@@ -11,10 +11,11 @@ project(Beluga)
 file(GLOB SOURCE "src/*.c")
 file(GLOB DECAWAVE_SRC "DecaDriver/src/*.c")
 
-include_directories(include DecaDriver/include)
+#include_directories(include DecaDriver/include)
 
 target_sources(app PRIVATE
-  ${SOURCE}
-  ${DECAWAVE_SRC}
+        src/main.c
+  #${SOURCE}
+  #${DECAWAVE_SRC}
 )
 # NORDIC SDK APP END

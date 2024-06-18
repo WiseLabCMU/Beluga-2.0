@@ -1,13 +1,18 @@
 NORDIC=$(HOME)
 BUILD=build
-BOARD=decawave_dwm1001_dev
+BOARD=
+BOARD_CONFIG=decawave_dwm1001_dev
+
+ifneq (, $(BOARD))
+	BOARD_CONFIG=$(BOARD)
+endif
 
 all: compile
 
 .PHONY: compile
 compile: $(BUILD)
-	echo $(HOME)
-	export BOARD=$(BOARD); \
+	echo $(BOARD_CONFIG); \
+	export BOARD=$(BOARD_CONFIG); \
 	export LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(NORDIC)/nordic/toolchains/2be090971e/usr/local/lib; \
 	cd $(BUILD); \
 	cmake ..; \

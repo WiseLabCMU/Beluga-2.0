@@ -20,7 +20,6 @@
 #include <zephyr/settings/settings.h>
 
 #include <zephyr/kernel.h>
-#include "random.h"
 
 #define STACKSIZE 1024
 #define PRIORITY 7
@@ -376,8 +375,6 @@ int main(void)
 {
 	int err;
 	int blink_status = 0;
-
-	hello_world();
 
 	printk("Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
 
