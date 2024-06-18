@@ -1,0 +1,2 @@
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libsubsys__net.a CMakeFiles/subsys__net.dir/buf.c.obj CMakeFiles/subsys__net.dir/buf_simple.c.obj
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libsubsys__net.a

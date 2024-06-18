@@ -1,0 +1,2 @@
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libdrivers__pinctrl.a CMakeFiles/drivers__pinctrl.dir/common.c.obj CMakeFiles/drivers__pinctrl.dir/pinctrl_nrf.c.obj
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libdrivers__pinctrl.a

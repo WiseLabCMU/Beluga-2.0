@@ -1,0 +1,2 @@
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libsubsys__random.a CMakeFiles/subsys__random.dir/rand32_xoshiro128.c.obj CMakeFiles/subsys__random.dir/rand32_entropy_device.c.obj
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libsubsys__random.a

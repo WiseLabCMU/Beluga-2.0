@@ -1,0 +1,2 @@
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libdrivers__timer.a CMakeFiles/drivers__timer.dir/sys_clock_init.c.obj CMakeFiles/drivers__timer.dir/nrf_rtc_timer.c.obj
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libdrivers__timer.a

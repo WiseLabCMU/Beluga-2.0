@@ -1,0 +1,32 @@
+zephyr/CMakeFiles/zephyr.dir/lib/os/timeutil.c.obj: \
+ /home/tom/nordic/v2.6.1/zephyr/lib/os/timeutil.c \
+ /home/tom/central_and_peripheral_hr/build/zephyr/include/generated/autoconf.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/toolchain/zephyr_stdint.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/stddef.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/stdint.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/_default_types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/features.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/picolibc.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_intsup.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_stdint.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/errno.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/errno.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/config.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/ieeefp.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/float.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/newlib.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/stdbool.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/timeutil.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/time.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/_ansi.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/cdefs.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/time.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/_ansi.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/_types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/timespec.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_timespec.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_locale.h

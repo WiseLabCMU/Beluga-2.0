@@ -1,0 +1,2 @@
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libsubsys__bluetooth__crypto.a CMakeFiles/subsys__bluetooth__crypto.dir/bt_crypto.c.obj
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libsubsys__bluetooth__crypto.a

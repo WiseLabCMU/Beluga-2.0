@@ -1,0 +1,2 @@
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libdrivers__entropy.a CMakeFiles/drivers__entropy.dir/entropy_nrf5.c.obj CMakeFiles/drivers__entropy.dir/entropy_bt_hci.c.obj
+/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libdrivers__entropy.a

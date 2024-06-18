@@ -1,0 +1,26 @@
+zephyr/CMakeFiles/zephyr.dir/lib/os/dec.c.obj: \
+ /home/tom/nordic/v2.6.1/zephyr/lib/os/dec.c \
+ /home/tom/central_and_peripheral_hr/build/zephyr/include/generated/autoconf.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/toolchain/zephyr_stdint.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_macro.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_internal.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_loops.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_listify.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_internal_is_eq.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_internal_util_inc.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_internal_util_dec.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/util_internal_util_x2.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/toolchain.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/toolchain/gcc.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/toolchain/common.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/stdbool.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/stddef.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/stdint.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/_default_types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/features.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/picolibc.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_intsup.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_stdint.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/sys/time_units.h

@@ -1,0 +1,25 @@
+modules/segger/CMakeFiles/modules__segger.dir/home/tom/nordic/v2.6.1/modules/debug/segger/SEGGER/SEGGER_RTT.c.obj: \
+ /home/tom/nordic/v2.6.1/modules/debug/segger/SEGGER/SEGGER_RTT.c \
+ /home/tom/central_and_peripheral_hr/build/zephyr/include/generated/autoconf.h \
+ /home/tom/nordic/v2.6.1/zephyr/include/zephyr/toolchain/zephyr_stdint.h \
+ /home/tom/nordic/v2.6.1/modules/debug/segger/SEGGER/SEGGER_RTT.h \
+ /home/tom/nordic/v2.6.1/modules/debug/segger/Config/SEGGER_RTT_Conf.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/stdlib.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/ieeefp.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/picolibc.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/_ansi.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/newlib.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/config.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/features.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/float.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/stddef.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/cdefs.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/_default_types.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/machine/stdlib.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/ssp/stdlib.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/ssp/ssp.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/lib/gcc/arm-zephyr-eabi/12.2.0/include/stdarg.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/string.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/_locale.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/sys/string.h \
+ /home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/picolibc/include/ssp/string.h
