@@ -1,2 +1,0 @@
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libdrivers__interrupt_controller.a CMakeFiles/drivers__interrupt_controller.dir/home/tom/nordic/v2.6.1/zephyr/misc/empty_file.c.obj
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libdrivers__interrupt_controller.a

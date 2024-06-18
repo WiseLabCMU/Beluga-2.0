@@ -1,2 +1,0 @@
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libmodules__segger.a CMakeFiles/modules__segger.dir/home/tom/nordic/v2.6.1/modules/debug/segger/SEGGER/SEGGER_RTT.c.obj CMakeFiles/modules__segger.dir/SEGGER_RTT_zephyr.c.obj
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libmodules__segger.a

@@ -5,10 +5,16 @@
 #
 cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(central_and_peripheral_hr)
+project(Beluga)
 
 # NORDIC SDK APP START
+file(GLOB SOURCE "src/*.c")
+file(GLOB DECAWAVE_SRC "DecaDriver/src/*.c")
+
+include_directories(include DecaDriver/include)
+
 target_sources(app PRIVATE
-  src/main.c
+  ${SOURCE}
+  ${DECAWAVE_SRC}
 )
 # NORDIC SDK APP END

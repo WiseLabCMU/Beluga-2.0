@@ -1,2 +1,0 @@
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc libarch__arm__core.a CMakeFiles/arch__arm__core.dir/fatal.c.obj CMakeFiles/arch__arm__core.dir/nmi.c.obj CMakeFiles/arch__arm__core.dir/nmi_on_reset.S.obj CMakeFiles/arch__arm__core.dir/tls.c.obj
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib libarch__arm__core.a

@@ -1,2 +1,0 @@
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc liblib__libc__picolibc.a CMakeFiles/lib__libc__picolibc.dir/libc-hooks.c.obj
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib liblib__libc__picolibc.a

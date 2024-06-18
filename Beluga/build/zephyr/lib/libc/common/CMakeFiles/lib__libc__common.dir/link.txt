@@ -1,2 +1,0 @@
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc liblib__libc__common.a CMakeFiles/lib__libc__common.dir/source/stdlib/abort.c.obj CMakeFiles/lib__libc__common.dir/source/stdlib/malloc.c.obj
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib liblib__libc__common.a

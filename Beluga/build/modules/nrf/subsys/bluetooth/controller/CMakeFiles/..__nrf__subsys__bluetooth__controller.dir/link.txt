@@ -1,2 +1,0 @@
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ar qc lib..__nrf__subsys__bluetooth__controller.a CMakeFiles/..__nrf__subsys__bluetooth__controller.dir/hci_driver.c.obj CMakeFiles/..__nrf__subsys__bluetooth__controller.dir/hci_internal.c.obj CMakeFiles/..__nrf__subsys__bluetooth__controller.dir/crypto.c.obj CMakeFiles/..__nrf__subsys__bluetooth__controller.dir/ecdh.c.obj
-/home/tom/nordic/toolchains/2be090971e/opt/zephyr-sdk/arm-zephyr-eabi/bin/arm-zephyr-eabi-ranlib lib..__nrf__subsys__bluetooth__controller.a
