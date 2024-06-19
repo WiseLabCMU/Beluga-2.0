@@ -122,7 +122,7 @@ uint32_t at_update_advertising_info(bool init) {
 
     if (init) {
         advdata.uuids_complete.uuid_cnt =
-                sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
+            sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
         advdata.uuids_complete.p_uuids = m_adv_uuids;
     }
 
@@ -457,7 +457,7 @@ void uart_task_function(void *pvParameter) {
                                      commands[i].cmd_length)) {
                         if (commands[i].callback != NULL) {
                             commands[i].callback(
-                                    (const char *)incoming_message.data);
+                                (const char *)incoming_message.data);
                         } else {
                             printf("Not Implemented \r\n");
                         }

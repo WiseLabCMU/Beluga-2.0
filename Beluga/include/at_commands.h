@@ -22,9 +22,10 @@ uint32_t at_update_advertising_info(bool init);
 /**
  * @brief Task to receive UART message from freertos UART queue and parse
  *
- * @param[in] pvParameter   Pointer that will be used as the parameter for the task.
+ * @param[in] pvParameter   Pointer that will be used as the parameter for the
+ * task.
  */
-void uart_task_function(void * pvParameter);
+void uart_task_function(void *pvParameter);
 
 extern int leds_mode;
 extern SemaphoreHandle_t print_list_sem;

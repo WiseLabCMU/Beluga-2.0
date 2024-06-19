@@ -74,10 +74,10 @@ static uint32_t dt_char_add(ble_cus_t *p_nus,
     attr_char_value.init_len = 0;
     attr_char_value.init_offs = 0;
     attr_char_value.max_len =
-            BLE_MAX_DT_CHAR_LEN; // Maximum data length can be transmitted
+        BLE_MAX_DT_CHAR_LEN; // Maximum data length can be transmitted
 
     return sd_ble_gatts_characteristic_add(
-            p_nus->service_handle, &char_md, &attr_char_value, &p_nus->dt_handles);
+        p_nus->service_handle, &char_md, &attr_char_value, &p_nus->dt_handles);
 }
 
 /**@brief Function for initializing the Custom Service.

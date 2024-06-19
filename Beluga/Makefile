@@ -2,6 +2,7 @@ NORDIC=$(HOME)
 BUILD=build
 BOARD=
 BOARD_CONFIG=decawave_dwm1001_dev
+FORMAT_FILES=src/*.c include/*.h DecaDriver/src/*.c DecaDriver/include/*.h
 
 ifneq (, $(BOARD))
 	BOARD_CONFIG=$(BOARD)
@@ -27,3 +28,6 @@ clean:
 
 vclean:
 	$(RM) -r $(BUILD)
+
+format:
+	clang-format -i $(FORMAT_FILES)

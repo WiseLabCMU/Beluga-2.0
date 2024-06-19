@@ -117,7 +117,7 @@ double ds_init_run(uint8 id) {
 
     /* ----- Send Poll message ----- */
     int check_poll_msg =
-            dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
+        dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 
     if (check_poll_msg == DWT_SUCCESS) {
 
@@ -134,8 +134,8 @@ double ds_init_run(uint8 id) {
     /*  Poll for reception of 1. a frame 2. error 3. timeout. See NOTE 4 below.
      */
     while (
-            !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
+        !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+          (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
     };
 
     /* Check the status register is a frame or not */
@@ -168,18 +168,18 @@ double ds_init_run(uint8 id) {
             poll_tx_ts = get_tx_timestamp_u64(); /* Get tx poll message transmit
                                                     timestamp */
             resp_rx_ts =
-                    get_rx_timestamp_u64(); /* Get rx response message timestamp */
+                get_rx_timestamp_u64(); /* Get rx response message timestamp */
 
             uint32 resp_tx_time;
             resp_tx_time =
-                    (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
-                                                                                  8;
+                (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
+                8;
             dwt_setdelayedtrxtime(resp_tx_time);
 
             /* Response TX timestamp is the transmission time we programmed plus
              * the antenna delay. */
             ts_replyA_end =
-                    (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+                (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
 
             /* ------ Send Final (third) message ------ */
 
@@ -240,7 +240,7 @@ double ds_init_run(uint8 id) {
 
                 /* A frame has been received, read it into the local buffer. */
                 frame_len =
-                        dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
+                    dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
                 if (frame_len <= RX_BUFFER_LEN) {
                     dwt_readrxdata(rx_buffer, frame_len, 0);
                 }
@@ -308,8 +308,8 @@ double ss_init_run(uint8 id) {
     int c = dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 
     while (
-            !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
+        !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+          (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
     };
 
     if (status_reg & SYS_STATUS_RXFCG) {

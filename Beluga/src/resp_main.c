@@ -134,7 +134,7 @@ nrf_drv_wdt_channel_id m_channel_id;
 int ds_resp_run(void) {
 
     int suspend_start = uxQueueMessagesWaiting(
-            (QueueHandle_t)sus_resp); // Check if responding is suspended
+        (QueueHandle_t)sus_resp); // Check if responding is suspended
     if (suspend_start == 0)
         return 1;
 
@@ -143,8 +143,8 @@ int ds_resp_run(void) {
 
     /* Poll for reception of a frame or error/timeout. See NOTE 5 below. */
     while (
-            !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
+        !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+          (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
         int suspend = uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
         if (suspend == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
@@ -190,8 +190,8 @@ int ds_resp_run(void) {
 
             /* Compute final message transmission time. See NOTE 7 below. */
             resp_tx_time =
-                    (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
-                                                                                  8;
+                (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
+                8;
             dwt_setdelayedtrxtime(resp_tx_time);
 
             /* Write and send the response message. See NOTE 9 below. */
@@ -265,7 +265,7 @@ int ds_resp_run(void) {
 
                 /* A frame has been received, read it into the local buffer. */
                 frame_len =
-                        dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
+                    dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
                 if (frame_len <= RX_BUFFER_LEN) {
                     dwt_readrxdata(rx_buffer, frame_len, 0);
                 }
@@ -328,11 +328,11 @@ int ds_resp_run(void) {
                     /* Write and send the report message. */
                     tx_report_msg[ALL_MSG_SN_IDX] = NODE_UUID;
                     dwt_writetxdata(
-                            sizeof(tx_report_msg), tx_report_msg,
-                            0); /* Zero offset in TX buffer. See Note 5 below.*/
+                        sizeof(tx_report_msg), tx_report_msg,
+                        0); /* Zero offset in TX buffer. See Note 5 below.*/
                     dwt_writetxfctrl(
-                            sizeof(tx_report_msg), 0,
-                            1); /* Zero offset in TX buffer, ranging. */
+                        sizeof(tx_report_msg), 0,
+                        1); /* Zero offset in TX buffer, ranging. */
                     int ret_report = dwt_starttx(DWT_START_TX_IMMEDIATE);
 
                     if (ret_report == DWT_SUCCESS) {
@@ -397,7 +397,7 @@ int ds_resp_run(void) {
  */
 int ss_resp_run(void) {
     int suspend_start = uxQueueMessagesWaiting(
-            (QueueHandle_t)sus_resp); // Check if responding is suspended
+        (QueueHandle_t)sus_resp); // Check if responding is suspended
     if (suspend_start == 0)
         return 1;
 
@@ -405,8 +405,8 @@ int ss_resp_run(void) {
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
 
     while (
-            !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
+        !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+          (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
         int suspend = uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
         if (suspend == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
@@ -452,14 +452,14 @@ int ss_resp_run(void) {
 
             /* Compute final message transmission time. See NOTE 7 below. */
             resp_tx_time =
-                    (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
-                                                                                  8;
+                (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
+                8;
             dwt_setdelayedtrxtime(resp_tx_time);
 
             /* Response TX timestamp is the transmission time we programmed plus
              * the antenna delay. */
             resp_tx_ts =
-                    (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+                (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
 
             /* Write all timestamps in the final message. See NOTE 8 below. */
             resp_msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
@@ -480,7 +480,7 @@ int ss_resp_run(void) {
 
                 while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
                     int suspend =
-                            uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
+                        uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
                     if (suspend == 0) {
                         dwt_forcetrxoff();
                         return 1;

@@ -18,13 +18,13 @@
 /**@brief FDS event handler to handle errors during initialization */
 void fds_evt_handler(fds_evt_t const *p_fds_evt) {
     switch (p_fds_evt->id) {
-        case FDS_EVT_INIT:
-            if (p_fds_evt->result != FDS_SUCCESS) {
-                // Initialization failed.
-            }
-            break;
-        default:
-            break;
+    case FDS_EVT_INIT:
+        if (p_fds_evt->result != FDS_SUCCESS) {
+            // Initialization failed.
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -74,7 +74,7 @@ void writeFlashID(uint32_t id, int record) {
         record.key = record_key;
         record.data.p_data = &str;
         record.data.length_words =
-                (sizeof("1") + 3) / 4; /* one word is four bytes. */
+            (sizeof("1") + 3) / 4; /* one word is four bytes. */
 
         ret_code_t rc;
         rc = fds_record_write(&record_desc, &record);
@@ -109,7 +109,7 @@ void writeFlashID(uint32_t id, int record) {
         record.key = record_key;
         record.data.p_data = &str;
         record.data.length_words =
-                (sizeof(str) + 3) / 4; /* one word is four bytes. */
+            (sizeof(str) + 3) / 4; /* one word is four bytes. */
         ret_code_t rc;
         rc = fds_record_update(&record_desc_1, &record);
         if (rc != FDS_SUCCESS) {
