@@ -51,6 +51,7 @@
 #include <zephyr/bluetooth/services/hrs.h>
 
 #include <led_config.h>
+#include <utils.h>
 
 #include <zephyr/settings/settings.h>
 
@@ -74,9 +75,11 @@ static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
 static bool bluetooth_on = false;
+static struct bt_conn *central_conn;
+static struct bt_hrs_client hrs_c;
 
 void scan_start(void) {
-    int err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
+    int err = bt_scan_start(BT_SCAN_TYPE_SCAN_PASSIVE);
 
     if (err != 0) {
         printk("Scanning failed to start (err %d)\n", err);
@@ -98,4 +101,259 @@ void adv_scan_start(void) {
             printk("Advertising failed to start (err %d)\n", err);
         }
     }
+}
+
+static void discovery_completed_cb(struct bt_gatt_dm *dm,
+                                   UNUSED void *context) {
+    bt_gatt_dm_data_print(dm);
+
+    // TODO: Figure out how to implement this
+
+    bt_gatt_dm_data_release(dm);
+}
+
+static void discovery_not_found_cb(UNUSED struct bt_conn *conn,
+                                   UNUSED void *context) {
+    printk("Heart Rate Service could not be found during the discovery\n");
+}
+
+static void discovery_error_found_cb(UNUSED struct bt_conn *conn, int err,
+                                     UNUSED void *context) {
+    printk("The discovery procedure failed with %d\n", err);
+}
+
+static const struct bt_gatt_dm_cb discovery_cb = {
+    .completed = discovery_completed_cb,
+    .service_not_found = discovery_not_found_cb,
+    .error_found = discovery_error_found_cb};
+
+static void gatt_discover(struct bt_conn *conn) {
+    int err;
+
+    err = bt_gatt_dm_start(conn, BT_UUID_GAP, &discovery_cb, NULL);
+
+    if (err) {
+        printk("Could not start the discovery procedure, error "
+               "code: %d\n",
+               err);
+    }
+}
+
+static void exchange_func(struct bt_conn *conn, uint8_t err,
+                          struct bt_gatt_exchange_params *params) {
+    if (!err) {
+        printk("MTU exchange done\n");
+    } else {
+        printk("MTU exchange failed (err %d)\n", err);
+    }
+}
+
+static void auth_cancel(struct bt_conn *conn) {
+    char addr[BT_ADDR_LE_STR_LEN];
+
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+    printk("Pairing cancelled: %s\n", addr);
+}
+
+static void pairing_complete(struct bt_conn *conn, bool bonded) {
+    char addr[BT_ADDR_LE_STR_LEN];
+
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+    printk("Pairing completed: %s, bonded: %d\n", addr, bonded);
+}
+
+static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason) {
+    char addr[BT_ADDR_LE_STR_LEN];
+
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+    printk("Pairing failed conn: %s, reason %d\n", addr, reason);
+}
+
+static const struct bt_conn_auth_cb auth_callbacks = {.cancel = auth_cancel};
+
+static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
+    .pairing_complete = pairing_complete, .pairing_failed = pairing_failed};
+
+static void connected(struct bt_conn *conn, uint8_t conn_err) {
+    int err;
+    struct bt_conn_info info;
+    char addr[BT_ADDR_LE_STR_LEN];
+
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+    if (conn_err) {
+        printk("Failed to connect to %s (%u)\n", addr, conn_err);
+
+        if (conn == central_conn) {
+            bt_conn_unref(central_conn);
+            central_conn = NULL;
+
+            scan_start();
+        }
+
+        return;
+    }
+
+    printk("Connected: %s\n", addr);
+
+    static struct bt_gatt_exchange_params exchange_params;
+    exchange_params.func = exchange_func;
+    err = bt_gatt_exchange_mtu(conn, &exchange_params);
+    if (err != 0) {
+        printk("MTU exchange failed (err %d)\n", err);
+    }
+
+    bt_conn_get_info(conn, &info);
+
+    if (info.role == BT_CONN_ROLE_CENTRAL) {
+        LED_ON(CENTRAL_CONNECTED_LED);
+
+        err = bt_conn_set_security(conn, BT_SECURITY_L2);
+        if (err) {
+            printk("Failed to set security (err %d)\n", err);
+
+            gatt_discover(conn);
+        }
+    } else {
+        LED_OFF(PERIPHERAL_CONNECTED_LED);
+    }
+}
+
+static void disconnected(struct bt_conn *conn, uint8_t reason) {
+    char addr[BT_ADDR_LE_STR_LEN];
+
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+    printk("Disconnected: %s (reason %u)\n", addr, reason);
+
+    if (conn == central_conn) {
+        LED_OFF(CENTRAL_CONNECTED_LED);
+
+        bt_conn_unref(central_conn);
+        central_conn = NULL;
+
+        scan_start();
+    } else {
+        LED_OFF(PERIPHERAL_CONNECTED_LED);
+    }
+}
+
+static void security_changed(struct bt_conn *conn, bt_security_t level,
+                             enum bt_security_err err) {
+    char addr[BT_ADDR_LE_STR_LEN];
+
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+    if (!err) {
+        printk("Security changed: %s level %u\n", addr, level);
+    } else {
+        printk("Security failed: %s level %u err %d\n", addr, level, err);
+    }
+
+    if (conn == central_conn) {
+        gatt_discover(conn);
+    }
+}
+
+BT_CONN_CB_DEFINE(conn_callbacks) = {.connected = connected,
+                                     .disconnected = disconnected,
+                                     .security_changed = security_changed};
+
+static void scan_filter_match(struct bt_scan_device_info *device_info,
+                              struct bt_scan_filter_match *filter_match,
+                              bool connectable) {
+    char addr[BT_ADDR_LE_STR_LEN];
+
+    bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
+
+    printk("Filters matched. Address: %s connectable: %d\n", addr, connectable);
+}
+
+static void scan_connecting_error(struct bt_scan_device_info *device_info) {
+    printk("Connecting failed\n");
+}
+
+static void scan_connecting(struct bt_scan_device_info *device_info,
+                            struct bt_conn *conn) {
+    central_conn = bt_conn_ref(conn);
+}
+
+BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL, scan_connecting_error,
+                scan_connecting);
+
+static void scan_init(void) {
+    int err;
+
+    struct bt_scan_init_param param = {.scan_param = NULL,
+                                       .conn_param = BT_LE_CONN_PARAM_DEFAULT,
+                                       .connect_if_match = 1};
+
+    bt_scan_init(&param);
+    bt_scan_cb_register(&scan_cb);
+
+    err =
+        bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_HRS);
+    if (err) {
+        printk("Scanning filters cannot be set (err %d)\n", err);
+    }
+
+    err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
+    if (err) {
+        printk("Filters cannot be turned on (err %d)\n", err);
+    }
+}
+
+int32_t init_bt_stack(void) {
+    int32_t err;
+
+    err = bt_conn_auth_cb_register(&auth_callbacks);
+    if (err) {
+        printk("Failed to register authorization callbacks.\n");
+        return 1;
+    }
+
+    err = bt_conn_auth_info_cb_register(&conn_auth_info_callbacks);
+    if (err) {
+        printk("Failed to register authorization info callbacks.\n");
+        return 1;
+    }
+
+    err = bt_enable(NULL);
+    if (err) {
+        return 1;
+    }
+
+    if (IS_ENABLED(CONFIG_SETTINGS)) {
+        settings_load();
+    }
+
+    scan_init();
+
+    err = bt_hrs_client_init(&hrs_c);
+    if (err) {
+        printk("Heart Rate Service client failed to init (err %d)\n", err);
+        return 0;
+    }
+
+    scan_start();
+
+    printk("Scanning started\n");
+
+    LED_OFF(PERIPHERAL_ADVERTISING_LED);
+
+    err =
+        bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+    if (err) {
+        printk("Advertising failed to start (err %d)\n", err);
+        return 1;
+    }
+    LED_ON(PERIPHERAL_ADVERTISING_LED);
+    bluetooth_on = true;
+
+    printk("Advertising started\n");
+
+    return 0;
 }
