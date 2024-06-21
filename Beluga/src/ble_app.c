@@ -304,7 +304,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
             gatt_discover(conn);
         }
     } else {
-        LED_OFF(PERIPHERAL_CONNECTED_LED);
+        LED_ON(PERIPHERAL_CONNECTED_LED);
     }
 }
 
