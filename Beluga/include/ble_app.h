@@ -28,7 +28,8 @@ typedef struct node {
                          if the node get updated */
     int polling_flag; /* Flag to indicate the node is passive or not, 1 if the
                          node will init uwb signal*/
-    int ble_time_stamp; /* Last timestamp get the BLE package from this node */
+    uint64_t
+        ble_time_stamp; /* Last timestamp get the BLE package from this node */
 } node;
 
 /*
@@ -36,6 +37,7 @@ typedef struct node {
  * NOTE: Change the size based on the network size
  */
 #define MAX_ANCHOR_COUNT 12
+extern node seen_list[MAX_ANCHOR_COUNT];
 
 int32_t init_bt_stack(void);
 

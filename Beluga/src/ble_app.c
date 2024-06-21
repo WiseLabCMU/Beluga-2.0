@@ -53,8 +53,21 @@
 
 #include <zephyr/kernel.h>
 
+#include <ble_app.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <utils.h>
+
+/**@brief Macro to unpack 16bit unsigned UUID from an octet stream.
+ */
+#define UUID16_EXTRACT(DST, SRC)                                               \
+    do {                                                                       \
+        (*(DST)) = (SRC)[1];                                                   \
+        (*(DST)) <<= 8;                                                        \
+        (*(DST)) |= (SRC)[0];                                                  \
+    } while (0)
+
+#define NAME_LEN 30
 
 static char const m_target_peripheral_name[] = "BN ";
 
@@ -72,12 +85,16 @@ static struct bt_data sd[] = {
 
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
+static uint16_t NODE_UUID = 1;
+static uint64_t timekeeper;
 
-#define NAME_LEN 30
+bool node_added = false;
+static int32_t last_seen_index = 0;
+node seen_list[MAX_ANCHOR_COUNT];
 
 struct ble_data {
     char name[NAME_LEN];
-    uint8_t uuid[2];
+    uint16_t uuid;
     uint8_t manufacturerData[NAME_LEN];
 };
 
@@ -90,8 +107,7 @@ static bool data_cb(struct bt_data *data, void *user_data) {
         memcpy(_data->name, data->data, MIN(data->data_len, NAME_LEN - 1));
         break;
     case BT_DATA_UUID16_ALL:
-        _data->uuid[0] = data->data[0];
-        _data->uuid[1] = data->data[1];
+        UUID16_EXTRACT(&(_data->uuid), data->data);
         break;
     case BT_DATA_MANUFACTURER_DATA:
         memcpy(_data->manufacturerData, data->data,
@@ -104,12 +120,61 @@ static bool data_cb(struct bt_data *data, void *user_data) {
     return true;
 }
 
+static int32_t get_seen_list_index(uint16_t uuid) {
+    for (uint32_t i = 0; i < (uint32_t)MAX_ANCHOR_COUNT; i++) {
+        if (seen_list[i].UUID == uuid) {
+            return (int32_t)i;
+        }
+    }
+    return INT32_C(-1);
+}
+
+ALWAYS_INLINE bool in_seen_list(uint16_t uuid) {
+    return get_seen_list_index(uuid) != INT32_C(-1);
+}
+
+static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
+    // TODO: Figure out polling flag
+    int32_t index = get_seen_list_index(0);
+    if (index < 0) {
+        // List is full
+        index = MAX_ANCHOR_COUNT - 1;
+    }
+    seen_list[last_seen_index].UUID = data->uuid;
+    seen_list[last_seen_index].RSSI = rssi;
+    seen_list[last_seen_index].ble_time_stamp = timekeeper;
+
+    // TODO: Polling flag stuff
+
+    last_seen_index = (last_seen_index + 1) % MAX_ANCHOR_COUNT;
+    node_added = true;
+}
+
+static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
+    int32_t index = get_seen_list_index(data->uuid);
+    seen_list[index].RSSI = rssi;
+    seen_list[index].ble_time_stamp = timekeeper;
+
+    // TODO: Polling flag stuff
+}
+
+static void update_seen_list(struct ble_data *data, int8_t rssi) {
+    if (data->uuid == NODE_UUID) {
+        return;
+    }
+
+    if (!in_seen_list(data->uuid)) {
+        insert_into_seen_list(data, rssi);
+    } else {
+        update_seen_neighbor(data, rssi);
+    }
+}
+
 static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
                                   uint8_t type,
                                   struct net_buf_simple *adv_info) {
     char addr_str[BT_ADDR_LE_STR_LEN];
     struct ble_data _data;
-    int err;
 
     memset(&_data, 0, sizeof(struct ble_data));
 
@@ -124,9 +189,7 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
     bt_data_parse(adv_info, data_cb, &_data);
 
     if (strncmp(_data.name, m_target_peripheral_name, 3) == 0) {
-        // RSSI is pretty simple
-        // How to get UUID and timestamp?
-        printk("Here");
+        update_seen_list(&_data, rssi);
     }
 }
 
