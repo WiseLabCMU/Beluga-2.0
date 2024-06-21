@@ -46,10 +46,6 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/uuid.h>
 
-#include <bluetooth/services/hrs_client.h>
-#include <zephyr/bluetooth/services/bas.h>
-#include <zephyr/bluetooth/services/hrs.h>
-
 #include <led_config.h>
 #include <utils.h>
 
@@ -76,10 +72,66 @@ static struct bt_data sd[] = {
 
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
-static struct bt_hrs_client hrs_c;
+
+#define NAME_LEN 30
+
+struct ble_data {
+    char name[NAME_LEN];
+    uint8_t uuid[2];
+    uint8_t manufacturerData[NAME_LEN];
+};
+
+static bool data_cb(struct bt_data *data, void *user_data) {
+    struct ble_data *_data = user_data;
+
+    switch (data->type) {
+    case BT_DATA_NAME_SHORTENED:
+    case BT_DATA_NAME_COMPLETE:
+        memcpy(_data->name, data->data, MIN(data->data_len, NAME_LEN - 1));
+        break;
+    case BT_DATA_UUID16_ALL:
+        _data->uuid[0] = data->data[0];
+        _data->uuid[1] = data->data[1];
+        break;
+    case BT_DATA_MANUFACTURER_DATA:
+        memcpy(_data->manufacturerData, data->data,
+               MIN(data->data_len, NAME_LEN - 1));
+        break;
+    default:
+        break;
+    }
+
+    return true;
+}
+
+static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
+                                  uint8_t type,
+                                  struct net_buf_simple *adv_info) {
+    char addr_str[BT_ADDR_LE_STR_LEN];
+    struct ble_data _data;
+    int err;
+
+    memset(&_data, 0, sizeof(struct ble_data));
+
+    if (type != BT_GAP_ADV_TYPE_ADV_IND &&
+        type != BT_GAP_ADV_TYPE_ADV_DIRECT_IND &&
+        type != BT_GAP_ADV_TYPE_SCAN_RSP) {
+        return;
+    }
+
+    bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
+
+    bt_data_parse(adv_info, data_cb, &_data);
+
+    if (strncmp(_data.name, m_target_peripheral_name, 3) == 0) {
+        // RSSI is pretty simple
+        // How to get UUID and timestamp?
+        printk("Here");
+    }
+}
 
 void scan_start(void) {
-    int err = bt_scan_start(BT_SCAN_TYPE_SCAN_PASSIVE);
+    int err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found_callback);
 
     if (err != 0) {
         printk("Scanning failed to start (err %d)\n", err);
@@ -147,35 +199,6 @@ static void exchange_func(struct bt_conn *conn, uint8_t err,
         printk("MTU exchange failed (err %d)\n", err);
     }
 }
-
-static void auth_cancel(struct bt_conn *conn) {
-    char addr[BT_ADDR_LE_STR_LEN];
-
-    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-    printk("Pairing cancelled: %s\n", addr);
-}
-
-static void pairing_complete(struct bt_conn *conn, bool bonded) {
-    char addr[BT_ADDR_LE_STR_LEN];
-
-    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-    printk("Pairing completed: %s, bonded: %d\n", addr, bonded);
-}
-
-static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason) {
-    char addr[BT_ADDR_LE_STR_LEN];
-
-    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-    printk("Pairing failed conn: %s, reason %d\n", addr, reason);
-}
-
-static const struct bt_conn_auth_cb auth_callbacks = {.cancel = auth_cancel};
-
-static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
-    .pairing_complete = pairing_complete, .pairing_failed = pairing_failed};
 
 static void connected(struct bt_conn *conn, uint8_t conn_err) {
     int err;
@@ -289,13 +312,12 @@ static void scan_init(void) {
 
     struct bt_scan_init_param param = {.scan_param = NULL,
                                        .conn_param = BT_LE_CONN_PARAM_DEFAULT,
-                                       .connect_if_match = 1};
+                                       .connect_if_match = 0};
 
     bt_scan_init(&param);
     bt_scan_cb_register(&scan_cb);
 
-    err =
-        bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_HRS);
+    err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_HRS);
     if (err) {
         printk("Scanning filters cannot be set (err %d)\n", err);
     }
@@ -309,18 +331,6 @@ static void scan_init(void) {
 int32_t init_bt_stack(void) {
     int32_t err;
 
-    err = bt_conn_auth_cb_register(&auth_callbacks);
-    if (err) {
-        printk("Failed to register authorization callbacks.\n");
-        return 1;
-    }
-
-    err = bt_conn_auth_info_cb_register(&conn_auth_info_callbacks);
-    if (err) {
-        printk("Failed to register authorization info callbacks.\n");
-        return 1;
-    }
-
     err = bt_enable(NULL);
     if (err) {
         return 1;
@@ -331,12 +341,6 @@ int32_t init_bt_stack(void) {
     }
 
     scan_init();
-
-    err = bt_hrs_client_init(&hrs_c);
-    if (err) {
-        printk("Heart Rate Service client failed to init (err %d)\n", err);
-        return 0;
-    }
 
     scan_start();
 
