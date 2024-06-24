@@ -67,9 +67,9 @@
         (*(DST)) |= (SRC)[0];                                                  \
     } while (0)
 
-#define NAME_LEN 30
-#define UUID_INDEX 2
-#define MANF_INDEX 3
+#define NAME_LEN           30
+#define UUID_INDEX         2
+#define MANF_INDEX         3
 #define POLLING_FLAG_INDEX 2
 
 enum adv_mode {
@@ -242,7 +242,8 @@ static void adv_no_connect_start(void) {
 
         LED_ON(CENTRAL_SCANNING_LED);
 
-        err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+        err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad), sd,
+                              ARRAY_SIZE(sd));
 
         if (err != 0) {
             printk("Advertising failed to start (err %d)\n", err);
@@ -434,9 +435,12 @@ void update_node_id(uint16_t uuid) {
     static uint8_t uuid_encoded[2];
     static uint8_t advName[NAME_LEN];
     memcpy(uuid_encoded, &uuid, sizeof(uuid));
-    size_t len = snprintf(advName, NAME_LEN, "%s%d", m_target_peripheral_name, uuid);
-    struct bt_data uuid_data = {.type = BT_DATA_UUID16_ALL, .data = uuid_encoded, .data_len = 2};
-    struct bt_data name_data = {.type = BT_DATA_NAME_COMPLETE, .data = advName, .data_len = len};
+    size_t len =
+        snprintf(advName, NAME_LEN, "%s%d", m_target_peripheral_name, uuid);
+    struct bt_data uuid_data = {
+        .type = BT_DATA_UUID16_ALL, .data = uuid_encoded, .data_len = 2};
+    struct bt_data name_data = {
+        .type = BT_DATA_NAME_COMPLETE, .data = advName, .data_len = len};
 
     NODE_UUID = uuid;
 
@@ -447,24 +451,27 @@ void update_node_id(uint16_t uuid) {
     ad[UUID_INDEX] = uuid_data;
     sd[0] = name_data;
 
-    switch(currentAdvMode) {
-        case ADVERTISING_CONNECTABLE:
-            adv_scan_start();
-            break;
-        case ADVERTISING_NONCONNECTABLE:
-            adv_no_connect_start();
-            break;
-        case ADVERTISING_OFF:
-            // do nothing
-            break;
-        default:
-            assert_print("Bad advertising mode");
-            break;
+    switch (currentAdvMode) {
+    case ADVERTISING_CONNECTABLE:
+        adv_scan_start();
+        break;
+    case ADVERTISING_NONCONNECTABLE:
+        adv_no_connect_start();
+        break;
+    case ADVERTISING_OFF:
+        // do nothing
+        break;
+    default:
+        assert_print("Bad advertising mode");
+        break;
     }
 }
 
 void advertising_reconfig(int32_t change) {
-    struct bt_data data_poll_0 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"), data_poll_1 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
+    struct bt_data data_poll_0 =
+                       BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
+                   data_poll_1 =
+                       BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
 
     bt_le_adv_stop();
 
@@ -474,19 +481,19 @@ void advertising_reconfig(int32_t change) {
         ad[MANF_INDEX] = data_poll_1;
     }
 
-    switch(currentAdvMode) {
-        case ADVERTISING_CONNECTABLE:
-            adv_scan_start();
-            break;
-        case ADVERTISING_NONCONNECTABLE:
-            adv_no_connect_start();
-            break;
-        case ADVERTISING_OFF:
-            // do nothing
-            break;
-        default:
-            assert_print("Bad advertising mode");
-            break;
+    switch (currentAdvMode) {
+    case ADVERTISING_CONNECTABLE:
+        adv_scan_start();
+        break;
+    case ADVERTISING_NONCONNECTABLE:
+        adv_no_connect_start();
+        break;
+    case ADVERTISING_OFF:
+        // do nothing
+        break;
+    default:
+        assert_print("Bad advertising mode");
+        break;
     }
 }
 
@@ -545,6 +552,4 @@ void disable_bluetooth(void) {
     bluetooth_on = false;
 }
 
-void enable_bluetooth(void) {
-    init_bt_stack();
-}
+void enable_bluetooth(void) { init_bt_stack(); }

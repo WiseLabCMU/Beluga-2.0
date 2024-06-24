@@ -20,7 +20,7 @@
  * BLE neighbor node structure
  */
 typedef struct node {
-    uint16_t UUID;       /* node ID */
+    uint16_t UUID;    /* node ID */
     int8_t RSSI;      /* node RSSI value */
     int time_stamp;   /* Last timestamp updated ranging value */
     float range;      /* Last updated ranging value */
