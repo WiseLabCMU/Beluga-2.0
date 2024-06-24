@@ -16,6 +16,7 @@ include_directories(include DecaDriver/include)
 target_sources(app PRIVATE
         src/main.c
         src/ble_app.c
+        src/flash.c
   #${SOURCE}
   #${DECAWAVE_SRC}
 )
