@@ -95,8 +95,6 @@ static struct bt_data ad[] = {
 static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
-//static uint8_t advName[NAME_LEN];
-
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
 static uint64_t timekeeper;
@@ -148,7 +146,6 @@ ALWAYS_INLINE bool in_seen_list(uint16_t uuid) {
 }
 
 static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
-    // TODO: Figure out polling flag
     int32_t index = get_seen_list_index(0);
     if (index < 0) {
         // List is full
@@ -157,8 +154,11 @@ static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
     seen_list[last_seen_index].UUID = data->uuid;
     seen_list[last_seen_index].RSSI = rssi;
     seen_list[last_seen_index].ble_time_stamp = timekeeper;
-
-    // TODO: Polling flag stuff
+    if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
+        seen_list[last_seen_index].polling_flag = 0;
+    } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {
+        seen_list[last_seen_index].polling_flag = 1;
+    }
 
     last_seen_index = (last_seen_index + 1) % MAX_ANCHOR_COUNT;
     node_added = true;
@@ -169,7 +169,11 @@ static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
     seen_list[index].RSSI = rssi;
     seen_list[index].ble_time_stamp = timekeeper;
 
-    // TODO: Polling flag stuff
+    if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
+        seen_list[last_seen_index].polling_flag = 0;
+    } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {
+        seen_list[last_seen_index].polling_flag = 1;
+    }
 }
 
 static void update_seen_list(struct ble_data *data, int8_t rssi) {
@@ -442,7 +446,6 @@ void update_node_id(uint16_t uuid) {
 
     ad[UUID_INDEX] = uuid_data;
     sd[0] = name_data;
-    // TODO: Update name
 
     switch(currentAdvMode) {
         case ADVERTISING_CONNECTABLE:
