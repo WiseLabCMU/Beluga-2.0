@@ -194,6 +194,8 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
 }
 
 void scan_start(void) {
+    LED_OFF(CENTRAL_SCANNING_LED);
+
     int err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found_callback);
 
     if (err != 0) {
@@ -201,11 +203,9 @@ void scan_start(void) {
     }
 }
 
-void adv_scan_start(void) {
+int32_t adv_scan_start(void) {
     if (bluetooth_on) {
         int32_t err;
-
-        scan_start();
 
         LED_ON(CENTRAL_SCANNING_LED);
 
@@ -214,6 +214,25 @@ void adv_scan_start(void) {
 
         if (err != 0) {
             printk("Advertising failed to start (err %d)\n", err);
+            LED_OFF(CENTRAL_SCANNING_LED);
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
+}
+
+void adv_no_connect_start(void) {
+    if (bluetooth_on) {
+        int32_t err;
+
+        LED_ON(CENTRAL_SCANNING_LED);
+
+        err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+
+        if (err != 0) {
+            printk("Advertising failed to start (err %d)\n", err);
+            LED_OFF(CENTRAL_SCANNING_LED);
         }
     }
 }
@@ -305,6 +324,8 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
         }
     } else {
         LED_ON(PERIPHERAL_CONNECTED_LED);
+        bt_le_adv_stop();
+        adv_no_connect_start();
     }
 }
 
@@ -324,6 +345,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
         scan_start();
     } else {
         LED_OFF(PERIPHERAL_CONNECTED_LED);
+        bt_le_adv_stop();
+        adv_scan_start();
     }
 }
 
@@ -411,14 +434,10 @@ int32_t init_bt_stack(void) {
 
     LED_OFF(PERIPHERAL_ADVERTISING_LED);
 
-    err =
-        bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
-    if (err) {
-        printk("Advertising failed to start (err %d)\n", err);
-        return 1;
-    }
-    LED_ON(PERIPHERAL_ADVERTISING_LED);
     bluetooth_on = true;
+    if (!adv_scan_start()) {
+        LED_ON(PERIPHERAL_ADVERTISING_LED);
+    }
 
     printk("Advertising started\n");
 
