@@ -519,3 +519,32 @@ int32_t init_bt_stack(void) {
 
     return 0;
 }
+
+void disable_bluetooth(void) {
+    int err;
+
+    err = bt_le_adv_stop();
+
+    if (err) {
+        printk("Failed to stop advertising (err %d)\n", err);
+    }
+
+    err = bt_le_scan_stop();
+
+    if (err) {
+        printk("Failed to stop scanning (err %d)\n", err);
+    }
+
+    err = bt_disable();
+
+    if (err) {
+        printk("Failed to disable bluetooth (err %d)\n", err);
+    }
+
+    currentAdvMode = ADVERTISING_OFF;
+    bluetooth_on = false;
+}
+
+void enable_bluetooth(void) {
+    init_bt_stack();
+}
