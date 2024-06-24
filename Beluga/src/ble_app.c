@@ -68,16 +68,28 @@
     } while (0)
 
 #define NAME_LEN 30
+#define UUID_INDEX 2
+#define MANF_INDEX 3
+#define POLLING_FLAG_INDEX 2
+
+enum adv_mode {
+    ADVERTISING_CONNECTABLE,
+    ADVERTISING_NONCONNECTABLE,
+    ADVERTISING_OFF
+};
+
+static uint16_t NODE_UUID = BT_UUID_HRS_VAL;
 
 static char const m_target_peripheral_name[] = "BN ";
 
-static const struct bt_data ad[] = {
+static struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE,
                   (CONFIG_BT_DEVICE_APPEARANCE >> 0) & 0xff,
                   (CONFIG_BT_DEVICE_APPEARANCE >> 8) & 0xff),
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
     BT_DATA_BYTES(BT_DATA_UUID16_ALL,
                   BT_UUID_16_ENCODE(BT_UUID_HRS_VAL)), /* Heart Rate Service */
+    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
 };
 
 static struct bt_data sd[] = {
@@ -85,12 +97,12 @@ static struct bt_data sd[] = {
 
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
-static uint16_t NODE_UUID = 1;
 static uint64_t timekeeper;
 
 bool node_added = false;
 static int32_t last_seen_index = 0;
 node seen_list[MAX_ANCHOR_COUNT];
+static enum adv_mode currentAdvMode = ADVERTISING_OFF;
 
 struct ble_data {
     char name[NAME_LEN];
@@ -171,18 +183,12 @@ static void update_seen_list(struct ble_data *data, int8_t rssi) {
 }
 
 static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
-                                  uint8_t type,
+                                  UNUSED uint8_t type,
                                   struct net_buf_simple *adv_info) {
     char addr_str[BT_ADDR_LE_STR_LEN];
     struct ble_data _data;
 
-    memset(&_data, 0, sizeof(struct ble_data));
-
-    if (type != BT_GAP_ADV_TYPE_ADV_IND &&
-        type != BT_GAP_ADV_TYPE_ADV_DIRECT_IND &&
-        type != BT_GAP_ADV_TYPE_SCAN_RSP) {
-        return;
-    }
+    memset(&_data, 0, sizeof(_data));
 
     bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
 
@@ -215,8 +221,10 @@ int32_t adv_scan_start(void) {
         if (err != 0) {
             printk("Advertising failed to start (err %d)\n", err);
             LED_OFF(CENTRAL_SCANNING_LED);
+            currentAdvMode = ADVERTISING_OFF;
             return 1;
         }
+        currentAdvMode = ADVERTISING_CONNECTABLE;
         return 0;
     }
     return 1;
@@ -233,7 +241,9 @@ void adv_no_connect_start(void) {
         if (err != 0) {
             printk("Advertising failed to start (err %d)\n", err);
             LED_OFF(CENTRAL_SCANNING_LED);
+            currentAdvMode = ADVERTISING_OFF;
         }
+        currentAdvMode = ADVERTISING_CONNECTABLE;
     }
 }
 
@@ -411,6 +421,61 @@ static void scan_init(void) {
     err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
     if (err) {
         printk("Filters cannot be turned on (err %d)\n", err);
+    }
+}
+
+void update_node_id(uint16_t uuid) {
+    struct bt_data uuid_data = BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(uuid));
+
+    NODE_UUID = uuid;
+
+    if (currentAdvMode != ADVERTISING_OFF) {
+        bt_le_adv_stop();
+    }
+
+    ad[UUID_INDEX] = uuid_data;
+    // TODO: Update name
+
+    switch(currentAdvMode) {
+        case ADVERTISING_CONNECTABLE:
+            adv_scan_start();
+            break;
+        case ADVERTISING_NONCONNECTABLE:
+            adv_no_connect_start();
+            break;
+        case ADVERTISING_OFF:
+            // do nothing
+            break;
+        default:
+            assert_print("Bad advertising mode");
+            break;
+    }
+}
+
+void advertising_reconfig(int32_t change) {
+    struct bt_data data_poll_0 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"), data_poll_1 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
+
+    bt_le_adv_stop();
+
+    if (change == 0) {
+        ad[MANF_INDEX] = data_poll_0;
+    } else {
+        ad[MANF_INDEX] = data_poll_1;
+    }
+
+    switch(currentAdvMode) {
+        case ADVERTISING_CONNECTABLE:
+            adv_scan_start();
+            break;
+        case ADVERTISING_NONCONNECTABLE:
+            adv_no_connect_start();
+            break;
+        case ADVERTISING_OFF:
+            // do nothing
+            break;
+        default:
+            assert_print("Bad advertising mode");
+            break;
     }
 }
 
