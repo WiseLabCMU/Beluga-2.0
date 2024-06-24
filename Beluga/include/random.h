@@ -17,9 +17,4 @@
 
 uint16_t get_rand_num_exp_collision(uint32_t freq);
 
-#endif #ifndef RANDOM_H
-#define RANDOM_H
-
-void hello_world(void);
-
 #endif

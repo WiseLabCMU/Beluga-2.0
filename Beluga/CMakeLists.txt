@@ -17,6 +17,7 @@ target_sources(app PRIVATE
         src/main.c
         src/ble_app.c
         src/flash.c
+        src/random.c
   #${SOURCE}
   #${DECAWAVE_SRC}
 )
