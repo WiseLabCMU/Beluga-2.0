@@ -95,6 +95,8 @@ static struct bt_data ad[] = {
 static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
+//static uint8_t advName[NAME_LEN];
+
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
 static uint64_t timekeeper;
@@ -425,7 +427,12 @@ static void scan_init(void) {
 }
 
 void update_node_id(uint16_t uuid) {
-    struct bt_data uuid_data = BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(uuid));
+    static uint8_t uuid_encoded[2];
+    static uint8_t advName[NAME_LEN];
+    memcpy(uuid_encoded, &uuid, sizeof(uuid));
+    size_t len = snprintf(advName, NAME_LEN, "%s%d", m_target_peripheral_name, uuid);
+    struct bt_data uuid_data = {.type = BT_DATA_UUID16_ALL, .data = uuid_encoded, .data_len = 2};
+    struct bt_data name_data = {.type = BT_DATA_NAME_COMPLETE, .data = advName, .data_len = len};
 
     NODE_UUID = uuid;
 
@@ -434,6 +441,7 @@ void update_node_id(uint16_t uuid) {
     }
 
     ad[UUID_INDEX] = uuid_data;
+    sd[0] = name_data;
     // TODO: Update name
 
     switch(currentAdvMode) {

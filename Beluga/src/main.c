@@ -28,6 +28,8 @@ int main(void) {
         return 0;
     }
 
+    update_node_id(10);
+
     for (;;) {
     }
 }

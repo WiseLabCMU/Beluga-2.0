@@ -40,5 +40,6 @@ typedef struct node {
 extern node seen_list[MAX_ANCHOR_COUNT];
 
 int32_t init_bt_stack(void);
+void update_node_id(uint16_t uuid);
 
 #endif
