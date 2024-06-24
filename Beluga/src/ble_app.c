@@ -205,7 +205,7 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
     }
 }
 
-void scan_start(void) {
+static void scan_start(void) {
     LED_OFF(CENTRAL_SCANNING_LED);
 
     int err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found_callback);
@@ -215,7 +215,7 @@ void scan_start(void) {
     }
 }
 
-int32_t adv_scan_start(void) {
+static int32_t adv_scan_start(void) {
     if (bluetooth_on) {
         int32_t err;
 
@@ -236,7 +236,7 @@ int32_t adv_scan_start(void) {
     return 1;
 }
 
-void adv_no_connect_start(void) {
+static void adv_no_connect_start(void) {
     if (bluetooth_on) {
         int32_t err;
 
