@@ -141,7 +141,7 @@ static int32_t get_seen_list_index(uint16_t uuid) {
     return INT32_C(-1);
 }
 
-ALWAYS_INLINE bool in_seen_list(uint16_t uuid) {
+STATIC_INLINE bool in_seen_list(uint16_t uuid) {
     return get_seen_list_index(uuid) != INT32_C(-1);
 }
 
