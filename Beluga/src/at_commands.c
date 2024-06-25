@@ -7,6 +7,7 @@
  *  @author WiseLab-CMU
  */
 
+#include <zephyr/sys/reboot.h>
 #include "deca_types.h"
 //#include "init_main.h"
 
@@ -32,6 +33,7 @@ struct cmd_info {
     void (*cmd_func)(const char *);
 };
 
+// TODO: Replace strtok with reentrent version or some other parsing mechanism
 // TODO: File static vars?
 
 static bool strtoint32(const char *str, int32_t *result) {
@@ -56,7 +58,7 @@ void init_at_commands(void) {
     // Init UART queue here
 }
 
-void at_start_uwb(UNUSED const char *cmd) {
+static void at_start_uwb(UNUSED const char *cmd) {
     // Mark UWB as started
     // Post Semaphores
 
@@ -66,7 +68,7 @@ void at_start_uwb(UNUSED const char *cmd) {
     OK;
 }
 
-void at_stop_uwb(UNUSED const char *cmd) {
+static void at_stop_uwb(UNUSED const char *cmd) {
     // Mark UWB as stopped
     // Wait semaphores here
 
@@ -76,7 +78,7 @@ void at_stop_uwb(UNUSED const char *cmd) {
     OK;
 }
 
-void at_start_ble(UNUSED const char *cmd) {
+static void at_start_ble(UNUSED const char *cmd) {
     enable_bluetooth();
     // Post list semaphore
 
@@ -86,7 +88,7 @@ void at_start_ble(UNUSED const char *cmd) {
     OK;
 }
 
-void at_stop_ble(UNUSED const char *cmd) {
+static void at_stop_ble(UNUSED const char *cmd) {
     disable_bluetooth();
     // Wait list semaphore
 
@@ -97,7 +99,7 @@ void at_stop_ble(UNUSED const char *cmd) {
     OK;
 }
 
-void at_change_id(UNUSED const char *cmd) {
+static void at_change_id(UNUSED const char *cmd) {
     char buf[BUF_SIZE];
     memcpy(buf, cmd, MIN(BUF_SIZE - 1, strlen(cmd)));
     char *uuid = strtok(buf, " ");
@@ -115,6 +117,194 @@ void at_change_id(UNUSED const char *cmd) {
     OK;
 }
 
+static void at_bootmode(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy( buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    char *boot = strtok(buf, " ");
+    boot = strtok(NULL, " ");
+    int32_t mode;
+    bool success = strtoint32(boot, &mode);
+
+    if (mode < 0 || mode > 2 || !success) {
+        printf("Invalid bootmode parameter \r\n");
+        return;
+    }
+
+    writeFlashID(CONFIG_BM, mode);
+    printf("Bootmode: %d ", mode);
+    OK;
+}
+
+static void at_rate(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    char *_rate = strtok(buf, " ");
+    _rate = strtok(NULL, " ");
+    int32_t rate;
+    bool success = strtoint32(_rate, &rate);
+
+    if (rate < 0 || rate > 500 || !success) {
+        printf("Invalid rate parameter\r\n");
+        return;
+    }
+
+    writeFlashID(CONFIG_RATE, rate);
+    // TODO: Set rate
+
+    // reconfig ble data
+    advertising_reconfig(rate != 0);
+    printf("Rate: %d ", rate);
+    OK;
+}
+
+static void at_channel(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    char *_channel = strtok(buf, " ");
+    _channel = strtok(NULL, " ");
+    int32_t channel;
+    bool success = strtoint32(_channel, &channel);
+
+    if (success /* && set_uwb_pgdelay(channel) */) {
+        OK;
+    } else {
+        printf("Invalid channel\r\n");
+    }
+}
+
+static void at_reset(UNUSED const char *message) {
+    eraseRecords();
+    printf("Reset ");
+    OK;
+}
+
+static void at_timeout(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    char *_timeout = strtok(buf, " ");
+    _timeout = strtok(NULL, " ");
+    int32_t timeout;
+    bool success = strtoint32(_timeout, &timeout);
+
+    if (!success || timeout < 0) {
+        printf("Invalid timeout value\r\n");
+        return;
+    }
+
+    writeFlashID(CONFIG_TIME, timeout);
+    // TODO: set the timeout value
+    OK;
+}
+
+static void at_txpower(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy(buf, message, MIN(BUF_SIZE -1, strlen(message)));
+    char *_power = strtok(buf, " ");
+    _power = strtok(NULL, " ");
+    int32_t power;
+    bool success = strtoint32(_power, &power);
+
+    if (success /* && set_uwb_tx_power(power)*/) {
+        OK;
+    } else {
+        printf("Tx power parameter input error\r\n");
+    }
+}
+
+static void at_streammode(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    char *_mode = strtok(buf, " ");
+    _mode = strtok(NULL, " ");
+    int32_t mode;
+    bool success = strtoint32(_mode, &mode);
+
+    if (success /*&& set_streaming_mode(mode)*/) {
+        OK;
+    } else {
+        printf("Stream mode parameter input error \r\n");
+    }
+}
+
+static void at_twrmode(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    char *_twr = strtok(buf, " ");
+    _twr = strtok(NULL, " ");
+    int32_t twr;
+    bool success = strtoint32(_twr, &twr);
+
+    if (success /*&& set_twr_mode(twr)*/) {
+        OK;
+    } else {
+        printf("TWR mode parameter input error \r\n");
+    }
+}
+
+static void at_ledmode(const char *message) {
+    char buf[BUF_SIZE];
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    char *_mode = strtok(buf, " ");
+    _mode = strtok(NULL, " ");
+    int32_t mode;
+    bool success = strtoint32(_mode, &mode);
+
+    if (!success || mode < 0 || mode > 1) {
+        printf("LED mode parameter input error \r\n");
+        return;
+    }
+
+    writeFlashID(CONFIG_LED, mode);
+    // TODO: Set mode
+    if (mode == 1) {
+        // TODO: Turn off LEDs
+        dwt_setleds(DWT_LEDS_DISABLE);
+    } else {
+        uint32_t state;
+        // TODO: Turn on power LED
+        dwt_setleds(DWT_LEDS_ENABLE);
+
+        state = readFlashID(CONFIG_BM);
+        if (state > 0) {
+            APP_LED_ON(UWB_LED);
+        }
+        if (state > 1) {
+            APP_LED_ON(BLE_LED);
+        }
+    }
+
+    OK;
+}
+
+static void at_reboot(UNUSED const char *message) {
+    OK;
+    sys_reboot(SYS_REBOOT_COLD);
+}
+
+static void at_pwramp(UNUSED const char *message) {
+    printf("Not Implemented \r\n");
+}
+
+static struct cmd_info commands[] = {
+        {"STARTUWB", 8, at_start_uwb},
+        {"STOPUWB", 7, at_stop_uwb},
+        {"STARTBLE", 8, at_start_ble},
+        {"STOPBLE", 7, at_stop_ble},
+        {"ID", 2, at_change_id},
+        {"BOOTMODE", 8, at_bootmode},
+        {"RATE", 4, at_rate},
+        {"CHANNEL", 7, at_channel},
+        {"RESET", 5, at_reset},
+        {"TIMEOUT", 7, at_timeout},
+        {"TXPOWER", 7, at_txpower},
+        {"STREAMMODE", 10, at_streammode},
+        {"TWRMODE", 7, at_twrmode},
+        {"LEDMODE", 7, at_ledmode},
+        {"REBOOT", 6, at_reboot},
+        {"PWRAMP", 6, at_pwramp},
+        {NULL, 0, NULL}
+};
+
 //
 //extern ble_uuid_t m_adv_uuids[2];
 //
@@ -127,245 +317,6 @@ void at_change_id(UNUSED const char *cmd) {
 //int leds_mode;
 //static uwb_lna_status = 0;
 //static uwb_pa_status = 0;
-//
-//static void at_command_bootmode(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t mode;
-//    bool success = strtouint32(uuid_char, &mode);
-//
-//    if (mode < 0 || mode > 2 || !success) {
-//        printf("Invalid bootmode parameter \r\n");
-//    } else {
-//        if (mode == 1) {
-//            writeFlashID(1, 2);
-//        } else if (mode == 2) {
-//            writeFlashID(2, 2);
-//        } else {
-//            writeFlashID(0, 2);
-//        }
-//
-//        printf("Bootmode: %d OK \r\n", mode);
-//    }
-//}
-//
-//static void at_command_rate(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t rate;
-//    bool success = strtouint32(uuid_char, &rate);
-//
-//    if (rate < 0 || rate > 500 || !success) {
-//        printf("Invalid rate parameter \r\n");
-//    } else {
-//        writeFlashID(rate, 3);
-//        set_initiator_freq(rate);
-//
-//        // reconfig BLE advertising data
-//        if (rate == 0) {
-//            advertising_reconfig(0);
-//        } else {
-//            advertising_reconfig(1);
-//        }
-//
-//        printf("Rate: %d OK \r\n", rate);
-//    }
-//}
-//
-//static void at_command_channel(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t channel;
-//    bool success = strtouint32(uuid_char, &channel);
-//
-//    if (success && set_uwb_pgdelay(channel)) {
-//        printf("OK\r\n");
-//    } else {
-//        printf("Invalid Channel number \r\n");
-//    }
-//}
-//
-//static void _at_helper_delete_record(uint16_t fileID, uint16_t recordKey) {
-//    fds_record_desc_t record_desc;
-//    fds_find_token_t ftok;
-//    memset(&ftok, 0x00, sizeof(fds_find_token_t));
-//    if (fds_record_find(fileID, recordKey, &record_desc, &ftok) ==
-//        FDS_SUCCESS) {
-//        ret_code_t ret = fds_record_delete(&record_desc);
-//        if (ret != FDS_SUCCESS) {
-//            printf("FDS Delete error \r\n");
-//        }
-//    }
-//}
-//
-//static void at_command_reset(UNUSED const char *message) {
-//    // Delete ID record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_1);
-//
-//    // Delete rate record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_3);
-//
-//    // Delete channel record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_4);
-//
-//    // Delete timeout record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_5);
-//
-//    // Delete Tx power record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_6);
-//
-//    // Delete stream mode record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_7);
-//
-//    // Delete TWR mode record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_8);
-//
-//    // Delete LED mode record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_9);
-//
-//    // Delete BOOT mode record
-//    _at_helper_delete_record(FILE_ID, RECORD_KEY_2);
-//
-//    printf("Reset OK \r\n");
-//}
-//
-//static void at_command_timeout(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t timeout;
-//    bool success = strtouint32(uuid_char, &timeout);
-//    // printf("%d \r\n", timeout);
-//
-//    if (!success) {
-//        printf("Timeout cannot be negative \r\n");
-//    } else {
-//        writeFlashID(timeout, 5);
-//        set_time_out(timeout);
-//
-//        printf("OK \r\n");
-//    }
-//}
-//
-//static void at_command_txpower(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t tx_power;
-//    bool success = strtouint32(uuid_char, &tx_power);
-//    // printf("%d \r\n", timeout);
-//
-//    if (success && set_uwb_tx_power(tx_power)) {
-//        printf("OK \r\n");
-//    } else {
-//        printf("Tx Power parameter input error \r\n");
-//    }
-//}
-//
-//static void at_command_streammode(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t stream_mode;
-//    bool success = strtouint32(uuid_char, &stream_mode);
-//
-//    if (success && set_streaming_mode(stream_mode)) {
-//        printf("OK \r\n");
-//    } else {
-//        printf("Stream mode parameter input error \r\n");
-//    }
-//}
-//
-//static void at_command_twrmode(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t ranging_mode;
-//    bool success = strtouint32(uuid_char, &ranging_mode);
-//
-//    if (success && set_twr_mode(ranging_mode)) {
-//        printf("OK \r\n");
-//    } else {
-//        printf("TWR mode parameter input error \r\n");
-//    }
-//}
-//
-//static void at_command_ledmode(const char *message) {
-//    char buf[100];
-//    strcpy(buf, message);
-//    char *uuid_char = strtok(buf, " ");
-//    uuid_char = strtok(NULL, " ");
-//    uint32_t led_mode;
-//    bool success = strtouint32(uuid_char, &led_mode);
-//
-//    if (led_mode < 0 || led_mode > 1) {
-//        printf("LED mode parameter input error \r\n");
-//    } else {
-//        writeFlashID(led_mode, 9);
-//        leds_mode = led_mode;
-//        // Turn off all LEDs
-//        if (leds_mode == 1) {
-//            bsp_board_leds_off();
-//            dwt_setleds(DWT_LEDS_DISABLE);
-//        }
-//
-//        // Turn on LEDs from flash records
-//        if (leds_mode == 0) {
-//            bsp_board_led_on(BSP_BOARD_LED_0);
-//            dwt_setleds(DWT_LEDS_ENABLE);
-//
-//            uint32_t state = getFlashID(2);
-//            if ((state == 1) || (state == 2)) {
-//                bsp_board_led_on(BSP_BOARD_LED_1);
-//            }
-//            if (state == 2) {
-//                bsp_board_led_on(BSP_BOARD_LED_2);
-//            }
-//        }
-//
-//        printf("OK \r\n");
-//    }
-//}
-//
-//static void at_command_reboot(UNUSED const char *message) {
-//    printf("OK \r\n");
-//    // Reboot device
-//    sd_nvic_SystemReset();
-//}
-//
-//static void at_command_pwramp(const char *message) {
-//
-//    printf("Not Implemented \r\n");
-//}
-//
-//static struct cmd_info commands[] = {{"STARTUWB", 8, at_cmd_start_uwb},
-//                                     {"STOPUWB", 7, at_command_stop_uwb},
-//                                     {"STARTBLE", 8, at_command_startable},
-//                                     {"STOPBLE", 7, at_command_stopable},
-//                                     {"ID", 2, at_command_id},
-//                                     {"BOOTMODE", 8, at_command_bootmode},
-//                                     {"RATE", 4, at_command_rate},
-//                                     {"CHANNEL", 7, at_command_channel},
-//                                     {"RESET", 5, at_command_reset},
-//                                     {"TIMEOUT", 7, at_command_timeout},
-//                                     {"TXPOWER", 7, at_command_txpower},
-//                                     {"STREAMMODE", 10, at_command_streammode},
-//                                     {"TWRMODE", 7, at_command_twrmode},
-//                                     {"LEDMODE", 7, at_command_ledmode},
-//                                     {"REBOOT", 6, at_command_reboot},
-//                                     {"PWRAMP", 6, at_command_pwramp},
-//                                     {NULL, 0, NULL}};
-//
 ///**
 // * @brief Task to receive UART message from freertos UART queue and parse
 // *

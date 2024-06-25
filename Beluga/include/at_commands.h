@@ -28,7 +28,7 @@ void init_at_commands(void);
 void uart_task_function(void *pvParameter);
 
 extern int leds_mode;
-extern SemaphoreHandle_t print_list_sem;
+//extern SemaphoreHandle_t print_list_sem;
 extern const size_t ble_uuid_cnt;
 
 #endif
