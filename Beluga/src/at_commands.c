@@ -7,8 +7,10 @@
  *  @author WiseLab-CMU
  */
 
-#include "deca_types.h"
+#include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
+
+#include "deca_types.h"
 //#include "init_main.h"
 
 #include <at_commands.h>
@@ -22,6 +24,7 @@
 #include <led_config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <thread_priorities.h>
 #include <utils.h>
 
 #define BUF_SIZE   128
@@ -41,6 +44,8 @@ struct cmd_info {
     size_t cmd_length;
     void (*cmd_func)(uint16_t argc, char const *const *argv);
 };
+
+K_FIFO_DEFINE(uart_queue);
 
 // TODO: File static vars?
 
@@ -98,9 +103,9 @@ static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     // Mark UWB as started
     // Post Semaphores
 
-    if (leds_mode) {
+    /*if (leds_mode) {
         APP_LED_ON(UWB_LED);
-    }
+    }*/
     OK;
 }
 
@@ -108,19 +113,19 @@ static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     // Mark UWB as stopped
     // Wait semaphores here
 
-    if (leds_mode) {
-        APP_LED_OFF(UWB_LED);
-    }
+    //    if (leds_mode) {
+    //        APP_LED_OFF(UWB_LED);
+    //    }
     OK;
 }
 
-static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv {
+static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     enable_bluetooth();
     // Post list semaphore
 
-    if (leds_mode) {
-        APP_LED_ON(BLE_LED);
-    }
+    //    if (leds_mode) {
+    //        APP_LED_ON(BLE_LED);
+    //    }
     OK;
 }
 
@@ -128,9 +133,9 @@ static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     disable_bluetooth();
     // Wait list semaphore
 
-    if (leds_mode) {
-        APP_LED_OFF(BLE_LED);
-    }
+    //    if (leds_mode) {
+    //        APP_LED_OFF(BLE_LED);
+    //    }
 
     OK;
 }
@@ -312,6 +317,67 @@ static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
                                      {"PWRAMP", 6, at_pwramp},
                                      {NULL, 0, NULL}};
 
+/**
+ * @brief Task to receive UART message from freertos UART queue and parse
+ *
+ * @param[in] pvParameter   Pointer that will be used as the parameter for the
+ * task.
+ */
+void runSerialCommand(void) {
+    bool found = false;
+    char *argv[MAX_TOKENS];
+    uint16_t argc;
+
+    struct command_buffer *commandBuffer = NULL;
+
+    while (true) {
+        k_msleep(100);
+
+        commandBuffer = k_fifo_get(&uart_queue, K_NO_WAIT);
+
+        if (commandBuffer == NULL) {
+            continue;
+        }
+
+        if (0 != strncmp((const char *)commandBuffer->command, "AT+", 3)) {
+            if (0 == strncmp((const char *)commandBuffer->command, "AT", 2)) {
+                printf("Only input AT without + command \r\n");
+            } else {
+                printf("Not an AT command\r\n");
+            }
+            k_free(commandBuffer);
+            continue;
+        }
+
+        for (size_t i = 0; commands[i].command != NULL; i++) {
+            if (0 == strncmp((const char *)(commandBuffer->command + 3),
+                             commands[i].command, commands[i].cmd_length)) {
+                argc = argparse(commandBuffer->command, argv);
+                argv[argc] = NULL;
+
+                if (commands[i].cmd_func != NULL) {
+                    commands[i].cmd_func(argc, (const char **)argv);
+                } else {
+                    printf("Not implemented\r\n");
+                }
+
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            printf("ERROR Invalid AT Command\r\n");
+        }
+        found = false;
+        k_free(commandBuffer);
+        commandBuffer = NULL;
+    }
+}
+
+K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
+                COMMAND_PRIO, 0, 0);
+
 //
 // extern ble_uuid_t m_adv_uuids[2];
 //
@@ -324,55 +390,3 @@ static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
 // int leds_mode;
 // static uwb_lna_status = 0;
 // static uwb_pa_status = 0;
-///**
-// * @brief Task to receive UART message from freertos UART queue and parse
-// *
-// * @param[in] pvParameter   Pointer that will be used as the parameter for the
-// * task.
-// */
-// void uart_task_function(void *pvParameter) {
-//    bool found = false;
-//    UNUSED_PARAMETER(pvParameter);
-//
-//    message incoming_message = {0};
-//
-//    while (1) {
-//        vTaskDelay(100);
-//
-//        if (xQueueReceive(uart_queue, &incoming_message, 0) == pdPASS) {
-//
-//            // Handle valid AT command begining with AT+
-//            if (0 == strncmp((const char *)incoming_message.data,
-//                             (const char *)"AT+", (size_t)3)) {
-//                for (size_t i = 0; commands[i].cmd_length != 0; i++) {
-//                    if (commands[i].command != NULL &&
-//                        0 == strncmp((const char *)incoming_message.data + 3,
-//                                     commands[i].command,
-//                                     commands[i].cmd_length)) {
-//                        if (commands[i].callback != NULL) {
-//                            commands[i].callback(
-//                                (const char *)incoming_message.data);
-//                        } else {
-//                            printf("Not Implemented \r\n");
-//                        }
-//                        found = true;
-//                        break;
-//                    }
-//                }
-//                if (!found) {
-//                    printf("ERROR Invalid AT Command\r\n");
-//                }
-//                found = false;
-//            }
-//
-//            else if (0 == strncmp((const char *)incoming_message.data,
-//                                  (const char *)"AT", (size_t)2)) {
-//                printf("Only input AT without + command \r\n");
-//            }
-//
-//            else {
-//                printf("Not an AT command\r\n");
-//            }
-//        }
-//    }
-//}

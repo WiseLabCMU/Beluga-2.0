@@ -1,0 +1,10 @@
+//
+// Created by tom on 6/25/24.
+//
+
+#ifndef BELUGA_THREAD_PRIORITIES_H
+#define BELUGA_THREAD_PRIORITIES_H
+
+#define COMMAND_PRIO 7
+
+#endif // BELUGA_THREAD_PRIORITIES_H
