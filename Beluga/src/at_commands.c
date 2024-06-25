@@ -317,10 +317,7 @@ static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
                                      {NULL, 0, NULL}};
 
 /**
- * @brief Task to receive UART message from freertos UART queue and parse
- *
- * @param[in] pvParameter   Pointer that will be used as the parameter for the
- * task.
+ * @brief Task to receive UART message from zephyr UART queue and parse
  */
 void runSerialCommand(void) {
     bool found = false;
@@ -374,8 +371,8 @@ void runSerialCommand(void) {
     }
 }
 
-K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
-                COMMAND_PRIO, 0, 0);
+//K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
+//                COMMAND_PRIO, 0, 0);
 
 //
 // extern ble_uuid_t m_adv_uuids[2];

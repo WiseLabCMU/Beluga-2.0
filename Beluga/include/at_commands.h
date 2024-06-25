@@ -23,12 +23,9 @@ struct command_buffer {
 void init_at_commands(void);
 
 /**
- * @brief Task to receive UART message from freertos UART queue and parse
- *
- * @param[in] pvParameter   Pointer that will be used as the parameter for the
- * task.
+ * @brief Task to receive UART message from zephyr UART queue and parse
  */
-void uart_task_function(void *pvParameter);
+void runSerialCommand(void);
 
 extern struct k_fifo uart_queue;
 
