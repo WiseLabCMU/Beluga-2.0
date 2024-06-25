@@ -27,7 +27,6 @@
 #include <thread_priorities.h>
 #include <utils.h>
 
-#define BUF_SIZE   128
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
 
