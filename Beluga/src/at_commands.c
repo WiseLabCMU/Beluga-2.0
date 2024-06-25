@@ -48,7 +48,7 @@ static uint16_t argparse(char *s, char **argv) {
     char *temp;
     uint16_t argc;
 
-    for (argc = 0, temp = s; argc < MAX_TOKENS; argc++) {
+    for (argc = 0, temp = s; argc < (MAX_TOKENS - 1); argc++) {
         while (isspace(*temp)) {
             temp++;
         }
@@ -60,6 +60,11 @@ static uint16_t argparse(char *s, char **argv) {
         argv[argc] = temp;
 
         while (isgraph(*temp)) {
+            temp++;
+        }
+
+        if (isspace(*temp)) {
+            *temp = '\0';
             temp++;
         }
     }
