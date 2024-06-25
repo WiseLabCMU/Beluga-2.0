@@ -28,10 +28,18 @@
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
 
+#define CHECK_ARGC(argc, required)                                             \
+    do {                                                                       \
+        if ((uint16)(argc) < (uint16_t)(required)) {                           \
+            printf("Missing argument(s)\r\n");                                 \
+            return;                                                            \
+        }                                                                      \
+    } while (0)
+
 struct cmd_info {
     const char *command;
     size_t cmd_length;
-    void (*cmd_func)(const char *);
+    void (*cmd_func)(uint16_t argc, char const *const *argv);
 };
 
 // TODO: File static vars?
@@ -81,7 +89,7 @@ void init_at_commands(void) {
     // Init UART queue here
 }
 
-static void at_start_uwb(UNUSED const char *cmd) {
+static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     // Mark UWB as started
     // Post Semaphores
 
@@ -91,7 +99,7 @@ static void at_start_uwb(UNUSED const char *cmd) {
     OK;
 }
 
-static void at_stop_uwb(UNUSED const char *cmd) {
+static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     // Mark UWB as stopped
     // Wait semaphores here
 
@@ -101,7 +109,7 @@ static void at_stop_uwb(UNUSED const char *cmd) {
     OK;
 }
 
-static void at_start_ble(UNUSED const char *cmd) {
+static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv {
     enable_bluetooth();
     // Post list semaphore
 
@@ -111,7 +119,7 @@ static void at_start_ble(UNUSED const char *cmd) {
     OK;
 }
 
-static void at_stop_ble(UNUSED const char *cmd) {
+static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     disable_bluetooth();
     // Wait list semaphore
 
@@ -122,13 +130,10 @@ static void at_stop_ble(UNUSED const char *cmd) {
     OK;
 }
 
-static void at_change_id(UNUSED const char *cmd) {
-    char buf[BUF_SIZE];
-    memcpy(buf, cmd, MIN(BUF_SIZE - 1, strlen(cmd)));
-    char *uuid = strtok(buf, " ");
-    uuid = strtok(NULL, " ");
+static void at_change_id(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t newID;
-    bool success = strtoint32(uuid, &newID);
+    bool success = strtoint32(argv[1], &newID);
 
     if (!success || newID <= 0 || newID > (int32_t)UINT16_MAX) {
         printf("Invalid ID\r\n");
@@ -140,13 +145,10 @@ static void at_change_id(UNUSED const char *cmd) {
     OK;
 }
 
-static void at_bootmode(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *boot = strtok(buf, " ");
-    boot = strtok(NULL, " ");
+static void at_bootmode(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t mode;
-    bool success = strtoint32(boot, &mode);
+    bool success = strtoint32(argv[1], &mode);
 
     if (mode < 0 || mode > 2 || !success) {
         printf("Invalid bootmode parameter \r\n");
@@ -158,13 +160,10 @@ static void at_bootmode(const char *message) {
     OK;
 }
 
-static void at_rate(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *_rate = strtok(buf, " ");
-    _rate = strtok(NULL, " ");
+static void at_rate(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t rate;
-    bool success = strtoint32(_rate, &rate);
+    bool success = strtoint32(argv[1], &rate);
 
     if (rate < 0 || rate > 500 || !success) {
         printf("Invalid rate parameter\r\n");
@@ -180,13 +179,10 @@ static void at_rate(const char *message) {
     OK;
 }
 
-static void at_channel(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *_channel = strtok(buf, " ");
-    _channel = strtok(NULL, " ");
+static void at_channel(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t channel;
-    bool success = strtoint32(_channel, &channel);
+    bool success = strtoint32(argv[1], &channel);
 
     if (success /* && set_uwb_pgdelay(channel) */) {
         OK;
@@ -195,19 +191,16 @@ static void at_channel(const char *message) {
     }
 }
 
-static void at_reset(UNUSED const char *message) {
+static void at_reset(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     eraseRecords();
     printf("Reset ");
     OK;
 }
 
-static void at_timeout(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *_timeout = strtok(buf, " ");
-    _timeout = strtok(NULL, " ");
+static void at_timeout(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t timeout;
-    bool success = strtoint32(_timeout, &timeout);
+    bool success = strtoint32(argv[1], &timeout);
 
     if (!success || timeout < 0) {
         printf("Invalid timeout value\r\n");
@@ -219,13 +212,10 @@ static void at_timeout(const char *message) {
     OK;
 }
 
-static void at_txpower(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *_power = strtok(buf, " ");
-    _power = strtok(NULL, " ");
+static void at_txpower(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t power;
-    bool success = strtoint32(_power, &power);
+    bool success = strtoint32(argv[1], &power);
 
     if (success /* && set_uwb_tx_power(power)*/) {
         OK;
@@ -234,13 +224,10 @@ static void at_txpower(const char *message) {
     }
 }
 
-static void at_streammode(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *_mode = strtok(buf, " ");
-    _mode = strtok(NULL, " ");
+static void at_streammode(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t mode;
-    bool success = strtoint32(_mode, &mode);
+    bool success = strtoint32(argv[1], &mode);
 
     if (success /*&& set_streaming_mode(mode)*/) {
         OK;
@@ -249,13 +236,10 @@ static void at_streammode(const char *message) {
     }
 }
 
-static void at_twrmode(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *_twr = strtok(buf, " ");
-    _twr = strtok(NULL, " ");
+static void at_twrmode(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t twr;
-    bool success = strtoint32(_twr, &twr);
+    bool success = strtoint32(argv[1], &twr);
 
     if (success /*&& set_twr_mode(twr)*/) {
         OK;
@@ -264,13 +248,10 @@ static void at_twrmode(const char *message) {
     }
 }
 
-static void at_ledmode(const char *message) {
-    char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
-    char *_mode = strtok(buf, " ");
-    _mode = strtok(NULL, " ");
+static void at_ledmode(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
     int32_t mode;
-    bool success = strtoint32(_mode, &mode);
+    bool success = strtoint32(argv[1], &mode);
 
     if (!success || mode < 0 || mode > 1) {
         printf("LED mode parameter input error \r\n");
@@ -299,12 +280,12 @@ static void at_ledmode(const char *message) {
     OK;
 }
 
-static void at_reboot(UNUSED const char *message) {
+static void at_reboot(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
     sys_reboot(SYS_REBOOT_COLD);
 }
 
-static void at_pwramp(UNUSED const char *message) {
+static void at_pwramp(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     printf("Not Implemented \r\n");
 }
 
