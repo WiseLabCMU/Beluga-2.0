@@ -271,11 +271,11 @@ static void at_ledmode(uint16_t argc, char const *const *argv) {
     // TODO: Set mode
     if (mode == 1) {
         // TODO: Turn off LEDs
-        //dwt_setleds(DWT_LEDS_DISABLE);
+        // dwt_setleds(DWT_LEDS_DISABLE);
     } else {
         uint32_t state;
         // TODO: Turn on power LED
-        //dwt_setleds(DWT_LEDS_ENABLE);
+        // dwt_setleds(DWT_LEDS_ENABLE);
 
         state = readFlashID(CONFIG_BM);
         if (state > 0) {
@@ -371,8 +371,9 @@ void runSerialCommand(void) {
     }
 }
 
-//K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
-//                COMMAND_PRIO, 0, 0);
+// K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL,
+// NULL,
+//                 COMMAND_PRIO, 0, 0);
 
 //
 // extern ble_uuid_t m_adv_uuids[2];

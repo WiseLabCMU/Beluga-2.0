@@ -20,6 +20,6 @@ target_sources(app PRIVATE
         src/random.c
         src/at_commands.c
   #${SOURCE}
-  #${DECAWAVE_SRC}
+  ${DECAWAVE_SRC}
 )
 # NORDIC SDK APP END
