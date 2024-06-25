@@ -14,13 +14,13 @@
 
 #include <stdint.h>
 
-#define CONFIG_ID    1      /* Idenfication for ID configuration */
-#define CONFIG_BM    2      /* Idenfication for Boot mode configuration */
-#define CONFIG_RATE  3      /* Idenfication for polling rate configuration */
-#define CONFIG_CHAN  4      /* Idenfication for UWB channel configuration */
-#define CONFIG_TIME  5      /* Idenfication for BLE timeout configuration */
-#define CONFIG_TXP   6      /* Idenfication for UWB TX power configuration */
-#define CONFIG_SM    7      /* Idenfication for streammode configuration */
+#define CONFIG_ID   1 /* Idenfication for ID configuration */
+#define CONFIG_BM   2 /* Idenfication for Boot mode configuration */
+#define CONFIG_RATE 3 /* Idenfication for polling rate configuration */
+#define CONFIG_CHAN 4 /* Idenfication for UWB channel configuration */
+#define CONFIG_TIME 5 /* Idenfication for BLE timeout configuration */
+#define CONFIG_TXP  6 /* Idenfication for UWB TX power configuration */
+#define CONFIG_SM   7 /* Idenfication for streammode configuration */
 #define CONFIG_TWR                                                             \
     8 /* Idenfication for two way raning scheme mode configuration */
 #define CONFIG_LED 9 /* Idenfication for LED mode configuration */

@@ -7,8 +7,8 @@
  *  @author WiseLab-CMU
  */
 
-#include <zephyr/sys/reboot.h>
 #include "deca_types.h"
+#include <zephyr/sys/reboot.h>
 //#include "init_main.h"
 
 #include <at_commands.h>
@@ -19,13 +19,14 @@
 #include <string.h>
 
 #include <flash.h>
-#include <utils.h>
-#include <stdlib.h>
 #include <led_config.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <utils.h>
 
-#define BUF_SIZE 128
-#define OK printf("OK\r\n")
+#define BUF_SIZE   128
+#define OK         printf("OK\r\n")
+#define MAX_TOKENS 20
 
 struct cmd_info {
     const char *command;
@@ -33,8 +34,30 @@ struct cmd_info {
     void (*cmd_func)(const char *);
 };
 
-// TODO: Replace strtok with reentrent version or some other parsing mechanism
 // TODO: File static vars?
+
+static uint16_t argparse(char *s, char **argv) {
+    char *temp;
+    uint16_t argc;
+
+    for (argc = 0, temp = s; argc < MAX_TOKENS; argc++) {
+        while (isspace(*temp)) {
+            temp++;
+        }
+
+        if (*temp == '\0') {
+            break;
+        }
+
+        argv[argc] = temp;
+
+        while (isgraph(*temp)) {
+            temp++;
+        }
+    }
+
+    return argc;
+}
 
 static bool strtoint32(const char *str, int32_t *result) {
     char *endptr;
@@ -119,7 +142,7 @@ static void at_change_id(UNUSED const char *cmd) {
 
 static void at_bootmode(const char *message) {
     char buf[BUF_SIZE];
-    memcpy( buf, message, MIN(BUF_SIZE - 1, strlen(message)));
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
     char *boot = strtok(buf, " ");
     boot = strtok(NULL, " ");
     int32_t mode;
@@ -198,7 +221,7 @@ static void at_timeout(const char *message) {
 
 static void at_txpower(const char *message) {
     char buf[BUF_SIZE];
-    memcpy(buf, message, MIN(BUF_SIZE -1, strlen(message)));
+    memcpy(buf, message, MIN(BUF_SIZE - 1, strlen(message)));
     char *_power = strtok(buf, " ");
     _power = strtok(NULL, " ");
     int32_t power;
@@ -285,45 +308,43 @@ static void at_pwramp(UNUSED const char *message) {
     printf("Not Implemented \r\n");
 }
 
-static struct cmd_info commands[] = {
-        {"STARTUWB", 8, at_start_uwb},
-        {"STOPUWB", 7, at_stop_uwb},
-        {"STARTBLE", 8, at_start_ble},
-        {"STOPBLE", 7, at_stop_ble},
-        {"ID", 2, at_change_id},
-        {"BOOTMODE", 8, at_bootmode},
-        {"RATE", 4, at_rate},
-        {"CHANNEL", 7, at_channel},
-        {"RESET", 5, at_reset},
-        {"TIMEOUT", 7, at_timeout},
-        {"TXPOWER", 7, at_txpower},
-        {"STREAMMODE", 10, at_streammode},
-        {"TWRMODE", 7, at_twrmode},
-        {"LEDMODE", 7, at_ledmode},
-        {"REBOOT", 6, at_reboot},
-        {"PWRAMP", 6, at_pwramp},
-        {NULL, 0, NULL}
-};
+static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
+                                     {"STOPUWB", 7, at_stop_uwb},
+                                     {"STARTBLE", 8, at_start_ble},
+                                     {"STOPBLE", 7, at_stop_ble},
+                                     {"ID", 2, at_change_id},
+                                     {"BOOTMODE", 8, at_bootmode},
+                                     {"RATE", 4, at_rate},
+                                     {"CHANNEL", 7, at_channel},
+                                     {"RESET", 5, at_reset},
+                                     {"TIMEOUT", 7, at_timeout},
+                                     {"TXPOWER", 7, at_txpower},
+                                     {"STREAMMODE", 10, at_streammode},
+                                     {"TWRMODE", 7, at_twrmode},
+                                     {"LEDMODE", 7, at_ledmode},
+                                     {"REBOOT", 6, at_reboot},
+                                     {"PWRAMP", 6, at_pwramp},
+                                     {NULL, 0, NULL}};
 
 //
-//extern ble_uuid_t m_adv_uuids[2];
+// extern ble_uuid_t m_adv_uuids[2];
 //
-//QueueHandle_t uart_queue;
-//SemaphoreHandle_t sus_resp, sus_init, print_list_sem;
+// QueueHandle_t uart_queue;
+// SemaphoreHandle_t sus_resp, sus_init, print_list_sem;
 //
-//static int uwb_started;
-//extern int ble_started;
+// static int uwb_started;
+// extern int ble_started;
 //
-//int leds_mode;
-//static uwb_lna_status = 0;
-//static uwb_pa_status = 0;
+// int leds_mode;
+// static uwb_lna_status = 0;
+// static uwb_pa_status = 0;
 ///**
 // * @brief Task to receive UART message from freertos UART queue and parse
 // *
 // * @param[in] pvParameter   Pointer that will be used as the parameter for the
 // * task.
 // */
-//void uart_task_function(void *pvParameter) {
+// void uart_task_function(void *pvParameter) {
 //    bool found = false;
 //    UNUSED_PARAMETER(pvParameter);
 //

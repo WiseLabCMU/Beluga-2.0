@@ -10,65 +10,65 @@
  */
 
 #include <flash.h>
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/flash.h>
-#include <zephyr/storage/flash_map.h>
+#include <stdio.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
-#include <stdio.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/kernel.h>
+#include <zephyr/storage/flash_map.h>
 
-#define FILE_ID      0x0015 /* The ID of the file to write the records into. */
-#define RECORD_KEY_1 0 /* A key for the first record. (ID) */
-#define RECORD_KEY_2 1 /* A key for the second record. (BOOTMODE) */
-#define RECORD_KEY_3 2 /* A key for the third record. (RATE)*/
-#define RECORD_KEY_4 3 /* A key for the forth record. (CHANNEL)*/
-#define RECORD_KEY_5 4 /* A key for the fifth record. (BLE Timeout)*/
-#define RECORD_KEY_6 5 /* A key for the sixth record. (TX Power)*/
-#define RECORD_KEY_7 6 /* A key for the seventh record. (STREAMMODE)*/
-#define RECORD_KEY_8 7 /* A key for the eighth record. (TWRMODE)*/
-#define RECORD_KEY_9 8 /* A key for the ninth record. (LEDMODE)*/
+#define FILE_ID          0x0015 /* The ID of the file to write the records into. */
+#define RECORD_KEY_1     0      /* A key for the first record. (ID) */
+#define RECORD_KEY_2     1      /* A key for the second record. (BOOTMODE) */
+#define RECORD_KEY_3     2      /* A key for the third record. (RATE)*/
+#define RECORD_KEY_4     3      /* A key for the forth record. (CHANNEL)*/
+#define RECORD_KEY_5     4      /* A key for the fifth record. (BLE Timeout)*/
+#define RECORD_KEY_6     5      /* A key for the sixth record. (TX Power)*/
+#define RECORD_KEY_7     6      /* A key for the seventh record. (STREAMMODE)*/
+#define RECORD_KEY_8     7      /* A key for the eighth record. (TWRMODE)*/
+#define RECORD_KEY_9     8      /* A key for the ninth record. (LEDMODE)*/
 
-#define PARTITION storage_partition
+#define PARTITION        storage_partition
 
 #define PARTITION_OFFSET FIXED_PARTITION_OFFSET(PARTITION)
 #define PARTITION_DEVICE FIXED_PARTITION_DEVICE(PARTITION)
 
-#define FLASH_PAGE_SIZE 4096
+#define FLASH_PAGE_SIZE  4096
 
 static const struct device *flash_dev = PARTITION_DEVICE;
 
 static uint32_t id2key(uint32_t record) {
     uint32_t record_key = 0;
-    switch(record) {
-        case CONFIG_ID:
-            record_key = RECORD_KEY_1;
-            break;
-        case CONFIG_BM:
-            record_key = RECORD_KEY_2;
-            break;
-        case CONFIG_RATE:
-            record_key = RECORD_KEY_3;
-            break;
-        case CONFIG_CHAN:
-            record_key = RECORD_KEY_4;
-            break;
-        case CONFIG_TIME:
-            record_key = RECORD_KEY_5;
-            break;
-        case CONFIG_TXP:
-            record_key = RECORD_KEY_6;
-            break;
-        case CONFIG_SM:
-            record_key = RECORD_KEY_7;
-            break;
-        case CONFIG_TWR:
-            record_key = RECORD_KEY_8;
-            break;
-        case CONFIG_LED:
-            record_key = RECORD_KEY_9;
-            break;
-        default:
-            assert_print("Invalid record");
+    switch (record) {
+    case CONFIG_ID:
+        record_key = RECORD_KEY_1;
+        break;
+    case CONFIG_BM:
+        record_key = RECORD_KEY_2;
+        break;
+    case CONFIG_RATE:
+        record_key = RECORD_KEY_3;
+        break;
+    case CONFIG_CHAN:
+        record_key = RECORD_KEY_4;
+        break;
+    case CONFIG_TIME:
+        record_key = RECORD_KEY_5;
+        break;
+    case CONFIG_TXP:
+        record_key = RECORD_KEY_6;
+        break;
+    case CONFIG_SM:
+        record_key = RECORD_KEY_7;
+        break;
+    case CONFIG_TWR:
+        record_key = RECORD_KEY_8;
+        break;
+    case CONFIG_LED:
+        record_key = RECORD_KEY_9;
+        break;
+    default:
+        assert_print("Invalid record");
     }
     return record_key;
 }
