@@ -1,0 +1,6 @@
+# Copyright (c) 2024 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_BELUGA2
+	bool "Beluga2"
+	depends on SOC_NRF52832_QFAA
