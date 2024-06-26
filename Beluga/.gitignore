@@ -1,5 +1,4 @@
+build_1/
 build
+build_2/
 cmake-build-debug/
-.idea/
-cmake-build-decawave/
-cmake-build-pca10040/
