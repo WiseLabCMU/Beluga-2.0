@@ -143,7 +143,7 @@ void set_spi_fast(beluga_spi_channel_t channel) {
     }
 }
 
-int write_spi(beluga_spi_channel_t channel, uint8_t *buffer, size_t bufLength) {
+int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer, size_t bufLength) {
     struct spi_config *_spiConfig;
     struct spi_buf *spiBuf;
     struct spi_buf_set *tx, *rx;
@@ -173,12 +173,61 @@ int write_spi(beluga_spi_channel_t channel, uint8_t *buffer, size_t bufLength) {
         }
     }
 
+    // Lock here because we are using the shared resources now...
     k_mutex_lock(&spi_lock, K_FOREVER);
     memcpy(txBuf, buffer, bufLength);
     spiBuf[TX_BUF_IDX].len = bufLength;
     spiBuf[RX_BUF_IDX].len = bufLength;
 
     err = spi_transceive(spi_device, _spiConfig, tx, rx);
+    k_mutex_unlock(&spi_lock);
+
+    return err;
+}
+
+int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer, uint8_t *readBuf, size_t bufLength) {
+    struct spi_config *_spiConfig;
+    struct spi_buf *spiBuf;
+    struct spi_buf_set *tx, *rx;
+    uint8_t *txBuf, *rxBuf;
+    int err;
+
+    switch(channel) {
+        case DW1000_SPI_CHANNEL: {
+            _spiConfig = dw1000SpiConfig;
+            txBuf = dw1000_txBuf;
+            rxBuf = dw1000_rxBuf;
+            spiBuf = dw1000_spiBufs;
+            tx = &dw1000_tx;
+            rx = &dw1000_rx;
+            break;
+        }
+        case NRF21_SPI_CHANNEL: {
+            _spiConfig = nrfSpiConfig;
+            txBuf = nrf21_txBuf;
+            rxBuf = nrf21_rxBuf;
+            spiBuf = nrf21_spiBufs;
+            tx = &nrf21_tx;
+            rx = &nrf21_rx;
+            break;
+        }
+        default: {
+            printk("Invalid SPI channel!");
+            return -1;
+        }
+    }
+
+    // Lock here because we are using the shared resources now
+    k_mutex_lock(&spi_lock, K_FOREVER);
+    memcpy(txBuf, writeBuffer, bufLength);
+    spiBuf[TX_BUF_IDX].len = bufLength;
+    spiBuf[RX_BUF_IDX].len = bufLength;
+
+    err = spi_transceive(spi_device, _spiConfig, tx, rx);
+
+    if (err == 0) {
+        memcpy(readBuf, rxBuf, bufLength);
+    }
     k_mutex_unlock(&spi_lock);
 
     return err;
