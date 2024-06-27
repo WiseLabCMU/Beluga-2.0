@@ -1,7 +1,4 @@
-# editors
-*.swp
-*~
+.idea
 .vscode
-
-# build
-/build*/
+cmake-build-decawave/
+cmake-build-pca10040/

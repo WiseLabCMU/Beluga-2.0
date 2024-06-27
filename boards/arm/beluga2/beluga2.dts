@@ -3,39 +3,22 @@
 
 /dts-v1/;
 #include <nordic/nrf52832_qfaa.dtsi>
+#include "beluga2_nrf52832-pinctrl.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
 
 / {
 	model = "Beluga2";
 	compatible = "wiselab,beluga2";
 
 	chosen {
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,uart-mcumgr = &uart0;
+		zephyr,bt-mon-uart = &uart0;
+		zephyr,bt-c2h-uart = &uart0;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
-	};
-
-	nrf21540-fem {
-		compatible = "nordic,nrf21540-fem";
-		tx-en-gpios = <&gpio0 22 0>;
-		rx-en-gpios = <&gpio0 24 0>;
-		pdn-gpios = <&gpio0 20 0>;
-		ant-sel-gpios = <&gpio0 23 0>;
-		mode-gpios = <&gpio0 25 0>;
-		spi-if = <&{/soc/spi@40004000/nrf21540-fem-spi@0/}>;
-		supply-voltage-mv = <3300>;
-		tx-en-settle-time-us = <11>;
-		rx-en-settle-time-us = <11>;
-		pdn-settle-time-us = <18>;
-		trx-hold-time-us = <3>;
-	};
-
-	zephyr,user {
-		J1.27-gpios = <&gpio0 6 0>;
-		J1.26-gpios = <&gpio0 7 0>;
-		J1.25-gpios = <&gpio0 8 0>;
-		J1.5-gpios = <&gpio0 9 0>;
-		J1.4-gpios = <&gpio0 10 0>;
-		J1.19-gpios = <&gpio0 13 0>;
 	};
 
 	leds {
@@ -60,6 +43,77 @@
 			label = "led3";
 		};
 	};
+
+	nrf_radio_fem: nrf21540-fem {
+		compatible = "nordic,nrf21540-fem";
+		tx-en-gpios = <&gpio0 22 0>;
+		rx-en-gpios = <&gpio0 24 0>;
+		pdn-gpios = <&gpio0 20 0>;
+		ant-sel-gpios = <&gpio0 23 0>;
+		mode-gpios = <&gpio0 25 0>;
+		spi-if = <&{/soc/spi@40004000/nrf21540-fem-spi@0/}>; // TODO
+		supply-voltage-mv = <3300>;
+	};
+
+	zephyr,user {
+		J1.27-gpios = <&gpio0 6 0>;
+		J1.26-gpios = <&gpio0 7 0>;
+		J1.25-gpios = <&gpio0 8 0>;
+		J1.5-gpios = <&gpio0 9 0>;
+		J1.4-gpios = <&gpio0 10 0>;
+		J1.19-gpios = <&gpio0 13 0>;
+	};
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uarte";
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-names = "default";
+};
+
+&i2c0 {
+	compatible = "nordic,nrftwi";
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+	lis2dh12@19 {
+		compatible = "st,lis2dh12";
+		reg = <0x19>;
+	};
+};
+
+main_spi: &spi1 {
+	status = "okay";
+	cs-gpios = <&gpio0 19 0>, <&gpio0 31 0>;
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-names = "default";
+	nrf21540-fem-spi@0 {
+		compatible = "nordic,nrf21540-fem-spi";
+		reg = <0x0>;
+		spi-max-frequency = <DT_FREQ_M(8)>;
+	};
+
+	dw1000@1 {
+		compatible = "decawave,dw1000";
+		reg = <0x1>;
+		int-gpios = <&gpio0 26 0>;
+		reset-gpios = <&gpio0 30 0>;
+		spi-max-frequency = <DT_FREQ_M(20)>;
+	};
+};
+
+&radio {
+	fem = <&nrf_radio_fem>;
 };
 
 &flash0 {
@@ -89,100 +143,4 @@
 			reg = <0x7a000 0x6000>;
 		};
 	};
-};
-
-
-
-
-
-&uart0 {
-	status = "okay";
-	current-speed = <115200>;
-	pinctrl-0 = <&uart0_default>;
-	pinctrl-names = "default";
-};
-
-&gpio0 {
-	status = "okay";
-};
-
-&pinctrl {
-	uart0_default: uart0_default {
-		group1 {
-			psels = <NRF_PSEL(UART_TX, 0, 3)>,
-					<NRF_PSEL(UART_RX, 0, 5)>,
-					<NRF_PSEL(UART_RTS, 0, 2)>,
-					<NRF_PSEL(UART_CTS, 0, 4)>;
-		};
-	};
-
-	spi1_default: spi1_default {
-		group1 {
-			psels = <NRF_PSEL(SPIM_MOSI, 0, 29)>,
-					<NRF_PSEL(SPIM_MISO, 0, 28)>,
-					<NRF_PSEL(SPIM_SCK, 0, 27)>;
-		};
-	};
-
-	i2c0_default: i2c0_default {
-		group1 {
-			psels = <NRF_PSEL(TWIM_SCL, 0, 17)>, <NRF_PSEL(TWIM_SDA, 0, 16)>;
-		};
-	};
-};
-
-&spi1 {
-	status = "okay";
-	pinctrl-0 = <&spi1_default>;
-	pinctrl-names = "default";
-	nrf21540-fem-spi@0 {
-		compatible = "nordic,nrf21540-fem-spi";
-		reg = <0x0>;
-		spi-max-frequency = <DT_FREQ_M(8)>;
-	};
-
-	dw1000@1 {
-		compatible = "decawave,dw1000";
-		reg = <0x1>;
-		int-gpios = <&gpio0 26 0>;
-		reset-gpios = <&gpio0 30 0>;
-		spi-max-frequency = <DT_FREQ_M(20)>;
-	};
-
-	max-frequency = <DT_FREQ_M(8)>;
-	cs-gpios = <&gpio0 19 0>, <&gpio0 31 0>;
-};
-
-&i2c0 {
-	status = "okay";
-	pinctrl-0 = <&i2c0_default>;
-	pinctrl-names = "default";
-	lis2dh12@19 {
-		compatible = "st,lis2dh12";
-		reg = <0x19>;
-	};
-};
-
-&systick {
-	status = "disabled";
-};
-
-&nvic {
-	status = "okay";
-};
-
-&power {
-	status = "okay";
-};
-
-&radio {
-	fem = <&{/nrf21540-fem/}>;
-};
-
-&clock {
-	status = "okay";
-};
-
-&gpiote {
-	status = "okay";
 };

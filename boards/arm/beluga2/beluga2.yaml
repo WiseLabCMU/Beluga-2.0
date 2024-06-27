@@ -11,3 +11,10 @@ toolchain:
   - zephyr
   - gnuarmemb
   - xtools
+supported:
+  - ble
+  - gpio
+  - i2c
+  - spi
+  - watchdog
+  - netif:openthread

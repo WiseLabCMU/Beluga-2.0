@@ -19,6 +19,7 @@ target_sources(app PRIVATE
         src/flash.c
         src/random.c
         src/at_commands.c
+        src/spi.c
   #${SOURCE}
   #${DECAWAVE_SRC}
 )

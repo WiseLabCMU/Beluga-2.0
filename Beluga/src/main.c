@@ -8,6 +8,7 @@
 
 #include "ble_app.h"
 #include <zephyr/kernel.h>
+#include <spi.h>
 
 int main(void) {
     int err;
