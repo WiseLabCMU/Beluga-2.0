@@ -47,6 +47,8 @@ static struct spi_buf_set nrf21_rx;
 static const struct spi_cs_control nrf_fem_cs = SPI_CS_CONTROL_INIT(DT_NODELABEL(nrf21540-fem-spi@0), 2);
 static const struct spi_cs_control dw1000_cs = SPI_CS_CONTROL_INIT(DT_NODELABEL(dw1000@1), 2);
 
+K_MUTEX_DEFINE(spi_lock);
+
 int init_spi1(void) {
     spiConfigs[DW1000_CONFIG_SLOW].cs = dw1000_cs;
     spiConfigs[DW1000_CONFIG_FAST].cs = dw1000_cs;
@@ -139,4 +141,45 @@ void set_spi_fast(beluga_spi_channel_t channel) {
             break;
         }
     }
+}
+
+int write_spi(beluga_spi_channel_t channel, uint8_t *buffer, size_t bufLength) {
+    struct spi_config *_spiConfig;
+    struct spi_buf *spiBuf;
+    struct spi_buf_set *tx, *rx;
+    uint8_t *txBuf;
+    int err;
+
+    switch(channel) {
+        case DW1000_SPI_CHANNEL: {
+            _spiConfig = dw1000SpiConfig;
+            txBuf = dw1000_txBuf;
+            spiBuf = dw1000_spiBufs;
+            tx = &dw1000_tx;
+            rx = &dw1000_rx;
+            break;
+        }
+        case NRF21_SPI_CHANNEL: {
+            _spiConfig = nrfSpiConfig;
+            txBuf = nrf21_txBuf;
+            spiBuf = nrf21_spiBufs;
+            tx = &nrf21_tx;
+            rx = &nrf21_rx;
+            break;
+        }
+        default: {
+            printk("Invalid SPI channel!");
+            return -1;
+        }
+    }
+
+    k_mutex_lock(&spi_lock, K_FOREVER);
+    memcpy(txBuf, buffer, bufLength);
+    spiBuf[TX_BUF_IDX].len = bufLength;
+    spiBuf[RX_BUF_IDX].len = bufLength;
+
+    err = spi_transceive(spi_device, _spiConfig, tx, rx);
+    k_mutex_unlock(&spi_lock);
+
+    return err;
 }
