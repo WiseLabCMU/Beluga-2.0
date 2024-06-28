@@ -11,9 +11,9 @@
  * @author DecaWave
  */
 
-#include <stdbool.h>
 #include "port_platform.h"
 #include "deca_device_api.h"
+#include <stdbool.h>
 
 /****************************************************************************
  *

@@ -3,6 +3,8 @@
 //
 
 #include <spi.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>
@@ -24,8 +26,7 @@
 #define RX_BUF_IDX              1
 #define TX_BUF_IDX              0
 
-#define SPI_NAME                                                               \
-    DT_NODE_FULL_NAME(DT_PHANDLE_BY_IDX(DT_NODELABEL(spi1), cs_gpios, 0))
+#define SPI_NAME                DEVICE_DT_GET(DT_NODELABEL(spi1))
 
 static const struct device *spi_device;
 static struct spi_config *dw1000SpiConfig = NULL;
@@ -46,26 +47,29 @@ static struct spi_buf_set nrf21_tx;
 static struct spi_buf_set nrf21_rx;
 
 static const struct spi_cs_control nrf_fem_cs =
-    SPI_CS_CONTROL_INIT(DT_NODELABEL(nrf21540 - fem - spi @0), 2);
+    SPI_CS_CONTROL_INIT(DT_NODELABEL(nrf_radio_fem_spi), 0);
 static const struct spi_cs_control dw1000_cs =
-    SPI_CS_CONTROL_INIT(DT_NODELABEL(dw1000 @1), 2);
+    SPI_CS_CONTROL_INIT(DT_NODELABEL(dw1000_spi), 0);
 
 K_MUTEX_DEFINE(spi_lock);
 
 int init_spi1(void) {
+    spi_device = SPI_NAME;
+    if (!device_is_ready(spi_device)) {
+        printk("Failed to bind SPI1\n");
+        return -1;
+    }
+
     spiConfigs[DW1000_CONFIG_SLOW].cs = dw1000_cs;
     spiConfigs[DW1000_CONFIG_FAST].cs = dw1000_cs;
     spiConfigs[NRF21540_CONFIG_SLOW].cs = nrf_fem_cs;
     spiConfigs[NRF21540_CONFIG_FAST].cs = nrf_fem_cs;
 
-    spi_device = device_get_binding(SPI_NAME);
-    if (spi_device == NULL) {
-        printk("Failed to bind SPI1\n");
-        return -1;
-    }
-
     for (int i = 0; i < NUM_SPI_CONFIGS; i++) {
-        spiConfigs[i].operation = SPI_WORD_SET(8);
+        spiConfigs[i].operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB |
+                                  SPI_MODE_CPOL | SPI_MODE_CPHA |
+                                  SPI_OP_MODE_MASTER;
+        spiConfigs[i].slave = i / 2;
     }
 
     spiConfigs[DW1000_CONFIG_SLOW].frequency = DW1000_SLOW_FREQUENCY;
@@ -98,8 +102,8 @@ int init_spi1(void) {
     nrf21_rx.buffers = &nrf21_spiBufs[RX_BUF_IDX];
     nrf21_rx.count = 1;
 
-    dw1000SpiConfig = &spiConfigs[DW1000_SLOW_FREQUENCY];
-    nrfSpiConfig = &spiConfigs[NRF21540_SLOW_FREQUENCY];
+    dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
+    nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_SLOW];
 
     return 0;
 }
@@ -107,13 +111,13 @@ int init_spi1(void) {
 void set_spi_slow(beluga_spi_channel_t channel) {
     switch (channel) {
     case DW1000_SPI_CHANNEL: {
-        dw1000SpiConfig = &spiConfigs[DW1000_SLOW_FREQUENCY];
+        dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
         memset(dw1000_rxBuf, 0, SPI_BUF_SIZE);
         memset(dw1000_txBuf, 0, SPI_BUF_SIZE);
         break;
     }
     case NRF21_SPI_CHANNEL: {
-        nrfSpiConfig = &spiConfigs[NRF21540_SLOW_FREQUENCY];
+        nrfSpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
         memset(nrf21_txBuf, 0, SPI_BUF_SIZE);
         memset(nrf21_rxBuf, 0, SPI_BUF_SIZE);
         break;
@@ -128,13 +132,13 @@ void set_spi_slow(beluga_spi_channel_t channel) {
 void set_spi_fast(beluga_spi_channel_t channel) {
     switch (channel) {
     case DW1000_SPI_CHANNEL: {
-        dw1000SpiConfig = &spiConfigs[DW1000_FAST_FREQUENCY];
+        dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_FAST];
         memset(dw1000_rxBuf, 0, SPI_BUF_SIZE);
         memset(dw1000_txBuf, 0, SPI_BUF_SIZE);
         break;
     }
     case NRF21_SPI_CHANNEL: {
-        nrfSpiConfig = &spiConfigs[NRF21540_FAST_FREQUENCY];
+        nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_FAST];
         memset(nrf21_txBuf, 0, SPI_BUF_SIZE);
         memset(nrf21_rxBuf, 0, SPI_BUF_SIZE);
         break;
