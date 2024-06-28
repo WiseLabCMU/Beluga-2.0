@@ -18,18 +18,6 @@ int main(void) {
 
     LED_INIT;
 
-    if (init_spi1()) {
-        printk("Failure");
-        return 1;
-    }
-
-    uint8_t buf[] = "Hello World!";
-
-    if (write_spi(DW1000_SPI_CHANNEL, buf, sizeof(buf) - 1)) {
-        printk("Transfer error");
-        return 1;
-    }
-
     err = init_bt_stack();
 
     if (err) {
