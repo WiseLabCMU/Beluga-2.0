@@ -21,6 +21,6 @@ target_sources(app PRIVATE
         src/at_commands.c
         src/spi.c
   #${SOURCE}
-  #${DECAWAVE_SRC}
+  ${DECAWAVE_SRC}
 )
 # NORDIC SDK APP END

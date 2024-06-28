@@ -13,7 +13,11 @@
 
 #include "port_platform.h"
 #include "deca_device_api.h"
+#include <spi.h>
 #include <stdbool.h>
+#include <zephyr/kernel.h>
+
+#define DW1000_MAXBUF 128
 
 /****************************************************************************
  *
@@ -79,68 +83,46 @@ void port_wakeup_dw1000(void) {}
  * */
 void port_wakeup_dw1000_fast(void) {}
 
-/**
- * @brief SPI user event handler.
- * @param event
- */
-void spi_event_handler(nrf_drv_spi_evt_t const *p_event, void *p_context) {
-    spi_xfer_done = true;
-}
-
 //================================================================================================
 int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
                 uint32 readlength, uint8 *readBuffer) {
-    uint8 *p1;
-    uint32 idatalength = 0;
+    uint8 txBuf[DW1000_MAXBUF];
+    uint8 rxBuf[DW1000_MAXBUF];
 
-    idatalength = headerLength + readlength;
+    // TODO: Potential buffer overflow
+    memset(txBuf, 0, headerLength + readlength);
+    memcpy(txBuf, headerBuffer, headerLength);
 
-    uint8 idatabuf[idatalength];
-    uint8 itempbuf[idatalength];
+    // TODO: Disable UW IRQ
+    int err =
+        read_spi(DW1000_SPI_CHANNEL, txBuf, rxBuf, readlength + headerLength);
+    // TODO: Restore UW IRQ
 
-    memset(idatabuf, 0, idatalength);
-    memset(itempbuf, 0, idatalength);
+    if (err != 0) {
+        printk("SPI read returned an error (err: %d)\n", err);
+        return 1;
+    }
 
-    p1 = idatabuf;
-    memcpy(p1, headerBuffer, headerLength);
-
-    p1 += headerLength;
-    memset(p1, 0x00, readlength);
-
-    spi_xfer_done = false;
-    nrf_drv_spi_transfer(&spi, idatabuf, idatalength, itempbuf, idatalength);
-    while (!spi_xfer_done)
-        ;
-
-    p1 = itempbuf + headerLength;
-
-    memcpy(readBuffer, p1, readlength);
+    memcpy(readBuffer, rxBuf + headerLength, readlength);
 
     return 0;
 }
 
 int writetospi(uint16 headerLength, const uint8 *headerBuffer,
                uint32 bodylength, const uint8 *bodyBuffer) {
-    uint8 *p1;
-    uint32 idatalength = 0;
+    uint8 txBuf[DW1000_MAXBUF];
 
-    idatalength = headerLength + bodylength;
+    memcpy(txBuf, headerBuffer, headerLength);
+    memcpy(txBuf + headerLength, bodyBuffer, bodylength);
 
-    uint8 idatabuf[idatalength];
-    uint8 itempbuf[idatalength];
+    // TODO: Disable UW IRQ
+    int err = write_spi(DW1000_SPI_CHANNEL, txBuf, headerLength + bodylength);
+    // TODO: Restore UW IRQ
 
-    memset(idatabuf, 0, idatalength);
-    memset(itempbuf, 0, idatalength);
-
-    p1 = idatabuf;
-    memcpy(p1, headerBuffer, headerLength);
-    p1 += headerLength;
-    memcpy(p1, bodyBuffer, bodylength);
-
-    spi_xfer_done = false;
-    nrf_drv_spi_transfer(&spi, idatabuf, idatalength, itempbuf, idatalength);
-    while (!spi_xfer_done)
-        ;
+    if (err != 0) {
+        printk("SPI write returned an error (err: %d)\n", err);
+        return 1;
+    }
 
     return 0;
 }
