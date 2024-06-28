@@ -5,11 +5,37 @@
 #ifndef BELUGA_LED_CONFIG_H
 #define BELUGA_LED_CONFIG_H
 
-#include <dk_buttons_and_leds.h>
+#define LED_SUPPORT_ENABLED 0
+#define BLE_LED_CONFIG      1
 
-#define LED_SUPPORT
-#define LED_SUPPORT_ENABLED        1
-#define BLE_LED_CONFIG             1
+#if LED_SUPPORT_ENABLED == 1
+#include <dk_buttons_and_leds.h>
+#define LED_INIT                                                               \
+    do {                                                                       \
+        int _ledErr = dk_leds_init();                                          \
+        if (_ledErr) {                                                         \
+            printk("LEDs init failed (err %d)\n", _ledErr);                    \
+            return 0;                                                          \
+        }                                                                      \
+    } while (0)
+#else
+#define LED_INIT                                                               \
+    do {                                                                       \
+    } while (0)
+
+#undef DK_LED1
+#define DK_LED1 1
+
+#undef DK_LED2
+#define DK_LED2 2
+
+#undef DK_LED3
+#define DK_LED3 3
+
+#undef DK_LED4
+#define DK_LED4 4
+#endif
+
 #define APP_LED_CONFIG             !BLE_LED_CONFIG
 
 #define PERIPHERAL_ADVERTISING_LED DK_LED1
@@ -20,7 +46,7 @@
 #define UWB_LED                    DK_LED1
 #define BLE_LED                    DK_LED2
 
-#if defined(LED_SUPPORT) && LED_SUPPORT_ENABLED == 1
+#if LED_SUPPORT_ENABLED == 1
 #define LED_ON(LED)                                                            \
     do {                                                                       \
         dk_set_led_on(LED);                                                    \

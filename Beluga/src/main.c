@@ -4,11 +4,10 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include <dk_buttons_and_leds.h>
-
 #include "ble_app.h"
-#include <zephyr/kernel.h>
+#include <led_config.h>
 #include <spi.h>
+#include <zephyr/kernel.h>
 
 int main(void) {
     int err;
@@ -16,10 +15,18 @@ int main(void) {
     printk(
         "Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
 
-    err = dk_leds_init();
-    if (err) {
-        printk("LEDs init failed (err %d)\n", err);
-        return 0;
+    LED_INIT;
+
+    if (init_spi1()) {
+        printk("Failure");
+        return 1;
+    }
+
+    uint8_t buf[] = "Hello World!";
+
+    if (write_spi(DW1000_SPI_CHANNEL, buf, sizeof(buf) - 1)) {
+        printk("Transfer error");
+        return 1;
     }
 
     err = init_bt_stack();
