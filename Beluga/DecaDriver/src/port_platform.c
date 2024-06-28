@@ -15,6 +15,7 @@
 #include "deca_device_api.h"
 #include <spi.h>
 #include <stdbool.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 
 #define DW1000_MAXBUF 128
@@ -89,7 +90,11 @@ int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
     uint8 txBuf[DW1000_MAXBUF];
     uint8 rxBuf[DW1000_MAXBUF];
 
-    // TODO: Potential buffer overflow
+    if ((headerLength + readlength) > DW1000_MAXBUF) {
+        // Buffer overflow prevention
+        return -1;
+    }
+
     memset(txBuf, 0, headerLength + readlength);
     memcpy(txBuf, headerBuffer, headerLength);
 
@@ -111,6 +116,11 @@ int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
 int writetospi(uint16 headerLength, const uint8 *headerBuffer,
                uint32 bodylength, const uint8 *bodyBuffer) {
     uint8 txBuf[DW1000_MAXBUF];
+
+    if ((headerLength + bodylength) > DW1000_MAXBUF) {
+        // Buffer overflow prevention
+        return -1;
+    }
 
     memcpy(txBuf, headerBuffer, headerLength);
     memcpy(txBuf + headerLength, bodyBuffer, bodylength);
