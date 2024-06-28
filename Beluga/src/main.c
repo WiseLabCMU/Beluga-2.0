@@ -8,6 +8,7 @@
 #include <led_config.h>
 #include <spi.h>
 #include <zephyr/kernel.h>
+#include <port_platform.h>
 
 int main(void) {
     int err;
