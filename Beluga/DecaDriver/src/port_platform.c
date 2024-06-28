@@ -17,6 +17,8 @@
 #include <stdbool.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 
 #define DW1000_MAXBUF 128
 
@@ -31,7 +33,7 @@
  *                  Port private variables and function prototypes
  *
  ****************************************************************************/
-static volatile uint32_t signalResetDone;
+static const struct gpio_dt_spec dw1000_reset_pin = GPIO_DT_SPEC_GET(DT_NODELABEL(dw1000_spi), reset_gpios);
 
 /****************************************************************************
  *
@@ -139,28 +141,6 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer,
 
 //------------------------------other---------------------------
 
-#define NRF_DRV_SPI_DEFAULT_CONFIG_2M(id)                                      \
-    {                                                                          \
-        .sck_pin = CONCAT_3(SPIM, id, _SCK_PIN),                               \
-        .mosi_pin = CONCAT_3(SPIM, id, _MOSI_PIN),                             \
-        .miso_pin = CONCAT_3(SPIM, id, _MISO_PIN),                             \
-        .ss_pin = NRF_DRV_SPI_PIN_NOT_USED,                                    \
-        .irq_priority = CONCAT_3(SPIM, id, _IRQ_PRIORITY), .orc = 0xFF,        \
-        .frequency = NRF_DRV_SPI_FREQ_2M, .mode = NRF_DRV_SPI_MODE_0,          \
-        .bit_order = NRF_DRV_SPI_BIT_ORDER_MSB_FIRST,                          \
-    }
-
-#define NRF_DRV_SPI_DEFAULT_CONFIG_8M(id)                                      \
-    {                                                                          \
-        .sck_pin = CONCAT_3(SPIM, id, _SCK_PIN),                               \
-        .mosi_pin = CONCAT_3(SPIM, id, _MOSI_PIN),                             \
-        .miso_pin = CONCAT_3(SPIM, id, _MISO_PIN),                             \
-        .ss_pin = NRF_DRV_SPI_PIN_NOT_USED,                                    \
-        .irq_priority = CONCAT_3(SPIM, id, _IRQ_PRIORITY), .orc = 0xFF,        \
-        .frequency = NRF_DRV_SPI_FREQ_8M, .mode = NRF_DRV_SPI_MODE_0,          \
-        .bit_order = NRF_DRV_SPI_BIT_ORDER_MSB_FIRST,                          \
-    }
-
 /* @fn      reset_DW1000
  * @brief   DW_RESET pin on DW1000 has 2 functions
  *          In general it is output, but it also can be used to reset the
@@ -168,13 +148,13 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer,
  * not be driven high externally.
  * */
 void reset_DW1000(void) {
-    nrf_gpio_cfg_output(DW1000_RST);
-    nrf_gpio_pin_clear(DW1000_RST);
-    nrf_delay_ms(2);
-    // nrf_gpio_pin_set(DW1000_RST);
-    // nrf_delay_ms(50);
-    nrf_gpio_cfg_input(DW1000_RST, NRF_GPIO_PIN_NOPULL);
-    nrf_delay_ms(2);
+    gpio_pin_configure_dt(&dw1000_reset_pin, GPIO_OUTPUT);
+    gpio_pin_set_dt(&dw1000_reset_pin, 0);
+    k_msleep(2);
+    gpio_pin_set_dt(&dw1000_reset_pin, 1);
+    k_msleep(50);
+    gpio_pin_configure_dt(&dw1000_reset_pin, GPIO_DISCONNECTED);
+    k_msleep(2);
 }
 
 /* @fn      port_set_dw1000_slowrate
@@ -182,12 +162,8 @@ void reset_DW1000(void) {
  *          n
  * */
 void port_set_dw1000_slowrate(void) {
-    nrf_drv_spi_config_t spi_config =
-        NRF_DRV_SPI_DEFAULT_CONFIG_2M(SPI_INSTANCE);
-    spi_config.ss_pin = SPI_CS_PIN;
-    APP_ERROR_CHECK(
-        nrf_drv_spi_init(&spi, &spi_config, spi_event_handler, NULL));
-    nrf_delay_ms(2);
+    set_spi_slow(DW1000_SPI_CHANNEL);
+    k_msleep(2);
 }
 
 /* @fn      port_set_dw1000_fastrate
@@ -195,16 +171,11 @@ void port_set_dw1000_slowrate(void) {
  *
  * */
 void port_set_dw1000_fastrate(void) {
-    nrf_drv_spi_uninit(&spi);
-    nrf_drv_spi_config_t spi_config =
-        NRF_DRV_SPI_DEFAULT_CONFIG_8M(SPI_INSTANCE);
-    spi_config.ss_pin = SPI_CS_PIN;
-    APP_ERROR_CHECK(
-        nrf_drv_spi_init(&spi, &spi_config, spi_event_handler, NULL));
-    nrf_delay_ms(2);
+    set_spi_fast(DW1000_SPI_CHANNEL);
+    k_msleep(2);
 }
 
-void deca_sleep(unsigned int time_ms) { nrf_delay_ms(time_ms); }
+void deca_sleep(unsigned int time_ms) { /*nrf_delay_ms(time_ms);*/ }
 
 // currently do nothing
 decaIrqStatus_t decamutexon(void) {
