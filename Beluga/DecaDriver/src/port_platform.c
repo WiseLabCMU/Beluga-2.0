@@ -175,7 +175,7 @@ void port_set_dw1000_fastrate(void) {
     k_msleep(2);
 }
 
-void deca_sleep(unsigned int time_ms) { /*nrf_delay_ms(time_ms);*/ }
+void deca_sleep(unsigned int time_ms) { k_msleep(time_ms); }
 
 // currently do nothing
 decaIrqStatus_t decamutexon(void) {
