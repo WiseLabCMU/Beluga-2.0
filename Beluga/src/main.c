@@ -10,11 +10,12 @@
 #include <spi.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <stdio.h>
 
 int main(void) {
     int err;
 
-    printk(
+    printf(
         "Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
 
     LED_INIT;
@@ -26,10 +27,10 @@ int main(void) {
         return 0;
     }
 
-    if (configure_watchdog_timer() < 0) {
-        printk("Failed to start watchdog\n");
-        return 0;
-    }
+    // if (configure_watchdog_timer() < 0) {
+    //     printk("Failed to start watchdog\n");
+    //     return 0;
+    // }
 
     for (;;) {
     }

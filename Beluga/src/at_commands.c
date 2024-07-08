@@ -11,14 +11,14 @@
 #include <zephyr/sys/reboot.h>
 
 #include "deca_types.h"
-//#include "init_main.h"
+#include "init_main.h"
 
 #include <at_commands.h>
 #include <ble_app.h>
-//#include "uart.h"
 #include <ctype.h>
 #include <errno.h>
 #include <string.h>
+#include <uart.h>
 
 #include <flash.h>
 #include <led_config.h>
@@ -43,8 +43,6 @@ struct cmd_info {
     size_t cmd_length;
     void (*cmd_func)(uint16_t argc, char const *const *argv);
 };
-
-K_FIFO_DEFINE(uart_queue);
 
 // TODO: File static vars?
 
@@ -324,19 +322,19 @@ void runSerialCommand(void) {
     char *argv[MAX_TOKENS];
     uint16_t argc;
 
-    struct command_buffer *commandBuffer = NULL;
+    struct buffer *commandBuffer = NULL;
 
     while (true) {
         k_msleep(100);
 
-        commandBuffer = k_fifo_get(&uart_queue, K_NO_WAIT);
+        commandBuffer = k_fifo_get(&uart_rx_queue, K_NO_WAIT);
 
         if (commandBuffer == NULL) {
             continue;
         }
 
-        if (0 != strncmp((const char *)commandBuffer->command, "AT+", 3)) {
-            if (0 == strncmp((const char *)commandBuffer->command, "AT", 2)) {
+        if (0 != strncmp((const char *)commandBuffer->buf, "AT+", 3)) {
+            if (0 == strncmp((const char *)commandBuffer->buf, "AT", 2)) {
                 printf("Only input AT without + command \r\n");
             } else {
                 printf("Not an AT command\r\n");
@@ -346,9 +344,9 @@ void runSerialCommand(void) {
         }
 
         for (size_t i = 0; commands[i].command != NULL; i++) {
-            if (0 == strncmp((const char *)(commandBuffer->command + 3),
+            if (0 == strncmp((const char *)(commandBuffer->buf + 3),
                              commands[i].command, commands[i].cmd_length)) {
-                argc = argparse(commandBuffer->command, argv);
+                argc = argparse(commandBuffer->buf, argv);
                 argv[argc] = NULL;
 
                 if (commands[i].cmd_func != NULL) {
@@ -366,14 +364,16 @@ void runSerialCommand(void) {
             printf("ERROR Invalid AT Command\r\n");
         }
         found = false;
+        k_free(commandBuffer->buf);
         k_free(commandBuffer);
         commandBuffer = NULL;
     }
 }
 
-// K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL,
-// NULL,
-//                 COMMAND_PRIO, 0, 0);
+#if ENABLE_THREADS
+K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
+                COMMAND_PRIO, 0, 0);
+#endif
 
 //
 // extern ble_uuid_t m_adv_uuids[2];

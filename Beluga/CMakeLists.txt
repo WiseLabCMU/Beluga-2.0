@@ -23,6 +23,7 @@ target_sources(app PRIVATE
         src/watchdog.c
         src/init_main.c
         src/timestamp.c
+        src/uart.c
   #${SOURCE}
   ${DECAWAVE_SRC}
 )

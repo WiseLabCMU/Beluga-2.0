@@ -15,8 +15,8 @@
 #include <stdint.h>
 #include <unistd.h>
 
-struct command_buffer {
-    char *command;
+struct buffer {
+    uint8_t *buf;
     size_t len;
 };
 
@@ -26,7 +26,5 @@ void init_at_commands(void);
  * @brief Task to receive UART message from zephyr UART queue and parse
  */
 void runSerialCommand(void);
-
-extern struct k_fifo uart_queue;
 
 #endif
