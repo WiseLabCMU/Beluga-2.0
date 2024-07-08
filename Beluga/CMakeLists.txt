@@ -20,6 +20,7 @@ target_sources(app PRIVATE
         src/random.c
         src/at_commands.c
         src/spi.c
+        src/watchdog.c
         #src/init_main.c
         src/timestamp.c
   #${SOURCE}

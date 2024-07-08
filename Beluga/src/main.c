@@ -9,6 +9,7 @@
 #include <spi.h>
 #include <zephyr/kernel.h>
 #include <port_platform.h>
+#include <watchdog.h>
 
 int main(void) {
     int err;
@@ -22,6 +23,11 @@ int main(void) {
 
     if (err) {
         printk("Failed to initialize the Bluetooth App\n");
+        return 0;
+    }
+
+    if (configure_watchdog_timer() < 0) {
+        printk("Failed to start watchdog\n");
         return 0;
     }
 
