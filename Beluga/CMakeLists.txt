@@ -21,7 +21,7 @@ target_sources(app PRIVATE
         src/at_commands.c
         src/spi.c
         src/watchdog.c
-        #src/init_main.c
+        src/init_main.c
         src/timestamp.c
   #${SOURCE}
   ${DECAWAVE_SRC}

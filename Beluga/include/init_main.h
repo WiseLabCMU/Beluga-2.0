@@ -13,13 +13,14 @@
  * @author Decawave
  */
 
-#include "FreeRTOS.h"
-#include "deca_types.h"
-#include "semphr.h"
+#ifndef DECA_INIT_MAIN_H
+#define DECA_INIT_MAIN_H
 
-extern SemaphoreHandle_t rxSemaphore, txSemaphore, sus_resp, sus_init;
+#include "deca_types.h"
+#include <stdbool.h>
+#include <stdint.h>
+
 extern int debug_print;
-extern uint16_t NODE_UUID;
 
 double ds_init_run(uint8 id);
 double ss_init_run(uint8 id);
@@ -30,3 +31,5 @@ void set_time_out(int timeout);
 bool set_uwb_tx_power(uint32_t tx_power);
 bool set_streaming_mode(uint32_t mode);
 bool set_twr_mode(uint32_t mode);
+
+#endif // DECA_INIT_MAIN_H

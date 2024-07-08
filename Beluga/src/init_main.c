@@ -16,20 +16,12 @@
  */
 
 #include "init_main.h"
-#include "FreeRTOS.h"
 #include "deca_device_api.h"
 #include "deca_regs.h"
-#include "nrf_gpio.h"
 #include "port_platform.h"
-#include "task.h"
 #include <stdio.h>
 #include <string.h>
-
-#include "app_timer.h"
-
 #include "random.h"
-#include "semphr.h"
-#include "timers.h"
 
 /* Frames used in the ranging process. See NOTE 1,2 below. */
 static uint8 tx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
@@ -89,10 +81,6 @@ static uint64 get_rx_timestamp_u64(void);
 #define RESP_RX_TIMEOUT_UUS         4000
 #define RESP_TX_TO_FINAL_RX_DLY_UUS 500
 #define FINAL_RX_TIMEOUT_UUS        4500
-
-APP_TIMER_DEF(tx_timekeeper);
-static int tx_time;
-static void tx_timer_function(void *p_context) { tx_time = 1; }
 
 /*!
  * ------------------------------------------------------------------------------------------------------------------
@@ -305,7 +293,7 @@ double ss_init_run(uint8 id) {
     /* Start transmission, indicating that a response is expected so that
      * reception is enabled automatically after the frame is sent and the delay
      * set by dwt_setrxaftertxdelay() has elapsed. */
-    int c = dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
+    dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 
     while (
         !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
