@@ -6,10 +6,10 @@
 
 #include "ble_app.h"
 #include <led_config.h>
-#include <spi.h>
-#include <zephyr/kernel.h>
 #include <port_platform.h>
+#include <spi.h>
 #include <watchdog.h>
+#include <zephyr/kernel.h>
 
 int main(void) {
     int err;

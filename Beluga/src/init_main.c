@@ -19,9 +19,9 @@
 #include "deca_device_api.h"
 #include "deca_regs.h"
 #include "port_platform.h"
+#include "random.h"
 #include <stdio.h>
 #include <string.h>
-#include "random.h"
 
 /* Frames used in the ranging process. See NOTE 1,2 below. */
 static uint8 tx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',

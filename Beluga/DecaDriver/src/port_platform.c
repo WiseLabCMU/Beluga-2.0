@@ -15,10 +15,10 @@
 #include "deca_device_api.h"
 #include <spi.h>
 #include <stdbool.h>
-#include <zephyr/drivers/gpio.h>
-#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/kernel.h>
 
 #define DW1000_MAXBUF 128
 
@@ -33,8 +33,10 @@
  *                  Port private variables and function prototypes
  *
  ****************************************************************************/
-static const struct gpio_dt_spec dw1000_reset_pin = GPIO_DT_SPEC_GET(DT_NODELABEL(dw1000_spi), reset_gpios);
-static const struct gpio_dt_spec dw1000_irq_pin = GPIO_DT_SPEC_GET(DT_NODELABEL(dw1000_spi), int_gpios);
+static const struct gpio_dt_spec dw1000_reset_pin =
+    GPIO_DT_SPEC_GET(DT_NODELABEL(dw1000_spi), reset_gpios);
+static const struct gpio_dt_spec dw1000_irq_pin =
+    GPIO_DT_SPEC_GET(DT_NODELABEL(dw1000_spi), int_gpios);
 
 /****************************************************************************
  *

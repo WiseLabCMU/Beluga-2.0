@@ -59,16 +59,17 @@ void decamutexoff(decaIrqStatus_t s);
 #define SPI_CS_PIN   17 /**< SPI CS Pin.*/
 
 #define SPI_INSTANCE 1 /**< SPI instance index. */
-//static const nrf_drv_spi_t spi =
-//    NRF_DRV_SPI_INSTANCE(SPI_INSTANCE); /**< SPI instance. */
-//static volatile bool spi_xfer_done; /**< Flag used to indicate that SPI instance
-//                                       completed the transfer. */
+// static const nrf_drv_spi_t spi =
+//     NRF_DRV_SPI_INSTANCE(SPI_INSTANCE); /**< SPI instance. */
+// static volatile bool spi_xfer_done; /**< Flag used to indicate that SPI
+// instance
+//                                        completed the transfer. */
 
 /**
  * @brief SPI user event handler.
  * @param event
  */
-//void spi_event_handler(nrf_drv_spi_evt_t const *p_event, void *p_context);
+// void spi_event_handler(nrf_drv_spi_evt_t const *p_event, void *p_context);
 
 #if 0
 

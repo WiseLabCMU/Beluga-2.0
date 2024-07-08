@@ -2,15 +2,15 @@
 // Created by tom on 7/8/24.
 //
 
-#include <zephyr/kernel.h>
+#include <stdbool.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/watchdog.h>
-#include <stdbool.h>
+#include <zephyr/kernel.h>
 
 #define WDT_MIN_WINDOW 0UL
 #define WDT_MAX_WINDOW 2000UL
 
-#define WDT_NAME DEVICE_DT_GET(DT_NODELABEL(wdt))
+#define WDT_NAME       DEVICE_DT_GET(DT_NODELABEL(wdt))
 
 static const struct device *wdt;
 static int watchdog_id = -1;
@@ -24,12 +24,10 @@ int configure_watchdog_timer(void) {
         return -1;
     }
 
-    struct wdt_timeout_cfg wdt_config = {
-            .flags = WDT_FLAG_RESET_SOC,
-            .window.min = WDT_MIN_WINDOW,
-            .window.max = WDT_MAX_WINDOW,
-            .callback = NULL
-    };
+    struct wdt_timeout_cfg wdt_config = {.flags = WDT_FLAG_RESET_SOC,
+                                         .window.min = WDT_MIN_WINDOW,
+                                         .window.max = WDT_MAX_WINDOW,
+                                         .callback = NULL};
 
     watchdog_id = wdt_install_timeout(wdt, &wdt_config);
 
@@ -55,9 +53,7 @@ int configure_watchdog_timer(void) {
     return 0;
 }
 
-void let_the_dog_starve(void) {
-    starving_dog = true;
-}
+void let_the_dog_starve(void) { starving_dog = true; }
 
 void watchdog_red_rocket(void) {
     if (!starving_dog) {

@@ -9,4 +9,4 @@ int configure_watchdog_timer(void);
 void let_the_dog_starve(void);
 void watchdog_red_rocket(void);
 
-#endif //BELUGA_WATCHDOG_H
+#endif // BELUGA_WATCHDOG_H

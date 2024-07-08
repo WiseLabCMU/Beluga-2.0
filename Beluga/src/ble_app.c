@@ -56,8 +56,8 @@
 #include <ble_app.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <utils.h>
 #include <timestamp.h>
+#include <utils.h>
 
 /**@brief Macro to unpack 16bit unsigned UUID from an octet stream.
  */

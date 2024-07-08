@@ -3,8 +3,8 @@
 //
 
 #include <timestamp.h>
-#include <zephyr/kernel.h>
 #include <utils.h>
+#include <zephyr/kernel.h>
 
 static volatile uint64_t timestamp = UINT64_C(0);
 
@@ -21,6 +21,4 @@ void init_timekeeper(uint32_t ms_delay_start, uint32_t ms_period) {
     k_timer_start(&timestamp_timer, K_MSEC(ms_delay_start), K_MSEC(ms_period));
 }
 
-uint64_t get_timestamp(void) {
-    return timestamp;
-}
+uint64_t get_timestamp(void) { return timestamp; }

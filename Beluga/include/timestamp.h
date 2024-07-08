@@ -10,4 +10,4 @@
 void init_timekeeper(uint32_t ms_delay_start, uint32_t ms_period);
 uint64_t get_timestamp(void);
 
-#endif //BELUGA_TIMESTAMP_H
+#endif // BELUGA_TIMESTAMP_H
