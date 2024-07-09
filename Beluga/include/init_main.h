@@ -25,11 +25,4 @@ extern int debug_print;
 double ds_init_run(uint8 id);
 double ss_init_run(uint8 id);
 
-void set_initiator_freq(int value);
-bool set_uwb_pgdelay(uint32_t channel);
-void set_time_out(int timeout);
-bool set_uwb_tx_power(uint32_t tx_power);
-bool set_streaming_mode(uint32_t mode);
-bool set_twr_mode(uint32_t mode);
-
 #endif // DECA_INIT_MAIN_H
