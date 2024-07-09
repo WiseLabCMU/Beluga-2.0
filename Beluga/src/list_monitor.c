@@ -2,8 +2,9 @@
 // Created by tom on 7/9/24.
 //
 
-#include <ble_app.h>
 #include <list_monitor.h>
+
+#include <ble_app.h>
 #include <stdint.h>
 #include <thread_priorities.h>
 #include <timestamp.h>

@@ -5,6 +5,7 @@
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <init_main.h>
+#include <resp_main.h>
 #include <random.h>
 #include <ranging.h>
 #include <thread_priorities.h>
@@ -18,21 +19,6 @@
 
 // TODO: Figure out better place for these
 ///////////////////////////////////////////////////////////////////////////////
-K_SEM_DEFINE(k_sus_resp, 0, 1);
-K_SEM_DEFINE(k_sus_init, 0, 1);
-
-#define SUSPEND_RESPONDER_TASK                                                 \
-    do {                                                                       \
-        k_sem_take(&k_sus_resp, K_NO_WAIT);                                    \
-        k_sem_take(&k_sus_init, K_FOREVER);                                    \
-        k_sleep(K_MSEC(2));                                                    \
-    } while (0)
-
-#define RESUME_RESPONDER_TASK                                                  \
-    do {                                                                       \
-        k_sem_give(&k_sus_init);                                               \
-        k_sem_give(&k_sus_resp);                                               \
-    } while (0)
 
 static enum pgdelay_ch uwb_pgdelay;
 
@@ -56,6 +42,19 @@ static const dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 
 ///////////////////////////////////////////////////////////////////////////////
 // TODO: END
+
+#define SUSPEND_RESPONDER_TASK                                                 \
+    do {                                                                       \
+        k_sem_take(&k_sus_resp, K_NO_WAIT);                                    \
+        k_sem_take(&k_sus_init, K_FOREVER);                                    \
+        k_sleep(K_MSEC(2));                                                    \
+    } while (0)
+
+#define RESUME_RESPONDER_TASK                                                  \
+    do {                                                                       \
+        k_sem_give(&k_sus_init);                                               \
+        k_sem_give(&k_sus_resp);                                               \
+    } while (0)
 
 K_MUTEX_DEFINE(twr_mutex);
 K_MUTEX_DEFINE(rate_mutex);
