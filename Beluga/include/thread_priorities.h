@@ -8,5 +8,9 @@
 #define ENABLE_THREADS 1
 
 #define COMMAND_PRIO   7
+#define LIST_PRIO      6
+#define RANGING_PRIO   5
+#define MONITOR_PRIO   4
+#define RESPONDER_PRIO 3
 
 #endif // BELUGA_THREAD_PRIORITIES_H
