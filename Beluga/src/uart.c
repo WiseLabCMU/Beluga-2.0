@@ -2,11 +2,11 @@
 // Created by tom on 7/8/24.
 //
 
-#include <uart.h>
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/uart.h>
-#include <stdint.h>
 #include <at_commands.h>
+#include <stdint.h>
+#include <uart.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/kernel.h>
 
 #define RX_BUFFER_SIZE 256
 
@@ -53,7 +53,8 @@ static void serial_callback(const struct device *dev, void *user_data) {
             k_fifo_put(&uart_rx_queue, _buf);
             rx_buf.len = 0;
             printk("Placed item into fifo\n");
-        } else if ((c != '\n' && c != '\r') && (rx_buf.len < (RX_BUFFER_SIZE - 1))) {
+        } else if ((c != '\n' && c != '\r') &&
+                   (rx_buf.len < (RX_BUFFER_SIZE - 1))) {
             rx_buf.data[rx_buf.len++] = c;
         }
     }
