@@ -22,6 +22,7 @@
 
 #include <flash.h>
 #include <led_config.h>
+#include <ranging.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <thread_priorities.h>
@@ -34,6 +35,18 @@
     do {                                                                       \
         if ((uint16)(argc) < (uint16_t)(required)) {                           \
             printf("Missing argument(s)\r\n");                                 \
+            return;                                                            \
+        }                                                                      \
+    } while (0)
+
+#define CONVERT_INT_TO_BOOL(boolarg, intarg)                                   \
+    do {                                                                       \
+        if ((intarg) == 0) {                                                   \
+            (boolarg) = false;                                                 \
+        } else if ((intarg) == 1) {                                            \
+            (boolarg) = true;                                                  \
+        } else {                                                               \
+            printf("Invalid argument\r\n");                                    \
             return;                                                            \
         }                                                                      \
     } while (0)
@@ -246,9 +259,11 @@ static void at_streammode(uint16_t argc, char const *const *argv) {
 static void at_twrmode(uint16_t argc, char const *const *argv) {
     CHECK_ARGC(argc, 2);
     int32_t twr;
-    bool success = strtoint32(argv[1], &twr);
+    bool value, success = strtoint32(argv[1], &twr);
 
-    if (success /*&& set_twr_mode(twr)*/) {
+    if (success) {
+        CONVERT_INT_TO_BOOL(value, twr);
+        set_twr_mode(value);
         OK;
     } else {
         printf("TWR mode parameter input error \r\n");
@@ -386,7 +401,7 @@ K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
                 COMMAND_PRIO, 0, 0);
 #endif
 
-// SemaphoreHandle_t sus_resp, sus_init, print_list_sem;
+// SemaphoreHandle_t print_list_sem;
 //
 // static int uwb_started;
 // extern int ble_started;
