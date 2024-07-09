@@ -406,8 +406,6 @@ K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
                 COMMAND_PRIO, 0, 0);
 #endif
 
-// SemaphoreHandle_t print_list_sem;
-//
 // static int uwb_started;
 // extern int ble_started;
 //
