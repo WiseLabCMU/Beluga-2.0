@@ -11,14 +11,22 @@
 #include <watchdog.h>
 #include <zephyr/kernel.h>
 #include <stdio.h>
+#include <uart.h>
+#include <unistd.h>
 
 int main(void) {
     int err;
 
-    printf(
-        "Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
-
     LED_INIT;
+
+    if (uart_init() < 0) {
+        printf("Error\n");
+        return 0;
+    }
+
+    printf("Success!\n");
+    printf(
+       "Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
 
     err = init_bt_stack();
 
@@ -33,5 +41,6 @@ int main(void) {
     // }
 
     for (;;) {
+        k_sleep(K_FOREVER);
     }
 }

@@ -5,58 +5,57 @@
 #include <uart.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/uart.h>
-#include <bluetooth/services/nus.h>
-#include <bluetooth/services/nus_client.h>
 #include <stdint.h>
+#include <at_commands.h>
 
 #define RX_BUFFER_SIZE 256
 
 struct uart_data {
-    void * fifo_reserved;
     size_t len;
     uint8_t data[RX_BUFFER_SIZE];
 };
 
 K_FIFO_DEFINE(uart_rx_queue);
 
-#define NUS_WRITE_TIMEOUT K_MSEC(150)
-#define UART_WAIT_FOR_BUF_DELAY K_MSEC(50)
-#define UART_RX_TIMEOUT 50000 /* Wait for RX complete event time in microseconds. */
-
 static const struct device *uart = DEVICE_DT_GET(DT_NODELABEL(uart0));
-static struct k_work_delayable uart_work;
-static struct uart_data rxBuffer = {
-        .len = 0
-};
 
-K_SEM_DEFINE(nus_write_sem, 0, 1);
+static struct uart_data rx_buf;
 
-static struct bt_conn *default_conn;
-static struct bt_nus_client nus_client;
+static void serial_callback(const struct device *dev, void *user_data) {
+    uint8_t c;
 
-static void uart_callback(const struct device *dev, struct uart_event *evt, void *user_data) {
-    ARG_UNUSED(dev);
+    if (!uart_irq_update(uart)) {
+        return;
+    }
 
-    static size_t aborted_len;
-    static struct uart_data *buf;
-    static uint8_t *aborted_buf;
-    static bool disable_req;
+    if (!uart_irq_rx_ready(uart)) {
+        return;
+    }
 
-    switch(evt->type) {
-        case UART_RX_RDY:
-            break;
-        case UART_RX_DISABLED:
-            break;
-        case UART_RX_BUF_REQUEST:
-            break;
-        case UART_RX_BUF_RELEASED:
-            break;
-        case UART_TX_DONE:
-            break;
-        case UART_TX_ABORTED:
-            break;
-        default:
-            break;
+    while (uart_fifo_read(uart, &c, 1) == 1) {
+        if ((c == '\n' || c == '\r') && rx_buf.len > 0) {
+            struct buffer *_buf;
+            rx_buf.data[rx_buf.len] = '\0';
+
+            _buf = k_malloc(sizeof(*_buf));
+            if (_buf == NULL) {
+                printk("Unable to allocate fifo item\n");
+                break;
+            }
+            _buf->len = rx_buf.len;
+            _buf->buf = k_malloc(_buf->len);
+            if (_buf->buf == NULL) {
+                printk("Unable to allocate buffer for fifo item\n");
+                k_free(_buf);
+                return;
+            }
+            memcpy(_buf->buf, rx_buf.data, rx_buf.len);
+            k_fifo_put(&uart_rx_queue, _buf);
+            rx_buf.len = 0;
+            printk("Placed item into fifo\n");
+        } else if ((c != '\n' && c != '\r') && (rx_buf.len < (RX_BUFFER_SIZE - 1))) {
+            rx_buf.data[rx_buf.len++] = c;
+        }
     }
 }
 
@@ -64,15 +63,17 @@ int uart_init(void) {
     int err;
 
     if (!device_is_ready(uart)) {
-        printk("UART device was not ready\n");
-        return -ENODEV;
+        printk("UART is not ready\n");
+        return -1;
     }
 
-    err = uart_callback_set(uart, uart_callback, NULL);
-    if (err != 0) {
-        printk("UART init error (%d)\n", err);
+    err = uart_irq_callback_user_data_set(uart, serial_callback, NULL);
+
+    if (err < 0) {
+        printk("Unable to set UART callback (err %d)\n", err);
         return err;
     }
+    uart_irq_rx_enable(uart);
 
-    return uart_rx_enable(uart, rxBuffer.data, RX_BUFFER_SIZE, UART_RX_TIMEOUT);
+    return 0;
 }

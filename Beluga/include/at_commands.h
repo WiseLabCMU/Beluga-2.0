@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 struct buffer {
+    void *fifo_reserved;
     uint8_t *buf;
     size_t len;
 };

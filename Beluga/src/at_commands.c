@@ -314,6 +314,12 @@ static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
                                      {"PWRAMP", 6, at_pwramp},
                                      {NULL, 0, NULL}};
 
+static inline void freeCommand(struct buffer **buf) {
+    k_free((*buf)->buf);
+    k_free(*buf);
+    *buf = NULL;
+}
+
 /**
  * @brief Task to receive UART message from zephyr UART queue and parse
  */
@@ -332,6 +338,7 @@ void runSerialCommand(void) {
         if (commandBuffer == NULL) {
             continue;
         }
+        printk("Item received\n");
 
         if (0 != strncmp((const char *)commandBuffer->buf, "AT+", 3)) {
             if (0 == strncmp((const char *)commandBuffer->buf, "AT", 2)) {
@@ -339,7 +346,13 @@ void runSerialCommand(void) {
             } else {
                 printf("Not an AT command\r\n");
             }
-            k_free(commandBuffer);
+            freeCommand(&commandBuffer);
+            continue;
+        }
+
+        if (commandBuffer->len == 3) {
+            printf("No command found after AT+\r\n");
+            freeCommand(&commandBuffer);
             continue;
         }
 
@@ -364,9 +377,7 @@ void runSerialCommand(void) {
             printf("ERROR Invalid AT Command\r\n");
         }
         found = false;
-        k_free(commandBuffer->buf);
-        k_free(commandBuffer);
-        commandBuffer = NULL;
+        freeCommand(&commandBuffer);
     }
 }
 
@@ -375,10 +386,6 @@ K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
                 COMMAND_PRIO, 0, 0);
 #endif
 
-//
-// extern ble_uuid_t m_adv_uuids[2];
-//
-// QueueHandle_t uart_queue;
 // SemaphoreHandle_t sus_resp, sus_init, print_list_sem;
 //
 // static int uwb_started;
