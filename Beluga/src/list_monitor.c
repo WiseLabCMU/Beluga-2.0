@@ -5,11 +5,11 @@
 #include <ble_app.h>
 #include <list_monitor.h>
 #include <stdint.h>
+#include <thread_priorities.h>
 #include <timestamp.h>
+#include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
-#include <thread_priorities.h>
-#include <utils.h>
 
 #define ENABLE_NODE_ADD_SEM 0
 
@@ -122,6 +122,6 @@ void monitor_task_function(void) {
 }
 
 #if ENABLE_THREADS
-K_THREAD_DEFINE(monitor_list_task_id, STACK_SIZE, monitor_task_function, NULL, NULL,
-                NULL, MONITOR_PRIO, 0, 0);
+K_THREAD_DEFINE(monitor_list_task_id, STACK_SIZE, monitor_task_function, NULL,
+                NULL, NULL, MONITOR_PRIO, 0, 0);
 #endif
