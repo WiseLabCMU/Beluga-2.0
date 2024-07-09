@@ -5,9 +5,9 @@
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <init_main.h>
-#include <resp_main.h>
 #include <random.h>
 #include <ranging.h>
+#include <resp_main.h>
 #include <thread_priorities.h>
 #include <timestamp.h>
 #include <utils.h>

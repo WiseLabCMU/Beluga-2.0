@@ -20,10 +20,10 @@
 #include "init_main.h"
 #include "port_platform.h"
 #include "random.h"
+#include <ble_app.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
-#include <ble_app.h>
 
 K_SEM_DEFINE(k_sus_resp, 0, 1);
 
@@ -131,7 +131,8 @@ static double distance;
  */
 int ds_resp_run(void) {
     uint16_t NODE_UUID = get_NODE_UUID();
-    unsigned int suspend_start = k_sem_count_get(&k_sus_resp); // Check if responding is suspended
+    unsigned int suspend_start =
+        k_sem_count_get(&k_sus_resp); // Check if responding is suspended
     if (suspend_start == 1)
         return 1;
 
@@ -395,7 +396,8 @@ int ds_resp_run(void) {
  */
 int ss_resp_run(void) {
     uint16_t NODE_UUID = get_NODE_UUID();
-    unsigned int suspend_start = k_sem_count_get(&k_sus_resp); // Check if responding is suspended
+    unsigned int suspend_start =
+        k_sem_count_get(&k_sus_resp); // Check if responding is suspended
     if (suspend_start == 0)
         return 1;
 
@@ -477,8 +479,7 @@ int ss_resp_run(void) {
             if (ret == DWT_SUCCESS) {
 
                 while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
-                    unsigned int suspend =
-                            k_sem_count_get(&k_sus_resp);
+                    unsigned int suspend = k_sem_count_get(&k_sus_resp);
                     if (suspend == 1) {
                         dwt_forcetrxoff();
                         return 1;
