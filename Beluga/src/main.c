@@ -8,11 +8,11 @@
 #include <led_config.h>
 #include <port_platform.h>
 #include <spi.h>
-#include <watchdog.h>
-#include <zephyr/kernel.h>
 #include <stdio.h>
 #include <uart.h>
 #include <unistd.h>
+#include <watchdog.h>
+#include <zephyr/kernel.h>
 
 int main(void) {
     int err;
@@ -26,7 +26,7 @@ int main(void) {
 
     printf("Success!\n");
     printf(
-       "Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
+        "Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
 
     err = init_bt_stack();
 
