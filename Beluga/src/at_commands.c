@@ -22,6 +22,7 @@
 
 #include <flash.h>
 #include <led_config.h>
+#include <list_neighbors.h>
 #include <ranging.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -130,8 +131,8 @@ static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+    k_sem_give(&print_list_sem);
     enable_bluetooth();
-    // Post list semaphore
 
     //    if (leds_mode) {
     //        APP_LED_ON(BLE_LED);
@@ -141,7 +142,7 @@ static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 
 static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     disable_bluetooth();
-    // Wait list semaphore
+    k_sem_take(&print_list_sem, K_FOREVER);
 
     //    if (leds_mode) {
     //        APP_LED_OFF(BLE_LED);
@@ -249,7 +250,10 @@ static void at_streammode(uint16_t argc, char const *const *argv) {
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
 
-    if (success /*&& set_streaming_mode(mode)*/) {
+    if (success) {
+        bool value;
+        CONVERT_INT_TO_BOOL(value, mode);
+        set_stream_mode(value);
         OK;
     } else {
         printf("Stream mode parameter input error \r\n");
