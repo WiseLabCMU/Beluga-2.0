@@ -58,8 +58,9 @@ static const dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 // TODO: END
 
 K_MUTEX_DEFINE(twr_mutex);
+K_MUTEX_DEFINE(rate_mutex);
 
-static int initiator_freq = 100;
+static uint32_t initiator_freq = 100;
 static bool twr_mode = false;
 
 void set_twr_mode(bool value) {
@@ -73,6 +74,20 @@ bool get_twr_mode(void) {
     k_mutex_lock(&twr_mutex, K_FOREVER);
     retVal = twr_mode;
     k_mutex_unlock(&twr_mutex);
+    return retVal;
+}
+
+void set_rate(uint32_t rate) {
+    k_mutex_lock(&rate_mutex, K_FOREVER);
+    initiator_freq = rate;
+    k_mutex_unlock(&rate_mutex);
+}
+
+uint32_t get_rate(void) {
+    uint32_t retVal;
+    k_mutex_lock(&rate_mutex, K_FOREVER);
+    retVal = initiator_freq;
+    k_mutex_unlock(&rate_mutex);
     return retVal;
 }
 
@@ -98,12 +113,12 @@ static void poll_nodes(void) {
     int cur_index = 0;
 
     // Stop the init task based on the input polling frequency
-    k_sleep(K_MSEC(initiator_freq));
+    k_sleep(K_MSEC(get_rate()));
 
     // If previous polling drop, give a random exponential distribution
     // delay
     if (drop_flag) {
-        uint16_t rand_small = get_rand_num_exp_collision(initiator_freq);
+        uint16_t rand_small = get_rand_num_exp_collision(get_rate());
         k_sleep(K_MSEC(rand_small));
         drop_flag = false;
     }

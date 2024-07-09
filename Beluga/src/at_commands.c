@@ -22,6 +22,7 @@
 
 #include <flash.h>
 #include <led_config.h>
+#include <list_monitor.h>
 #include <list_neighbors.h>
 #include <ranging.h>
 #include <stdio.h>
@@ -192,7 +193,7 @@ static void at_rate(uint16_t argc, char const *const *argv) {
     }
 
     writeFlashID(CONFIG_RATE, rate);
-    // TODO: Set rate
+    set_rate(rate);
 
     // reconfig ble data
     advertising_reconfig(rate != 0);
@@ -229,7 +230,7 @@ static void at_timeout(uint16_t argc, char const *const *argv) {
     }
 
     writeFlashID(CONFIG_TIME, timeout);
-    // TODO: set the timeout value
+    set_node_timeout(timeout);
     OK;
 }
 

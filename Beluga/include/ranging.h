@@ -18,5 +18,7 @@ enum pgdelay_ch {
 
 void set_twr_mode(bool value);
 bool get_twr_mode(void);
+void set_rate(uint32_t rate);
+uint32_t get_rate(void);
 
 #endif // BELUGA_RANGING_H
