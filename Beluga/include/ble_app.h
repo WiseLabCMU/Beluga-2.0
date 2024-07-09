@@ -32,11 +32,6 @@ typedef struct node {
         ble_time_stamp; /* Last timestamp get the BLE package from this node */
 } node;
 
-/*
- * Maximum BLE neighbors in the list
- * NOTE: Change the size based on the network size
- */
-#define MAX_ANCHOR_COUNT 12
 extern node seen_list[MAX_ANCHOR_COUNT];
 
 int32_t init_bt_stack(void);
@@ -44,5 +39,7 @@ void update_node_id(uint16_t uuid);
 void advertising_reconfig(int32_t change);
 void disable_bluetooth(void);
 void enable_bluetooth(void);
+void ble_disable_scan(void);
+void ble_enable_scan(void);
 
 #endif

@@ -54,6 +54,7 @@
 #include <zephyr/kernel.h>
 
 #include <ble_app.h>
+#include <list_monitor.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <timestamp.h>
@@ -99,7 +100,6 @@ static struct bt_data sd[] = {
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
 
-bool node_added = false;
 static int32_t last_seen_index = 0;
 node seen_list[MAX_ANCHOR_COUNT];
 static enum adv_mode currentAdvMode = ADVERTISING_OFF;
@@ -161,7 +161,7 @@ static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
     }
 
     last_seen_index = (last_seen_index + 1) % MAX_ANCHOR_COUNT;
-    node_added = true;
+    node_added();
 }
 
 static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
@@ -553,3 +553,17 @@ void disable_bluetooth(void) {
 }
 
 void enable_bluetooth(void) { init_bt_stack(); }
+
+void ble_disable_scan(void) {
+    int err = bt_le_scan_stop();
+
+    if (err) {
+        printk("Failed to stop scanning (err %d)\n", err);
+    }
+    printk("Scanning stopped\n");
+}
+
+void ble_enable_scan(void) {
+    scan_start();
+    printk("Scanning started\n");
+}
