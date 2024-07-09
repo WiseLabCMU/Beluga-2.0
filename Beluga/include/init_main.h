@@ -19,10 +19,13 @@
 #include "deca_types.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <zephyr/kernel.h>
 
 extern int debug_print;
 
 double ds_init_run(uint8 id);
 double ss_init_run(uint8 id);
+
+extern struct k_sem k_sus_init;
 
 #endif // DECA_INIT_MAIN_H
