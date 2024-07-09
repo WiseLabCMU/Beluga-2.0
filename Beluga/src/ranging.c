@@ -223,6 +223,6 @@ void rangingTask(void) {
 }
 
 #if ENABLE_THREADS
-K_THREAD_DEFINE(command_task_id, STACK_SIZE, rangingTask, NULL, NULL, NULL,
+K_THREAD_DEFINE(ranging_task_id, STACK_SIZE, rangingTask, NULL, NULL, NULL,
                 RANGING_PRIO, 0, 0);
 #endif
