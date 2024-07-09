@@ -58,7 +58,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <timestamp.h>
-#include <utils.h>
+
+K_MUTEX_DEFINE(UUID_mutex);
 
 /**@brief Macro to unpack 16bit unsigned UUID from an octet stream.
  */
@@ -109,6 +110,20 @@ struct ble_data {
     uint16_t uuid;
     uint8_t manufacturerData[NAME_LEN];
 };
+
+ALWAYS_INLINE static void set_NODE_UUID(uint16_t uuid) {
+    k_mutex_lock(&UUID_mutex, K_FOREVER);
+    NODE_UUID = uuid;
+    k_mutex_unlock(&UUID_mutex);
+}
+
+uint16_t get_NODE_UUID(void) {
+    uint16_t retVal;
+    k_mutex_lock(&UUID_mutex, K_FOREVER);
+    retVal = NODE_UUID;
+    k_mutex_unlock(&UUID_mutex);
+    return retVal;
+}
 
 static bool data_cb(struct bt_data *data, void *user_data) {
     struct ble_data *_data = user_data;
@@ -442,7 +457,7 @@ void update_node_id(uint16_t uuid) {
     struct bt_data name_data = {
         .type = BT_DATA_NAME_COMPLETE, .data = advName, .data_len = len};
 
-    NODE_UUID = uuid;
+    set_NODE_UUID(uuid);
 
     if (currentAdvMode != ADVERTISING_OFF) {
         bt_le_adv_stop();

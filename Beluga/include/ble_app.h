@@ -41,5 +41,6 @@ void disable_bluetooth(void);
 void enable_bluetooth(void);
 void ble_disable_scan(void);
 void ble_enable_scan(void);
+uint16_t get_NODE_UUID(void);
 
 #endif
