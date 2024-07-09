@@ -15,17 +15,17 @@
  * @author Decawave
  */
 
-#include "FreeRTOS.h"
 #include "deca_device_api.h"
 #include "deca_regs.h"
 #include "init_main.h"
-#include "nrf_drv_wdt.h"
 #include "port_platform.h"
 #include "random.h"
-#include "semphr.h"
-#include "task.h"
 #include <stdio.h>
 #include <string.h>
+#include <zephyr/kernel.h>
+#include <ble_app.h>
+
+K_SEM_DEFINE(k_sus_resp, 0, 1);
 
 /* Inter-ranging delay period, in milliseconds. */
 #define RNG_DELAY_MS 250
@@ -119,8 +119,6 @@ static double distance;
 /* Receive final timeout. See NOTE 5 below. */
 #define FINAL_RX_TIMEOUT_UUS 4500
 
-nrf_drv_wdt_channel_id m_channel_id;
-
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn ss_resp_run()
@@ -132,10 +130,9 @@ nrf_drv_wdt_channel_id m_channel_id;
  * @return int represent task complete or abort
  */
 int ds_resp_run(void) {
-
-    int suspend_start = uxQueueMessagesWaiting(
-        (QueueHandle_t)sus_resp); // Check if responding is suspended
-    if (suspend_start == 0)
+    uint16_t NODE_UUID = get_NODE_UUID();
+    unsigned int suspend_start = k_sem_count_get(&k_sus_resp); // Check if responding is suspended
+    if (suspend_start == 1)
         return 1;
 
     /* Activate reception immediately. */
@@ -145,8 +142,9 @@ int ds_resp_run(void) {
     while (
         !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
           (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
-        int suspend = uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
-        if (suspend == 0) {
+        unsigned int suspend = k_sem_count_get(&k_sus_resp);
+
+        if (suspend == 1) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
@@ -239,8 +237,8 @@ int ds_resp_run(void) {
             while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
                      (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO |
                       SYS_STATUS_ALL_RX_ERR))) {
-                int suspend = uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
-                if (suspend == 0) {
+                unsigned int suspend = k_sem_count_get(&k_sus_resp);
+                if (suspend == 1) {
                     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
                     /* Reset RX to properly reinitialise LDE operation. */
                     dwt_rxreset();
@@ -396,8 +394,8 @@ int ds_resp_run(void) {
  * @return int represent task complete or abort
  */
 int ss_resp_run(void) {
-    int suspend_start = uxQueueMessagesWaiting(
-        (QueueHandle_t)sus_resp); // Check if responding is suspended
+    uint16_t NODE_UUID = get_NODE_UUID();
+    unsigned int suspend_start = k_sem_count_get(&k_sus_resp); // Check if responding is suspended
     if (suspend_start == 0)
         return 1;
 
@@ -407,8 +405,8 @@ int ss_resp_run(void) {
     while (
         !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
           (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
-        int suspend = uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
-        if (suspend == 0) {
+        unsigned int suspend = k_sem_count_get(&k_sus_resp);
+        if (suspend == 1) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
@@ -479,9 +477,9 @@ int ss_resp_run(void) {
             if (ret == DWT_SUCCESS) {
 
                 while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
-                    int suspend =
-                        uxQueueMessagesWaiting((QueueHandle_t)sus_resp);
-                    if (suspend == 0) {
+                    unsigned int suspend =
+                            k_sem_count_get(&k_sus_resp);
+                    if (suspend == 1) {
                         dwt_forcetrxoff();
                         return 1;
                     }
