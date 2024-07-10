@@ -22,7 +22,6 @@
 #include <uart.h>
 
 #include <flash.h>
-#include <led_config.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <ranging.h>
@@ -30,6 +29,7 @@
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
+#include <app_leds.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -105,45 +105,30 @@ static bool strtoint32(const char *str, int32_t *result) {
 }
 
 static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
-    // Mark UWB as started
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
-
-    /*if (leds_mode) {
-        APP_LED_ON(UWB_LED);
-    }*/
+    update_led_state(LED_UWB_ON);
     OK;
 }
 
 static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
-    // Mark UWB as stopped
     k_sem_take(&k_sus_resp, K_FOREVER);
     k_sem_take(&k_sus_init, K_FOREVER);
-
-    //    if (leds_mode) {
-    //        APP_LED_OFF(UWB_LED);
-    //    }
+    update_led_state(LED_UWB_OFF);
     OK;
 }
 
 static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     k_sem_give(&print_list_sem);
     enable_bluetooth();
-
-    //    if (leds_mode) {
-    //        APP_LED_ON(BLE_LED);
-    //    }
+    update_led_state(LED_BLE_ON);
     OK;
 }
 
 static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     disable_bluetooth();
     k_sem_take(&print_list_sem, K_FOREVER);
-
-    //    if (leds_mode) {
-    //        APP_LED_OFF(BLE_LED);
-    //    }
-
+    update_led_state(LED_BLE_OFF);
     OK;
 }
 
@@ -279,22 +264,10 @@ static void at_ledmode(uint16_t argc, char const *const *argv) {
     }
 
     writeFlashID(CONFIG_LED, mode);
-    // TODO: Set mode
     if (mode == 1) {
-        // TODO: Turn off LEDs
-        // dwt_setleds(DWT_LEDS_DISABLE);
+        all_leds_off();
     } else {
-        uint32_t state;
-        // TODO: Turn on power LED
-        // dwt_setleds(DWT_LEDS_ENABLE);
-
-        state = readFlashID(CONFIG_BM);
-        if (state > 0) {
-            APP_LED_ON(UWB_LED);
-        }
-        if (state > 1) {
-            APP_LED_ON(BLE_LED);
-        }
+        restore_led_states();
     }
 
     OK;
