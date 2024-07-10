@@ -17,6 +17,9 @@
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
 
+/* Maximum transmission power register value */
+#define TX_POWER_MAX 0x1F1F1F1F
+
 #define SUSPEND_RESPONDER_TASK                                                 \
     do {                                                                       \
         k_sem_take(&k_sus_resp, K_NO_WAIT);                                    \
@@ -85,6 +88,15 @@ bool set_uwb_channel(uint32_t channel) {
     dwt_configure(&config);
     dwt_configuretxrf(&config_tx);
     return true;
+}
+
+void set_tx_power(bool power_max) {
+    if (power_max) {
+        config_tx.power = TX_POWER_MAX;
+    } else {
+        config_tx.power = TX_POWER_MAN_DEFAULT;
+    }
+    dwt_configuretxrf(&config_tx);
 }
 
 void set_twr_mode(bool value) {

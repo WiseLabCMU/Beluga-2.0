@@ -42,18 +42,6 @@
         }                                                                      \
     } while (0)
 
-#define CONVERT_INT_TO_BOOL(boolarg, intarg)                                   \
-    do {                                                                       \
-        if ((intarg) == 0) {                                                   \
-            (boolarg) = false;                                                 \
-        } else if ((intarg) == 1) {                                            \
-            (boolarg) = true;                                                  \
-        } else {                                                               \
-            printf("Invalid argument\r\n");                                    \
-            return;                                                            \
-        }                                                                      \
-    } while (0)
-
 struct cmd_info {
     const char *command;
     size_t cmd_length;
@@ -61,6 +49,17 @@ struct cmd_info {
 };
 
 // TODO: File static vars?
+
+STATIC_INLINE bool int2bool(bool *boolarg, int32_t intarg) {
+    if (intarg == 0) {
+        *boolarg = false;
+    } else if (intarg == 1) {
+        *boolarg = true;
+    } else {
+        return false;
+    }
+    return true;
+}
 
 static uint16_t argparse(char *s, char **argv) {
     char *temp;
@@ -240,9 +239,10 @@ static void at_timeout(uint16_t argc, char const *const *argv) {
 static void at_txpower(uint16_t argc, char const *const *argv) {
     CHECK_ARGC(argc, 2);
     int32_t power;
-    bool success = strtoint32(argv[1], &power);
+    bool value, success = strtoint32(argv[1], &power);
 
-    if (success /* && set_uwb_tx_power(power)*/) {
+    if (success && int2bool(&value, power)) {
+        set_tx_power(value);
         OK;
     } else {
         printf("Tx power parameter input error\r\n");
@@ -252,11 +252,9 @@ static void at_txpower(uint16_t argc, char const *const *argv) {
 static void at_streammode(uint16_t argc, char const *const *argv) {
     CHECK_ARGC(argc, 2);
     int32_t mode;
-    bool success = strtoint32(argv[1], &mode);
+    bool value, success = strtoint32(argv[1], &mode);
 
-    if (success) {
-        bool value;
-        CONVERT_INT_TO_BOOL(value, mode);
+    if (success && int2bool(&value, mode)) {
         set_stream_mode(value);
         OK;
     } else {
@@ -269,8 +267,7 @@ static void at_twrmode(uint16_t argc, char const *const *argv) {
     int32_t twr;
     bool value, success = strtoint32(argv[1], &twr);
 
-    if (success) {
-        CONVERT_INT_TO_BOOL(value, twr);
+    if (success && int2bool(&value, twr)) {
         set_twr_mode(value);
         OK;
     } else {
