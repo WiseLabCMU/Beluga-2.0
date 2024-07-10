@@ -11,6 +11,7 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <init_main.h>
 
 #define ENABLE_NODE_ADD_SEM 0
 
@@ -81,7 +82,7 @@ void monitor_task_function(void) {
 
         watchdog_red_rocket();
 
-        // TODO: xSemaphoreTake(sus_init, portMAX_DELAY);
+        k_sem_take(&k_sus_init, K_FOREVER);
         removed = false;
         count += 1;
 
@@ -118,7 +119,7 @@ void monitor_task_function(void) {
             ble_enable_scan();
         }
 
-        // TODO: xSemaphoreGive(sus_init);
+        k_sem_give(&k_sus_init);
     }
 }
 
