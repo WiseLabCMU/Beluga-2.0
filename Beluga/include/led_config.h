@@ -45,6 +45,8 @@
 
 #define UWB_LED                    DK_LED1
 #define BLE_LED                    DK_LED2
+#define UNUSED_LED                 DK_LED3
+#define POWER_LED                  DK_LED4
 
 #if LED_SUPPORT_ENABLED == 1
 #define LED_ON(LED)                                                            \

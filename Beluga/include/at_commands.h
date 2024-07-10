@@ -21,11 +21,4 @@ struct buffer {
     size_t len;
 };
 
-void init_at_commands(void);
-
-/**
- * @brief Task to receive UART message from zephyr UART queue and parse
- */
-void runSerialCommand(void);
-
 #endif

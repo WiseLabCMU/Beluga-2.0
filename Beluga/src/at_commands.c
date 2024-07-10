@@ -48,8 +48,6 @@ struct cmd_info {
     void (*cmd_func)(uint16_t argc, char const *const *argv);
 };
 
-// TODO: File static vars?
-
 STATIC_INLINE bool int2bool(bool *boolarg, int32_t intarg) {
     if (intarg == 0) {
         *boolarg = false;
@@ -104,11 +102,6 @@ static bool strtoint32(const char *str, int32_t *result) {
 
     *result = (int32_t)ret;
     return true;
-}
-
-void init_at_commands(void) {
-    // Init any semaphores here
-    // Init UART queue here
 }
 
 static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
@@ -334,7 +327,7 @@ static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
                                      {"PWRAMP", 6, at_pwramp},
                                      {NULL, 0, NULL}};
 
-static inline void freeCommand(struct buffer **buf) {
+STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
     k_free(*buf);
     *buf = NULL;
