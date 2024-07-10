@@ -5,13 +5,13 @@
 #include <list_monitor.h>
 
 #include <ble_app.h>
+#include <init_main.h>
 #include <stdint.h>
 #include <thread_priorities.h>
 #include <timestamp.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
-#include <init_main.h>
 
 #define ENABLE_NODE_ADD_SEM 0
 

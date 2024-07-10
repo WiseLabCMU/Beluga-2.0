@@ -17,32 +17,6 @@
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
 
-// TODO: Figure out better place for these
-///////////////////////////////////////////////////////////////////////////////
-
-static enum pgdelay_ch uwb_pgdelay;
-
-/* DW1000 config struct */
-static const dwt_config_t config = {
-    5,               /* Channel number. */
-    DWT_PRF_64M,     /* Pulse repetition frequency. */
-    DWT_PLEN_128,    /* Preamble length. Used in TX only. */
-    DWT_PAC8,        /* Preamble acquisition chunk size. Used in RX only. */
-    10,              /* TX preamble code. Used in TX only. */
-    10,              /* RX preamble code. Used in RX only. */
-    0,               /* 0 to use standard SFD, 1 to use non-standard SFD. */
-    DWT_BR_6M8,      /* Data rate. */
-    DWT_PHRMODE_STD, /* PHY header mode. */
-    (129 + 8 - 8) /* SFD timeout (preamble length + 1 + SFD length - PAC size).
-                 Used in RX only. */
-};
-
-/* DW1000 TX config struct */
-static const dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
-
-///////////////////////////////////////////////////////////////////////////////
-// TODO: END
-
 #define SUSPEND_RESPONDER_TASK                                                 \
     do {                                                                       \
         k_sem_take(&k_sus_resp, K_NO_WAIT);                                    \
@@ -61,6 +35,57 @@ K_MUTEX_DEFINE(rate_mutex);
 
 static uint32_t initiator_freq = 100;
 static bool twr_mode = false;
+
+/* DW1000 config struct */
+static dwt_config_t config = {
+    5,               /* Channel number. */
+    DWT_PRF_64M,     /* Pulse repetition frequency. */
+    DWT_PLEN_128,    /* Preamble length. Used in TX only. */
+    DWT_PAC8,        /* Preamble acquisition chunk size. Used in RX only. */
+    10,              /* TX preamble code. Used in TX only. */
+    10,              /* RX preamble code. Used in RX only. */
+    0,               /* 0 to use standard SFD, 1 to use non-standard SFD. */
+    DWT_BR_6M8,      /* Data rate. */
+    DWT_PHRMODE_STD, /* PHY header mode. */
+    (129 + 8 - 8) /* SFD timeout (preamble length + 1 + SFD length - PAC size).
+             Used in RX only. */
+};
+
+/* DW1000 TX config struct */
+static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
+
+bool set_uwb_channel(uint32_t channel) {
+    enum pgdelay_ch uwb_pgdelay;
+
+    switch (channel) {
+    case 1:
+        uwb_pgdelay = ch1;
+        break;
+    case 2:
+        uwb_pgdelay = ch2;
+        break;
+    case 3:
+        uwb_pgdelay = ch3;
+        break;
+    case 4:
+        uwb_pgdelay = ch4;
+        break;
+    case 5:
+        uwb_pgdelay = ch5;
+        break;
+    case 7:
+        uwb_pgdelay = ch7;
+        break;
+    default:
+        return false;
+    }
+
+    config_tx.PGdly = uwb_pgdelay;
+    config.chan = channel;
+    dwt_configure(&config);
+    dwt_configuretxrf(&config_tx);
+    return true;
+}
 
 void set_twr_mode(bool value) {
     k_mutex_lock(&twr_mutex, K_FOREVER);

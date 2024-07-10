@@ -12,6 +12,7 @@
 
 #include "deca_types.h"
 #include "init_main.h"
+#include "resp_main.h"
 
 #include <at_commands.h>
 #include <ble_app.h>
@@ -113,7 +114,8 @@ void init_at_commands(void) {
 
 static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     // Mark UWB as started
-    // Post Semaphores
+    k_sem_give(&k_sus_resp);
+    k_sem_give(&k_sus_init);
 
     /*if (leds_mode) {
         APP_LED_ON(UWB_LED);
@@ -123,7 +125,8 @@ static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 
 static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     // Mark UWB as stopped
-    // Wait semaphores here
+    k_sem_take(&k_sus_resp, K_FOREVER);
+    k_sem_take(&k_sus_init, K_FOREVER);
 
     //    if (leds_mode) {
     //        APP_LED_OFF(UWB_LED);
@@ -206,7 +209,7 @@ static void at_channel(uint16_t argc, char const *const *argv) {
     int32_t channel;
     bool success = strtoint32(argv[1], &channel);
 
-    if (success /* && set_uwb_pgdelay(channel) */) {
+    if (success && set_uwb_channel(channel)) {
         OK;
     } else {
         printf("Invalid channel\r\n");

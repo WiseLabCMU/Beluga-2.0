@@ -5,9 +5,9 @@
 #include <ranging.h>
 #include <resp_main.h>
 #include <thread_priorities.h>
+#include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
-#include <utils.h>
 
 /**
  * @brief SS TWR Initiator task entry function.
@@ -17,10 +17,10 @@
  */
 void responder_task_function(void) {
 
-//    if (leds_mode == 0)
-//        dwt_setleds(DWT_LEDS_ENABLE);
-//    if (leds_mode == 1)
-//        dwt_setleds(DWT_LEDS_DISABLE);
+    //    if (leds_mode == 0)
+    //        dwt_setleds(DWT_LEDS_ENABLE);
+    //    if (leds_mode == 1)
+    //        dwt_setleds(DWT_LEDS_DISABLE);
 
     while (true) {
         watchdog_red_rocket();
@@ -39,6 +39,6 @@ void responder_task_function(void) {
 }
 
 #if ENABLE_THREADS
-K_THREAD_DEFINE(responder_task_id, STACK_SIZE, responder_task_function, NULL, NULL, NULL,
-                RESPONDER_PRIO, 0, 0);
+K_THREAD_DEFINE(responder_task_id, STACK_SIZE, responder_task_function, NULL,
+                NULL, NULL, RESPONDER_PRIO, 0, 0);
 #endif
