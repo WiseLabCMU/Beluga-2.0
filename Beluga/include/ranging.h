@@ -6,6 +6,8 @@
 #define BELUGA_RANGING_H
 
 #include <deca_regs.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 enum pgdelay_ch {
     ch1 = TC_PGDELAY_CH1,
@@ -22,5 +24,6 @@ void set_rate(uint32_t rate);
 uint32_t get_rate(void);
 bool set_uwb_channel(uint32_t channel);
 void set_tx_power(bool power_max);
+void init_uwb(void);
 
 #endif // BELUGA_RANGING_H

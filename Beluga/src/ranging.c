@@ -4,6 +4,7 @@
 
 #include <ble_app.h>
 #include <deca_device_api.h>
+#include <port_platform.h>
 #include <init_main.h>
 #include <random.h>
 #include <ranging.h>
@@ -13,6 +14,7 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <stdbool.h>
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
@@ -125,6 +127,28 @@ uint32_t get_rate(void) {
     retVal = initiator_freq;
     k_mutex_unlock(&rate_mutex);
     return retVal;
+}
+
+void init_uwb(void) {
+    //TODO: COnfigure UWB IRQ
+
+    port_set_dw1000_slowrate();
+
+    if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR) {
+        while (true)
+            ;
+    }
+
+    port_set_dw1000_fastrate();
+    dwt_configure(&config);
+    dwt_configuretxrf(&config_tx);
+
+    /* Apply default antenna delay value. See NOTE 2 below. */
+    dwt_setrxantennadelay(RX_ANT_DLY);
+    dwt_settxantennadelay(TX_ANT_DLY);
+
+    /* Set expected response's timeout. (keep listening so timeout is 0) */
+    dwt_setrxtimeout(0);
 }
 
 /**
@@ -273,7 +297,7 @@ void rangingTask(void) {
     }
 }
 
-#if ENABLE_THREADS
+#if ENABLE_THREADS && ENABLE_RANGING
 K_THREAD_DEFINE(ranging_task_id, STACK_SIZE, rangingTask, NULL, NULL, NULL,
                 RANGING_PRIO, 0, 0);
 #endif
