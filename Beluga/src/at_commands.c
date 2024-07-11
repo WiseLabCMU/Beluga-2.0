@@ -367,7 +367,7 @@ void runSerialCommand(void) {
     }
 }
 
-#if ENABLE_THREADS
+#if ENABLE_THREADS && ENABLE_COMMANDS
 K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
                 COMMAND_PRIO, 0, 0);
 #endif

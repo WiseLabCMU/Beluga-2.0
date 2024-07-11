@@ -86,7 +86,7 @@ void list_task_function(void) {
     }
 }
 
-#if ENABLE_THREADS
+#if ENABLE_THREADS && ENABLE_LIST
 K_THREAD_DEFINE(print_list_task_id, STACK_SIZE, list_task_function, NULL, NULL,
                 NULL, LIST_PRIO, 0, 0);
 #endif
