@@ -6,39 +6,74 @@
 
 #include "ble_app.h"
 #include <led_config.h>
-#include <port_platform.h>
 #include <spi.h>
 #include <stdio.h>
 #include <uart.h>
 #include <unistd.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <timestamp.h>
+#include <flash.h>
+#include <ranging.h>
+#include <app_leds.h>
+#include <zephyr/drivers/hwinfo.h>
+
+/* Firmware version */
+#define FIRMWARE_VERSION "2.0"
+
+static void load_settings(void) {
+    printf("Flash Configuration: \r\n");
+
+    int32_t led_mode = readFlashID(CONFIG_LED);
+
+    if (led_mode == 1) {
+        all_leds_off();
+        printf("  LED Mode: Off \r\n");
+    } else if (led_mode == 0) {
+        update_led_state(LED_POWER_ON);
+        printf("  LED Mode: On \r\n");
+    } else {
+        update_led_state(LED_POWER_ON);
+        printf("  LED Mode: Default \r\n");
+    }
+}
 
 int main(void) {
-    int err;
+    // if (configure_watchdog_timer() < 0) {
+    //     printk("Failed to configure watchdog timer\n");
+    //     return 0;
+    // }
+
+    uint32_t reason;
+
+    hwinfo_get_reset_cause(&reason);
+    hwinfo_clear_reset_cause();
+
+    memset(seen_list, 0, ARRAY_SIZE(seen_list));
+
+    enable_bluetooth();
+   if (initFlash()) {
+       printk("Unable to init flash\n");
+       return 0;
+   }
+   //eraseRecords();
+
+    if (uart_init() < 0) {
+        printk("Failed to init uart\n");
+        return 0;
+    }
 
     LED_INIT;
 
-    if (uart_init() < 0) {
-        printf("Error\n");
-        return 0;
-    }
+    //init_uwb();
 
-    printf("Success!\n");
-    printf(
-        "Starting Bluetooth Central and Peripheral Heart Rate relay example\n");
+    //init_timekeeper(1, 1);
 
-    err = init_bt_stack();
+    printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
 
-    if (err) {
-        printk("Failed to initialize the Bluetooth App\n");
-        return 0;
-    }
+    // TODO: STack sizes
 
-    // if (configure_watchdog_timer() < 0) {
-    //     printk("Failed to start watchdog\n");
-    //     return 0;
-    // }
+    load_settings();
 
     for (;;) {
         k_sleep(K_FOREVER);
