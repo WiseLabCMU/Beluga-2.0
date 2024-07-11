@@ -18,15 +18,17 @@
 #include <zephyr/storage/flash_map.h>
 
 #define FILE_ID          0x0015 /* The ID of the file to write the records into. */
-#define RECORD_KEY_1     0      /* A key for the first record. (ID) */
-#define RECORD_KEY_2     1      /* A key for the second record. (BOOTMODE) */
-#define RECORD_KEY_3     2      /* A key for the third record. (RATE)*/
-#define RECORD_KEY_4     3      /* A key for the forth record. (CHANNEL)*/
-#define RECORD_KEY_5     4      /* A key for the fifth record. (BLE Timeout)*/
-#define RECORD_KEY_6     5      /* A key for the sixth record. (TX Power)*/
-#define RECORD_KEY_7     6      /* A key for the seventh record. (STREAMMODE)*/
-#define RECORD_KEY_8     7      /* A key for the eighth record. (TWRMODE)*/
-#define RECORD_KEY_9     8      /* A key for the ninth record. (LEDMODE)*/
+#define RECORD_KEY_1     32      /* A key for the first record. (ID) */
+#define RECORD_KEY_2     (RECORD_KEY_1 + 1)      /* A key for the second record. (BOOTMODE) */
+#define RECORD_KEY_3     (RECORD_KEY_1 + 2)      /* A key for the third record. (RATE)*/
+#define RECORD_KEY_4     (RECORD_KEY_1 + 3)      /* A key for the forth record. (CHANNEL)*/
+#define RECORD_KEY_5     (RECORD_KEY_1 + 4)      /* A key for the fifth record. (BLE Timeout)*/
+#define RECORD_KEY_6     (RECORD_KEY_1 + 5)      /* A key for the sixth record. (TX Power)*/
+#define RECORD_KEY_7     (RECORD_KEY_1 + 6)      /* A key for the seventh record. (STREAMMODE)*/
+#define RECORD_KEY_8     (RECORD_KEY_1 + 7)      /* A key for the eighth record. (TWRMODE)*/
+#define RECORD_KEY_9     (RECORD_KEY_1 + 8)      /* A key for the ninth record. (LEDMODE)*/
+
+#define MAX_RECORD_ID (CONFIG_LED + 1)
 
 #define PARTITION        storage_partition
 
@@ -35,7 +37,12 @@
 
 #define FLASH_PAGE_SIZE  4096
 
+#define FLASH_FALSE INT32_C(0x1111)
+#define FLASH_TRUE INT32_C(0xFFFF)
+#define FLASH_UNWRITTEN INT32_C(-1)
+
 static const struct device *flash_dev = PARTITION_DEVICE;
+static bool internal_read = false;
 
 static uint32_t id2key(uint32_t record) {
     uint32_t record_key = 0;
@@ -81,23 +88,79 @@ int32_t initFlash(void) {
     return 0;
 }
 
-void writeFlashID(uint32_t id, int32_t record) {
-    uint32_t record_key = id2key(id);
-    off_t offset = PARTITION_OFFSET + (record_key << 2);
-
-    if (flash_write(flash_dev, offset, &record, sizeof(int32_t)) != 0) {
-        printk("Flash write failed!\n");
+void read_stored_values(int32_t *records) {
+    internal_read = true;
+    for (size_t i = 1; i < MAX_RECORD_ID; i++) {
+        records[i - 1] = readFlashID(i);
     }
+    internal_read = false;
+}
+
+void restore_records(const int32_t *records) {
+    uint32_t record_key;
+
+    for (size_t i = 1; i < MAX_RECORD_ID; i++) {
+        if (records[i - 1] == FLASH_FALSE || records[i - 1] == FLASH_TRUE) {
+            record_key = id2key((uint32_t)i);
+            off_t offset = PARTITION_OFFSET + (record_key << 2);
+
+            if (flash_write(flash_dev, offset, &records[i - 1], sizeof(int32_t)) != 0) {
+                printk("Flash write failed!\n");
+            }
+            printk("   Attempted to write %x at 0x%x\n", records[i - 1], offset);
+
+            internal_read = true;
+            int32_t readValue = readFlashID((uint32_t)i);
+            internal_read = false;
+            if (records[i - 1] == readValue) {
+                printk("Flash OK\n");
+            } else {
+                printk("Flash failed:\n");
+                printk("Write value %x does not match read value %x\n", records[i - 1], readValue);
+            }
+        }
+    }
+}
+
+void writeFlashID(uint32_t id, int32_t record) {
+    int32_t records[MAX_RECORD_ID - 1];
+
+    if (id >= MAX_RECORD_ID) {
+        return;
+    }
+
+    if (record == 0) {
+        record = FLASH_FALSE;
+    } else if (record == 1) {
+        record = FLASH_TRUE;
+    } else if (id != CONFIG_ID) {
+        return;
+    }
+
+    read_stored_values(records);
+    eraseRecords();
+    records[id - 1] = record;
+    restore_records(records);
 }
 
 int32_t readFlashID(uint32_t id) {
     uint32_t record_key = id2key(id);
     off_t offset = PARTITION_OFFSET + (record_key << 2);
-    int32_t value;
+    int32_t value = 0;
 
+    printk("   Attempted to read 0x%x\n", offset);
     if (flash_read(flash_dev, offset, &value, sizeof(int32_t)) != 0) {
         printk("Flash read failed!\n");
-        return 0;
+        return -1;
+    }
+    printk("   Data read: %x\n", value);
+
+    if (!internal_read) {
+        if (value == FLASH_TRUE) {
+            value = 1;
+        } else if (value == FLASH_FALSE) {
+            value = 0;
+        }
     }
 
     return value;
