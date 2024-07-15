@@ -21,6 +21,7 @@
 #include <string.h>
 #include <uart.h>
 
+#include <app_leds.h>
 #include <flash.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
@@ -29,7 +30,6 @@
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
-#include <app_leds.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20

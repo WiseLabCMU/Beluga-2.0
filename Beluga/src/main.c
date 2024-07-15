@@ -5,18 +5,18 @@
  */
 
 #include "ble_app.h"
+#include <app_leds.h>
+#include <flash.h>
 #include <led_config.h>
+#include <ranging.h>
 #include <spi.h>
 #include <stdio.h>
+#include <timestamp.h>
 #include <uart.h>
 #include <unistd.h>
 #include <watchdog.h>
-#include <zephyr/kernel.h>
-#include <timestamp.h>
-#include <flash.h>
-#include <ranging.h>
-#include <app_leds.h>
 #include <zephyr/drivers/hwinfo.h>
+#include <zephyr/kernel.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -52,11 +52,11 @@ int main(void) {
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
     enable_bluetooth();
-   if (initFlash()) {
-       printk("Unable to init flash\n");
-       return 0;
-   }
-   //eraseRecords();
+    if (initFlash()) {
+        printk("Unable to init flash\n");
+        return 0;
+    }
+    // eraseRecords();
 
     if (uart_init() < 0) {
         printk("Failed to init uart\n");
@@ -65,9 +65,9 @@ int main(void) {
 
     LED_INIT;
 
-    //init_uwb();
+    // init_uwb();
 
-    //init_timekeeper(1, 1);
+    // init_timekeeper(1, 1);
 
     printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
 

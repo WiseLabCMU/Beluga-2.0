@@ -17,18 +17,26 @@
 #include <zephyr/kernel.h>
 #include <zephyr/storage/flash_map.h>
 
-#define FILE_ID          0x0015 /* The ID of the file to write the records into. */
-#define RECORD_KEY_1     32      /* A key for the first record. (ID) */
-#define RECORD_KEY_2     (RECORD_KEY_1 + 1)      /* A key for the second record. (BOOTMODE) */
-#define RECORD_KEY_3     (RECORD_KEY_1 + 2)      /* A key for the third record. (RATE)*/
-#define RECORD_KEY_4     (RECORD_KEY_1 + 3)      /* A key for the forth record. (CHANNEL)*/
-#define RECORD_KEY_5     (RECORD_KEY_1 + 4)      /* A key for the fifth record. (BLE Timeout)*/
-#define RECORD_KEY_6     (RECORD_KEY_1 + 5)      /* A key for the sixth record. (TX Power)*/
-#define RECORD_KEY_7     (RECORD_KEY_1 + 6)      /* A key for the seventh record. (STREAMMODE)*/
-#define RECORD_KEY_8     (RECORD_KEY_1 + 7)      /* A key for the eighth record. (TWRMODE)*/
-#define RECORD_KEY_9     (RECORD_KEY_1 + 8)      /* A key for the ninth record. (LEDMODE)*/
+#define FILE_ID      0x0015 /* The ID of the file to write the records into. */
+#define RECORD_KEY_1 32     /* A key for the first record. (ID) */
+#define RECORD_KEY_2                                                           \
+    (RECORD_KEY_1 + 1) /* A key for the second record. (BOOTMODE) */
+#define RECORD_KEY_3 (RECORD_KEY_1 + 2) /* A key for the third record.         \
+                                           (RATE)*/
+#define RECORD_KEY_4                                                           \
+    (RECORD_KEY_1 + 3) /* A key for the forth record. (CHANNEL)*/
+#define RECORD_KEY_5                                                           \
+    (RECORD_KEY_1 + 4) /* A key for the fifth record. (BLE Timeout)*/
+#define RECORD_KEY_6                                                           \
+    (RECORD_KEY_1 + 5) /* A key for the sixth record. (TX Power)*/
+#define RECORD_KEY_7                                                           \
+    (RECORD_KEY_1 + 6) /* A key for the seventh record. (STREAMMODE)*/
+#define RECORD_KEY_8                                                           \
+    (RECORD_KEY_1 + 7) /* A key for the eighth record. (TWRMODE)*/
+#define RECORD_KEY_9                                                           \
+    (RECORD_KEY_1 + 8) /* A key for the ninth record. (LEDMODE)*/
 
-#define MAX_RECORD_ID (CONFIG_LED + 1)
+#define MAX_RECORD_ID    (CONFIG_LED + 1)
 
 #define PARTITION        storage_partition
 
@@ -37,9 +45,9 @@
 
 #define FLASH_PAGE_SIZE  4096
 
-#define FLASH_FALSE INT32_C(0x1111)
-#define FLASH_TRUE INT32_C(0xFFFF)
-#define FLASH_UNWRITTEN INT32_C(-1)
+#define FLASH_FALSE      INT32_C(0x1111)
+#define FLASH_TRUE       INT32_C(0xFFFF)
+#define FLASH_UNWRITTEN  INT32_C(-1)
 
 static const struct device *flash_dev = PARTITION_DEVICE;
 static bool internal_read = false;
@@ -104,10 +112,12 @@ void restore_records(const int32_t *records) {
             record_key = id2key((uint32_t)i);
             off_t offset = PARTITION_OFFSET + (record_key << 2);
 
-            if (flash_write(flash_dev, offset, &records[i - 1], sizeof(int32_t)) != 0) {
+            if (flash_write(flash_dev, offset, &records[i - 1],
+                            sizeof(int32_t)) != 0) {
                 printk("Flash write failed!\n");
             }
-            printk("   Attempted to write %x at 0x%x\n", records[i - 1], offset);
+            printk("   Attempted to write %x at 0x%x\n", records[i - 1],
+                   offset);
 
             internal_read = true;
             int32_t readValue = readFlashID((uint32_t)i);
@@ -116,7 +126,8 @@ void restore_records(const int32_t *records) {
                 printk("Flash OK\n");
             } else {
                 printk("Flash failed:\n");
-                printk("Write value %x does not match read value %x\n", records[i - 1], readValue);
+                printk("Write value %x does not match read value %x\n",
+                       records[i - 1], readValue);
             }
         }
     }

@@ -24,4 +24,4 @@ enum led_state get_uwb_led_state(void);
 enum led_state get_power_led_state(void);
 enum led_state get_unused_led_state(void);
 
-#endif //BELUGA_APP_LEDS_H
+#endif // BELUGA_APP_LEDS_H

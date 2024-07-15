@@ -5,17 +5,17 @@
 #ifndef BELUGA_THREAD_PRIORITIES_H
 #define BELUGA_THREAD_PRIORITIES_H
 
-#define ENABLE_THREADS 1
-#define ENABLE_COMMANDS 1
-#define ENABLE_LIST 0
-#define ENABLE_RANGING 0
-#define ENABLE_MONITOR 0
+#define ENABLE_THREADS   1
+#define ENABLE_COMMANDS  1
+#define ENABLE_LIST      0
+#define ENABLE_RANGING   0
+#define ENABLE_MONITOR   0
 #define ENABLE_RESPONDER 0
 
-#define COMMAND_PRIO   7
-#define LIST_PRIO      6
-#define RANGING_PRIO   5
-#define MONITOR_PRIO   4
-#define RESPONDER_PRIO 3
+#define COMMAND_PRIO     7
+#define LIST_PRIO        6
+#define RANGING_PRIO     5
+#define MONITOR_PRIO     4
+#define RESPONDER_PRIO   3
 
 #endif // BELUGA_THREAD_PRIORITIES_H

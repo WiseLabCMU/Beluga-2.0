@@ -2,20 +2,20 @@
 // Created by tom on 7/10/24.
 //
 
-#include <led_config.h>
 #include <app_leds.h>
-#include <stdint.h>
 #include <assert.h>
-#include <stdbool.h>
-#include <zephyr/sys/util.h>
 #include <deca_device_api.h>
+#include <led_config.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <zephyr/sys/util.h>
 
-#define BLE_BIT 0
-#define UWB_BIT 1
-#define UNUSED_BIT 2
-#define POWER_BIT 3
+#define BLE_BIT      0
+#define UWB_BIT      1
+#define UNUSED_BIT   2
+#define POWER_BIT    3
 
-#define led_mode_om true
+#define led_mode_om  true
 #define led_mode_off false
 
 static uint8_t ledState = 0;
@@ -28,41 +28,41 @@ static void led_on(uint32_t led) {
 }
 
 void update_led_state(enum led_state update) {
-    switch(update) {
-        case LED_BLE_ON:
-            ledState |= UINT8_C(1) << BLE_BIT;
-            led_on(BLE_LED);
-            break;
-        case LED_BLE_OFF:
-            ledState &= ~(UINT8_C(1) << BLE_BIT);
-            APP_LED_OFF(BLE_LED);
-            break;
-        case LED_UWB_ON:
-            ledState |= UINT8_C(1) << UWB_BIT;
-            led_on(UWB_LED);
-            break;
-        case LED_UWB_OFF:
-            ledState &= ~(UINT8_C(1) << UWB_BIT);
-            APP_LED_OFF(UWB_LED);
-            break;
-        case LED_POWER_ON:
-            ledState |= UINT8_C(1) << POWER_BIT;
-            led_on(POWER_LED);
-            break;
-        case LED_POWER_OFF:
-            ledState &= ~(UINT8_C(1) << POWER_BIT);
-            APP_LED_OFF(POWER_LED);
-            break;
-        case LED_UNUSED_ON:
-            ledState |= UINT8_C(1) << UNUSED_BIT;
-            led_on(UNUSED_LED);
-            break;
-        case LED_UNUSED_OFF:
-            ledState &= ~(UINT8_C(1) << UNUSED_BIT);
-            APP_LED_OFF(UNUSED_LED);
-            break;
-        default:
-            assert(false);
+    switch (update) {
+    case LED_BLE_ON:
+        ledState |= UINT8_C(1) << BLE_BIT;
+        led_on(BLE_LED);
+        break;
+    case LED_BLE_OFF:
+        ledState &= ~(UINT8_C(1) << BLE_BIT);
+        APP_LED_OFF(BLE_LED);
+        break;
+    case LED_UWB_ON:
+        ledState |= UINT8_C(1) << UWB_BIT;
+        led_on(UWB_LED);
+        break;
+    case LED_UWB_OFF:
+        ledState &= ~(UINT8_C(1) << UWB_BIT);
+        APP_LED_OFF(UWB_LED);
+        break;
+    case LED_POWER_ON:
+        ledState |= UINT8_C(1) << POWER_BIT;
+        led_on(POWER_LED);
+        break;
+    case LED_POWER_OFF:
+        ledState &= ~(UINT8_C(1) << POWER_BIT);
+        APP_LED_OFF(POWER_LED);
+        break;
+    case LED_UNUSED_ON:
+        ledState |= UINT8_C(1) << UNUSED_BIT;
+        led_on(UNUSED_LED);
+        break;
+    case LED_UNUSED_OFF:
+        ledState &= ~(UINT8_C(1) << UNUSED_BIT);
+        APP_LED_OFF(UNUSED_LED);
+        break;
+    default:
+        assert(false);
     }
 }
 
@@ -72,7 +72,7 @@ void all_leds_off(void) {
     APP_LED_OFF(UWB_LED);
     APP_LED_OFF(UNUSED_LED);
     APP_LED_OFF(POWER_LED);
-    //dwt_setleds(DWT_LEDS_DISABLE);
+    // dwt_setleds(DWT_LEDS_DISABLE);
 }
 
 void restore_led_states(void) {
@@ -94,7 +94,7 @@ void restore_led_states(void) {
         APP_LED_ON(POWER_LED);
     }
     led_mode = led_mode_om;
-    //dwt_setleds(DWT_LEDS_ENABLE);
+    // dwt_setleds(DWT_LEDS_ENABLE);
 }
 
 enum led_state get_ble_led_state(void) {

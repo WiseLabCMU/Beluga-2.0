@@ -4,17 +4,17 @@
 
 #include <ble_app.h>
 #include <deca_device_api.h>
-#include <port_platform.h>
 #include <init_main.h>
+#include <port_platform.h>
 #include <random.h>
 #include <ranging.h>
 #include <resp_main.h>
+#include <stdbool.h>
 #include <thread_priorities.h>
 #include <timestamp.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
-#include <stdbool.h>
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
@@ -130,7 +130,7 @@ uint32_t get_rate(void) {
 }
 
 void init_uwb(void) {
-    //TODO: COnfigure UWB IRQ
+    // TODO: COnfigure UWB IRQ
 
     port_set_dw1000_slowrate();
 
