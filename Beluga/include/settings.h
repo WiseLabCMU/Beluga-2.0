@@ -17,8 +17,6 @@ enum beluga_setting {
     BELUGA_STREAMMODE,
     BELUGA_TWR,
     BELUGA_LEDMODE,
-    BELUGA_SETTINGS_RESERVED // Reserved for internal use only. Do not use. Keep
-                             // as last member
 };
 
 #define DEFAULT_ID_SETTING INT32_C(0)

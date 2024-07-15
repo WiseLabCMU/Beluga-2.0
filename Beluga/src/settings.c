@@ -22,6 +22,18 @@ struct beluga_settings_vals {
     int32_t value;
 };
 
+struct beluga_settings_vals settingValues[] = {
+        {"id", DEFAULT_ID_SETTING},
+        {"boot_mode", DEFAULT_SETTING},
+        {"poll_rate", DEFAULT_SETTING},
+        {"uwb_channel", DEFAULT_SETTING},
+        {"ble_timeout", DEFAULT_SETTING},
+        {"tx_power", DEFAULT_SETTING},
+        {"stream_mode", DEFAULT_SETTING},
+        {"twr", DEFAULT_SETTING},
+        {"led_mode", DEFAULT_SETTING}
+};
+
 int beluga_handle_get(const char *name, char *val, int val_len_max) {
     return -ENOENT;
 }
