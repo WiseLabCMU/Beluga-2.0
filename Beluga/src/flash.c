@@ -21,8 +21,9 @@
 #define RECORD_KEY_1 32     /* A key for the first record. (ID) */
 #define RECORD_KEY_2                                                           \
     (RECORD_KEY_1 + 1) /* A key for the second record. (BOOTMODE) */
-#define RECORD_KEY_3 (RECORD_KEY_1 + 2) /* A key for the third record.         \
-                                           (RATE)*/
+#define RECORD_KEY_3                                                           \
+    (RECORD_KEY_1 + 2) /* A key for the third record.                          \
+                          (RATE)*/
 #define RECORD_KEY_4                                                           \
     (RECORD_KEY_1 + 3) /* A key for the forth record. (CHANNEL)*/
 #define RECORD_KEY_5                                                           \

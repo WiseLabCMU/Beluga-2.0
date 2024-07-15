@@ -8,6 +8,7 @@
 #include <zephyr/sys/printk.h>
 
 #include <errno.h>
+#include <string.h>
 
 #if defined(CONFIG_SETTINGS_FILE)
 #include <zephyr/fs/fs.h>
@@ -17,30 +18,61 @@
 #define STORAGE_PARTITION    storage_partition
 #define STORAGE_PARTITION_ID FIXED_PARTITION_ID(STORAGE_PARTITION)
 
-struct beluga_settings_vals {
-    const char *name;
+struct beluga_settings_dict {
+    const char *key;
     int32_t value;
 };
 
-struct beluga_settings_vals settingValues[] = {
-        {"id", DEFAULT_ID_SETTING},
-        {"boot_mode", DEFAULT_SETTING},
-        {"poll_rate", DEFAULT_SETTING},
-        {"uwb_channel", DEFAULT_SETTING},
-        {"ble_timeout", DEFAULT_SETTING},
-        {"tx_power", DEFAULT_SETTING},
-        {"stream_mode", DEFAULT_SETTING},
-        {"twr", DEFAULT_SETTING},
-        {"led_mode", DEFAULT_SETTING}
-};
+struct beluga_settings_dict settingValues[] = {
+    {"id", DEFAULT_ID_SETTING},       {"boot_mode", DEFAULT_SETTING},
+    {"poll_rate", DEFAULT_SETTING},   {"uwb_channel", DEFAULT_SETTING},
+    {"ble_timeout", DEFAULT_SETTING}, {"tx_power", DEFAULT_SETTING},
+    {"stream_mode", DEFAULT_SETTING}, {"twr", DEFAULT_SETTING},
+    {"led_mode", DEFAULT_SETTING}};
+
+#define LONGEST_SETTING_NAME_LEN 11
+#define BELUGA_LEN               6
+#define SEPARATOR_LEN            1
+#define MAX_NAME_LENGTH                                                        \
+    (LONGEST_SETTING_NAME_LEN + SEPARATOR_LEN + BELUGA_LEN + 1)
 
 int beluga_handle_get(const char *name, char *val, int val_len_max) {
+    ARG_UNUSED(val_len_max);
+    const char *next;
+
+    for (size_t i = 0; i < ARRAY_SIZE(settingValues); i++) {
+        if (settings_name_steq(name, settingValues[i].key, &next) && !next) {
+            memcpy(val, &settingValues[i].value,
+                   sizeof(settingValues[0].value));
+            return sizeof(settingValues[0].value);
+        }
+    }
+
     return -ENOENT;
 }
 
 int beluga_handle_set(const char *name, size_t len, settings_read_cb read_cb,
                       void *cb_arg) {
-    return -ENOENT;
+    ARG_UNUSED(len);
+    const char *next;
+    size_t name_len;
+    int rc = -ENOENT;
+
+    name_len = settings_name_next(name, &next);
+
+    for (size_t i = 0; (i < ARRAY_SIZE(settingValues)) && !next; i++) {
+        if (strncmp(name, settingValues[i].key, name_len) == 0) {
+            rc = read_cb(cb_arg, &settingValues[i].value,
+                         sizeof(settingValues[0].value));
+            if (rc > 0) {
+                printk("<beluga/%s> = %d\n", settingValues[i].key,
+                       settingValues[i].value);
+            }
+            break;
+        }
+    }
+
+    return rc;
 }
 
 int beluga_handle_commit(void) {
@@ -50,8 +82,14 @@ int beluga_handle_commit(void) {
 
 int beluga_handle_export(int (*cb)(const char *name, const void *value,
                                    size_t val_len)) {
+    char name[2 * MAX_NAME_LENGTH];
     printk("export keys under <beluga> handler\n");
-    // TODO
+
+    for (size_t i = 0; i < ARRAY_SIZE(settingValues); i++) {
+        snprintf(name, MAX_NAME_LENGTH, "beluga/%s", settingValues[i].key);
+        (void)cb(name, &settingValues[i].value, sizeof(settingValues[0].value));
+    }
+
     return 0;
 }
 
