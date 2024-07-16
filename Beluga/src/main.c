@@ -17,6 +17,7 @@
 #include <watchdog.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
+#include <settings.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -24,7 +25,7 @@
 static void load_settings(void) {
     printf("Flash Configuration: \r\n");
 
-    int32_t led_mode = readFlashID(CONFIG_LED);
+    int32_t led_mode = retrieveSetting(BELUGA_LEDMODE);
 
     if (led_mode == 1) {
         all_leds_off();
@@ -52,7 +53,7 @@ int main(void) {
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
     enable_bluetooth();
-    if (initFlash()) {
+    if (initBelugaSettings()) {
         printk("Unable to init flash\n");
         return 0;
     }

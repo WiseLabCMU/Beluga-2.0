@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
+#include <settings.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -263,7 +264,8 @@ static void at_ledmode(uint16_t argc, char const *const *argv) {
         return;
     }
 
-    writeFlashID(CONFIG_LED, mode);
+    updateSetting(BELUGA_LEDMODE, mode);
+    // writeFlashID(CONFIG_LED, mode);
     if (mode == 1) {
         all_leds_off();
     } else {
