@@ -25,11 +25,11 @@
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <ranging.h>
+#include <settings.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
-#include <settings.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20

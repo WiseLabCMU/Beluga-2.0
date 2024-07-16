@@ -6,8 +6,12 @@
 
 #include "ble_app.h"
 #include <app_leds.h>
+#include <init_main.h>
 #include <led_config.h>
+#include <list_neighbors.h>
 #include <ranging.h>
+#include <resp_main.h>
+#include <settings.h>
 #include <spi.h>
 #include <stdio.h>
 #include <timestamp.h>
@@ -16,11 +20,6 @@
 #include <watchdog.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
-#include <settings.h>
-#include <list_neighbors.h>
-#include <init_main.h>
-#include <resp_main.h>
-#include <spi.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -56,28 +55,29 @@ static void load_id(void) {
 static void load_bootmode(void) {
     int32_t bootMode = retrieveSetting(BELUGA_BOOTMODE);
 
-    switch(bootMode) {
-        case 1:
-            k_sem_give(&print_list_sem);
-            ble_enable_scan();
-            update_led_state(LED_BLE_ON);
-            break;
-        case 2:
-            k_sem_give(&print_list_sem);
-            ble_enable_scan();
-            update_led_state(LED_BLE_ON);
-            k_sem_give(&k_sus_resp);
-            k_sem_give(&k_sus_init);
-            update_led_state(LED_UWB_ON);
-        case 0:
-            break;
-        default:
-            printf("  Boot Mode: Default \r\n");
-            break;
+    switch (bootMode) {
+    case 1:
+        k_sem_give(&print_list_sem);
+        ble_enable_scan();
+        update_led_state(LED_BLE_ON);
+        break;
+    case 2:
+        k_sem_give(&print_list_sem);
+        ble_enable_scan();
+        update_led_state(LED_BLE_ON);
+        k_sem_give(&k_sus_resp);
+        k_sem_give(&k_sus_init);
+        update_led_state(LED_UWB_ON);
+    case 0:
+        break;
+    default:
+        printf("  Boot Mode: Default \r\n");
+        break;
     }
 
     if (bootMode == 0 || bootMode == 1 || bootMode == 2) {
-        printf("  Boot Mode: BLE %s + UWB %s\r\n", (bootMode > 0) ? "ON" : "OFF", (bootMode == 2) ? "ON" : "OFF");
+        printf("  Boot Mode: BLE %s + UWB %s\r\n",
+               (bootMode > 0) ? "ON" : "OFF", (bootMode == 2) ? "ON" : "OFF");
     }
 }
 
@@ -107,7 +107,7 @@ static void load_channel(void) {
 static void load_timeout(void) {
     int32_t timeout = retrieveSetting(BELUGA_BLE_TIMEOUT);
 
-    if(timeout != DEFAULT_SETTING) {
+    if (timeout != DEFAULT_SETTING) {
         // TODO: Set timeout
         printf("  BLE Timeout: %d \r\n", timeout);
     } else {

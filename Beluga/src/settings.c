@@ -114,7 +114,8 @@ void updateSetting(enum beluga_setting setting, int32_t value) {
 }
 
 int32_t retrieveSetting(enum beluga_setting setting) {
-    int32_t retVal = (setting == BELUGA_ID) ? DEFAULT_ID_SETTING : DEFAULT_SETTING;
+    int32_t retVal =
+        (setting == BELUGA_ID) ? DEFAULT_ID_SETTING : DEFAULT_SETTING;
 
     if (setting >= BELUGA_RESERVED) {
         return retVal;
