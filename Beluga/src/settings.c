@@ -126,6 +126,16 @@ int32_t retrieveSetting(enum beluga_setting setting) {
     return retVal;
 }
 
+void resetBelugaSettings(void) {
+    for (size_t i = 0; i < ARRAY_SIZE(settingValues); i++) {
+        settingValues[i].value = DEFAULT_SETTING;
+    }
+    settingValues[BELUGA_ID].value = DEFAULT_ID_SETTING;
+
+    printk("Reset all settings\n");
+    settings_save();
+}
+
 int initBelugaSettings(void) {
     int rc;
 

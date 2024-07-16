@@ -25,6 +25,7 @@ enum beluga_setting {
 
 void updateSetting(enum beluga_setting setting, int32_t value);
 int32_t retrieveSetting(enum beluga_setting setting);
+void resetBelugaSettings(void);
 int initBelugaSettings(void);
 
 #endif // BELUGA_SETTINGS_H
