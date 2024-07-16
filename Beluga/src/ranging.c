@@ -135,6 +135,7 @@ void init_uwb(void) {
     port_set_dw1000_slowrate();
 
     if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR) {
+        printk("Failed to load UWB code\r\n");
         while (true)
             ;
     }

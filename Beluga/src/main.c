@@ -20,6 +20,7 @@
 #include <list_neighbors.h>
 #include <init_main.h>
 #include <resp_main.h>
+#include <spi.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -118,10 +119,9 @@ static void load_tx_power(void) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
 
     if (tx_power == 1) {
-        //set_tx_power(true);
+        set_tx_power(true);
         printf("  TX Power: Max \r\n");
     } else {
-        set_tx_power(false);
         printf("  TX Power: Default \r\n");
     }
 }
@@ -162,16 +162,62 @@ static void load_settings(void) {
     load_twr_mode();
 }
 
-int main(void) {
-    // if (configure_watchdog_timer() < 0) {
-    //     printk("Failed to configure watchdog timer\n");
-    //     return 0;
-    // }
-
+static void get_reset_cause(void) {
     uint32_t reason;
-
     hwinfo_get_reset_cause(&reason);
     hwinfo_clear_reset_cause();
+
+    printk("Reset causes: \n");
+
+    if (reason & RESET_PIN) {
+        printk("External pin\n");
+    }
+    if (reason & RESET_SOFTWARE) {
+        printk("Software reset\n");
+    }
+    if (reason & RESET_BROWNOUT) {
+        printk("Brownout\n");
+    }
+    if (reason & RESET_POR) {
+        printk("Power-on reset\n");
+    }
+    if (reason & RESET_WATCHDOG) {
+        printk("Watchdog timer expiration\n");
+    }
+    if (reason & RESET_DEBUG) {
+        printk("Debug event\n");
+    }
+    if (reason & RESET_SECURITY) {
+        printk("Security violation\n");
+    }
+    if (reason & RESET_LOW_POWER_WAKE) {
+        printk("Waking up from low power mode\n");
+    }
+    if (reason & RESET_CPU_LOCKUP) {
+        printk("CPU lock-up detected\n");
+    }
+    if (reason & RESET_PARITY) {
+        printk("Parity error\n");
+    }
+    if (reason & RESET_PLL) {
+        printk("PLL error\n");
+    }
+    if (reason & RESET_CLOCK) {
+        printk("Clock error\n");
+    }
+    if (reason & RESET_HARDWARE) {
+        printk("Hardware reset\n");
+    }
+    if (reason & RESET_USER) {
+        printk("User reset\n");
+    }
+    if (reason & RESET_TEMPERATURE) {
+        printk("Temperature reset\n");
+    }
+}
+
+int main(void) {
+    get_reset_cause();
 
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
@@ -181,18 +227,27 @@ int main(void) {
         printk("Unable to init flash\n");
         return 0;
     }
-    // eraseRecords();
 
     if (uart_init() < 0) {
         printk("Failed to init uart\n");
         return 0;
     }
 
+    if (init_spi1() < 0) {
+        printk("Failed to initialize SPI 1\n");
+        return 0;
+    }
+
     LED_INIT;
 
-    // init_uwb();
+    if (configure_watchdog_timer() < 0) {
+        printk("Failed to configure watchdog timer\n");
+        return 0;
+    }
 
-    // init_timekeeper(1, 1);
+    init_uwb();
+
+    init_timekeeper(1, 1);
 
     printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
 
