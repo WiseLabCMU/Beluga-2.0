@@ -5,8 +5,17 @@
 #ifndef BELUGA_LED_CONFIG_H
 #define BELUGA_LED_CONFIG_H
 
+#if defined(CONFIG_DK_LIBRARY) && defined(CONFIG_BELUGA_LEDS)
+#define LED_SUPPORT_ENABLED 1
+#else
 #define LED_SUPPORT_ENABLED 0
-#define BLE_LED_CONFIG      1
+#endif
+
+#if defined(CONFIG_BELUGA_BLE_LEDS)
+#define BLE_LED_CONFIG 1
+#else
+#define BLE_LED_CONFIG 0
+#endif
 
 #if LED_SUPPORT_ENABLED == 1
 #include <dk_buttons_and_leds.h>

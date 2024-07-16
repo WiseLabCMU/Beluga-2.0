@@ -52,3 +52,11 @@ config BELUGA_RESPONDER_PRIO
 config ENABLE_BELUGA_UWB
     bool "Enables DecaDriver library for UWB"
     default y
+
+config BELUGA_LEDS
+    bool "Enables the LED driver for Beluga"
+    default n
+
+config BELUGA_BLE_LEDS
+    bool "Use the LEDs to indicate BLE states"
+    default n
