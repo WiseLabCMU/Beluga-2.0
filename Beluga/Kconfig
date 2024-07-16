@@ -1,0 +1,50 @@
+source "Kconfig.zephyr"
+
+config ENABLE_BELUGA_THREADS
+    bool "Enables threads for Beluga"
+    default y
+
+config ENABLE_COMMANDS
+    bool "Enables commands for Beluga"
+    default n
+
+config ENABLE_LIST
+    bool "Enables the list thread for Beluga"
+    default n
+
+config ENABLE_RANGING
+    bool "Enables the ranging thread for Beluga"
+    default n
+
+config ENABLE_MONITOR
+    bool "Enables the monitor thread in Beluga"
+    default n
+
+config ENABLE_RESPONDER
+    bool "Enables the responder thread in Beluga"
+    default n
+
+config BELUGA_COMMANDS_PRIO
+    int "Priority for commands thread"
+    depends on ENABLE_COMMANDS
+    default 8
+
+config BELUGA_LIST_PRIO
+    int "Priority for list thread"
+    depends on ENABLE_LIST
+    default 8
+
+config BELUGA_RANGING_PRIO
+    int "Priority for ranging thread"
+    depends on ENABLE_RANGING
+    default 8
+
+config BELUGA_MONITOR_PRIO
+    int "Priority for monitor thread"
+    depends on ENABLE_MONITOR
+    default 8
+
+config BELUGA_RESPONDER_PRIO
+    int "Priority for responder thread"
+    depends on ENABLE_RESPONDER
+    default 7
