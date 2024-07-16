@@ -6,7 +6,6 @@
 
 #include "ble_app.h"
 #include <app_leds.h>
-#include <flash.h>
 #include <led_config.h>
 #include <ranging.h>
 #include <spi.h>
@@ -18,6 +17,9 @@
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <settings.h>
+#include <list_neighbors.h>
+#include <init_main.h>
+#include <resp_main.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -37,6 +39,99 @@ static void load_settings(void) {
         update_led_state(LED_POWER_ON);
         printf("  LED Mode: Default \r\n");
     }
+
+    int32_t nodeID = retrieveSetting(BELUGA_ID);
+
+    if (nodeID != DEFAULT_ID_SETTING) {
+        update_node_id((uint16_t)nodeID);
+        printf("  Node ID: %d \r\n", nodeID);
+    } else {
+        printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\r\n");
+        printf("  !Warning! Please setup node ID!\r\n");
+        printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\r\n");
+    }
+
+    int32_t bootMode = retrieveSetting(BELUGA_BOOTMODE);
+
+    switch(bootMode) {
+        case 1:
+            k_sem_give(&print_list_sem);
+            ble_enable_scan();
+            update_led_state(LED_BLE_ON);
+            break;
+        case 2:
+            k_sem_give(&print_list_sem);
+            ble_enable_scan();
+            update_led_state(LED_BLE_ON);
+            k_sem_give(&k_sus_resp);
+            k_sem_give(&k_sus_init);
+            update_led_state(LED_UWB_ON);
+        case 0:
+            break;
+        default:
+            printf("  Boot Mode: Default \r\n");
+            break;
+    }
+
+    if (bootMode == 0 || bootMode == 1 || bootMode == 2) {
+        printf("  Boot Mode: BLE %s + UWB %s\r\n", (bootMode > 0) ? "ON" : "OFF", (bootMode == 2) ? "ON" : "OFF");
+    }
+
+    int32_t rate = retrieveSetting(BELUGA_POLL_RATE);
+
+    if (rate != DEFAULT_SETTING) {
+        set_rate(rate);
+        advertising_reconfig(rate != 0);
+        printf("  UWB Polling Rate: %d\r\n", rate);
+    } else {
+        printf("  UWB Polling Rate: Default \r\n");
+    }
+
+    int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
+
+    if (channel != DEFAULT_SETTING) {
+        set_uwb_channel(channel);
+        printf("  UWB Channel: %d \r\n", channel);
+    } else {
+        printf("  UWB Channel: Defalut \r\n");
+    }
+
+    int32_t timeout = retrieveSetting(BELUGA_BLE_TIMEOUT);
+
+    if(timeout != DEFAULT_SETTING) {
+        // TODO: Set timeout
+        printf("  BLE Timeout: %d \r\n", timeout);
+    } else {
+        printf("  BLE Timeout: Default \r\n");
+    }
+
+    int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
+
+    if (tx_power == 1) {
+        //set_tx_power(true);
+        printf("  TX Power: Max \r\n");
+    } else {
+        set_tx_power(false);
+        printf("  TX Power: Default \r\n");
+    }
+
+    int32_t stream_mode = retrieveSetting(BELUGA_STREAMMODE);
+
+    if (stream_mode != DEFAULT_SETTING) {
+        set_stream_mode(stream_mode != 0);
+        printf("  Stream Mode: %d \r\n", stream_mode);
+    } else {
+        printf("  Stream Mode: Default \r\n");
+    }
+
+    int32_t twr = retrieveSetting(BELUGA_TWR);
+
+    if (twr != DEFAULT_SETTING) {
+        set_twr_mode(twr != 0);
+        printf("  Ranging Mode: %d \r\n", twr);
+    } else {
+        printf("  Ranging Mode: Default \r\n");
+    }
 }
 
 int main(void) {
@@ -53,6 +148,7 @@ int main(void) {
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
     enable_bluetooth();
+    ble_disable_scan();
     if (initBelugaSettings()) {
         printk("Unable to init flash\n");
         return 0;

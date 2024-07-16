@@ -22,7 +22,6 @@
 #include <uart.h>
 
 #include <app_leds.h>
-#include <flash.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <ranging.h>
@@ -144,7 +143,7 @@ static void at_change_id(uint16_t argc, char const *const *argv) {
     }
 
     update_node_id((uint16_t)newID);
-    writeFlashID(CONFIG_ID, newID);
+    updateSetting(BELUGA_ID, newID);
     OK;
 }
 
@@ -158,7 +157,7 @@ static void at_bootmode(uint16_t argc, char const *const *argv) {
         return;
     }
 
-    writeFlashID(CONFIG_BM, mode);
+    updateSetting(BELUGA_BOOTMODE, mode);
     printf("Bootmode: %d ", mode);
     OK;
 }
@@ -173,7 +172,7 @@ static void at_rate(uint16_t argc, char const *const *argv) {
         return;
     }
 
-    writeFlashID(CONFIG_RATE, rate);
+    updateSetting(BELUGA_POLL_RATE, rate);
     set_rate(rate);
 
     // reconfig ble data
@@ -188,6 +187,7 @@ static void at_channel(uint16_t argc, char const *const *argv) {
     bool success = strtoint32(argv[1], &channel);
 
     if (success && set_uwb_channel(channel)) {
+        updateSetting(BELUGA_UWB_CHANNEL, channel);
         OK;
     } else {
         printf("Invalid channel\r\n");
@@ -195,7 +195,7 @@ static void at_channel(uint16_t argc, char const *const *argv) {
 }
 
 static void at_reset(UNUSED uint16_t argc, UNUSED char const *const *argv) {
-    eraseRecords();
+    resetBelugaSettings();
     printf("Reset ");
     OK;
 }
@@ -210,7 +210,7 @@ static void at_timeout(uint16_t argc, char const *const *argv) {
         return;
     }
 
-    writeFlashID(CONFIG_TIME, timeout);
+    updateSetting(BELUGA_BLE_TIMEOUT, timeout);
     set_node_timeout(timeout);
     OK;
 }
@@ -221,6 +221,7 @@ static void at_txpower(uint16_t argc, char const *const *argv) {
     bool value, success = strtoint32(argv[1], &power);
 
     if (success && int2bool(&value, power)) {
+        updateSetting(BELUGA_TX_POWER, value);
         set_tx_power(value);
         OK;
     } else {
@@ -234,6 +235,7 @@ static void at_streammode(uint16_t argc, char const *const *argv) {
     bool value, success = strtoint32(argv[1], &mode);
 
     if (success && int2bool(&value, mode)) {
+        updateSetting(BELUGA_STREAMMODE, mode);
         set_stream_mode(value);
         OK;
     } else {
@@ -247,6 +249,7 @@ static void at_twrmode(uint16_t argc, char const *const *argv) {
     bool value, success = strtoint32(argv[1], &twr);
 
     if (success && int2bool(&value, twr)) {
+        updateSetting(BELUGA_TWR, twr);
         set_twr_mode(value);
         OK;
     } else {
@@ -265,7 +268,6 @@ static void at_ledmode(uint16_t argc, char const *const *argv) {
     }
 
     updateSetting(BELUGA_LEDMODE, mode);
-    // writeFlashID(CONFIG_LED, mode);
     if (mode == 1) {
         all_leds_off();
     } else {

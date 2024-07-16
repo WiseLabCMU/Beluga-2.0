@@ -24,6 +24,5 @@ int ds_resp_run(void);
 int ss_resp_run(void);
 
 extern struct k_sem k_sus_resp;
-extern struct k_sem k_sus_init;
 
 #endif // DECA_RESP_MAIN_H

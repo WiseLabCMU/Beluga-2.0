@@ -25,7 +25,7 @@
 #include <string.h>
 #include <zephyr/kernel.h>
 
-K_SEM_DEFINE(k_sus_resp, 0, 1);
+K_SEM_DEFINE(k_sus_resp, 1, 1);
 
 /* Inter-ranging delay period, in milliseconds. */
 #define RNG_DELAY_MS 250
