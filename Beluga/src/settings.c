@@ -98,12 +98,32 @@ SETTINGS_STATIC_HANDLER_DEFINE(BelugaSettings, "beluga", beluga_handle_get,
                                beluga_handle_export);
 
 void updateSetting(enum beluga_setting setting, int32_t value) {
-    // TODO
+    char name[2 * MAX_NAME_LENGTH];
+    int rc;
+
+    if (setting >= BELUGA_RESERVED) {
+        return;
+    }
+    snprintf(name, MAX_NAME_LENGTH, "beluga/%s", settingValues[setting].key);
+
+    rc = settings_save_one(name, (const void *)&value, sizeof(value));
+
+    if (rc) {
+        printk("Error saving %s (%d)\n", name, rc);
+    }
 }
 
 int32_t retrieveSetting(enum beluga_setting setting) {
-    // TODO
-    return DEFAULT_SETTING;
+    int32_t retVal = (setting == BELUGA_ID) ? DEFAULT_ID_SETTING : DEFAULT_SETTING;
+
+    if (setting >= BELUGA_RESERVED) {
+        return retVal;
+    }
+
+    settings_load();
+    retVal = settingValues[setting].value;
+
+    return retVal;
 }
 
 int initBelugaSettings(void) {

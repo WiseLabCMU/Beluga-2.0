@@ -17,6 +17,7 @@ enum beluga_setting {
     BELUGA_STREAMMODE,
     BELUGA_TWR,
     BELUGA_LEDMODE,
+    BELUGA_RESERVED
 };
 
 #define DEFAULT_ID_SETTING INT32_C(0)
