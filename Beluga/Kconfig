@@ -48,3 +48,7 @@ config BELUGA_RESPONDER_PRIO
     int "Priority for responder thread"
     depends on ENABLE_RESPONDER
     default 7
+
+config ENABLE_BELUGA_UWB
+    bool "Enables DecaDriver library for UWB"
+    default y
