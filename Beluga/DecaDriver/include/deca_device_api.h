@@ -189,6 +189,20 @@ typedef signed long int32;
 // Call-back data RX frames flags
 #define DWT_CB_DATA_RX_FLAG_RNG 0x1 // Ranging bit
 
+#ifndef CONFIG_ENABLE_BELUGA_UWB
+#define DWT_DISABLED_RET_SUCCESS  return DWT_SUCCESS
+#define DWT_DISABLED_RET_DEV_CODE return 0xDECA0130
+#define DWT_DISABLED_RET_VOID     return
+#define DWT_DISABLED_RET_DOUBLE   return 0.0
+#else
+#define DWT_DISABLED_RET_SUCCESS                                               \
+    do {                                                                       \
+    } while (0)
+#define DWT_DISABLED_RET_DEV_CODE DWT_DISABLED_RET_SUCCESS
+#define DWT_DISABLED_RET_VOID     DWT_DISABLED_RET_SUCCESS
+#define DWT_DISABLED_RET_DOUBLE   DWT_DISABLED_RET_SUCCESS
+#endif
+
 // TX/RX call-back data
 typedef struct {
     uint32 status;     // initial value of register as ISR is entered

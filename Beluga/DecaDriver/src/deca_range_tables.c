@@ -165,6 +165,7 @@ const uint8 range25cm64PRFwb[2]
  * returns correction needed in meters
  */
 double dwt_getrangebias(uint8 chan, float range, uint8 prf) {
+    DWT_DISABLED_RET_DOUBLE;
     // first get the lookup index that corresponds to given range for a
     // particular channel at 16M PRF
     int i = 0;

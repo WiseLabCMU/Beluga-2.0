@@ -92,6 +92,7 @@ void port_wakeup_dw1000_fast(void) {}
 //================================================================================================
 int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
                 uint32 readlength, uint8 *readBuffer) {
+    DWT_DISABLED_RET_SUCCESS;
     uint8 txBuf[DW1000_MAXBUF];
     uint8 rxBuf[DW1000_MAXBUF];
 
@@ -120,6 +121,7 @@ int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
 
 int writetospi(uint16 headerLength, const uint8 *headerBuffer,
                uint32 bodylength, const uint8 *bodyBuffer) {
+    DWT_DISABLED_RET_SUCCESS;
     uint8 txBuf[DW1000_MAXBUF];
 
     if ((headerLength + bodylength) > DW1000_MAXBUF) {
@@ -178,7 +180,10 @@ void port_set_dw1000_fastrate(void) {
     k_msleep(2);
 }
 
-void deca_sleep(unsigned int time_ms) { k_msleep(time_ms); }
+void deca_sleep(unsigned int time_ms) {
+    DWT_DISABLED_RET_VOID;
+    k_msleep(time_ms);
+}
 
 // currently do nothing
 decaIrqStatus_t decamutexon(void) {
