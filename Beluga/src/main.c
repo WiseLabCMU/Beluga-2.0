@@ -8,6 +8,7 @@
 #include <app_leds.h>
 #include <init_main.h>
 #include <led_config.h>
+#include <list_monitor.h>
 #include <list_neighbors.h>
 #include <ranging.h>
 #include <resp_main.h>
@@ -108,7 +109,7 @@ static void load_timeout(void) {
     int32_t timeout = retrieveSetting(BELUGA_BLE_TIMEOUT);
 
     if (timeout != DEFAULT_SETTING) {
-        // TODO: Set timeout
+        set_node_timeout(timeout);
         printf("  BLE Timeout: %d \r\n", timeout);
     } else {
         printf("  BLE Timeout: Default \r\n");
