@@ -72,7 +72,7 @@ void all_leds_off(void) {
     APP_LED_OFF(UWB_LED);
     APP_LED_OFF(UNUSED_LED);
     APP_LED_OFF(POWER_LED);
-    // dwt_setleds(DWT_LEDS_DISABLE);
+    dwt_setleds(DWT_LEDS_DISABLE);
 }
 
 void restore_led_states(void) {
@@ -94,7 +94,7 @@ void restore_led_states(void) {
         APP_LED_ON(POWER_LED);
     }
     led_mode = led_mode_om;
-    // dwt_setleds(DWT_LEDS_ENABLE);
+    dwt_setleds(DWT_LEDS_ENABLE);
 }
 
 enum led_state get_ble_led_state(void) {
