@@ -23,7 +23,7 @@ struct beluga_settings_dict {
     int32_t value;
 };
 
-struct beluga_settings_dict settingValues[] = {
+static struct beluga_settings_dict settingValues[] = {
     {"id", DEFAULT_ID_SETTING},       {"boot_mode", DEFAULT_SETTING},
     {"poll_rate", DEFAULT_SETTING},   {"uwb_channel", DEFAULT_SETTING},
     {"ble_timeout", DEFAULT_SETTING}, {"tx_power", DEFAULT_SETTING},
@@ -36,7 +36,7 @@ struct beluga_settings_dict settingValues[] = {
 #define MAX_NAME_LENGTH                                                        \
     (LONGEST_SETTING_NAME_LEN + SEPARATOR_LEN + BELUGA_LEN + 1)
 
-int beluga_handle_get(const char *name, char *val, int val_len_max) {
+static int beluga_handle_get(const char *name, char *val, int val_len_max) {
     ARG_UNUSED(val_len_max);
     const char *next;
 
@@ -51,7 +51,7 @@ int beluga_handle_get(const char *name, char *val, int val_len_max) {
     return -ENOENT;
 }
 
-int beluga_handle_set(const char *name, size_t len, settings_read_cb read_cb,
+static int beluga_handle_set(const char *name, size_t len, settings_read_cb read_cb,
                       void *cb_arg) {
     ARG_UNUSED(len);
     const char *next;
@@ -75,12 +75,12 @@ int beluga_handle_set(const char *name, size_t len, settings_read_cb read_cb,
     return rc;
 }
 
-int beluga_handle_commit(void) {
+static int beluga_handle_commit(void) {
     printk("Loading all settings under <beluga> handler is done\n");
     return 0;
 }
 
-int beluga_handle_export(int (*cb)(const char *name, const void *value,
+static int beluga_handle_export(int (*cb)(const char *name, const void *value,
                                    size_t val_len)) {
     char name[2 * MAX_NAME_LENGTH];
     printk("export keys under <beluga> handler\n");
