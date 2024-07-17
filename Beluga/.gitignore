@@ -2,3 +2,5 @@ build_1/
 build
 build_2/
 cmake-build-debug/
+cmake-build-beluga2
+cmake-build-nrf21540dk_nrf52840/

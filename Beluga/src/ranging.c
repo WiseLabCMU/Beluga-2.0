@@ -130,7 +130,7 @@ uint32_t get_rate(void) {
 }
 
 void init_uwb(void) {
-    // TODO: COnfigure UWB IRQ
+    setup_DW1000RSTnIRQ(0);
 
     port_set_dw1000_slowrate();
 

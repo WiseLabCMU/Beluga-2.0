@@ -74,7 +74,10 @@ static const struct gpio_dt_spec dw1000_irq_pin =
  *          0 - output Open collector mode
  *          !0 - input mode with connected EXTI0 IRQ
  * */
-void setup_DW1000RSTnIRQ(int enable) {}
+void setup_DW1000RSTnIRQ(int enable) {
+    ARG_UNUSED(enable);
+    gpio_pin_configure_dt(&dw1000_irq_pin, GPIO_DISCONNECTED);
+}
 
 /* @fn      port_wakeup_dw1000
  * @brief   "slow" waking up of DW1000 using DW_CS only
