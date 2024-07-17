@@ -1,0 +1,13 @@
+
+
+&spi1 {
+	cs-gpios = <&gpio0 10 0>;
+
+	dw1000_spi: dw1000@0 {
+		compatible = "decawave,dw1000";
+		reg = <0x0>;
+		spi-max-frequency = <8000000>;
+		int-gpios = <&gpio0 9 0>;
+		reset-gpios = <&gpio0 4 0>;
+	};
+};
