@@ -5,9 +5,8 @@
 #ifndef BELUGA_UTILS_H
 #define BELUGA_UTILS_H
 
-#define STACK_SIZE    1024
-
 #define UNUSED        __attribute__((unused))
 #define STATIC_INLINE __attribute__((always_inline)) static inline
+#define DEPRECATED(MSG) __attribute__((deprecated (MSG)))
 
 #endif // BELUGA_UTILS_H

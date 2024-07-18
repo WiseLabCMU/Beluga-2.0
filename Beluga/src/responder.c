@@ -39,6 +39,6 @@ void responder_task_function(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_RESPONDER
-K_THREAD_DEFINE(responder_task_id, STACK_SIZE, responder_task_function, NULL,
+K_THREAD_DEFINE(responder_task_id, CONFIG_RESPONDER_STACK_SIZE, responder_task_function, NULL,
                 NULL, NULL, RESPONDER_PRIO, 0, 0);
 #endif

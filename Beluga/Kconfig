@@ -49,6 +49,31 @@ config BELUGA_RESPONDER_PRIO
     depends on ENABLE_RESPONDER
     default 7
 
+config COMMANDS_STACK_SIZE
+    int "Stack size (bytes) for commands thread"
+    depends on ENABLE_COMMANDS
+    default 1024
+
+config LIST_STACK_SIZE
+    int "Stack size (bytes) for list thread"
+    depends on ENABLE_LIST
+    default 1024
+
+config RANGING_STACK_SIZE
+    int "Stack size (bytes) for ranging thread"
+    depends on ENABLE_RANGING
+    default 1024
+
+config MONITOR_STACK_SIZE
+    int "Stack size (bytes) for monitor task"
+    depends on ENABLE_MONITOR
+    default 1024
+
+config RESPONDER_STACK_SIZE
+    int "Stack size (bytes) for responder task"
+    depends on ENABLE_RESPONDER
+    default 1024
+
 config ENABLE_BELUGA_UWB
     bool "Enables DecaDriver library for UWB"
     default y

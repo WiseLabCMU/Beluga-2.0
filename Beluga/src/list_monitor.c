@@ -124,6 +124,6 @@ void monitor_task_function(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_MONITOR
-K_THREAD_DEFINE(monitor_list_task_id, STACK_SIZE, monitor_task_function, NULL,
+K_THREAD_DEFINE(monitor_list_task_id, CONFIG_MONITOR_STACK_SIZE, monitor_task_function, NULL,
                 NULL, NULL, MONITOR_PRIO, 0, 0);
 #endif

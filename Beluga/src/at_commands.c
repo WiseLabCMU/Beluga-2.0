@@ -372,13 +372,10 @@ void runSerialCommand(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_COMMANDS
-K_THREAD_DEFINE(command_task_id, STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
+K_THREAD_DEFINE(command_task_id, CONFIG_COMMANDS_STACK_SIZE, runSerialCommand, NULL, NULL, NULL,
                 COMMAND_PRIO, 0, 0);
 #endif
 
-// static int uwb_started;
-// extern int ble_started;
-//
 // int leds_mode;
 // static uwb_lna_status = 0;
 // static uwb_pa_status = 0;
