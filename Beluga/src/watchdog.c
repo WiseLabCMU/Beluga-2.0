@@ -10,7 +10,13 @@
 #define WDT_MIN_WINDOW 0UL
 #define WDT_MAX_WINDOW 2000UL
 
+#ifdef CONFIG_WATCHDOG
 #define WDT_NAME       DEVICE_DT_GET(DT_NODELABEL(wdt))
+#define WDT_ENABLED true
+#else
+#define WDT_NAME NULL
+#define WDT_ENABLED false
+#endif
 
 static const struct device *wdt;
 static int watchdog_id = -1;
@@ -19,6 +25,11 @@ static bool starving_dog = false;
 int configure_watchdog_timer(void) {
     int err;
     wdt = WDT_NAME;
+
+    if (!WDT_ENABLED) {
+        return 0;
+    }
+
     if (!device_is_ready(wdt)) {
         printk("%s: device is not ready.\n", wdt->name);
         return -1;
@@ -56,6 +67,10 @@ int configure_watchdog_timer(void) {
 void let_the_dog_starve(void) { starving_dog = true; }
 
 void watchdog_red_rocket(void) {
+    if (!WDT_ENABLED) {
+        return;
+    }
+
     if (!starving_dog) {
         wdt_feed(wdt, watchdog_id);
     }
