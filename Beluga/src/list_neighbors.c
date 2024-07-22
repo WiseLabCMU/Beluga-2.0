@@ -8,7 +8,7 @@
 #include <utils.h>
 #include <zephyr/kernel.h>
 
-K_SEM_DEFINE(print_list_sem, 1, 1);
+K_SEM_DEFINE(print_list_sem, 0, 1);
 K_MUTEX_DEFINE(stream_mode_mutex);
 
 static bool stream_mode = false;
@@ -87,6 +87,6 @@ void list_task_function(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_LIST
-K_THREAD_DEFINE(print_list_task_id, CONFIG_LIST_STACK_SIZE, list_task_function, NULL, NULL,
-                NULL, LIST_PRIO, 0, 0);
+K_THREAD_DEFINE(print_list_task_id, CONFIG_LIST_STACK_SIZE, list_task_function,
+                NULL, NULL, NULL, LIST_PRIO, 0, 0);
 #endif

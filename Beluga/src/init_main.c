@@ -24,7 +24,7 @@
 #include <string.h>
 #include <zephyr/kernel.h>
 
-K_SEM_DEFINE(k_sus_init, 1, 1);
+K_SEM_DEFINE(k_sus_init, 0, 1);
 
 /* Frames used in the ranging process. See NOTE 1,2 below. */
 static uint8 tx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',

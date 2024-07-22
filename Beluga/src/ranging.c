@@ -299,6 +299,6 @@ void rangingTask(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_RANGING
-K_THREAD_DEFINE(ranging_task_id, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL, NULL, NULL,
-                RANGING_PRIO, 0, 0);
+K_THREAD_DEFINE(ranging_task_id, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
+                NULL, NULL, RANGING_PRIO, 0, 0);
 #endif

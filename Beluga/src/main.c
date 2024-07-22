@@ -12,6 +12,7 @@
 #include <list_neighbors.h>
 #include <ranging.h>
 #include <resp_main.h>
+#include <responder.h>
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>
@@ -252,9 +253,9 @@ int main(void) {
 
     printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
 
-    // TODO: STack sizes
-
     load_settings();
+
+    init_responder_thread();
 
     for (;;) {
         k_sleep(K_FOREVER);

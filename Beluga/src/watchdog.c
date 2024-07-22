@@ -11,10 +11,10 @@
 #define WDT_MAX_WINDOW 2000UL
 
 #ifdef CONFIG_WATCHDOG
-#define WDT_NAME       DEVICE_DT_GET(DT_NODELABEL(wdt))
+#define WDT_NAME    DEVICE_DT_GET(DT_NODELABEL(wdt))
 #define WDT_ENABLED true
 #else
-#define WDT_NAME NULL
+#define WDT_NAME    NULL
 #define WDT_ENABLED false
 #endif
 

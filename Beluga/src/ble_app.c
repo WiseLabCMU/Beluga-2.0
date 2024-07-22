@@ -583,19 +583,19 @@ void ble_enable_scan(void) {
     printk("Scanning started\n");
 }
 
-//void update_ble_service(float range) {
-//    union {
-//        uint16_t uuid;
-//        uint8_t uuid_split[sizeof(uint16_t)];
-//    } uuid = {
-//            .uuid = NODE_UUID
-//    };
-//    union {
-//        uint8_t bytes[sizeof(uint32_t)];
-//        int32_t range;
-//    } uRange;
+// void update_ble_service(float range) {
+//     union {
+//         uint16_t uuid;
+//         uint8_t uuid_split[sizeof(uint16_t)];
+//     } uuid = {
+//             .uuid = NODE_UUID
+//     };
+//     union {
+//         uint8_t bytes[sizeof(uint32_t)];
+//         int32_t range;
+//     } uRange;
 //
-//    uRange.range = (int32_t)(range * 1000);
+//     uRange.range = (int32_t)(range * 1000);
 //
-//    //bt_gatt_notify(NULL,
-//}
+//     //bt_gatt_notify(NULL,
+// }

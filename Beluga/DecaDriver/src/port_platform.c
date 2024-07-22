@@ -33,10 +33,15 @@
  *                  Port private variables and function prototypes
  *
  ****************************************************************************/
+#ifdef CONFIG_ENABLE_BELUGA_UWB
 static const struct gpio_dt_spec dw1000_reset_pin =
     GPIO_DT_SPEC_GET(DT_NODELABEL(dw1000_spi), reset_gpios);
 static const struct gpio_dt_spec dw1000_irq_pin =
     GPIO_DT_SPEC_GET(DT_NODELABEL(dw1000_spi), int_gpios);
+#else
+static const struct gpio_dt_spec dw1000_reset_pin;
+static const struct gpio_dt_spec dw1000_irq_pin;
+#endif
 
 /****************************************************************************
  *
@@ -76,6 +81,7 @@ static const struct gpio_dt_spec dw1000_irq_pin =
  * */
 void setup_DW1000RSTnIRQ(int enable) {
     ARG_UNUSED(enable);
+    DWT_DISABLED_RET_VOID;
     gpio_pin_configure_dt(&dw1000_irq_pin, GPIO_DISCONNECTED);
 }
 

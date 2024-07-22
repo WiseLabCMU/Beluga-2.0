@@ -51,8 +51,8 @@ static int beluga_handle_get(const char *name, char *val, int val_len_max) {
     return -ENOENT;
 }
 
-static int beluga_handle_set(const char *name, size_t len, settings_read_cb read_cb,
-                      void *cb_arg) {
+static int beluga_handle_set(const char *name, size_t len,
+                             settings_read_cb read_cb, void *cb_arg) {
     ARG_UNUSED(len);
     const char *next;
     size_t name_len;
@@ -81,7 +81,7 @@ static int beluga_handle_commit(void) {
 }
 
 static int beluga_handle_export(int (*cb)(const char *name, const void *value,
-                                   size_t val_len)) {
+                                          size_t val_len)) {
     char name[2 * MAX_NAME_LENGTH];
     printk("export keys under <beluga> handler\n");
 

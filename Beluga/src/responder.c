@@ -15,12 +15,10 @@
  * @param[in] pvParameter   Pointer that will be used as the parameter for the
  * task.
  */
-void responder_task_function(void) {
-
-    //    if (leds_mode == 0)
-    //        dwt_setleds(DWT_LEDS_ENABLE);
-    //    if (leds_mode == 1)
-    //        dwt_setleds(DWT_LEDS_DISABLE);
+static void responder_task_function(void *p1, void *p2, void *p3) {
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
 
     while (true) {
         watchdog_red_rocket();
@@ -28,7 +26,7 @@ void responder_task_function(void) {
         // Check if responding is suspended, return 0 means suspended
         unsigned int suspend_start = k_sem_count_get(&k_sus_resp);
 
-        if (suspend_start == 0) {
+        if (suspend_start != 0) {
             if (get_twr_mode()) {
                 ds_resp_run();
             } else {
@@ -39,6 +37,17 @@ void responder_task_function(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_RESPONDER
-K_THREAD_DEFINE(responder_task_id, CONFIG_RESPONDER_STACK_SIZE, responder_task_function, NULL,
-                NULL, NULL, RESPONDER_PRIO, 0, 0);
+K_THREAD_STACK_DEFINE(responder_stack, CONFIG_RESPONDER_STACK_SIZE);
+static struct k_thread responder_data;
+static k_tid_t responder_task_id;
+
+void init_responder_thread(void) {
+    responder_task_id = k_thread_create(
+            &responder_data, responder_stack,
+            K_THREAD_STACK_SIZEOF(responder_stack), responder_task_function, NULL,
+            NULL, NULL, CONFIG_BELUGA_RESPONDER_PRIO, 0, K_NO_WAIT);
+}
+#else
+void init_responder_thread(void) {
+}
 #endif
