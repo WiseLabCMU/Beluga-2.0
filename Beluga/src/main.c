@@ -258,6 +258,7 @@ int main(void) {
 
     init_responder_thread();
     init_commands_thread();
+    init_print_list_task();
 
     for (;;) {
         k_sleep(K_FOREVER);

@@ -68,7 +68,11 @@ static void stream_print(void) {
  * @param[in] pvParameter   Pointer that will be used as the parameter for the
  * task.
  */
-void list_task_function(void) {
+void list_task_function(void *p1, void *p2, void *p3) {
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
+
     while (true) {
         k_sleep(K_MSEC(50));
 
@@ -87,6 +91,16 @@ void list_task_function(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_LIST
-K_THREAD_DEFINE(print_list_task_id, CONFIG_LIST_STACK_SIZE, list_task_function,
-                NULL, NULL, NULL, LIST_PRIO, 0, 0);
+K_THREAD_STACK_DEFINE(list_stack, CONFIG_LIST_STACK_SIZE);
+static struct k_thread list_thread_data;
+static k_tid_t print_list_task_id;
+
+void init_print_list_task(void) {
+    print_list_task_id = k_thread_create(&list_thread_data, list_stack,
+                                         K_THREAD_STACK_SIZEOF(list_stack),
+                                         list_task_function, NULL, NULL, NULL,
+                                         CONFIG_BELUGA_LIST_PRIO, 0, K_NO_WAIT);
+}
+#else
+void init_print_list_task(void) {}
 #endif
