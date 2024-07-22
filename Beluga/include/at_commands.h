@@ -21,4 +21,6 @@ struct buffer {
     size_t len;
 };
 
+void init_commands_thread(void);
+
 #endif

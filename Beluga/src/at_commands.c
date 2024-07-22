@@ -313,7 +313,10 @@ STATIC_INLINE void freeCommand(struct buffer **buf) {
 /**
  * @brief Task to receive UART message from zephyr UART queue and parse
  */
-void runSerialCommand(void) {
+void runSerialCommand(void *p1, void *p2, void *p3) {
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
     bool found = false;
     char *argv[MAX_TOKENS];
     uint16_t argc;
@@ -372,8 +375,18 @@ void runSerialCommand(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_COMMANDS
-K_THREAD_DEFINE(command_task_id, CONFIG_COMMANDS_STACK_SIZE, runSerialCommand,
-                NULL, NULL, NULL, COMMAND_PRIO, 0, 0);
+K_THREAD_STACK_DEFINE(command_stack, CONFIG_COMMANDS_STACK_SIZE);
+static struct k_thread command_thread_data;
+static k_tid_t command_task_id;
+
+void init_commands_thread(void) {
+    command_task_id = k_thread_create(
+        &command_thread_data, command_stack,
+        K_THREAD_STACK_SIZEOF(command_stack), runSerialCommand, NULL, NULL,
+        NULL, CONFIG_BELUGA_COMMANDS_PRIO, 0, K_NO_WAIT);
+}
+#else
+void init_commands_thread(void) {}
 #endif
 
 // int leds_mode;

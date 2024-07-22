@@ -6,6 +6,7 @@
 
 #include "ble_app.h"
 #include <app_leds.h>
+#include <at_commands.h>
 #include <init_main.h>
 #include <led_config.h>
 #include <list_monitor.h>
@@ -256,6 +257,7 @@ int main(void) {
     load_settings();
 
     init_responder_thread();
+    init_commands_thread();
 
     for (;;) {
         k_sleep(K_FOREVER);
