@@ -322,7 +322,7 @@ STATIC_INLINE void freeCommand(struct buffer **buf) {
 /**
  * @brief Task to receive UART message from zephyr UART queue and parse
  */
-void runSerialCommand(void *p1, void *p2, void *p3) {
+NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);

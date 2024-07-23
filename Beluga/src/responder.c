@@ -15,7 +15,7 @@
  * @param[in] pvParameter   Pointer that will be used as the parameter for the
  * task.
  */
-static void responder_task_function(void *p1, void *p2, void *p3) {
+NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
