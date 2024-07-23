@@ -105,6 +105,11 @@ static bool strtoint32(const char *str, int32_t *result) {
 }
 
 static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+    if (get_ble_led_state() == LED_BLE_OFF) {
+        // Avoid undefined behavior
+        printf("Cannot start UWB: BLE has not been started\r\n");
+        return;
+    }
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
     update_led_state(LED_UWB_ON);
@@ -119,8 +124,12 @@ static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+    if (get_NODE_UUID() == 0) {
+        printf("Cannot start BLE: Node ID is not set\r\n");
+        return;
+    }
     k_sem_give(&print_list_sem);
-    enable_bluetooth();
+    enable_bluetooth(true);
     update_led_state(LED_BLE_ON);
     OK;
 }

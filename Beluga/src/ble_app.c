@@ -81,7 +81,7 @@ enum adv_mode {
     ADVERTISING_OFF
 };
 
-static uint16_t NODE_UUID = BT_UUID_HRS_VAL;
+static uint16_t NODE_UUID = 0;
 
 static char const m_target_peripheral_name[] = "BN ";
 
@@ -512,7 +512,7 @@ void advertising_reconfig(int32_t change) {
     }
 }
 
-int32_t init_bt_stack(void) {
+int32_t init_bt_stack(bool start_scanning) {
     int32_t err;
 
     err = bt_enable(NULL);
@@ -526,7 +526,9 @@ int32_t init_bt_stack(void) {
 
     scan_init();
 
-    scan_start();
+    if (start_scanning) {
+        scan_start();
+    }
 
     printk("Scanning started\n");
 
@@ -567,7 +569,7 @@ void disable_bluetooth(void) {
     bluetooth_on = false;
 }
 
-void enable_bluetooth(void) { init_bt_stack(); }
+void enable_bluetooth(bool start_scanning) { init_bt_stack(start_scanning); }
 
 void ble_disable_scan(void) {
     int err = bt_le_scan_stop();

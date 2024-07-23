@@ -224,8 +224,7 @@ int main(void) {
 
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
-    enable_bluetooth();
-    ble_disable_scan();
+    enable_bluetooth(false);
     if (initBelugaSettings()) {
         printk("Unable to init flash\n");
         return 0;
