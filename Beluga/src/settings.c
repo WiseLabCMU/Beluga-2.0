@@ -121,7 +121,7 @@ int32_t retrieveSetting(enum beluga_setting setting) {
         return retVal;
     }
 
-    settings_load();
+    // Settings were loaded at initialization, saved whenever written
     retVal = settingValues[setting].value;
 
     return retVal;
@@ -172,6 +172,8 @@ int initBelugaSettings(void) {
         printk("settings subsys initialization: fail (err %d)\n", rc);
         return rc;
     }
+
+    settings_load();
 
     printk("settings subsys initialization: OK.\n");
 
