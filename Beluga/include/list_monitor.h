@@ -12,5 +12,6 @@ void set_node_timeout(uint32_t value);
 uint64_t get_node_timeout(void);
 void node_added(void);
 bool check_node_added(void);
+void init_monitor_thread(void);
 
 #endif // BELUGA_LIST_MONITOR_H

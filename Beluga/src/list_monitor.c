@@ -73,7 +73,10 @@ bool check_node_added(void) {
  * @param[in] pvParameter   Pointer that will be used as the parameter for the
  * task.
  */
-void monitor_task_function(void) {
+NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
     uint32_t count = 0;
     bool removed = false;
 
@@ -124,6 +127,16 @@ void monitor_task_function(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_MONITOR
-K_THREAD_DEFINE(monitor_list_task_id, CONFIG_MONITOR_STACK_SIZE,
-                monitor_task_function, NULL, NULL, NULL, MONITOR_PRIO, 0, 0);
+K_THREAD_STACK_DEFINE(monitor_stack, CONFIG_MONITOR_STACK_SIZE);
+static struct k_thread monitor_data;
+static k_tid_t monitor_task_id;
+
+void init_monitor_thread(void) {
+    monitor_task_id = k_thread_create(&monitor_data, monitor_stack,
+                                      K_THREAD_STACK_SIZEOF(monitor_stack),
+                                      monitor_task_function, NULL, NULL, NULL,
+                                      CONFIG_BELUGA_MONITOR_PRIO, 0, K_NO_WAIT);
+}
+#else
+void init_monitor_thread(void) {}
 #endif
