@@ -288,6 +288,7 @@ static void at_ledmode(uint16_t argc, char const *const *argv) {
 
 static void at_reboot(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
+    printf("\r\n");
     sys_reboot(SYS_REBOOT_COLD);
 }
 

@@ -154,15 +154,25 @@ static void load_twr_mode(void) {
 static void load_settings(void) {
     printf("Flash Configuration: \r\n");
 
+    watchdog_red_rocket();
     load_led_mode();
+    watchdog_red_rocket();
     load_id();
+    watchdog_red_rocket();
     load_bootmode();
+    watchdog_red_rocket();
     load_poll_rate();
+    watchdog_red_rocket();
     load_channel();
+    watchdog_red_rocket();
     load_timeout();
+    watchdog_red_rocket();
     load_tx_power();
+    watchdog_red_rocket();
     load_stream_mode();
+    watchdog_red_rocket();
     load_twr_mode();
+    watchdog_red_rocket();
 }
 
 static void get_reset_cause(void) {
@@ -254,10 +264,12 @@ int main(void) {
     printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
 
     load_settings();
+    printf("\r\n");
 
     init_responder_thread();
     init_commands_thread();
     init_print_list_task();
+    init_responder_thread();
 
     for (;;) {
         k_sleep(K_FOREVER);

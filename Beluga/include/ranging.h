@@ -25,5 +25,6 @@ uint32_t get_rate(void);
 bool set_uwb_channel(uint32_t channel);
 void set_tx_power(bool power_max);
 void init_uwb(void);
+void init_ranging_thread(void);
 
 #endif // BELUGA_RANGING_H

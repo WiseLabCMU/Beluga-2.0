@@ -256,7 +256,11 @@ static void poll_nodes(void) {
     RESUME_RESPONDER_TASK;
 }
 
-void rangingTask(void) {
+NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
+
     while (true) {
         watchdog_red_rocket();
 
@@ -299,6 +303,16 @@ void rangingTask(void) {
 }
 
 #if ENABLE_THREADS && ENABLE_RANGING
-K_THREAD_DEFINE(ranging_task_id, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
-                NULL, NULL, RANGING_PRIO, 0, 0);
+K_THREAD_STACK_DEFINE(ranging_stack, CONFIG_RANGING_STACK_SIZE);
+static struct k_thread ranging_task_data;
+static k_tid_t ranging_task_id;
+
+void init_ranging_thread(void) {
+    ranging_task_id =
+        k_thread_create(&ranging_task_data, ranging_stack,
+                        K_THREAD_STACK_SIZEOF(ranging_stack), rangingTask, NULL,
+                        NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, 0, K_NO_WAIT);
+}
+#else
+void init_ranging_thread(void) {}
 #endif
