@@ -8,7 +8,12 @@
 #include <zephyr/kernel.h>
 
 #define WDT_MIN_WINDOW 0UL
+
+#ifndef CONFIG_WDT_MAX_WINDOW
 #define WDT_MAX_WINDOW 2000UL
+#else
+#define WDT_MAX_WINDOW CONFIG_WDT_MAX_WINDOW
+#endif
 
 #ifdef CONFIG_WATCHDOG
 #define WDT_NAME    DEVICE_DT_GET(DT_NODELABEL(wdt))

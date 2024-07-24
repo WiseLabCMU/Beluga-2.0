@@ -136,6 +136,7 @@ void init_monitor_thread(void) {
                                       K_THREAD_STACK_SIZEOF(monitor_stack),
                                       monitor_task_function, NULL, NULL, NULL,
                                       CONFIG_BELUGA_MONITOR_PRIO, 0, K_NO_WAIT);
+    printk("Started monitor\n");
 }
 #else
 void init_monitor_thread(void) {}

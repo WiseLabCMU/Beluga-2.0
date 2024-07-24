@@ -85,3 +85,7 @@ config BELUGA_LEDS
 config BELUGA_BLE_LEDS
     bool "Use the LEDs to indicate BLE states"
     default n
+
+config WDT_MAX_WINDOW
+    int "Maximum window of the watchdog timer"
+    default 2000

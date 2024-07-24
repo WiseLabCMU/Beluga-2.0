@@ -394,6 +394,7 @@ void init_commands_thread(void) {
         &command_thread_data, command_stack,
         K_THREAD_STACK_SIZEOF(command_stack), runSerialCommand, NULL, NULL,
         NULL, CONFIG_BELUGA_COMMANDS_PRIO, 0, K_NO_WAIT);
+    printk("Started AT commands\n");
 }
 #else
 void init_commands_thread(void) {}

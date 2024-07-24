@@ -47,6 +47,7 @@ void init_responder_thread(void) {
         &responder_data, responder_stack,
         K_THREAD_STACK_SIZEOF(responder_stack), responder_task_function, NULL,
         NULL, NULL, CONFIG_BELUGA_RESPONDER_PRIO, 0, K_NO_WAIT);
+    printk("Started responder\n");
 }
 #else
 void init_responder_thread(void) {}

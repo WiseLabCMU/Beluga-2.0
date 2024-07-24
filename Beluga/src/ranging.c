@@ -312,6 +312,7 @@ void init_ranging_thread(void) {
         k_thread_create(&ranging_task_data, ranging_stack,
                         K_THREAD_STACK_SIZEOF(ranging_stack), rangingTask, NULL,
                         NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, 0, K_NO_WAIT);
+    printk("Started ranging\n");
 }
 #else
 void init_ranging_thread(void) {}

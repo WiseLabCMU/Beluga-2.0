@@ -269,7 +269,7 @@ int main(void) {
     init_responder_thread();
     init_commands_thread();
     init_print_list_task();
-    init_responder_thread();
+    init_ranging_thread();
     init_monitor_thread();
 
     for (;;) {

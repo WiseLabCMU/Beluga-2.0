@@ -100,6 +100,7 @@ void init_print_list_task(void) {
                                          K_THREAD_STACK_SIZEOF(list_stack),
                                          list_task_function, NULL, NULL, NULL,
                                          CONFIG_BELUGA_LIST_PRIO, 0, K_NO_WAIT);
+    printk("Started neighbors list\n");
 }
 #else
 void init_print_list_task(void) {}
