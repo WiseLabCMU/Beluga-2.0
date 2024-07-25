@@ -12,7 +12,23 @@ NRF21_BUILD_DIR=cmake-build-nrf21540dk_nrf52840
 NRF52DK_BUILD_DIR=cmake-build-pca10040
 BELUGA_BUILD_DIR=cmake-build-beluga
 
-OPT_LEVEL=Debug
+# Valid optimization levels
+VALID_OPT_LEVELS = Speed Memory Debug
+# Default value for OPT_LEVEL
+OPT_LEVEL ?= Debug
+
+ifneq ($(filter $(OPT_LEVEL), $(VALID_OPT_LEVELS)), $(OPT_LEVEL))
+$(error Invalid OPT_LEVEL value: $(OPT_LEVEL). Valid values are: $(VALID_OPT_LEVELS))
+endif
+
+# Define flags based on OPT_LEVEL
+ifeq ($(OPT_LEVEL), Debug)
+    OPT_FLAGS = -DCMAKE_BUILD_TYPE=Debug
+else ifeq ($(OPT_LEVEL), Speed)
+    OPT_FLAGS = -DCONFIG_SPEED_OPTIMIZATIONS=y
+else ifeq ($(OPT_LEVEL), Memory)
+    OPT_FLAGS = -DCONFIG_SIZE_OPTIMIZATIONS=y
+endif
 
 all: decawave nrf21540dk nrf52dk beluga
 
@@ -21,7 +37,7 @@ decawave:
 			west build --build-dir $(PWD)/$(DECAWAVE_BUILD_DIR) \
 			$(PWD)/Beluga --board decawave_dwm1001_dev --no-sysbuild \
 			-- -DNCS_TOOLCHAIN_VERSION=NONE -DBOARD_ROOT=$(PWD) \
-			-DCMAKE_BUILD_TYPE=$(OPT_LEVEL) -DCMAKE_MAKE_PROGRAM=ninja \
+			$(OPT_FLAGS) -DCMAKE_MAKE_PROGRAM=ninja \
 			-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
 			-DDTC_OVERLAY_FILE=$(PWD)/$(DECAWAVE_OVERLAY)"
 
@@ -32,7 +48,7 @@ nrf21540dk:
 			-- -DNCS_TOOLCHAIN_VERSION=NONE -DCMAKE_MAKE_PROGRAM=ninja \
 			-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
 			-DBOARD_ROOT=$(PWD) -DDTC_OVERLAY_FILE=$(PWD)/$(NRF21540_OVERLAY) \
-			-DCMAKE_BUILD_TYPE=$(OPT_LEVEL)"
+			$(OPT_FLAGS)"
 
 nrf52dk:
 	@bash -c "$(ENV); \
@@ -41,7 +57,7 @@ nrf52dk:
     			-- -DNCS_TOOLCHAIN_VERSION=NONE -DCMAKE_MAKE_PROGRAM=ninja \
     			-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
     			-DBOARD_ROOT=$(PWD) -DDTC_OVERLAY_FILE=$(PWD)/$(NRF52832_OVERLAY) \
-    			-DCMAKE_BUILD_TYPE=$(OPT_LEVEL)"
+    			$(OPT_FLAGS)"
 
 beluga:
 	@bash -c "$(ENV); \
@@ -49,7 +65,7 @@ beluga:
         	$(PWD)/Beluga --board beluga2 --no-sysbuild \
         	-- -DNCS_TOOLCHAIN_VERSION=NONE -DCMAKE_MAKE_PROGRAM=ninja \
         	-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
-        	-DBOARD_ROOT=$(PWD) -DCMAKE_BUILD_TYPE=$(OPT_LEVEL)"
+        	-DBOARD_ROOT=$(PWD) $(OPT_FLAGS)"
 
 format:
 	@cd Beluga; \
