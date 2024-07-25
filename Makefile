@@ -30,12 +30,28 @@ else ifeq ($(OPT_LEVEL), Memory)
     OPT_FLAGS = -DCONFIG_SIZE_OPTIMIZATIONS=y
 endif
 
+# Valid pristine options
+VALID_PRISTINE = y yes Yes n no No
+# Default value for pristine
+PRISTINE ?= n
+
+# Check if PRISTINE is valid
+ifneq ($(filter $(PRISTINE), $(VALID_PRISTINE)), $(PRISTINE))
+$(error Invalid PRISTINE value: $(PRISTINE). Valid values are: $(VALID_PRISTINE))
+endif
+
+ifeq ($(filter $(PRISTINE), y yes Yes), $(PRISTINE))
+    PRISTINE_BUILD = --pristine
+else
+    PRISTINE_BUILD =
+endif
+
 all: decawave nrf21540dk nrf52dk beluga
 
 decawave:
 	@bash -c "$(ENV); \
 			west build --build-dir $(PWD)/$(DECAWAVE_BUILD_DIR) \
-			$(PWD)/Beluga --board decawave_dwm1001_dev --no-sysbuild \
+			$(PWD)/Beluga --board decawave_dwm1001_dev --no-sysbuild $(PRISTINE_BUILD) \
 			-- -DNCS_TOOLCHAIN_VERSION=NONE -DBOARD_ROOT=$(PWD) \
 			$(OPT_FLAGS) -DCMAKE_MAKE_PROGRAM=ninja \
 			-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
@@ -44,7 +60,7 @@ decawave:
 nrf21540dk:
 	@bash -c "$(ENV); \
 			west build --build-dir $(PWD)/$(NRF21_BUILD_DIR) \
-			$(PWD)/Beluga --board nrf21540dk_nrf52840 --no-sysbuild \
+			$(PWD)/Beluga --board nrf21540dk_nrf52840 --no-sysbuild $(PRISTINE_BUILD) \
 			-- -DNCS_TOOLCHAIN_VERSION=NONE -DCMAKE_MAKE_PROGRAM=ninja \
 			-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
 			-DBOARD_ROOT=$(PWD) -DDTC_OVERLAY_FILE=$(PWD)/$(NRF21540_OVERLAY) \
@@ -53,7 +69,7 @@ nrf21540dk:
 nrf52dk:
 	@bash -c "$(ENV); \
     			west build --build-dir $(PWD)/$(NRF52DK_BUILD_DIR) \
-    			$(PWD)/Beluga --board nrf52dk_nrf52832 --no-sysbuild \
+    			$(PWD)/Beluga --board nrf52dk_nrf52832 --no-sysbuild $(PRISTINE_BUILD) \
     			-- -DNCS_TOOLCHAIN_VERSION=NONE -DCMAKE_MAKE_PROGRAM=ninja \
     			-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
     			-DBOARD_ROOT=$(PWD) -DDTC_OVERLAY_FILE=$(PWD)/$(NRF52832_OVERLAY) \
@@ -62,7 +78,7 @@ nrf52dk:
 beluga:
 	@bash -c "$(ENV); \
 			west build --build-dir $(PWD)/$(BELUGA_BUILD_DIR) \
-        	$(PWD)/Beluga --board beluga2 --no-sysbuild \
+        	$(PWD)/Beluga --board beluga2 --no-sysbuild $(PRISTINE_BUILD) \
         	-- -DNCS_TOOLCHAIN_VERSION=NONE -DCMAKE_MAKE_PROGRAM=ninja \
         	-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
         	-DBOARD_ROOT=$(PWD) $(OPT_FLAGS)"
