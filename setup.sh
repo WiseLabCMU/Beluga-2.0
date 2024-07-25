@@ -17,9 +17,9 @@ version_compare() {
 }
 
 if [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
-  sudo apt update > /dev/null
-  sudo apt upgrade -y > /dev/null
-  sudo apt install -y wget > /dev/null
+  sudo apt update
+  sudo apt upgrade -y
+  sudo apt install -y wget
   # Get current Ubuntu version
   ubuntu_version=$(lsb_release -rs)
 
@@ -38,7 +38,7 @@ if [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
   sudo apt install --no-install-recommends -y git cmake ninja-build gperf \
     ccache dfu-util device-tree-compiler wget \
     python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv xz-utils file \
-    make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1 > /dev/null
+    make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1 make
 
   cmake_version=$(cmake --version | grep -oP "(?<=version )[0-9]+\.[0-9]+\.[0-9]+")
 
@@ -110,4 +110,6 @@ if [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
   sudo dpkg -i JLink_Linux_V798a_x86_64.deb
   sudo apt-get install -f
   cd ..
+
+  deactivate
 fi
