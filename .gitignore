@@ -7,3 +7,5 @@ gn/
 ncs/
 nrfcmdtools/
 zephyr-sdk-0.16.1/
+cmake-build-beluga/
+cmake-build-nrf21540dk_nrf52840/
