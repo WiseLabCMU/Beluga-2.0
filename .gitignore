@@ -2,3 +2,8 @@
 .vscode
 cmake-build-decawave/
 cmake-build-pca10040/
+.venv/
+gn/
+ncs/
+nrfcmdtools/
+zephyr-sdk-0.16.1/
