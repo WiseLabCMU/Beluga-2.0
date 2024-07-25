@@ -83,6 +83,22 @@ beluga:
         	-DCACHED_CONF_FILE=$(PWD)/Beluga/prj.conf \
         	-DBOARD_ROOT=$(PWD) $(OPT_FLAGS)"
 
+flash-nrf52dk:
+	@bash -c "$(ENV); \
+			  cd $(NRF52DK_BUILD_DIR); west flash"
+
+flash-decawave:
+	@bash -c "$(ENV); \
+			  cd $(DECAWAVE_BUILD_DIR); west flash"
+
+flash-nrf21540dk:
+	@bash -c "$(ENV); \
+			  cd $(NRF21_BUILD_DIR); west flash"
+
+flash-beluga:
+	@bash -c "$(ENV); \
+			  cd $(BELUGA_BUILD_DIR); west flash"
+
 format:
 	@cd Beluga; \
 	make format
