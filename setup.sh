@@ -38,7 +38,7 @@ if [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
   sudo apt install --no-install-recommends -y git cmake ninja-build gperf \
     ccache dfu-util device-tree-compiler wget \
     python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv xz-utils file \
-    make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1 make
+    make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1 make clang-format
 
   cmake_version=$(cmake --version | grep -oP "(?<=version )[0-9]+\.[0-9]+\.[0-9]+")
 
@@ -66,10 +66,10 @@ if [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
     wget -O gn.zip https://chrome-infra-packages.appspot.com/dl/gn/gn/linux-amd64/+/latest
     unzip gn.zip
     rm gn.zip
+    echo 'export PATH=${PWD}:"$PATH"' >> ${HOME}/.bashrc
+    source ${HOME}/.bashrc
     cd ..
   fi
-
-  # TODO: export gn path in makefile
 
   # Create environment
   python3 -m venv .venv
