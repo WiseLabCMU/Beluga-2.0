@@ -129,7 +129,7 @@ static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
         return;
     }
     k_sem_give(&print_list_sem);
-    enable_bluetooth(true);
+    enable_bluetooth();
     update_led_state(LED_BLE_ON);
     OK;
 }

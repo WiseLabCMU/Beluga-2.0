@@ -34,13 +34,15 @@ typedef struct node {
 
 extern node seen_list[MAX_ANCHOR_COUNT];
 
-int32_t init_bt_stack(bool start_scanning);
+int32_t init_bt_stack(void);
+int32_t deinit_bt_stack(void);
+int32_t enable_bluetooth(void);
+int32_t disable_bluetooth(void);
 void update_node_id(uint16_t uuid);
-void advertising_reconfig(int32_t change);
-void disable_bluetooth(void);
-void enable_bluetooth(bool start_scanning);
-void ble_disable_scan(void);
-void ble_enable_scan(void);
 uint16_t get_NODE_UUID(void);
+void advertising_reconfig(int32_t change);
+
+// void ble_disable_scan(void);
+// void ble_enable_scan(void);
 
 #endif

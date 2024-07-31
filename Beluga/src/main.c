@@ -60,12 +60,12 @@ static void load_bootmode(void) {
     switch (bootMode) {
     case 1:
         k_sem_give(&print_list_sem);
-        ble_enable_scan();
+        enable_bluetooth();
         update_led_state(LED_BLE_ON);
         break;
     case 2:
         k_sem_give(&print_list_sem);
-        ble_enable_scan();
+        enable_bluetooth();
         update_led_state(LED_BLE_ON);
         k_sem_give(&k_sus_resp);
         k_sem_give(&k_sus_init);
@@ -233,7 +233,10 @@ int main(void) {
 
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
-    enable_bluetooth(false);
+    if (init_bt_stack() != 0) {
+        printk("Failed to init bluetooth stack\n");
+    }
+
     if (initBelugaSettings()) {
         printk("Unable to init flash\n");
         return 1;

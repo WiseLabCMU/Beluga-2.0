@@ -117,14 +117,6 @@ ALWAYS_INLINE static void set_NODE_UUID(uint16_t uuid) {
     k_mutex_unlock(&UUID_mutex);
 }
 
-uint16_t get_NODE_UUID(void) {
-    uint16_t retVal;
-    k_mutex_lock(&UUID_mutex, K_FOREVER);
-    retVal = NODE_UUID;
-    k_mutex_unlock(&UUID_mutex);
-    return retVal;
-}
-
 static bool data_cb(struct bt_data *data, void *user_data) {
     struct ble_data *_data = user_data;
 
@@ -220,7 +212,7 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
     }
 }
 
-static void scan_start(void) {
+static int32_t scan_start(void) {
     BLE_LED_OFF(CENTRAL_SCANNING_LED);
 
     int err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found_callback);
@@ -228,27 +220,25 @@ static void scan_start(void) {
     if (err != 0) {
         printk("Scanning failed to start (err %d)\n", err);
     }
+    return err;
 }
 
 static int32_t adv_scan_start(void) {
-    if (bluetooth_on) {
-        int32_t err;
+    int32_t err;
 
-        BLE_LED_ON(CENTRAL_SCANNING_LED);
+    BLE_LED_ON(CENTRAL_SCANNING_LED);
 
-        err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd,
-                              ARRAY_SIZE(sd));
+    err =
+        bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 
-        if (err != 0) {
-            printk("Advertising failed to start (err %d)\n", err);
-            BLE_LED_OFF(CENTRAL_SCANNING_LED);
-            currentAdvMode = ADVERTISING_OFF;
-            return 1;
-        }
-        currentAdvMode = ADVERTISING_CONNECTABLE;
-        return 0;
+    if (err != 0) {
+        printk("Advertising failed to start (err %d)\n", err);
+        BLE_LED_OFF(CENTRAL_SCANNING_LED);
+        currentAdvMode = ADVERTISING_OFF;
+        return 1;
     }
-    return 1;
+    currentAdvMode = ADVERTISING_CONNECTABLE;
+    return 0;
 }
 
 static void adv_no_connect_start(void) {
@@ -425,7 +415,7 @@ static void scan_connecting(struct bt_scan_device_info *device_info,
 BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL, scan_connecting_error,
                 scan_connecting);
 
-static void scan_init(void) {
+static int32_t scan_init(void) {
     int err;
 
     struct bt_scan_init_param param = {.scan_param = NULL,
@@ -438,12 +428,85 @@ static void scan_init(void) {
     err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_HRS);
     if (err) {
         printk("Scanning filters cannot be set (err %d)\n", err);
+        return 1;
     }
 
     err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
     if (err) {
         printk("Filters cannot be turned on (err %d)\n", err);
+        return 1;
     }
+    return 0;
+}
+
+int32_t init_bt_stack(void) {
+    int32_t err;
+
+    err = bt_enable(NULL);
+    if (err) {
+        return 1;
+    }
+
+    if (IS_ENABLED(CONFIG_SETTINGS)) {
+        settings_load();
+    }
+
+    return scan_init();
+    //    scan_start();
+    //
+    //    printk("Scanning started\n");
+    //
+    //    BLE_LED_OFF(PERIPHERAL_ADVERTISING_LED);
+    //
+    //    bluetooth_on = true;
+    //    if (!adv_scan_start()) {
+    //        BLE_LED_ON(PERIPHERAL_ADVERTISING_LED);
+    //    }
+
+    // printk("Advertising started\n");
+}
+
+int32_t deinit_bt_stack(void) {
+    bt_le_adv_stop();
+    bt_le_scan_stop();
+
+    return bt_disable();
+}
+
+int32_t enable_bluetooth(void) {
+    if (!bluetooth_on) {
+        if (scan_start() != 0) {
+            return 1;
+        }
+        if (adv_scan_start() != 0) {
+            return 1;
+        }
+        bluetooth_on = true;
+
+        return 0;
+    }
+    return 1;
+}
+
+int32_t disable_bluetooth(void) {
+    // TODO: stop advertising and scanning
+    if (bluetooth_on) {
+        int err;
+        if ((err = bt_le_adv_stop()) != 0) {
+            printk("Unable to stop advertising (err: %d)\n", err);
+            return 1;
+        }
+        currentAdvMode = ADVERTISING_OFF;
+
+        if ((err = bt_le_scan_stop()) != 0) {
+            printk("Unable to stop scanning (err: %d)\n", err);
+            return 1;
+        }
+        bluetooth_on = false;
+
+        return 0;
+    }
+    return 1;
 }
 
 void update_node_id(uint16_t uuid) {
@@ -482,6 +545,14 @@ void update_node_id(uint16_t uuid) {
     }
 }
 
+uint16_t get_NODE_UUID(void) {
+    uint16_t retVal;
+    k_mutex_lock(&UUID_mutex, K_FOREVER);
+    retVal = NODE_UUID;
+    k_mutex_unlock(&UUID_mutex);
+    return retVal;
+}
+
 void advertising_reconfig(int32_t change) {
     struct bt_data data_poll_0 =
                        BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
@@ -510,69 +581,6 @@ void advertising_reconfig(int32_t change) {
         assert_print("Bad advertising mode");
         break;
     }
-}
-
-int32_t init_bt_stack(bool start_scanning) {
-    int32_t err;
-
-    err = bt_enable(NULL);
-    if (err) {
-        return 1;
-    }
-
-    if (IS_ENABLED(CONFIG_SETTINGS)) {
-        settings_load();
-    }
-
-    scan_init();
-
-    if (start_scanning) {
-        scan_start();
-    }
-
-    printk("Scanning started\n");
-
-    BLE_LED_OFF(PERIPHERAL_ADVERTISING_LED);
-
-    bluetooth_on = true;
-    if (!adv_scan_start()) {
-        BLE_LED_ON(PERIPHERAL_ADVERTISING_LED);
-    }
-
-    printk("Advertising started\n");
-
-    return 0;
-}
-
-void disable_bluetooth(void) {
-    int err;
-
-    err = bt_le_adv_stop();
-
-    if (err) {
-        printk("Failed to stop advertising (err %d)\n", err);
-    }
-
-    err = bt_le_scan_stop();
-
-    currentAdvMode = ADVERTISING_OFF;
-    bluetooth_on = false;
-}
-
-void enable_bluetooth(bool start_scanning) { init_bt_stack(start_scanning); }
-
-void ble_disable_scan(void) {
-    int err = bt_le_scan_stop();
-
-    if (err) {
-        printk("Failed to stop scanning (err %d)\n", err);
-    }
-    printk("Scanning stopped\n");
-}
-
-void ble_enable_scan(void) {
-    scan_start();
-    printk("Scanning started\n");
 }
 
 // void update_ble_service(float range) {
