@@ -221,7 +221,7 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
 }
 
 static void scan_start(void) {
-    LED_OFF(CENTRAL_SCANNING_LED);
+    BLE_LED_OFF(CENTRAL_SCANNING_LED);
 
     int err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found_callback);
 
@@ -234,14 +234,14 @@ static int32_t adv_scan_start(void) {
     if (bluetooth_on) {
         int32_t err;
 
-        LED_ON(CENTRAL_SCANNING_LED);
+        BLE_LED_ON(CENTRAL_SCANNING_LED);
 
         err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd,
                               ARRAY_SIZE(sd));
 
         if (err != 0) {
             printk("Advertising failed to start (err %d)\n", err);
-            LED_OFF(CENTRAL_SCANNING_LED);
+            BLE_LED_OFF(CENTRAL_SCANNING_LED);
             currentAdvMode = ADVERTISING_OFF;
             return 1;
         }
@@ -255,14 +255,14 @@ static void adv_no_connect_start(void) {
     if (bluetooth_on) {
         int32_t err;
 
-        LED_ON(CENTRAL_SCANNING_LED);
+        BLE_LED_ON(CENTRAL_SCANNING_LED);
 
         err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad), sd,
                               ARRAY_SIZE(sd));
 
         if (err != 0) {
             printk("Advertising failed to start (err %d)\n", err);
-            LED_OFF(CENTRAL_SCANNING_LED);
+            BLE_LED_OFF(CENTRAL_SCANNING_LED);
             currentAdvMode = ADVERTISING_OFF;
         }
         currentAdvMode = ADVERTISING_CONNECTABLE;
@@ -346,7 +346,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
     bt_conn_get_info(conn, &info);
 
     if (info.role == BT_CONN_ROLE_CENTRAL) {
-        LED_ON(CENTRAL_CONNECTED_LED);
+        BLE_LED_ON(CENTRAL_CONNECTED_LED);
 
         err = bt_conn_set_security(conn, BT_SECURITY_L2);
         if (err) {
@@ -355,7 +355,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
             gatt_discover(conn);
         }
     } else {
-        LED_ON(PERIPHERAL_CONNECTED_LED);
+        BLE_LED_ON(PERIPHERAL_CONNECTED_LED);
         bt_le_adv_stop();
         adv_no_connect_start();
     }
@@ -369,14 +369,14 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
     printk("Disconnected: %s (reason %u)\n", addr, reason);
 
     if (conn == central_conn) {
-        LED_OFF(CENTRAL_CONNECTED_LED);
+        BLE_LED_OFF(CENTRAL_CONNECTED_LED);
 
         bt_conn_unref(central_conn);
         central_conn = NULL;
 
         scan_start();
     } else {
-        LED_OFF(PERIPHERAL_CONNECTED_LED);
+        BLE_LED_OFF(PERIPHERAL_CONNECTED_LED);
         bt_le_adv_stop();
         adv_scan_start();
     }
@@ -532,11 +532,11 @@ int32_t init_bt_stack(bool start_scanning) {
 
     printk("Scanning started\n");
 
-    LED_OFF(PERIPHERAL_ADVERTISING_LED);
+    BLE_LED_OFF(PERIPHERAL_ADVERTISING_LED);
 
     bluetooth_on = true;
     if (!adv_scan_start()) {
-        LED_ON(PERIPHERAL_ADVERTISING_LED);
+        BLE_LED_ON(PERIPHERAL_ADVERTISING_LED);
     }
 
     printk("Advertising started\n");
@@ -554,16 +554,6 @@ void disable_bluetooth(void) {
     }
 
     err = bt_le_scan_stop();
-
-    if (err) {
-        printk("Failed to stop scanning (err %d)\n", err);
-    }
-
-    err = bt_disable();
-
-    if (err) {
-        printk("Failed to disable bluetooth (err %d)\n", err);
-    }
 
     currentAdvMode = ADVERTISING_OFF;
     bluetooth_on = false;
