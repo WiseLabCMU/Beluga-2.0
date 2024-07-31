@@ -162,9 +162,9 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer,
  * not be driven high externally.
  * */
 void reset_DW1000(void) {
-    #ifndef CONFIG_ENABLE_BELUGA_UWB
+#ifndef CONFIG_ENABLE_BELUGA_UWB
     return;
-    #endif
+#endif
     gpio_pin_configure_dt(&dw1000_reset_pin, GPIO_OUTPUT);
     gpio_pin_set_dt(&dw1000_reset_pin, 0);
     k_msleep(2);
