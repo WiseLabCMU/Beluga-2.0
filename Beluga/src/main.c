@@ -34,12 +34,11 @@ static void load_led_mode(void) {
         all_leds_off();
         printf("  LED Mode: Off \r\n");
     } else if (led_mode == 0) {
-        update_led_state(LED_POWER_ON);
         printf("  LED Mode: On \r\n");
     } else {
-        update_led_state(LED_POWER_ON);
         printf("  LED Mode: Default \r\n");
     }
+    update_led_state(LED_POWER_ON);
 }
 
 static void load_id(void) {
@@ -237,24 +236,24 @@ int main(void) {
     enable_bluetooth(false);
     if (initBelugaSettings()) {
         printk("Unable to init flash\n");
-        return 0;
+        return 1;
     }
 
     if (uart_init() < 0) {
         printk("Failed to init uart\n");
-        return 0;
+        return 1;
     }
 
     if (init_spi1() < 0) {
         printk("Failed to initialize SPI 1\n");
-        return 0;
+        return 1;
     }
 
     LED_INIT;
 
     if (configure_watchdog_timer() < 0) {
         printk("Failed to configure watchdog timer\n");
-        return 0;
+        return 1;
     }
 
     init_uwb();
@@ -275,4 +274,6 @@ int main(void) {
     for (;;) {
         k_sleep(K_FOREVER);
     }
+
+    return 1;
 }
