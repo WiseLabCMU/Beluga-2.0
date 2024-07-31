@@ -117,7 +117,7 @@ void set_spi_slow(beluga_spi_channel_t channel) {
         break;
     }
     case NRF21_SPI_CHANNEL: {
-        nrfSpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
+        nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_SLOW];
         memset(nrf21_txBuf, 0, SPI_BUF_SIZE);
         memset(nrf21_rxBuf, 0, SPI_BUF_SIZE);
         break;
