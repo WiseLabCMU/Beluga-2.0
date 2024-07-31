@@ -132,6 +132,8 @@ uint32_t get_rate(void) {
 void init_uwb(void) {
     setup_DW1000RSTnIRQ(0);
 
+    reset_DW1000();
+
     port_set_dw1000_slowrate();
 
     if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR) {
