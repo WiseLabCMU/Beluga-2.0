@@ -17,21 +17,6 @@
 #define BLE_LED_CONFIG 0
 #endif
 
-#if LED_SUPPORT_ENABLED == 1
-#include <dk_buttons_and_leds.h>
-#define LED_INIT                                                               \
-    do {                                                                       \
-        int _ledErr = dk_leds_init();                                          \
-        if (_ledErr) {                                                         \
-            printk("LEDs init failed (err %d)\n", _ledErr);                    \
-            return 0;                                                          \
-        }                                                                      \
-    } while (0)
-#else
-#define LED_INIT                                                               \
-    do {                                                                       \
-    } while (0)
-
 #undef DK_LED1
 #define DK_LED1 1
 
@@ -42,8 +27,7 @@
 #define DK_LED3 3
 
 #undef DK_LED4
-#define DK_LED4 4
-#endif
+#define DK_LED4                    4
 
 #define APP_LED_CONFIG             !BLE_LED_CONFIG
 
@@ -52,10 +36,12 @@
 #define CENTRAL_SCANNING_LED       DK_LED3
 #define CENTRAL_CONNECTED_LED      DK_LED4
 
-#define UWB_LED                    DK_LED1
-#define BLE_LED                    DK_LED2
-#define UNUSED_LED                 DK_LED3
-#define POWER_LED                  DK_LED4
+#define UWB_LED                    DK_LED3
+#define BLE_LED                    DK_LED4
+#define UNUSED_LED                 DK_LED1
+#define POWER_LED                  DK_LED2
+
+#define LED_SUPPORT_ENABLED        1
 
 #if LED_SUPPORT_ENABLED == 1
 #define LED_ON(LED)                                                            \
@@ -71,6 +57,26 @@
     do {                                                                       \
     } while (0)
 #define LED_OFF(LED) LED_ON(LED)
+#endif
+
+#if LED_SUPPORT_ENABLED == 1
+#include <dk_buttons_and_leds.h>
+#define LED_INIT                                                               \
+    do {                                                                       \
+        int _ledErr = dk_leds_init();                                          \
+        if (_ledErr) {                                                         \
+            printk("LEDs init failed (err %d)\n", _ledErr);                    \
+            return 0;                                                          \
+        }                                                                      \
+        LED_OFF(DK_LED1);                                                      \
+        LED_OFF(DK_LED2);                                                      \
+        LED_OFF(DK_LED3);                                                      \
+        LED_OFF(DK_LED4);                                                      \
+    } while (0)
+#else
+#define LED_INIT                                                               \
+    do {                                                                       \
+    } while (0)
 #endif
 
 #if BLE_LED_CONFIG == 1
