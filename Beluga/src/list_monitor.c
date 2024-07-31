@@ -103,7 +103,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
         // Re-sort seen list by RSSI value when a node is removed, added, or a
         // period of time
         if (removed || check_node_added() || ((count % 5) == 0)) {
-            ble_disable_scan();
+            disable_bluetooth();
 
             for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
                 for (int k = j + 1; k < MAX_ANCHOR_COUNT; k++) {
@@ -119,7 +119,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
             reset_node_added();
             removed = false;
             count = 0;
-            ble_enable_scan();
+            enable_bluetooth();
         }
 
         k_sem_give(&k_sus_init);
