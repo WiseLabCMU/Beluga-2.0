@@ -66,10 +66,7 @@ int init_spi1(void) {
     spiConfigs[NRF21540_CONFIG_FAST].cs = nrf_fem_cs;
 
     for (int i = 0; i < NUM_SPI_CONFIGS; i++) {
-        spiConfigs[i].operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB |
-                                  SPI_MODE_CPOL | SPI_MODE_CPHA |
-                                  SPI_OP_MODE_MASTER;
-        spiConfigs[i].slave = i / 2;
+        spiConfigs[i].operation = SPI_WORD_SET(8);
     }
 
     spiConfigs[DW1000_CONFIG_SLOW].frequency = DW1000_SLOW_FREQUENCY;
