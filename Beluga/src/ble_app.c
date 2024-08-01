@@ -70,10 +70,12 @@ K_MUTEX_DEFINE(UUID_mutex);
         (*(DST)) |= (SRC)[0];                                                  \
     } while (0)
 
-#define NAME_LEN           30
-#define UUID_INDEX         2
-#define MANF_INDEX         3
-#define POLLING_FLAG_INDEX 2
+#define BELUGA_SERVICE_UUID BT_UUID_HRS_VAL
+
+#define NAME_LEN            30
+#define UUID_INDEX          4
+#define MANF_INDEX          3
+#define POLLING_FLAG_INDEX  2
 
 enum adv_mode {
     ADVERTISING_CONNECTABLE,
@@ -90,9 +92,11 @@ static struct bt_data ad[] = {
                   (CONFIG_BT_DEVICE_APPEARANCE >> 0) & 0xff,
                   (CONFIG_BT_DEVICE_APPEARANCE >> 8) & 0xff),
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    BT_DATA_BYTES(BT_DATA_UUID16_ALL,
-                  BT_UUID_16_ENCODE(BT_UUID_HRS_VAL)), /* Heart Rate Service */
+    BT_DATA_BYTES(
+        BT_DATA_UUID16_ALL,
+        BT_UUID_16_ENCODE(BELUGA_SERVICE_UUID)), /* Heart Rate Service */
     BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
+    BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(0x1234)),
 };
 
 static struct bt_data sd[] = {
@@ -106,9 +110,9 @@ node seen_list[MAX_ANCHOR_COUNT];
 static enum adv_mode currentAdvMode = ADVERTISING_OFF;
 
 struct ble_data {
-    char name[NAME_LEN];
     uint16_t uuid;
     uint8_t manufacturerData[NAME_LEN];
+    bool beluga_node;
 };
 
 ALWAYS_INLINE static void set_NODE_UUID(uint16_t uuid) {
@@ -119,14 +123,16 @@ ALWAYS_INLINE static void set_NODE_UUID(uint16_t uuid) {
 
 static bool data_cb(struct bt_data *data, void *user_data) {
     struct ble_data *_data = user_data;
+    uint16_t uuid = 0;
 
     switch (data->type) {
-    case BT_DATA_NAME_SHORTENED:
-    case BT_DATA_NAME_COMPLETE:
-        memcpy(_data->name, data->data, MIN(data->data_len, NAME_LEN - 1));
-        break;
     case BT_DATA_UUID16_ALL:
-        UUID16_EXTRACT(&(_data->uuid), data->data);
+        UUID16_EXTRACT(&uuid, data->data);
+        if (uuid == BELUGA_SERVICE_UUID) {
+            _data->beluga_node = true;
+        } else {
+            _data->uuid = uuid;
+        }
         break;
     case BT_DATA_MANUFACTURER_DATA:
         memcpy(_data->manufacturerData, data->data,
@@ -207,7 +213,7 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
 
     bt_data_parse(adv_info, data_cb, &_data);
 
-    if (strncmp(_data.name, m_target_peripheral_name, 3) == 0) {
+    if (_data.beluga_node) {
         update_seen_list(&_data, rssi);
     }
 }
@@ -238,6 +244,13 @@ static int32_t adv_scan_start(void) {
         return 1;
     }
     currentAdvMode = ADVERTISING_CONNECTABLE;
+
+    err = bt_le_scan_start(BT_LE_SCAN_ACTIVE, device_found_callback);
+
+    if (err != 0) {
+        printk("Scanning failed to start (err %d)\n", err);
+        return 1;
+    }
     return 0;
 }
 
@@ -452,18 +465,6 @@ int32_t init_bt_stack(void) {
     }
 
     return scan_init();
-    //    scan_start();
-    //
-    //    printk("Scanning started\n");
-    //
-    //    BLE_LED_OFF(PERIPHERAL_ADVERTISING_LED);
-    //
-    //    bluetooth_on = true;
-    //    if (!adv_scan_start()) {
-    //        BLE_LED_ON(PERIPHERAL_ADVERTISING_LED);
-    //    }
-
-    // printk("Advertising started\n");
 }
 
 int32_t deinit_bt_stack(void) {
@@ -475,9 +476,9 @@ int32_t deinit_bt_stack(void) {
 
 int32_t enable_bluetooth(void) {
     if (!bluetooth_on) {
-        if (scan_start() != 0) {
-            return 1;
-        }
+        //        if (scan_start() != 0) {
+        //            return 1;
+        //        }
         if (adv_scan_start() != 0) {
             return 1;
         }
