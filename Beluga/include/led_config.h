@@ -17,17 +17,14 @@
 #define BLE_LED_CONFIG 0
 #endif
 
-#undef DK_LED1
+#if LED_SUPPORT_ENABLED == 0
 #define DK_LED1 1
-
-#undef DK_LED2
 #define DK_LED2 2
-
-#undef DK_LED3
 #define DK_LED3 3
-
-#undef DK_LED4
-#define DK_LED4                    4
+#define DK_LED4 4
+#else
+#include <dk_buttons_and_leds.h>
+#endif
 
 #define APP_LED_CONFIG             !BLE_LED_CONFIG
 
@@ -60,7 +57,6 @@
 #endif
 
 #if LED_SUPPORT_ENABLED == 1
-#include <dk_buttons_and_leds.h>
 #define LED_INIT                                                               \
     do {                                                                       \
         int _ledErr = dk_leds_init();                                          \
