@@ -8,6 +8,7 @@
 #include <zephyr/sys/printk.h>
 
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 
 #if defined(CONFIG_SETTINGS_FILE)

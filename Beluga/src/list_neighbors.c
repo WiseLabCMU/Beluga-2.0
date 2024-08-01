@@ -3,7 +3,9 @@
 //
 
 #include <ble_app.h>
+#include <inttypes.h>
 #include <list_neighbors.h>
+#include <stdio.h>
 #include <thread_priorities.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
@@ -31,9 +33,11 @@ static void normal_print(void) {
     printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
 
     for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
-        if (seen_list[j].UUID != 0)
-            printf("%d, %f, %d, %d \r\n", seen_list[j].UUID, seen_list[j].range,
-                   seen_list[j].RSSI, seen_list[j].time_stamp);
+        if (seen_list[j].UUID != 0) {
+            printf("%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n",
+                   seen_list[j].UUID, seen_list[j].range, seen_list[j].RSSI,
+                   seen_list[j].time_stamp);
+        }
     }
 }
 
@@ -52,8 +56,8 @@ static void stream_print(void) {
 
         for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
             if (seen_list[j].UUID != 0 && seen_list[j].update_flag == 1)
-                printf("%d, %f, %d, %d \r\n", seen_list[j].UUID,
-                       seen_list[j].range, seen_list[j].RSSI,
+                printf("%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n",
+                       seen_list[j].UUID, seen_list[j].range, seen_list[j].RSSI,
                        seen_list[j].time_stamp);
 
             // Reset update flag of the node

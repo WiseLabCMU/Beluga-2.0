@@ -11,7 +11,7 @@
 #include <resp_main.h>
 #include <stdbool.h>
 #include <thread_priorities.h>
-#include <timestamp.h>
+//#include <timestamp.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
@@ -237,7 +237,7 @@ static void poll_nodes(void) {
         if ((numThru != 0) && (range >= -5) && (range <= 100)) {
             seen_list[cur_index].update_flag = 1;
             seen_list[cur_index].range = range;
-            seen_list[cur_index].time_stamp = get_timestamp();
+            seen_list[cur_index].time_stamp = k_uptime_get();
 
             // Update BLE transfer value to phone
             // TODO:

@@ -57,7 +57,7 @@
 #include <list_monitor.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <timestamp.h>
+#include <stdio.h>
 
 K_MUTEX_DEFINE(UUID_mutex);
 
@@ -166,7 +166,7 @@ static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
     }
     seen_list[last_seen_index].UUID = data->uuid;
     seen_list[last_seen_index].RSSI = rssi;
-    seen_list[last_seen_index].ble_time_stamp = get_timestamp();
+    seen_list[last_seen_index].ble_time_stamp = k_uptime_get();
     if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
         seen_list[last_seen_index].polling_flag = 0;
     } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {
@@ -180,7 +180,7 @@ static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
 static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
     int32_t index = get_seen_list_index(data->uuid);
     seen_list[index].RSSI = rssi;
-    seen_list[index].ble_time_stamp = get_timestamp();
+    seen_list[index].ble_time_stamp = k_uptime_get();
 
     if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
         seen_list[last_seen_index].polling_flag = 0;

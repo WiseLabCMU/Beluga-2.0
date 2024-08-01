@@ -8,7 +8,7 @@
 #include <init_main.h>
 #include <stdint.h>
 #include <thread_priorities.h>
-#include <timestamp.h>
+//#include <timestamp.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
@@ -92,7 +92,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
         // Check for timeout eviction
         for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
             if (seen_list[x].UUID != 0) {
-                if ((get_timestamp() - seen_list[x].ble_time_stamp) >=
+                if ((k_uptime_get() - seen_list[x].ble_time_stamp) >=
                     get_node_timeout()) {
                     removed = true;
                     memset(&seen_list[x], 0, sizeof(seen_list[0]));

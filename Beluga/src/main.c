@@ -17,7 +17,7 @@
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>
-#include <timestamp.h>
+//#include <timestamp.h>
 #include <uart.h>
 #include <unistd.h>
 #include <watchdog.h>
@@ -260,8 +260,6 @@ int main(void) {
     }
 
     init_uwb();
-
-    init_timekeeper(1, 1);
 
     printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
 

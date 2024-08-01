@@ -20,15 +20,15 @@
  * BLE neighbor node structure
  */
 typedef struct node {
-    uint16_t UUID;    /* node ID */
-    int8_t RSSI;      /* node RSSI value */
-    int time_stamp;   /* Last timestamp updated ranging value */
-    float range;      /* Last updated ranging value */
+    uint16_t UUID;      /* node ID */
+    int8_t RSSI;        /* node RSSI value */
+    int64_t time_stamp; /* Last timestamp updated ranging value */
+    float range;        /* Last updated ranging value */
     int update_flag;  /* Flag to indicate the ranging value is updated or not, 1
                          if the node get updated */
     int polling_flag; /* Flag to indicate the node is passive or not, 1 if the
                          node will init uwb signal*/
-    uint64_t
+    int64_t
         ble_time_stamp; /* Last timestamp get the BLE package from this node */
 } node;
 

@@ -280,7 +280,7 @@ int ds_resp_run(void) {
 
                 if (memcmp(rx_buffer, rx_final_msg, ALL_MSG_COMMON_LEN) == 0 &&
                     (id == NODE_UUID)) {
-                    int ret;
+                    // int ret;
                     uint32 resp_rx_ts, poll_tx_ts, final_tx_ts;
                     uint32 poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
                     double roundA, replyA, roundB, replyB;

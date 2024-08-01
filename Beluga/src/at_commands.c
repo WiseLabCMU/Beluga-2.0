@@ -64,7 +64,7 @@ static uint16_t argparse(char *s, char **argv) {
     uint16_t argc;
 
     for (argc = 0, temp = s; argc < (MAX_TOKENS - 1); argc++) {
-        while (isspace(*temp)) {
+        while (isspace((int)*temp)) {
             temp++;
         }
 
@@ -74,11 +74,11 @@ static uint16_t argparse(char *s, char **argv) {
 
         argv[argc] = temp;
 
-        while (isgraph(*temp)) {
+        while (isgraph((int)*temp)) {
             temp++;
         }
 
-        if (isspace(*temp)) {
+        if (isspace((int)*temp)) {
             *temp = '\0';
             temp++;
         }
@@ -95,7 +95,7 @@ static bool strtoint32(const char *str, int32_t *result) {
     ret = strtol(str, &endptr, 10);
 
     if (errno == ERANGE || (int64_t)ret > (int64_t)INT32_MAX ||
-        isgraph(*endptr)) {
+        isgraph((int)*endptr)) {
         *result = 0;
         return false;
     }
