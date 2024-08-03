@@ -89,3 +89,7 @@ config BELUGA_BLE_LEDS
 config WDT_MAX_WINDOW
     int "Maximum window of the watchdog timer"
     default 2000
+
+config DEBUG_BELUGA_CLOCK
+    bool "Debug oscillating crystals"
+    default n

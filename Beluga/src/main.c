@@ -27,6 +27,78 @@
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
 
+#include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/clock_control/nrf_clock_control.h>
+
+enum clk_cntrl { HIGH_FREQ, LOW_FREQ };
+
+static bool clock_init(enum clk_cntrl clk_subsys) {
+    int err;
+    int res;
+    struct onoff_manager *clk_mgr;
+    struct onoff_client clk_cli;
+
+    switch (clk_subsys) {
+    case HIGH_FREQ:
+        clk_mgr = z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_HF);
+        break;
+    case LOW_FREQ:
+        clk_mgr = z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_LF);
+        break;
+    default:
+        return false;
+    }
+
+    if (!clk_mgr) {
+        printk("Unable to get the Clock manager\n");
+        return false;
+    }
+
+    sys_notify_init_spinwait(&clk_cli.notify);
+
+    err = onoff_request(clk_mgr, &clk_cli);
+    if (err < 0) {
+        printk("Clock request failed: %d\n", err);
+        return false;
+    }
+
+    int retries = 15;
+
+    do {
+        for (int i = 0; i < 10000; i++)
+            ;
+        err = sys_notify_fetch_result(&clk_cli.notify, &res);
+        if (!err && res) {
+            printk("Clock could not be started: %d\n", res);
+            return false;
+        } else if (err) {
+            printk("sys_notify_fetch_result(): %d\n", err);
+        }
+        retries--;
+    } while (err && retries);
+
+    if (err == 0) {
+        printk("Clock has started\n");
+    }
+    return err == 0;
+}
+
+#ifdef CONFIG_DEBUG_BELUGA_CLOCK
+#define INIT_CLOCKS                                                            \
+    do {                                                                       \
+        bool retVal = clock_init(LOW_FREQ);                                    \
+        while (!retVal)                                                        \
+            ;                                                                  \
+        retVal = clock_init(HIGH_FREQ);                                        \
+        while (!retVal)                                                        \
+            ;                                                                  \
+    } while (0)
+#else
+#define INIT_CLOCKS                                                            \
+    do {                                                                       \
+    } while (0)
+#endif
+
 static void load_led_mode(void) {
     int32_t led_mode = retrieveSetting(BELUGA_LEDMODE);
 
@@ -232,6 +304,8 @@ int main(void) {
     get_reset_cause();
 
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
+
+    INIT_CLOCKS;
 
     if (init_bt_stack() != 0) {
         printk("Failed to init bluetooth stack\n");
