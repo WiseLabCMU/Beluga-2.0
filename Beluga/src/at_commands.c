@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
+#include <range_extension.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -292,8 +293,23 @@ static void at_reboot(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     sys_reboot(SYS_REBOOT_COLD);
 }
 
-static void at_pwramp(UNUSED uint16_t argc, UNUSED char const *const *argv) {
-    printf("Not Implemented \r\n");
+static void at_pwramp(uint16_t argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
+    int32_t pwramp;
+    bool success = strtoint32(argv[1], &pwramp);
+
+    if (!success || pwramp < 0 || pwramp > 1) {
+        printf("Power amp parameter input error \r\n");
+        return;
+    }
+
+    if (pwramp == 0) {
+        disable_range_extension();
+    } else {
+        enable_range_extension();
+    }
+
+    OK;
 }
 
 static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
