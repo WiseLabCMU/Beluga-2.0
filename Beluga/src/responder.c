@@ -50,5 +50,7 @@ void init_responder_thread(void) {
     printk("Started responder\n");
 }
 #else
-void init_responder_thread(void) {}
+void init_responder_thread(void) {
+    printk("Responder disabled\n");
+}
 #endif

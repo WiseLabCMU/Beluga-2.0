@@ -76,5 +76,7 @@ int uart_init(void) {
     }
     uart_irq_rx_enable(uart);
 
+    printk("UART initialized\n");
+
     return 0;
 }

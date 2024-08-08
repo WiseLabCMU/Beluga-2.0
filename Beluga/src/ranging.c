@@ -152,6 +152,8 @@ void init_uwb(void) {
 
     /* Set expected response's timeout. (keep listening so timeout is 0) */
     dwt_setrxtimeout(0);
+
+    printk("UWB initialized\n");
 }
 
 /**
@@ -317,5 +319,7 @@ void init_ranging_thread(void) {
     printk("Started ranging\n");
 }
 #else
-void init_ranging_thread(void) {}
+void init_ranging_thread(void) {
+    printk("Ranging disabled\n");
+}
 #endif

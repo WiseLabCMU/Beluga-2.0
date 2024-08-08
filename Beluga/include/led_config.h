@@ -66,10 +66,12 @@
         LED_OFF(DK_LED2);                                                      \
         LED_OFF(DK_LED3);                                                      \
         LED_OFF(DK_LED4);                                                      \
+        printk("LEDs initialized\n");                                          \
     } while (0)
 #else
 #define LED_INIT                                                               \
     do {                                                                       \
+    printk("LEDs disabled\n"); \
     } while (0)
 #endif
 
