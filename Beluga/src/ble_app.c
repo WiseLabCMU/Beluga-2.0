@@ -380,8 +380,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
         scan_start();
     } else {
         BLE_LED_OFF(PERIPHERAL_CONNECTED_LED);
-        bt_le_adv_stop();
-        adv_scan_start();
+        disable_bluetooth();
+        enable_bluetooth();
     }
 }
 
