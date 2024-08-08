@@ -290,6 +290,7 @@ static void at_ledmode(uint16_t argc, char const *const *argv) {
 static void at_reboot(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
     printf("\r\n");
+    disable_bluetooth();
     sys_reboot(SYS_REBOOT_COLD);
 }
 
@@ -413,7 +414,9 @@ void init_commands_thread(void) {
     printk("Started AT commands\n");
 }
 #else
-void init_commands_thread(void) {}
+void init_commands_thread(void) {
+    printk("Started AT commands\n");
+}
 #endif
 
 // int leds_mode;

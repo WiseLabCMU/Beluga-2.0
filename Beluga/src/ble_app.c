@@ -380,8 +380,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
         scan_start();
     } else {
         BLE_LED_OFF(PERIPHERAL_CONNECTED_LED);
-        bt_le_adv_stop();
-        adv_scan_start();
+        disable_bluetooth();
+        enable_bluetooth();
     }
 }
 
@@ -459,10 +459,7 @@ int32_t init_bt_stack(void) {
     if (err) {
         return 1;
     }
-
-    if (IS_ENABLED(CONFIG_SETTINGS)) {
-        settings_load();
-    }
+    printk("Bluetooth stack loaded\n");
 
     return scan_init();
 }
@@ -476,9 +473,6 @@ int32_t deinit_bt_stack(void) {
 
 int32_t enable_bluetooth(void) {
     if (!bluetooth_on) {
-        //        if (scan_start() != 0) {
-        //            return 1;
-        //        }
         if (adv_scan_start() != 0) {
             return 1;
         }

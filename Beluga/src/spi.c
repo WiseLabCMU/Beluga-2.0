@@ -102,6 +102,8 @@ int init_spi1(void) {
     dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
     nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_SLOW];
 
+    printk("SPI 1 initialized\n");
+
     return 0;
 }
 

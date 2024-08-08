@@ -32,6 +32,7 @@ int configure_watchdog_timer(void) {
     wdt = WDT_NAME;
 
     if (!WDT_ENABLED) {
+        printk("Watchdog disabled\n");
         return 0;
     }
 
@@ -65,6 +66,7 @@ int configure_watchdog_timer(void) {
         printk("Failed to feed the dog (%d)\n", err);
         return -1;
     }
+    printk("Watchdog initialized\n");
 
     return 0;
 }

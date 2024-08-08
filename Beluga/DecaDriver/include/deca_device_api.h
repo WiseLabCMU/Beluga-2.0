@@ -190,10 +190,12 @@ typedef signed long int32;
 #define DWT_CB_DATA_RX_FLAG_RNG 0x1 // Ranging bit
 
 #ifndef CONFIG_ENABLE_BELUGA_UWB
-#define DWT_DISABLED_RET_SUCCESS  return DWT_SUCCESS
-#define DWT_DISABLED_RET_DEV_CODE return 0xDECA0130
-#define DWT_DISABLED_RET_VOID     return
-#define DWT_DISABLED_RET_DOUBLE   return 0.0
+#include <zephyr/sys/printk.h>
+
+#define DWT_DISABLED_RET_SUCCESS do { printk("UWB disabled\n"); return DWT_SUCCESS; } while(0)
+#define DWT_DISABLED_RET_DEV_CODE do { printk("UWB disabled\n"); return 0xDECA0130; } while(0)
+#define DWT_DISABLED_RET_VOID     do { printk("UWB disabled\n"); return; } while(0)
+#define DWT_DISABLED_RET_DOUBLE   do { printk("UWB disabled\n"); return 0.0; } while(0)
 #else
 #define DWT_DISABLED_RET_SUCCESS                                               \
     do {                                                                       \

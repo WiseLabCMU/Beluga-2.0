@@ -139,5 +139,7 @@ void init_monitor_thread(void) {
     printk("Started monitor\n");
 }
 #else
-void init_monitor_thread(void) {}
+void init_monitor_thread(void) {
+    printk("Monitor disabled\n");
+}
 #endif
