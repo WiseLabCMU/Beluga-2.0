@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <zephyr/kernel.h>
 
-#ifdef CONFIG_FEM_AL_LIB
+#if defined(CONFIG_FEM_AL_LIB) && defined(CONFIG_BELUGA_RANGE_EXTENSION)
 #include <fem_al/fem_al.h>
 #include <deca_device_api.h>
 #include <nrf.h>
@@ -80,6 +80,22 @@ void disable_range_extension(void) {
 
 }
 
+#elif defined(CONFIG_BELUGA_RANGE_EXTENSION)
+#include <zephyr/drivers/gpio.h>
+
+DT_NODELABEL(nrf_radio_fem)
+
+void init_range_extension(void) {
+
+}
+
+void enable_range_extension(void) {
+
+}
+
+void disable_range_extension(void) {
+
+}
 #else
 void init_range_extension(void) {
     printk("Range extension disabled\n");

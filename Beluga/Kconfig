@@ -93,3 +93,7 @@ config WDT_MAX_WINDOW
 config DEBUG_BELUGA_CLOCK
     bool "Debug oscillating crystals"
     default n
+
+config BELUGA_RANGE_EXTENSION
+    bool "Enable range extension for Beluga"
+    default n
