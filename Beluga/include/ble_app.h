@@ -41,6 +41,7 @@ int32_t disable_bluetooth(void);
 void update_node_id(uint16_t uuid);
 uint16_t get_NODE_UUID(void);
 void advertising_reconfig(int32_t change);
+bool check_ble_enabled(void);
 
 // void ble_disable_scan(void);
 // void ble_enable_scan(void);
