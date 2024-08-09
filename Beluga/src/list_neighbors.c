@@ -107,7 +107,5 @@ void init_print_list_task(void) {
     printk("Started neighbors list\n");
 }
 #else
-void init_print_list_task(void) {
-    printk("Neighbors list disabled\n");
-}
+void init_print_list_task(void) { printk("Neighbors list disabled\n"); }
 #endif

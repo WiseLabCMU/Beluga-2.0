@@ -319,7 +319,5 @@ void init_ranging_thread(void) {
     printk("Started ranging\n");
 }
 #else
-void init_ranging_thread(void) {
-    printk("Ranging disabled\n");
-}
+void init_ranging_thread(void) { printk("Ranging disabled\n"); }
 #endif

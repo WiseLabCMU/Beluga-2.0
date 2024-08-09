@@ -24,13 +24,13 @@
 #include <app_leds.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
+#include <range_extension.h>
 #include <ranging.h>
 #include <settings.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
-#include <range_extension.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -414,9 +414,7 @@ void init_commands_thread(void) {
     printk("Started AT commands\n");
 }
 #else
-void init_commands_thread(void) {
-    printk("Started AT commands\n");
-}
+void init_commands_thread(void) { printk("Started AT commands\n"); }
 #endif
 
 // int leds_mode;

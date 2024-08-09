@@ -71,7 +71,7 @@
 #else
 #define LED_INIT                                                               \
     do {                                                                       \
-    printk("LEDs disabled\n"); \
+        printk("LEDs disabled\n");                                             \
     } while (0)
 #endif
 

@@ -192,10 +192,26 @@ typedef signed long int32;
 #ifndef CONFIG_ENABLE_BELUGA_UWB
 #include <zephyr/sys/printk.h>
 
-#define DWT_DISABLED_RET_SUCCESS do { printk("UWB disabled\n"); return DWT_SUCCESS; } while(0)
-#define DWT_DISABLED_RET_DEV_CODE do { printk("UWB disabled\n"); return 0xDECA0130; } while(0)
-#define DWT_DISABLED_RET_VOID     do { printk("UWB disabled\n"); return; } while(0)
-#define DWT_DISABLED_RET_DOUBLE   do { printk("UWB disabled\n"); return 0.0; } while(0)
+#define DWT_DISABLED_RET_SUCCESS                                               \
+    do {                                                                       \
+        printk("UWB disabled\n");                                              \
+        return DWT_SUCCESS;                                                    \
+    } while (0)
+#define DWT_DISABLED_RET_DEV_CODE                                              \
+    do {                                                                       \
+        printk("UWB disabled\n");                                              \
+        return 0xDECA0130;                                                     \
+    } while (0)
+#define DWT_DISABLED_RET_VOID                                                  \
+    do {                                                                       \
+        printk("UWB disabled\n");                                              \
+        return;                                                                \
+    } while (0)
+#define DWT_DISABLED_RET_DOUBLE                                                \
+    do {                                                                       \
+        printk("UWB disabled\n");                                              \
+        return 0.0;                                                            \
+    } while (0)
 #else
 #define DWT_DISABLED_RET_SUCCESS                                               \
     do {                                                                       \
