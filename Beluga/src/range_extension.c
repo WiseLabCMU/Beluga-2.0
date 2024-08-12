@@ -9,15 +9,61 @@
 #if defined(CONFIG_FEM_AL_LIB) && defined(CONFIG_BELUGA_RANGE_EXTENSION)
 #include <deca_device_api.h>
 #include <fem_al/fem_al.h>
-#include <nrf.h>
+//#include <nrf.h>
 
-// TODO
+#define MAX_GAIN 31
 
-void init_range_extension(void) {}
+bool init_range_extension(void) { return fem_tx_gain_set(0); }
 
-void enable_range_extension(void) {}
+bool enable_range_extension(void) {
+    int err;
+    if (IS_ENABLED(CONFIG_MPSL_FEM_NRF21540_GPIO_SPI)) {
+        err = fem_tx_gain_set(MAX_GAIN);
+    } else {
+        err = fem_tx_gain_set(1);
+    }
 
-void disable_range_extension(void) {}
+    if (err) {
+        printk("Unable to adjust gain (%d)\n", err);
+        return false;
+    }
+
+    return true;
+}
+
+bool disable_range_extension(void) {
+    int err = fem_tx_gain_set(0);
+
+    if (err) {
+        printk("Unable to adjust gain (%d)\n", err);
+        return false;
+    }
+
+    return true;
+}
+
+bool select_antenna(enum antenna_select ant) {
+    int err;
+    switch (ant) {
+    case ANTENNA_1:
+        err = fem_antenna_select(FEM_ANTENNA_1);
+        break;
+    case ANTENNA_2:
+        err = fem_antenna_select(FEM_ANTENNA_2);
+        break;
+    default:
+        printk("Invalid antenna input\n");
+        break;
+    }
+
+    if (err) {
+        printk("fem_antenna_select(): %d\n", err);
+        printf("Not implemented\r\n");
+        return false;
+    }
+
+    return true;
+}
 
 #elif defined(CONFIG_BELUGA_RANGE_EXTENSION)
 // Only GPIO support
@@ -162,9 +208,23 @@ bool select_antenna(enum antenna_select ant) {
 }
 
 #else
-void init_range_extension(void) { printk("Range extension disabled\n"); }
+bool init_range_extension(void) {
+    printk("Range extension disabled\n");
+    return true;
+}
 
-void enable_range_extension(void) { printf("Not implemented\r\n"); }
+bool enable_range_extension(void) {
+    printf("Not implemented\r\n");
+    return false;
+}
 
-void disable_range_extension(void) { printf("Not implemented\r\n"); }
+bool disable_range_extension(void) {
+    printf("Not implemented\r\n");
+    return false;
+}
+
+bool select_antenna(enum antenna_select ant) {
+    printf("Not implemented\r\n");
+    return false;
+}
 #endif

@@ -18,6 +18,7 @@
 #include <spi.h>
 #include <stdio.h>
 //#include <timestamp.h>
+#include <range_extension.h>
 #include <uart.h>
 #include <unistd.h>
 #include <watchdog.h>
@@ -323,6 +324,11 @@ int main(void) {
 
     if (init_spi1() < 0) {
         printk("Failed to initialize SPI 1\n");
+        return 1;
+    }
+
+    if (!init_range_extension()) {
+        printk("Failed to initialize range extension\n");
         return 1;
     }
 

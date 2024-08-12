@@ -31,3 +31,14 @@
 &spi2 {
 	status = "disabled";
 };
+
+/// {
+//	nrf21540-fem {
+//		compatible = "nordic,nrf21540-fem";
+//		mode-gpios = <&gpio0 13 0>;
+//		rx-en-gpios = <&gpio0 14 0>;
+//		ant-sel-gpios = <&gpio0 15 0>;
+//		tx-en-gpios = <&gpio0 16 0>;
+//		pdn-gpios = <&gpio0 20 0>;
+//	};
+//};
