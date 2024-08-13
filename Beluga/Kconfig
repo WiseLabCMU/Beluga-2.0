@@ -97,3 +97,13 @@ config DEBUG_BELUGA_CLOCK
 config BELUGA_RANGE_EXTENSION
     bool "Enable range extension for Beluga"
     default n
+
+config BELUGA_POUTA
+    int "The gain when the mode pin is high"
+    depends on BELUGA_RANGE_EXTENSION
+    default 0
+
+config BELUGA_POUTB
+    int "The gain when the mode pin is low"
+    depends on BELUGA_RANGE_EXTENSION
+    default 31
