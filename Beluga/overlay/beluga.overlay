@@ -1,0 +1,6 @@
+ / {
+	 vr_adjust: vr_adjust {
+		 compatible = "vr-adjust";
+		 gpios = <&gpio0 6 0>;
+	 };
+ };

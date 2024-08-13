@@ -1,0 +1,10 @@
+description: GPIO pin to adjust the voltage regulator output
+
+compatible: "vr-adjust"
+
+properties:
+  gpios:
+    type: phandle-array
+    required: true
+    description: |
+      The GPIO controlling the output of the voltage regulator.
