@@ -188,6 +188,21 @@ static void write_pouta(void) {
     write_spi(NRF21_SPI_CHANNEL, command, NRF21_MAXBUF);
 }
 
+static void read_nrf21(uint8_t *pouta, uint8_t *poutb) {
+    uint8_t command[NRF21_MAXBUF];
+    uint8_t read_data[NRF21_MAXBUF];
+    enable_uicr_mode();
+
+    command[0] = 0x3 | NRF21_READ;
+
+    read_spi(NRF21_SPI_CHANNEL, command, read_data, NRF21_MAXBUF);
+    *poutb = read_data[1];
+
+    command[0] = 0x2 | NRF21_READ;
+    read_spi(NRF21_SPI_CHANNEL, command, read_data, NRF21_MAXBUF);
+    *pouta = read_data[1];
+}
+
 bool init_nrf21540(void) {
     int err;
 
@@ -198,6 +213,7 @@ bool init_nrf21540(void) {
     }
 
     if (!areBoundsSet()) {
+        uint8_t pouta, poutb;
         update_voltage_level(VR_3V5);
         assert(get_current_voltage() == VR_3V5);
         power_on_nrf21();
@@ -211,14 +227,18 @@ bool init_nrf21540(void) {
         k_sleep(K_MSEC(2));
         update_voltage_level(VR_3V3);
         power_on_nrf21();
-        // TODO: Read from nrf21
+        read_nrf21(&pouta, &poutb);
         power_down_nrf21();
-        // TODO: VERIFY VALUES ARE CORRECT
-        if (false) {
+        if (pouta == CONFIG_BELUGA_POUTA && poutb == CONFIG_BELUGA_POUTB) {
             updateStaticSetting(BELUGA_FEM_POUTA, CONFIG_BELUGA_POUTA);
             updateStaticSetting(BELUGA_FEM_POUTB, CONFIG_BELUGA_POUTB);
+        } else {
+            printk("Configuration mismatches\n");
+            return false;
         }
     }
+
+    printk("Front end module configured\n");
 
     return true;
 }
