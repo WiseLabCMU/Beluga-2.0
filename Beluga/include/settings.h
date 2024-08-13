@@ -21,7 +21,8 @@ enum beluga_setting {
 };
 
 enum beluga_static_settings {
-    BELUGA_FEM_PROGRAMMED,
+    BELUGA_FEM_POUTA,
+    BELUGA_FEM_POUTB,
     BELUGA_STATIC_RESERVED
 };
 

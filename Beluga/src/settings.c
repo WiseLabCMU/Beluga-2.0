@@ -29,12 +29,10 @@ static struct beluga_settings_dict settingValues[] = {
     {"poll_rate", DEFAULT_SETTING},   {"uwb_channel", DEFAULT_SETTING},
     {"ble_timeout", DEFAULT_SETTING}, {"tx_power", DEFAULT_SETTING},
     {"stream_mode", DEFAULT_SETTING}, {"twr", DEFAULT_SETTING},
-    {"led_mode", DEFAULT_SETTING},
-    {"fem_programmed", DEFAULT_SETTING}};
+    {"led_mode", DEFAULT_SETTING},    {"fem_programmed", DEFAULT_SETTING}};
 
 static struct beluga_settings_dict staticSettingValues[] = {
-        {"fem_programmed", DEFAULT_SETTING}
-};
+    {"pout_a", DEFAULT_SETTING}, {"pout_b", DEFAULT_SETTING}};
 
 #define LONGEST_SETTING_NAME_LEN 11
 #define BELUGA_LEN               6
@@ -107,16 +105,19 @@ static int static_beluga_get(const char *name, char *val, int val_len_max) {
     ARG_UNUSED(val_len_max);
     const char *next;
 
-    for(size_t i = 0; i < ARRAY_SIZE(staticSettingValues); i++) {
-        if (settings_name_steq(name, staticSettingValues[i].key, &next) && !next) {
-            memcpy(val, &staticSettingValues[i].value, sizeof(staticSettingValues[0].value));
+    for (size_t i = 0; i < ARRAY_SIZE(staticSettingValues); i++) {
+        if (settings_name_steq(name, staticSettingValues[i].key, &next) &&
+            !next) {
+            memcpy(val, &staticSettingValues[i].value,
+                   sizeof(staticSettingValues[0].value));
             return sizeof(staticSettingValues[0].value);
         }
     }
     return -ENOENT;
 }
 
-static int static_beluga_set(const char *name, size_t len, settings_read_cb read_cb, void *cb_arg) {
+static int static_beluga_set(const char *name, size_t len,
+                             settings_read_cb read_cb, void *cb_arg) {
     ARG_UNUSED(len);
     const char *next;
     size_t name_len;
@@ -126,10 +127,12 @@ static int static_beluga_set(const char *name, size_t len, settings_read_cb read
 
     for (size_t i = 0; (i < ARRAY_SIZE(staticSettingValues)) && !next; i++) {
         if (strncmp(name, staticSettingValues[i].key, name_len) == 0) {
-            rc = read_cb(cb_arg, &staticSettingValues[i].value, sizeof(staticSettingValues[0].value));
+            rc = read_cb(cb_arg, &staticSettingValues[i].value,
+                         sizeof(staticSettingValues[0].value));
 
             if (rc > 0) {
-                printk("static_beluga/%s> = %d\n", staticSettingValues[i].key, staticSettingValues[i].value);
+                printk("static_beluga/%s> = %d\n", staticSettingValues[i].key,
+                       staticSettingValues[i].value);
             }
             break;
         }
@@ -142,21 +145,25 @@ static int static_beluga_handle_commit(void) {
     return 0;
 }
 
-static int static_beluga_handle_export(int (*cb)(const char *name, const void *value,
-                                          size_t val_len)) {
+static int static_beluga_handle_export(int (*cb)(const char *name,
+                                                 const void *value,
+                                                 size_t val_len)) {
     char name[2 * MAX_NAME_LENGTH];
     printk("export keys under <static_beluga> handler\n");
 
     for (size_t i = 0; i < ARRAY_SIZE(staticSettingValues); i++) {
-        snprintf(name, MAX_NAME_LENGTH, "static_beluga/%s", staticSettingValues[i].key);
-        (void)cb(name, &staticSettingValues[i].value, sizeof(staticSettingValues[0].value));
+        snprintf(name, MAX_NAME_LENGTH, "static_beluga/%s",
+                 staticSettingValues[i].key);
+        (void)cb(name, &staticSettingValues[i].value,
+                 sizeof(staticSettingValues[0].value));
     }
 
     return 0;
 }
 
-SETTINGS_STATIC_HANDLER_DEFINE(StaticBelugaSettings, "static_beluga", static_beluga_get,
-                               static_beluga_set, static_beluga_handle_commit,
+SETTINGS_STATIC_HANDLER_DEFINE(StaticBelugaSettings, "static_beluga",
+                               static_beluga_get, static_beluga_set,
+                               static_beluga_handle_commit,
                                static_beluga_handle_export);
 
 void updateSetting(enum beluga_setting setting, int32_t value) {
@@ -190,13 +197,14 @@ int32_t retrieveSetting(enum beluga_setting setting) {
 }
 
 void updateStaticSetting(enum beluga_static_settings setting, int32_t value) {
-    char name[2 *MAX_NAME_LENGTH];
+    char name[2 * MAX_NAME_LENGTH];
     int rc;
 
     if (setting >= BELUGA_STATIC_RESERVED) {
         return;
     }
-    snprintf(name, MAX_NAME_LENGTH, "static_beluga/%s", staticSettingValues[setting].key);
+    snprintf(name, MAX_NAME_LENGTH, "static_beluga/%s",
+             staticSettingValues[setting].key);
 
     rc = settings_save_one(name, (const void *)&value, sizeof(value));
 
