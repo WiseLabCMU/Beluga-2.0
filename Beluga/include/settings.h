@@ -17,6 +17,7 @@ enum beluga_setting {
     BELUGA_STREAMMODE,
     BELUGA_TWR,
     BELUGA_LEDMODE,
+    BELUGA_FEM_PROGRAMMED,
     BELUGA_RESERVED
 };
 

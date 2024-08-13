@@ -29,7 +29,8 @@ static struct beluga_settings_dict settingValues[] = {
     {"poll_rate", DEFAULT_SETTING},   {"uwb_channel", DEFAULT_SETTING},
     {"ble_timeout", DEFAULT_SETTING}, {"tx_power", DEFAULT_SETTING},
     {"stream_mode", DEFAULT_SETTING}, {"twr", DEFAULT_SETTING},
-    {"led_mode", DEFAULT_SETTING}};
+    {"led_mode", DEFAULT_SETTING},
+    {"fem_programmed", DEFAULT_SETTING}};
 
 #define LONGEST_SETTING_NAME_LEN 11
 #define BELUGA_LEN               6
