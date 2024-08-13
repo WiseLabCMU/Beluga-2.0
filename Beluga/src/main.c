@@ -17,13 +17,13 @@
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>
-//#include <timestamp.h>
 #include <range_extension.h>
 #include <uart.h>
 #include <unistd.h>
 #include <watchdog.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
+#include <voltage_regulator.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -307,6 +307,11 @@ int main(void) {
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
     INIT_CLOCKS;
+
+    if (!init_voltage_regulator()) {
+        printk("Failed to initialize voltage regulator\n");
+        return 1;
+    }
 
     if (init_bt_stack() != 0) {
         printk("Failed to init bluetooth stack\n");
