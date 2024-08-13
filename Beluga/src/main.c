@@ -11,19 +11,19 @@
 #include <led_config.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
+#include <range_extension.h>
 #include <ranging.h>
 #include <resp_main.h>
 #include <responder.h>
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>
-#include <range_extension.h>
 #include <uart.h>
 #include <unistd.h>
+#include <voltage_regulator.h>
 #include <watchdog.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
-#include <voltage_regulator.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"

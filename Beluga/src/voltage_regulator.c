@@ -25,7 +25,7 @@ static enum voltage_level currentLevel = VR_3V3;
         return VR_3V3;                                                         \
     } while (0)
 
-    static const struct gpio_dt_spec _vr_adjust;
+static const struct gpio_dt_spec _vr_adjust;
 #else
 #define VR_RET_SUCCESS                                                         \
     do {                                                                       \
@@ -34,7 +34,8 @@ static enum voltage_level currentLevel = VR_3V3;
     do {                                                                       \
     } while (0)
 
-static const struct gpio_dt_spec _vr_adjust = GPIO_DT_SPEC_GET(DT_NODELABEL(vr_adjust), gpios);
+static const struct gpio_dt_spec _vr_adjust =
+    GPIO_DT_SPEC_GET(DT_NODELABEL(vr_adjust), gpios);
 #endif
 
 bool init_voltage_regulator(void) {
@@ -57,19 +58,19 @@ bool update_voltage_level(enum voltage_level level) {
     int err;
 
     switch (level) {
-        case VR_2V4:
-            err = gpio_pin_configure_dt(&_vr_adjust, GPIO_OUTPUT_ACTIVE);
-            break;
-        case VR_3V3:
-            err = gpio_pin_configure_dt(&_vr_adjust, GPIO_DISCONNECTED);
-            break;
-        case VR_3V5:
-            err = gpio_pin_configure_dt(&_vr_adjust, GPIO_OUTPUT_INACTIVE);
-            break;
-        default:
-            printk("Received an invalid voltage level\n");
-            err = 1;
-            break;
+    case VR_2V4:
+        err = gpio_pin_configure_dt(&_vr_adjust, GPIO_OUTPUT_ACTIVE);
+        break;
+    case VR_3V3:
+        err = gpio_pin_configure_dt(&_vr_adjust, GPIO_DISCONNECTED);
+        break;
+    case VR_3V5:
+        err = gpio_pin_configure_dt(&_vr_adjust, GPIO_OUTPUT_INACTIVE);
+        break;
+    default:
+        printk("Received an invalid voltage level\n");
+        err = 1;
+        break;
     }
 
     if (!err) {
