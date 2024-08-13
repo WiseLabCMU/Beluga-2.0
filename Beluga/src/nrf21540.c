@@ -16,6 +16,10 @@
 
 #if defined(CONFIG_BELUGA_RANGE_EXTENSION)
 
+#define NRF21_MAXBUF 2
+#define NRF21_READ (0b10 << 6)
+#define NRF21_WRITE (0b11 << 6)
+
 #define NRF21540_NODE DT_NODELABEL(nrf_radio_fem)
 
 #if DT_NODE_HAS_PROP(NRF21540_NODE, ant_sel_gpios)
@@ -152,6 +156,38 @@ static void power_down_nrf21(void) {
     }
 }
 
+static void enable_uicr_mode(void) {
+    uint8_t command[NRF21_MAXBUF] = {
+            0x1 | NRF21_WRITE, 0x4
+    };
+
+    write_spi(NRF21_SPI_CHANNEL, command, NRF21_MAXBUF);
+}
+
+static void enter_program_mode(void) {
+    uint8_t command[NRF21_MAXBUF] = {
+            0x1 | NRF21_WRITE, 0xF0
+    };
+
+    write_spi(NRF21_SPI_CHANNEL, command, NRF21_MAXBUF);
+}
+
+static void write_poutb(void) {
+    uint8_t command[NRF21_MAXBUF] = {
+            0x3 | NRF21_WRITE, (1 << 5) | CONFIG_BELUGA_POUTB
+    };
+
+    write_spi(NRF21_SPI_CHANNEL, command, NRF21_MAXBUF);
+}
+
+static void write_pouta(void) {
+    uint8_t command[NRF21_MAXBUF] = {
+            0x2 | NRF21_WRITE, (3 << 5) | CONFIG_BELUGA_POUTA
+    };
+
+    write_spi(NRF21_SPI_CHANNEL, command, NRF21_MAXBUF);
+}
+
 bool init_nrf21540(void) {
     int err;
 
@@ -166,11 +202,11 @@ bool init_nrf21540(void) {
         assert(get_current_voltage() == VR_3V5);
         power_on_nrf21();
         set_spi_slow(NRF21_SPI_CHANNEL);
-        // TODO: Enable UICR
-        // TODO: Enter programming mode
-        // TODO: WRITE POUTB SEL AND POUTB_UICR
-        // TODO: WRITE POUTA SEL AND POUTA_UICR and WRITE 1 TO WR_UICR
-        k_sleep(K_MSEC(1));
+        enable_uicr_mode();
+        enter_program_mode();
+        write_poutb();
+        write_pouta();
+        k_sleep(K_MSEC(2));
         power_down_nrf21();
         k_sleep(K_MSEC(2));
         update_voltage_level(VR_3V3);

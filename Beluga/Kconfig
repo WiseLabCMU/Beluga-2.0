@@ -101,9 +101,9 @@ config BELUGA_RANGE_EXTENSION
 config BELUGA_POUTA
     int "The gain when the mode pin is high"
     depends on BELUGA_RANGE_EXTENSION
-    default 0
+    default 31
 
 config BELUGA_POUTB
     int "The gain when the mode pin is low"
     depends on BELUGA_RANGE_EXTENSION
-    default 31
+    default 0
