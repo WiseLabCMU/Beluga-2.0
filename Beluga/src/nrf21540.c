@@ -103,12 +103,15 @@ bool select_ble_antenna(enum antenna_select antenna) {
     int err = 0;
 
 #if ANTENNA_GPIO
+    bool state = save_and_disable_bluetooth();
     switch (antenna) {
         case ANTENNA_1:
             err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 0);
+            restore_bluetooth(state);
             break;
         case ANTENNA_2:
             err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 1);
+            restore_bluetooth(state);
             break;
         default:
             printk("Invalid value\n");
@@ -121,6 +124,31 @@ bool select_ble_antenna(enum antenna_select antenna) {
 #else
     printk("No antenna select found\n");
 #endif
+
+    return err == 0;
+}
+
+bool select_ble_gain(enum ble_gain gain) {
+    int err = 0;
+
+    bool state = save_and_disable_bluetooth();
+    switch(gain) {
+        case GAIN_0_DB:
+            err = gpio_pin_set_dt(&nrf21_gpios.power_mode, 1);
+            restore_bluetooth(state);
+            break;
+        case GAIN_20_DB:
+            err = gpio_pin_set_dt(&nrf21_gpios.power_mode, 0);
+            restore_bluetooth(state);
+            break;
+        default:
+            printk("Invalid gain case\n");
+            return false;
+    }
+
+    if (err) {
+        printk("Unable to set gain: %d\n", err);
+    }
 
     return err == 0;
 }
