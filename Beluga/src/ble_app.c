@@ -60,6 +60,7 @@
 #include <stdio.h>
 
 K_MUTEX_DEFINE(UUID_mutex);
+K_SEM_DEFINE(ble_state, 1, 1);
 
 /**@brief Macro to unpack 16bit unsigned UUID from an octet stream.
  */
@@ -471,37 +472,50 @@ int32_t deinit_bt_stack(void) {
     return bt_disable();
 }
 
-int32_t enable_bluetooth(void) {
-    if (!bluetooth_on) {
-        if (adv_scan_start() != 0) {
-            return 1;
-        }
-        bluetooth_on = true;
-
-        return 0;
+static int32_t _enable_bluetooth(void) {
+    if (adv_scan_start() != 0) {
+        return 1;
     }
-    return 1;
+    bluetooth_on = true;
+
+    return 0;
+}
+
+int32_t enable_bluetooth(void) {
+    int32_t retVal = 1;
+    k_sem_take(&ble_state, K_FOREVER);
+    if (!bluetooth_on) {
+        retVal = _enable_bluetooth();
+    }
+    k_sem_give(&ble_state);
+    return retVal;
+}
+
+static int32_t _disable_bluetooth(void) {
+    int err;
+    if ((err = bt_le_adv_stop()) != 0) {
+        printk("Unable to stop advertising (err: %d)\n", err);
+        return 1;
+    }
+    currentAdvMode = ADVERTISING_OFF;
+
+    if ((err = bt_le_scan_stop()) != 0) {
+        printk("Unable to stop scanning (err: %d)\n", err);
+        return 1;
+    }
+    bluetooth_on = false;
+
+    return 0;
 }
 
 int32_t disable_bluetooth(void) {
-    // TODO: stop advertising and scanning
+    int32_t retVal = 1;
+    k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
-        int err;
-        if ((err = bt_le_adv_stop()) != 0) {
-            printk("Unable to stop advertising (err: %d)\n", err);
-            return 1;
-        }
-        currentAdvMode = ADVERTISING_OFF;
-
-        if ((err = bt_le_scan_stop()) != 0) {
-            printk("Unable to stop scanning (err: %d)\n", err);
-            return 1;
-        }
-        bluetooth_on = false;
-
-        return 0;
+        retVal =  _disable_bluetooth();
     }
-    return 1;
+    k_sem_give(&ble_state);
+    return retVal;
 }
 
 void update_node_id(uint16_t uuid) {
@@ -596,3 +610,20 @@ bool check_ble_enabled(void) { return bluetooth_on; }
 //
 //     //bt_gatt_notify(NULL,
 // }
+
+bool save_and_disable_bluetooth(void) {
+    bool retVal;
+    k_sem_take(&ble_state, K_FOREVER);
+    retVal = bluetooth_on;
+    if (bluetooth_on) {
+        _disable_bluetooth();
+    }
+    return retVal;
+}
+
+void restore_bluetooth(bool state) {
+    if (state) {
+        _enable_bluetooth();
+    }
+    k_sem_give(&ble_state);
+}
