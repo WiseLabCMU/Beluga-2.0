@@ -99,4 +99,30 @@ bool init_nrf21540(void) {
     return retVal;
 }
 
+bool select_ble_antenna(enum antenna_select antenna) {
+    int err = 0;
+
+#if ANTENNA_GPIO
+    switch (antenna) {
+        case ANTENNA_1:
+            err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 0);
+            break;
+        case ANTENNA_2:
+            err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 1);
+            break;
+        default:
+            printk("Invalid value\n");
+            return false;
+    }
+
+    if (err) {
+        printk("Failed to set GPIO: %d\n", err);
+    }
+#else
+    printk("No antenna select found\n");
+#endif
+
+    return err == 0;
+}
+
 #endif
