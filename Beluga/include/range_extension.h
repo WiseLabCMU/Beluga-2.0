@@ -6,12 +6,11 @@
 #define BELUGA_RANGE_EXTENSION_H
 
 #include <stdbool.h>
-
-enum antenna_select { ANTENNA_1, ANTENNA_2 };
+#include <stdint.h>
 
 bool init_range_extension(void);
 bool enable_range_extension(void);
 bool disable_range_extension(void);
-bool select_antenna(enum antenna_select ant);
+bool select_antenna(int32_t ant);
 
 #endif // BELUGA_RANGE_EXTENSION_H

@@ -13,6 +13,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
+#include <stdio.h>
 
 #if defined(CONFIG_BELUGA_RANGE_EXTENSION)
 
@@ -100,7 +101,7 @@ bool init_nrf21540(void) {
 }
 
 bool select_ble_antenna(enum antenna_select antenna) {
-    int err = 0;
+    int err = 1;
 
 #if ANTENNA_GPIO
     bool state = save_and_disable_bluetooth();
@@ -122,7 +123,7 @@ bool select_ble_antenna(enum antenna_select antenna) {
         printk("Failed to set GPIO: %d\n", err);
     }
 #else
-    printk("No antenna select found\n");
+    printf("Not implemented\r\n");
 #endif
 
     return err == 0;
