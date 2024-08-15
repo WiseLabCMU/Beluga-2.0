@@ -75,7 +75,7 @@ static bool configure_nrf21_gpios(void) {
         return false;
     }
 
-    err = gpio_pin_configure_dt(&nrf21_gpios.power_mode, GPIO_OUTPUT_INACTIVE);
+    err = gpio_pin_configure_dt(&nrf21_gpios.power_mode, GPIO_OUTPUT_ACTIVE);
 
     if (err) {
         printk("Power mode GPIO configure (%d)\n", err);
