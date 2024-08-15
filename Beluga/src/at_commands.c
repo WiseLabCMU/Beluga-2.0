@@ -313,6 +313,23 @@ static void at_pwramp(uint16_t argc, char const *const *argv) {
     OK;
 }
 
+static void at_antenna(uint16_t  argc, char const *const *argv) {
+    CHECK_ARGC(argc, 2);
+    int32_t antenna;
+    bool success = strtoint32(argv[1], &antenna);
+
+    if (!success || antenna < 1 || antenna > 2) {
+        printf("Antenna parameter input error \r\n");
+        return;
+    }
+
+    success = select_antenna(antenna);
+
+    if (success) {
+        OK;
+    }
+}
+
 static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
                                      {"STOPUWB", 7, at_stop_uwb},
                                      {"STARTBLE", 8, at_start_ble},
@@ -329,6 +346,7 @@ static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
                                      {"LEDMODE", 7, at_ledmode},
                                      {"REBOOT", 6, at_reboot},
                                      {"PWRAMP", 6, at_pwramp},
+                                     {"ANTENNA", 7, at_antenna},
                                      {NULL, 0, NULL}};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
