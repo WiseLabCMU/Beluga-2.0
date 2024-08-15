@@ -512,7 +512,7 @@ int32_t disable_bluetooth(void) {
     int32_t retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
-        retVal =  _disable_bluetooth();
+        retVal = _disable_bluetooth();
     }
     k_sem_give(&ble_state);
     return retVal;

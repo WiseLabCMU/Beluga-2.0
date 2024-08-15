@@ -9,11 +9,11 @@
 #include <spi.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <voltage_regulator.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
-#include <stdio.h>
 
 #if defined(CONFIG_BELUGA_RANGE_EXTENSION)
 
@@ -48,9 +48,9 @@ static struct nrf21540_gpios {
     const struct gpio_dt_spec power_mode;
 } nrf21_gpios = {
 #if ANTENNA_GPIO
-        .ant_sel = GPIO_DT_SPEC_GET(NRF21540_NODE, ant_sel_gpios),
+    .ant_sel = GPIO_DT_SPEC_GET(NRF21540_NODE, ant_sel_gpios),
 #endif
-        .power_mode = GPIO_DT_SPEC_GET(NRF21540_NODE, mode_gpios),
+    .power_mode = GPIO_DT_SPEC_GET(NRF21540_NODE, mode_gpios),
 };
 
 static bool configure_nrf21_gpios(void) {
@@ -106,17 +106,17 @@ bool select_ble_antenna(enum antenna_select antenna) {
 #if ANTENNA_GPIO
     bool state = save_and_disable_bluetooth();
     switch (antenna) {
-        case ANTENNA_1:
-            err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 0);
-            restore_bluetooth(state);
-            break;
-        case ANTENNA_2:
-            err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 1);
-            restore_bluetooth(state);
-            break;
-        default:
-            printk("Invalid value\n");
-            return false;
+    case ANTENNA_1:
+        err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 0);
+        restore_bluetooth(state);
+        break;
+    case ANTENNA_2:
+        err = gpio_pin_set_dt(&nrf21_gpios.ant_sel, 1);
+        restore_bluetooth(state);
+        break;
+    default:
+        printk("Invalid value\n");
+        return false;
     }
 
     if (err) {
@@ -133,18 +133,18 @@ bool select_ble_gain(enum ble_gain gain) {
     int err = 0;
 
     bool state = save_and_disable_bluetooth();
-    switch(gain) {
-        case GAIN_0_DB:
-            err = gpio_pin_set_dt(&nrf21_gpios.power_mode, 1);
-            restore_bluetooth(state);
-            break;
-        case GAIN_20_DB:
-            err = gpio_pin_set_dt(&nrf21_gpios.power_mode, 0);
-            restore_bluetooth(state);
-            break;
-        default:
-            printk("Invalid gain case\n");
-            return false;
+    switch (gain) {
+    case GAIN_0_DB:
+        err = gpio_pin_set_dt(&nrf21_gpios.power_mode, 1);
+        restore_bluetooth(state);
+        break;
+    case GAIN_20_DB:
+        err = gpio_pin_set_dt(&nrf21_gpios.power_mode, 0);
+        restore_bluetooth(state);
+        break;
+    default:
+        printk("Invalid gain case\n");
+        return false;
     }
 
     if (err) {

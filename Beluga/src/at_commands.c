@@ -313,7 +313,7 @@ static void at_pwramp(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_antenna(uint16_t  argc, char const *const *argv) {
+static void at_antenna(uint16_t argc, char const *const *argv) {
     CHECK_ARGC(argc, 2);
     int32_t antenna;
     bool success = strtoint32(argv[1], &antenna);
@@ -330,24 +330,16 @@ static void at_antenna(uint16_t  argc, char const *const *argv) {
     }
 }
 
-static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
-                                     {"STOPUWB", 7, at_stop_uwb},
-                                     {"STARTBLE", 8, at_start_ble},
-                                     {"STOPBLE", 7, at_stop_ble},
-                                     {"ID", 2, at_change_id},
-                                     {"BOOTMODE", 8, at_bootmode},
-                                     {"RATE", 4, at_rate},
-                                     {"CHANNEL", 7, at_channel},
-                                     {"RESET", 5, at_reset},
-                                     {"TIMEOUT", 7, at_timeout},
-                                     {"TXPOWER", 7, at_txpower},
-                                     {"STREAMMODE", 10, at_streammode},
-                                     {"TWRMODE", 7, at_twrmode},
-                                     {"LEDMODE", 7, at_ledmode},
-                                     {"REBOOT", 6, at_reboot},
-                                     {"PWRAMP", 6, at_pwramp},
-                                     {"ANTENNA", 7, at_antenna},
-                                     {NULL, 0, NULL}};
+static struct cmd_info commands[] = {
+    {"STARTUWB", 8, at_start_uwb}, {"STOPUWB", 7, at_stop_uwb},
+    {"STARTBLE", 8, at_start_ble}, {"STOPBLE", 7, at_stop_ble},
+    {"ID", 2, at_change_id},       {"BOOTMODE", 8, at_bootmode},
+    {"RATE", 4, at_rate},          {"CHANNEL", 7, at_channel},
+    {"RESET", 5, at_reset},        {"TIMEOUT", 7, at_timeout},
+    {"TXPOWER", 7, at_txpower},    {"STREAMMODE", 10, at_streammode},
+    {"TWRMODE", 7, at_twrmode},    {"LEDMODE", 7, at_ledmode},
+    {"REBOOT", 6, at_reboot},      {"PWRAMP", 6, at_pwramp},
+    {"ANTENNA", 7, at_antenna},    {NULL, 0, NULL}};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
