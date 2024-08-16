@@ -111,3 +111,9 @@ config BELUGA_POUTB
 config BELUGA_NETWORK_SIZE
     int "The number of nodes in the network"
     default 12
+
+config BELUGA_RESET_REASON
+    bool "Print the reset reason"
+    select PRINTK
+    select HWINFO
+    default n

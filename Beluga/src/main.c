@@ -20,11 +20,11 @@
 #include <stdio.h>
 #include <uart.h>
 #include <unistd.h>
+#include <utils.h>
 #include <voltage_regulator.h>
 #include <watchdog.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
-#include <utils.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -248,6 +248,7 @@ static void load_settings(void) {
     watchdog_red_rocket();
 }
 
+#if defined(CONFIG_BELUGA_RESET_REASON)
 static void get_reset_cause(void) {
     uint32_t reason;
     hwinfo_get_reset_cause(&reason);
@@ -302,8 +303,18 @@ static void get_reset_cause(void) {
     }
 }
 
+#define RESET_CAUSE                                                            \
+    do {                                                                       \
+        get_reset_cause();                                                     \
+    } while (0)
+#else
+#define RESET_CAUSE                                                            \
+    do {                                                                       \
+    } while (0)
+#endif
+
 int main(void) {
-    get_reset_cause();
+    RESET_CAUSE;
 
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
