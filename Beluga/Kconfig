@@ -107,3 +107,9 @@ config BELUGA_RESET_REASON
     select PRINTK
     select HWINFO
     default n
+
+config BELUGA_DUMP_CORE
+    bool "Dump the core on crashes"
+    select DEBUG_COREDUMP
+    imply DEBUG_COREDUMP_BACKEND_LOGGING
+    imply DEBUG_COREDUMP_MEMORY_DUMP_MIN
