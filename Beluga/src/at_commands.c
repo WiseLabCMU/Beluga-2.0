@@ -305,12 +305,14 @@ static void at_pwramp(uint16_t argc, char const *const *argv) {
     }
 
     if (pwramp == 0) {
-        disable_range_extension();
+        success = disable_range_extension();
     } else {
-        enable_range_extension();
+        success = enable_range_extension();
     }
 
-    OK;
+    if (success) {
+        OK;
+    }
 }
 
 static void at_antenna(uint16_t argc, char const *const *argv) {
