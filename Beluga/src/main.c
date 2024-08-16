@@ -24,6 +24,7 @@
 #include <watchdog.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
+#include <utils.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -33,7 +34,7 @@
 
 enum clk_cntrl { HIGH_FREQ, LOW_FREQ };
 
-static bool clock_init(enum clk_cntrl clk_subsys) {
+UNUSED static bool clock_init(enum clk_cntrl clk_subsys) {
     int err;
     int res;
     struct onoff_manager *clk_mgr;
