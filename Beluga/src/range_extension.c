@@ -7,13 +7,26 @@
 #include <zephyr/kernel.h>
 
 #if defined(CONFIG_BELUGA_RANGE_EXTENSION)
+#include <deca_device_api.h>
 #include <nrf21540.h>
 
 bool init_range_extension(void) { return init_nrf21540(); }
 
-bool enable_range_extension(void) { return select_ble_gain(GAIN_20_DB); }
+bool enable_range_extension(void) {
+    bool retVal = select_ble_gain(GAIN_20_DB);
+    if (retVal) {
+        dwt_setlnapamode(0, 1);
+    }
+    return retVal;
+}
 
-bool disable_range_extension(void) { return select_ble_gain(GAIN_0_DB); }
+bool disable_range_extension(void) {
+    bool retVal = select_ble_gain(GAIN_0_DB);
+    if (retVal) {
+        dwt_setlnapamode(0, 1);
+    }
+    return retVal;
+}
 
 bool select_antenna(int32_t ant) {
     bool retVal = false;
