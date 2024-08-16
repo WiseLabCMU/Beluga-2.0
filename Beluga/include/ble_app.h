@@ -32,6 +32,8 @@ typedef struct node {
         ble_time_stamp; /* Last timestamp get the BLE package from this node */
 } node;
 
+#define MAX_ANCHOR_COUNT CONFIG_BELUGA_NETWORK_SIZE
+
 extern node seen_list[MAX_ANCHOR_COUNT];
 
 int32_t init_bt_stack(void);

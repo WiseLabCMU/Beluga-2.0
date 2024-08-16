@@ -107,3 +107,7 @@ config BELUGA_POUTB
     int "The gain when the mode pin is low"
     depends on BELUGA_RANGE_EXTENSION
     default 0
+
+config BELUGA_NETWORK_SIZE
+    int "The number of nodes in the network"
+    default 12
