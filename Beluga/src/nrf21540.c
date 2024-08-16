@@ -15,9 +15,9 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 
-#if defined(CONFIG_BELUGA_RANGE_EXTENSION)
-
 #define NRF21540_NODE DT_NODELABEL(nrf_radio_fem)
+
+#if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(NRF21540_NODE) && DT_NODE_HAS_STATUS(NRF21540_NODE, okay)
 
 #if DT_NODE_HAS_PROP(NRF21540_NODE, ant_sel_gpios)
 #define ANTENNA_GPIO 1
@@ -152,6 +152,22 @@ bool select_ble_gain(enum ble_gain gain) {
     }
 
     return err == 0;
+}
+
+#else
+bool init_nrf21540(void) {
+    printk("nrf21540 disabled\r\n");
+    return true;
+}
+
+bool select_ble_antenna(enum antenna_select antenna) {
+    printf("Not implemented\r\n");
+    return false;
+}
+
+bool select_ble_gain(enum ble_gain gain) {
+    printf("Not Implemented\r\n");
+    return false;
 }
 
 #endif

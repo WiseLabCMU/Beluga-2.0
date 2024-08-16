@@ -11,7 +11,7 @@
 &spi1 {
 	compatible = "nordic,nrf-spi";
 	status = "okay";
-	cs-gpios = <&gpio0 21 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>, <&gpio0 23 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+	cs-gpios = <&gpio0 21 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>, <&gpio0 22 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
 	pinctrl-0 = <&spi1_default>;
 	pinctrl-names = "default", "sleep";
 	nrf_radio_fem_spi: nrf21540-fem-spi@0 {
@@ -23,8 +23,8 @@
 	dw1000_spi: dw1000@1 {
 		compatible = "decawave,dw1000";
 		reg = <0x1>;
-		int-gpios = <&gpio0 24 0>;
-		reset-gpios = <&gpio0 25 0>;
+		int-gpios = <&gpio0 28 0>;
+		reset-gpios = <&gpio0 9 0>;
 		spi-max-frequency = <20000000>;
 	};
 };
@@ -32,13 +32,36 @@
 	status = "disabled";
 };
 
-/// {
-//	nrf21540-fem {
-//		compatible = "nordic,nrf21540-fem";
-//		mode-gpios = <&gpio0 13 0>;
-//		rx-en-gpios = <&gpio0 14 0>;
-//		ant-sel-gpios = <&gpio0 15 0>;
-//		tx-en-gpios = <&gpio0 16 0>;
-//		pdn-gpios = <&gpio0 20 0>;
-//	};
-//};
+/ {
+	nrf_radio_fem: nrf21540-fem {
+		compatible = "nordic,nrf21540-fem";
+		mode-gpios = <&gpio0 13 0>;
+		rx-en-gpios = <&gpio0 14 0>;
+		ant-sel-gpios = <&gpio0 15 0>;
+		tx-en-gpios = <&gpio0 16 0>;
+		pdn-gpios = <&gpio0 20 0>;
+		spi-if = <&nrf_radio_fem_spi>;
+		supply-voltage-mv = <3000>;
+		status = "okay";
+	};
+};
+
+&radio {
+	fem = <&nrf_radio_fem>;
+};
+
+&spi1_sleep {
+	group1 {
+		psels = <NRF_PSEL(SPIM_SCK, 0, 25)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 23)>,
+				<NRF_PSEL(SPIM_MISO, 0, 24)>;
+	};
+};
+
+&spi1_default {
+	group1 {
+		psels = <NRF_PSEL(SPIM_SCK, 0, 25)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 23)>,
+				<NRF_PSEL(SPIM_MISO, 0, 24)>;
+	};
+};

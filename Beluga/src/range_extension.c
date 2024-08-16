@@ -48,7 +48,7 @@ bool disable_range_extension(void) {
     return false;
 }
 
-bool select_antenna(enum antenna_select ant) {
+bool select_antenna(int32_t ant) {
     printf("Not implemented\r\n");
     return false;
 }
