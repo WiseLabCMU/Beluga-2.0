@@ -110,4 +110,9 @@ class BelugaSerial:
         command = f'AT+STREAMMODE {updates_only}\r\n'
         ret = self._send_command(command.encode())
         return ret
+
+    def twr_mode(self, mode: int) -> str:
+        command = f'AT+TWRMODE {mode}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
     
