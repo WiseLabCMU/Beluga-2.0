@@ -64,7 +64,9 @@ class BelugaSerial:
         ret = self._send_command(command.encode())
         return ret
 
-    def set_bootmode(self, boot_mode: BelugaBootMode):
+    def bootmode(self, boot_mode: BelugaBootMode) -> str:
+        if boot_mode not in BelugaBootMode:
+            return 'Invalid bootmode parameter'
         command = f'AT+BOOTMODE {int(boot_mode)}\r\n'
         ret = self._send_command(command.encode())
         return ret
