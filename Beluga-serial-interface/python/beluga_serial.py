@@ -1,6 +1,7 @@
 import serial
 import serial.tools.list_ports as list_ports
 from typing import List, Dict
+import enum
 
 
 TARGETS = [
@@ -32,3 +33,30 @@ class BelugaSerial:
                 else:
                     ret[dev_name] = [port.device]
         return ret
+
+    def _send_command(self, command: bytes) -> str:
+        pass
+
+    def start_uwb(self) -> str:
+        ret = self._send_command(b'AT+STARTUWB\r\n')
+        return ret
+
+    def stop_uwb(self) -> str:
+        ret = self._send_command(b'AT+STOPUWB\r\n')
+        return ret
+
+    def start_ble(self) -> str:
+        ret = self._send_command(b'AT+STARTBLE\r\n')
+        return ret
+
+    def stop_ble(self) -> str:
+        ret = self._send_command(b'AT+STOPBLE\r\n')
+        return ret
+
+    def set_id(self, new_id: int) -> str:
+        command = f'AT+ID {new_id}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
+
+    def set_bootmode(self, bootmode):
+        pass
