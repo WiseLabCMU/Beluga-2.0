@@ -82,9 +82,13 @@ class BelugaSerial:
         ret = self._send_command(command.encode())
         return ret
 
-    def rate(self, rate: int):
+    def rate(self, rate: int) -> str:
         command = f'AT+RATE {rate}\r\n'
         ret = self._send_command(command.encode())
         return ret
 
-
+    def channel(self, channel: int) -> str:
+        command = f'AT+CHANNEL {channel}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
+    
