@@ -124,3 +124,8 @@ class BelugaSerial:
     def reboot(self) -> str:
         ret = self._send_command(b'AT+REBOOT\r\n')
         return ret
+
+    def pwr_amp(self, enable_pwr_amp: int) -> str:
+        command = f'AT+PWRAMP {enable_pwr_amp}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
