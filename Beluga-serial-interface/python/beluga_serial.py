@@ -115,4 +115,8 @@ class BelugaSerial:
         command = f'AT+TWRMODE {mode}\r\n'
         ret = self._send_command(command.encode())
         return ret
-    
+
+    def led_mode(self, led_mode: int) -> str:
+        command = f'AT+LEDMODE {led_mode}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
