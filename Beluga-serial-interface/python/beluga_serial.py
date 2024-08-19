@@ -9,6 +9,12 @@ TARGETS = [
 ]
 
 
+class BelugaBootMode(enum.IntEnum):
+    WIRELESS_OFF = 0
+    BLE_ON = 1
+    BLE_UWB_ON = 2
+
+
 class BelugaSerial:
     def __init__(self, baud: int = 115200):
         targets = self._find_ports(TARGETS)
@@ -58,5 +64,7 @@ class BelugaSerial:
         ret = self._send_command(command.encode())
         return ret
 
-    def set_bootmode(self, bootmode):
-        pass
+    def set_bootmode(self, boot_mode: BelugaBootMode):
+        command = f'AT+BOOTMODE {int(boot_mode)}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
