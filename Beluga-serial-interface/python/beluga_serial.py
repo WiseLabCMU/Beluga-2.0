@@ -59,7 +59,7 @@ class BelugaSerial:
         ret = self._send_command(b'AT+STOPBLE\r\n')
         return ret
 
-    def set_id(self, new_id: int) -> str:
+    def id(self, new_id: int) -> str:
         command = f'AT+ID {new_id}\r\n'
         ret = self._send_command(command.encode())
         return ret
