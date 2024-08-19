@@ -368,6 +368,7 @@ int main(void) {
     init_print_list_task();
     init_ranging_thread();
     init_monitor_thread();
+    watchdog_red_rocket();
 
     for (;;) {
         k_sleep(K_FOREVER);

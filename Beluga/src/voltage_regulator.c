@@ -49,6 +49,11 @@ bool init_voltage_regulator(void) {
 
     err = gpio_pin_configure_dt(&_vr_adjust, GPIO_DISCONNECTED);
     currentLevel = VR_3V3;
+    if (!err) {
+        printk("Voltage regulator configured\n");
+    } else {
+        printk("An error occurred when configuring voltage regulator\n");
+    }
     return err == 0;
 }
 
