@@ -91,4 +91,8 @@ class BelugaSerial:
         command = f'AT+CHANNEL {channel}\r\n'
         ret = self._send_command(command.encode())
         return ret
+
+    def reset(self) -> str:
+        ret = self._send_command(b'AT+RESET\r\n')
+        return ret
     
