@@ -120,3 +120,7 @@ class BelugaSerial:
         command = f'AT+LEDMODE {led_mode}\r\n'
         ret = self._send_command(command.encode())
         return ret
+
+    def reboot(self) -> str:
+        ret = self._send_command(b'AT+REBOOT\r\n')
+        return ret
