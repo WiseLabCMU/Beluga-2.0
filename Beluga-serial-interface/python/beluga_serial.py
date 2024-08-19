@@ -100,4 +100,9 @@ class BelugaSerial:
         command = f'AT+TIMEOUT {timeout}'
         ret = self._send_command(command.encode())
         return ret
+
+    def tx_power(self, max_power: int):
+        command = f'AT+TXPOWER {max_power}'
+        ret = self._send_command(command.encode())
+        return ret
     
