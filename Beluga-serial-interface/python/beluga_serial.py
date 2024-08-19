@@ -129,3 +129,8 @@ class BelugaSerial:
         command = f'AT+PWRAMP {enable_pwr_amp}\r\n'
         ret = self._send_command(command.encode())
         return ret
+
+    def antenna(self, antenna: int) -> str:
+        command = f'AT+ANTENNA {antenna}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
