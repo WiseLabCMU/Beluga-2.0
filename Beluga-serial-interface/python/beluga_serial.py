@@ -97,12 +97,17 @@ class BelugaSerial:
         return ret
 
     def timeout(self, timeout: int) -> str:
-        command = f'AT+TIMEOUT {timeout}'
+        command = f'AT+TIMEOUT {timeout}\r\n'
         ret = self._send_command(command.encode())
         return ret
 
-    def tx_power(self, max_power: int):
-        command = f'AT+TXPOWER {max_power}'
+    def tx_power(self, max_power: int) -> str:
+        command = f'AT+TXPOWER {max_power}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
+
+    def stream_mode(self, updates_only: int) -> str:
+        command = f'AT+STREAMMODE {updates_only}\r\n'
         ret = self._send_command(command.encode())
         return ret
     
