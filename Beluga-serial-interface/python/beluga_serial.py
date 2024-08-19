@@ -95,4 +95,9 @@ class BelugaSerial:
     def reset(self) -> str:
         ret = self._send_command(b'AT+RESET\r\n')
         return ret
+
+    def timeout(self, timeout: int) -> str:
+        command = f'AT+TIMEOUT {timeout}'
+        ret = self._send_command(command.encode())
+        return ret
     
