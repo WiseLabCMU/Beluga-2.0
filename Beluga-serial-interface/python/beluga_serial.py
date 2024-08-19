@@ -70,3 +70,10 @@ class BelugaSerial:
         command = f'AT+BOOTMODE {int(boot_mode)}\r\n'
         ret = self._send_command(command.encode())
         return ret
+
+    def rate(self, rate: int):
+        command = f'AT+RATE {rate}\r\n'
+        ret = self._send_command(command.encode())
+        return ret
+
+
