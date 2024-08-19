@@ -25,6 +25,17 @@ class BelugaSerial:
                 print(f"Connecting to {target}: {targets[target][0]}")
                 self._serial = serial.Serial(targets[target][0], baudrate=baud)
                 break
+        self._beluga_states = {
+            'led_mode': -1,
+            'id': 0,
+            'bootmode': -1,
+            'rate': -1,
+            'channel': -1,
+            'timeout': -1,
+            'tx_power': -1,
+            'stream': -1,
+            'ranging': -1
+        }
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
