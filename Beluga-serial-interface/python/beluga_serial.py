@@ -157,20 +157,33 @@ class BelugaSerial:
                 settings_processed += 1
         return lines_processed, settings_processed == NUM_SETTING_LINES
 
-    def _write_ranging_batch(self, lines: List[str]):
-        pass
+    def _write_ranging_batch(self, lines: List[str]) -> int:
+        lines_processed = 0
+        for line in lines:
+            if line == '# ID, RANGE, RSSI, TIMESTAMP':
+                lines_processed += 1
+            elif line[0].isdigit():
+                lines_processed += 1
+                # TODO
+            else:
+                break
+        return lines_processed
+
 
     def _receive_response(self, response: str):
         self._response = response
         self._response_received.release()
 
-    def _parse_lines(self, lines: List[bytes]):
+    def _process_lines(self, lines: List[bytes]):
         i = 0
         l = len(lines)
         lines = [line.decode().strip() for line in lines]
 
         while i < l:
-            if lines[i].startswith('Node On'):
+            if lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
+                processed = self._write_ranging_batch(lines)
+                i += processed
+            elif lines[i].startswith('Node On'):
                 while True:
                     processed, all_settings = self._update_settings(lines)
                     if all_settings:
@@ -180,14 +193,15 @@ class BelugaSerial:
                         new_lines = [line.decode().strip() for line in self._get_lines()]
                         lines += new_lines
                         l = len(lines)
-
-
+            else:
+                self._receive_response(lines[i])
+                i += 1
 
     def _read_serial(self):
         while not self._stop.is_set():
             lines = self._get_lines()
             if lines:
-                self._parse_lines(lines)
+                self._process_lines(lines)
             time.sleep(0.5)
 
     def _send_command(self, command: bytes) -> str:
@@ -280,3 +294,6 @@ class BelugaSerial:
         command = f'AT+ANTENNA {antenna}\r\n'
         ret = self._send_command(command.encode())
         return ret
+
+    def start(self):
+        pass
