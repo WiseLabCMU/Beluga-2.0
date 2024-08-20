@@ -3,6 +3,7 @@ import serial.tools.list_ports as list_ports
 from typing import List, Dict, Optional
 import enum
 import threading
+import time
 
 
 TARGETS = [
@@ -41,6 +42,9 @@ class BelugaSerial:
         self._response: str = ''
         self._response_received = threading.BoundedSemaphore()
         self._timeout = timeout
+        self._rx_thread: Optional[threading.Thread] = None
+        self._stop = threading.Event()
+        self._out_stream = None
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
@@ -55,6 +59,27 @@ class BelugaSerial:
                 else:
                     ret[dev_name] = [port.device]
         return ret
+
+    def _update_settings(self, lines: List[bytes]):
+        pass
+
+    def _write_ranging_batch(self, lines: List[bytes]):
+        pass
+
+    def _receive_response(self, response: bytes):
+        pass
+
+    def _parse_lines(self, lines: List[bytes]):
+        pass
+
+    def _read_serial(self):
+        while not self._stop.is_set():
+            self._serial_lock.acquire()
+            lines = self._serial.readlines()
+            self._serial_lock.release()
+            if lines:
+                self._parse_lines(lines)
+            time.sleep(0.5)
 
     def _send_command(self, command: bytes) -> str:
         self._serial_lock.acquire()
