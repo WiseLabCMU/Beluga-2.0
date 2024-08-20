@@ -296,4 +296,13 @@ class BelugaSerial:
         return ret
 
     def start(self):
-        pass
+        if self._rx_thread is not None:
+            raise RuntimeError('Please stop before restarting')
+        self._rx_thread = threading.Thread(target=self._read_serial, daemon=True)
+        self._rx_thread.start()
+
+    def stop(self):
+        if self._rx_thread is None:
+            return
+        self._stop.set()
+        self._rx_thread.join()
