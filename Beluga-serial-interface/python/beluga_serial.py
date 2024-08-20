@@ -1,7 +1,8 @@
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict
+from typing import List, Dict, Optional
 import enum
+import threading
 
 
 TARGETS = [
@@ -16,7 +17,7 @@ class BelugaBootMode(enum.IntEnum):
 
 
 class BelugaSerial:
-    def __init__(self, baud: int = 115200):
+    def __init__(self, baud: int = 115200, timeout: float = 2.0):
         targets = self._find_ports(TARGETS)
         if not targets:
             raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
@@ -36,6 +37,10 @@ class BelugaSerial:
             'stream': -1,
             'ranging': -1
         }
+        self._serial_lock = threading.Lock()
+        self._response: str = ''
+        self._response_received = threading.BoundedSemaphore()
+        self._timeout = timeout
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
@@ -52,7 +57,14 @@ class BelugaSerial:
         return ret
 
     def _send_command(self, command: bytes) -> str:
-        pass
+        self._serial_lock.acquire()
+        self._serial.write(command)
+        self._serial_lock.release()
+        if not self._response_received.acquire(timeout=self._timeout):
+            return 'Response timed out'
+        ret = self._response
+        self._response = None
+        return ret
 
     def start_uwb(self) -> str:
         ret = self._send_command(b'AT+STARTUWB\r\n')
