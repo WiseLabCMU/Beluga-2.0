@@ -1,6 +1,6 @@
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import enum
 import threading
 import time
@@ -18,25 +18,25 @@ class BelugaBootMode(enum.IntEnum):
 
 
 class BelugaSerial:
-    def __init__(self, baud: int = 115200, timeout: float = 2.0):
+    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5):
         targets = self._find_ports(TARGETS)
         if not targets:
             raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
         for target in TARGETS:
             if target in targets.keys():
                 print(f"Connecting to {target}: {targets[target][0]}")
-                self._serial = serial.Serial(targets[target][0], baudrate=baud)
+                self._serial = serial.Serial(targets[target][0], baudrate=baud, timeout=serial_timeout)
                 break
         self._beluga_states = {
-            'led_mode': -1,
+            'led_mode': 0,
             'id': 0,
-            'bootmode': -1,
-            'rate': -1,
-            'channel': -1,
-            'timeout': -1,
-            'tx_power': -1,
-            'stream': -1,
-            'ranging': -1
+            'bootmode': 0,
+            'rate': 100,
+            'channel': 5,
+            'timeout': 9000,
+            'tx_power': 0,
+            'stream': 0,
+            'ranging': 0,
         }
         self._serial_lock = threading.Lock()
         self._response: str = ''
@@ -61,24 +61,131 @@ class BelugaSerial:
                     ret[dev_name] = [port.device]
         return ret
 
-    def _update_settings(self, lines: List[bytes]):
+    def _get_lines(self) -> List[bytes]:
+        self._serial_lock.acquire()
+        lines = self._serial.readlines()
+        self._serial_lock.release()
+        return lines
+
+    def _update_settings(self, lines: List[str]) -> Tuple[int, bool]:
+        lines_processed = 0
+        settings_processed = 0
+        node_uninit = False
+        NUM_SETTING_LINES = 11
+
+        for line in lines:
+            if settings_processed == NUM_SETTING_LINES:
+                break
+            if line.startswith('Node On:'):
+                lines_processed += 1
+                settings_processed += 1
+            elif line == 'Flash Configuration: ':
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('LED Mode: '):
+                if 'Off' in line:
+                    self._beluga_states['led_mode'] = 0
+                elif 'On' in line:
+                    self._beluga_states['led_mode'] = 1
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('!'):
+                lines_processed += 1
+                if not node_uninit:
+                    node_uninit = True
+                    settings_processed += 1
+            elif line.startswith('Node ID: '):
+                self._beluga_states['id'] = int(line[9:])
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('Boot Mode: '):
+                self._beluga_states['bootmode'] = 0
+                if 'BLE ON' in line:
+                    self._beluga_states['bootmode'] = 1
+                if 'UWB ON' in line:
+                    if self._beluga_states['bootmode'] != 1:
+                        raise ValueError(f'Invalid bootmode received: {line}')
+                    self._beluga_states['bootmode'] += 1
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('UWB Polling Rate: '):
+                rate = line[18:]
+                try:
+                    self._beluga_states['rate'] = int(rate)
+                except ValueError:
+                    pass
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('UWB Channel: '):
+                channel = line[13:]
+                try:
+                    self._beluga_states['channel'] = int(channel)
+                except ValueError:
+                    pass
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('BLE Timeout: '):
+                timeout = line[13:]
+                try:
+                    self._beluga_states['timeout'] = int(timeout)
+                except ValueError:
+                    pass
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('TX Power: '):
+                if 'Max' in line:
+                    self._beluga_states['tx_power'] = 1
+                else:
+                    self._beluga_states['tx_power'] = 0
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('Stream Mode: '):
+                mode = line[13:]
+                try:
+                    self._beluga_states['stream'] = int(mode)
+                except ValueError:
+                    pass
+                lines_processed += 1
+                settings_processed += 1
+            elif line.startswith('Ranging Mode: '):
+                mode = line[13:]
+                try:
+                    self._beluga_states['ranging'] = int(mode)
+                except ValueError:
+                    pass
+                lines_processed += 1
+                settings_processed += 1
+        return lines_processed, settings_processed == NUM_SETTING_LINES
+
+    def _write_ranging_batch(self, lines: List[str]):
         pass
 
-    def _write_ranging_batch(self, lines: List[bytes]):
-        pass
-
-    def _receive_response(self, response: bytes):
-        self._response = response.decode('utf-8')
+    def _receive_response(self, response: str):
+        self._response = response
         self._response_received.release()
 
     def _parse_lines(self, lines: List[bytes]):
-        pass
+        i = 0
+        l = len(lines)
+        lines = [line.decode().strip() for line in lines]
+
+        while i < l:
+            if lines[i].startswith('Node On'):
+                while True:
+                    processed, all_settings = self._update_settings(lines)
+                    if all_settings:
+                        i += processed
+                        break
+                    else:
+                        new_lines = [line.decode().strip() for line in self._get_lines()]
+                        lines += new_lines
+                        l = len(lines)
+
+
 
     def _read_serial(self):
         while not self._stop.is_set():
-            self._serial_lock.acquire()
-            lines = self._serial.readlines()
-            self._serial_lock.release()
+            lines = self._get_lines()
             if lines:
                 self._parse_lines(lines)
             time.sleep(0.5)
