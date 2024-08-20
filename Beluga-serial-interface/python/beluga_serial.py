@@ -44,7 +44,8 @@ class BelugaSerial:
         self._timeout = timeout
         self._rx_thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
-        self._out_stream = None
+        self._outstream = None
+        self._outstream_lock = threading.Lock()
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
@@ -67,7 +68,8 @@ class BelugaSerial:
         pass
 
     def _receive_response(self, response: bytes):
-        pass
+        self._response = response.decode('utf-8')
+        self._response_received.release()
 
     def _parse_lines(self, lines: List[bytes]):
         pass
