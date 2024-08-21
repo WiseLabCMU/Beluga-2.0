@@ -79,7 +79,7 @@ class BelugaSerial:
             if line.startswith('Node On:'):
                 lines_processed += 1
                 settings_processed += 1
-            elif line == 'Flash Configuration: ':
+            elif line == 'Flash Configuration:':
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('LED Mode: '):
@@ -177,15 +177,18 @@ class BelugaSerial:
     def _process_lines(self, lines: List[bytes]):
         i = 0
         l = len(lines)
-        lines = [line.decode().strip() for line in lines]
+        lines = [line.decode(errors='ignore').strip() for line in lines]
 
         while i < l:
-            if lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
+            if not lines[i]:
+                # Empty line
+                i += 1
+            elif lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
                 processed = self._write_ranging_batch(lines)
                 i += processed
             elif lines[i].startswith('Node On'):
                 while True:
-                    processed, all_settings = self._update_settings(lines)
+                    processed, all_settings = self._update_settings(lines[i:])
                     if all_settings:
                         i += processed
                         break
@@ -198,6 +201,7 @@ class BelugaSerial:
                 i += 1
 
     def _read_serial(self):
+        self._response_received.acquire(blocking=False)
         while not self._stop.is_set():
             lines = self._get_lines()
             if lines:
