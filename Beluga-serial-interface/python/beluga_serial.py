@@ -1,6 +1,8 @@
+from io import TextIOWrapper
+import sys
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union, TextIO
 import enum
 import threading
 import time
@@ -44,7 +46,7 @@ class BelugaSerial:
         self._timeout = timeout
         self._rx_thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
-        self._outstream = None
+        self._outstream: Union[TextIOWrapper, TextIO] = sys.stdout
         self._outstream_lock = threading.Lock()
 
     @staticmethod
@@ -164,7 +166,10 @@ class BelugaSerial:
                 lines_processed += 1
             elif line[0].isdigit():
                 lines_processed += 1
-                # TODO
+                self._outstream_lock.acquire()
+                self._outstream.write(line)
+                self._outstream.flush()
+                self._outstream_lock.release()
             else:
                 break
         return lines_processed
@@ -310,3 +315,10 @@ class BelugaSerial:
             return
         self._stop.set()
         self._rx_thread.join()
+
+    def set_outstream(self, stream: Union[TextIOWrapper, TextIO]):
+        self._outstream_lock.acquire()
+        if self._outstream != sys.stdout:
+            self._outstream.close()
+        self._outstream = stream
+        self._outstream_lock.release()
