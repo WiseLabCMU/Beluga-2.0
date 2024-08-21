@@ -48,6 +48,7 @@ class BelugaSerial:
         self._stop = threading.Event()
         self._outstream: Union[TextIOWrapper, TextIO] = sys.stdout
         self._outstream_lock = threading.Lock()
+        self.start()
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
