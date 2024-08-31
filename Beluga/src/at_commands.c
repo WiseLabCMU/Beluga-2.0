@@ -43,6 +43,16 @@
         }                                                                      \
     } while (0)
 
+#define READ_SETTING(argc, required, setting, settingstr)                      \
+    do {                                                                       \
+        if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
+            int32_t setting = retrieveSetting((setting));                      \
+            printf(settingstr ": %d ", setting);                               \
+            OK;                                                                \
+            return;                                                            \
+        }                                                                      \
+    } while (0)
+
 struct cmd_info {
     const char *command;
     size_t cmd_length;
@@ -143,7 +153,7 @@ static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_change_id(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_ID, "ID");
     int32_t newID;
     bool success = strtoint32(argv[1], &newID);
 
@@ -158,7 +168,7 @@ static void at_change_id(uint16_t argc, char const *const *argv) {
 }
 
 static void at_bootmode(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_BOOTMODE, "Bootmode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
 
@@ -173,7 +183,7 @@ static void at_bootmode(uint16_t argc, char const *const *argv) {
 }
 
 static void at_rate(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_POLL_RATE, "Rate");
     int32_t rate;
     bool success = strtoint32(argv[1], &rate);
 
@@ -192,7 +202,7 @@ static void at_rate(uint16_t argc, char const *const *argv) {
 }
 
 static void at_channel(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_UWB_CHANNEL, "Channel");
     int32_t channel;
     bool success = strtoint32(argv[1], &channel);
 
@@ -211,7 +221,7 @@ static void at_reset(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_timeout(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_BLE_TIMEOUT, "Timeout");
     int32_t timeout;
     bool success = strtoint32(argv[1], &timeout);
 
@@ -226,7 +236,7 @@ static void at_timeout(uint16_t argc, char const *const *argv) {
 }
 
 static void at_txpower(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_TX_POWER, "TX Power");
     int32_t power;
     bool value, success = strtoint32(argv[1], &power);
 
@@ -240,7 +250,7 @@ static void at_txpower(uint16_t argc, char const *const *argv) {
 }
 
 static void at_streammode(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_STREAMMODE, "Stream Mode");
     int32_t mode;
     bool value, success = strtoint32(argv[1], &mode);
 
@@ -254,7 +264,7 @@ static void at_streammode(uint16_t argc, char const *const *argv) {
 }
 
 static void at_twrmode(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_TWR, "TWR");
     int32_t twr;
     bool value, success = strtoint32(argv[1], &twr);
 
@@ -268,7 +278,7 @@ static void at_twrmode(uint16_t argc, char const *const *argv) {
 }
 
 static void at_ledmode(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_LEDMODE, "LED Mode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
 
