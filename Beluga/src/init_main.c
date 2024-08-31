@@ -79,7 +79,7 @@ static uint64 get_tx_timestamp_u64(void);
 static uint64 get_rx_timestamp_u64(void);
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
-//#define POLL_TX_TO_RESP_RX_DLY_UUS 100
+// #define POLL_TX_TO_RESP_RX_DLY_UUS 100
 #define POLL_TX_TO_RESP_RX_DLY_UUS  300
 #define RESP_RX_TIMEOUT_UUS         4000
 #define RESP_TX_TO_FINAL_RX_DLY_UUS 500

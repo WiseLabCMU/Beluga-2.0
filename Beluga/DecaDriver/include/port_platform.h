@@ -21,15 +21,15 @@ extern "C" {
 #include <stdint.h>
 #include <string.h>
 
-//#include "app_error.h"
-//#include "app_util_platform.h"
-//#include "boards.h"
+// #include "app_error.h"
+// #include "app_util_platform.h"
+// #include "boards.h"
 #include "deca_device_api.h"
 #include "deca_types.h"
-//#include "nrf_delay.h"
-//#include "nrf_drv_spi.h"
-//#include "nrf_gpio.h"
-//#include "nrf_log.h"
+// #include "nrf_delay.h"
+// #include "nrf_drv_spi.h"
+// #include "nrf_gpio.h"
+// #include "nrf_log.h"
 
 /*
 
@@ -44,8 +44,8 @@ performing range measurements.
 */
 
 /* Default antenna delay values for 64 MHz PRF.*/
-//#define TX_ANT_DLY 16456
-//#define RX_ANT_DLY 16456
+// #define TX_ANT_DLY 16456
+// #define RX_ANT_DLY 16456
 #define TX_ANT_DLY 16436
 #define RX_ANT_DLY 16436
 

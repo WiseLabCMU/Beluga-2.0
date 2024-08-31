@@ -20,19 +20,11 @@ enum beluga_setting {
     BELUGA_RESERVED
 };
 
-enum beluga_static_settings {
-    BELUGA_FEM_POUTA,
-    BELUGA_FEM_POUTB,
-    BELUGA_STATIC_RESERVED
-};
-
 #define DEFAULT_ID_SETTING INT32_C(0)
 #define DEFAULT_SETTING    INT32_C(-1)
 
 void updateSetting(enum beluga_setting setting, int32_t value);
 int32_t retrieveSetting(enum beluga_setting setting);
-void updateStaticSetting(enum beluga_static_settings setting, int32_t value);
-int32_t retrieveStaticSetting(enum beluga_static_settings setting);
 void resetBelugaSettings(void);
 int initBelugaSettings(void);
 

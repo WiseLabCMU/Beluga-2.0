@@ -363,7 +363,7 @@ extern "C" {
 #define SYS_STATUS_RXRFSL                                                      \
     0x00010000UL /* Receiver Reed Solomon Frame Sync Loss */
 #define SYS_STATUS_RXRFTO 0x00020000UL /* Receive Frame Wait Timeout */
-//#define SYS_STATUS_RXRFTO       0x00002000UL    /* Receive Frame Wait Timeout
+// #define SYS_STATUS_RXRFTO       0x00002000UL    /* Receive Frame Wait Timeout
 //*/
 #define SYS_STATUS_LDEERR                                                      \
     0x00040000UL /* Leading edge detection processing error */

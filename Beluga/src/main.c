@@ -106,13 +106,9 @@ static void load_led_mode(void) {
 
     if (led_mode == 1) {
         all_leds_off();
-        printf("  LED Mode: Off \r\n");
-    } else if (led_mode == 0) {
-        printf("  LED Mode: On \r\n");
-    } else {
-        printf("  LED Mode: Default \r\n");
     }
     update_led_state(LED_POWER_ON);
+    printf("  LED Mode: %d \r\n", led_mode);
 }
 
 static void load_id(void) {
@@ -147,48 +143,29 @@ static void load_bootmode(void) {
     case 0:
         break;
     default:
-        printf("  Boot Mode: Default \r\n");
+        printf("  Boot Mode: Unknown \r\n");
         break;
     }
-
-    if (bootMode == 0 || bootMode == 1 || bootMode == 2) {
-        printf("  Boot Mode: BLE %s + UWB %s\r\n",
-               (bootMode > 0) ? "ON" : "OFF", (bootMode == 2) ? "ON" : "OFF");
-    }
+    printf("  Boot Mode: %d\r\n", bootMode);
 }
 
 static void load_poll_rate(void) {
     int32_t rate = retrieveSetting(BELUGA_POLL_RATE);
-
-    if (rate != DEFAULT_SETTING) {
-        set_rate(rate);
-        advertising_reconfig(rate != 0);
-        printf("  UWB Polling Rate: %d\r\n", rate);
-    } else {
-        printf("  UWB Polling Rate: Default \r\n");
-    }
+    set_rate(rate);
+    advertising_reconfig(rate != 0);
+    printf("  UWB Polling Rate: %d\r\n", rate);
 }
 
 static void load_channel(void) {
     int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
-
-    if (channel != DEFAULT_SETTING) {
-        set_uwb_channel(channel);
-        printf("  UWB Channel: %d \r\n", channel);
-    } else {
-        printf("  UWB Channel: Defalut \r\n");
-    }
+    set_uwb_channel(channel);
+    printf("  UWB Channel: %d \r\n", channel);
 }
 
 static void load_timeout(void) {
     int32_t timeout = retrieveSetting(BELUGA_BLE_TIMEOUT);
-
-    if (timeout != DEFAULT_SETTING) {
-        set_node_timeout(timeout);
-        printf("  BLE Timeout: %d \r\n", timeout);
-    } else {
-        printf("  BLE Timeout: Default \r\n");
-    }
+    set_node_timeout(timeout);
+    printf("  BLE Timeout: %d \r\n", timeout);
 }
 
 static void load_tx_power(void) {
@@ -204,24 +181,14 @@ static void load_tx_power(void) {
 
 static void load_stream_mode(void) {
     int32_t stream_mode = retrieveSetting(BELUGA_STREAMMODE);
-
-    if (stream_mode != DEFAULT_SETTING) {
-        set_stream_mode(stream_mode != 0);
-        printf("  Stream Mode: %d \r\n", stream_mode);
-    } else {
-        printf("  Stream Mode: Default \r\n");
-    }
+    set_stream_mode(stream_mode != 0);
+    printf("  Stream Mode: %d \r\n", stream_mode);
 }
 
 static void load_twr_mode(void) {
     int32_t twr = retrieveSetting(BELUGA_TWR);
-
-    if (twr != DEFAULT_SETTING) {
-        set_twr_mode(twr != 0);
-        printf("  Ranging Mode: %d \r\n", twr);
-    } else {
-        printf("  Ranging Mode: Default \r\n");
-    }
+    set_twr_mode(twr != 0);
+    printf("  Ranging Mode: %d \r\n", twr);
 }
 
 static void load_settings(void) {
