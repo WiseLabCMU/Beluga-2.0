@@ -34,16 +34,16 @@ struct beluga_settings_dict {
 };
 
 static const int32_t default_settings[] = {
-    DEFAULT_ID_SETTING, DEFAULT_BOOTMODE, DEFAULT_RATE,       DEFAULT_CHANNEL,
-    DEFAULT_TIMEOUT,    DEFAULT_TXPOWER,  DEFAULT_STREAMMODE, DEFAULT_TWR,
-    DEFAULT_LEDMODE,    DEFAULT_SETTING};
+    DEFAULT_ID_SETTING, DEFAULT_BOOTMODE, DEFAULT_RATE,
+    DEFAULT_CHANNEL,    DEFAULT_TIMEOUT,  DEFAULT_TXPOWER,
+    DEFAULT_STREAMMODE, DEFAULT_TWR,      DEFAULT_LEDMODE};
 
 static struct beluga_settings_dict settingValues[] = {
     {"id", DEFAULT_ID_SETTING},          {"boot_mode", DEFAULT_BOOTMODE},
     {"poll_rate", DEFAULT_RATE},         {"uwb_channel", DEFAULT_CHANNEL},
     {"ble_timeout", DEFAULT_TIMEOUT},    {"tx_power", DEFAULT_TXPOWER},
     {"stream_mode", DEFAULT_STREAMMODE}, {"twr", DEFAULT_TWR},
-    {"led_mode", DEFAULT_LEDMODE},       {"fem_programmed", DEFAULT_SETTING}};
+    {"led_mode", DEFAULT_LEDMODE}};
 
 #define LONGEST_SETTING_NAME_LEN 11
 #define BELUGA_LEN               6
@@ -125,6 +125,8 @@ void updateSetting(enum beluga_setting setting, int32_t value) {
 
     if (rc) {
         printk("Error saving %s (%d)\n", name, rc);
+    } else {
+        settingValues[setting].value = value;
     }
 }
 

@@ -6,7 +6,7 @@ cmake-build-pca10040/
 gn/
 ncs/
 nrfcmdtools/
-zephyr-sdk-0.16.1/
+zephyr-sdk-0.16.*/
 cmake-build-beluga/
 cmake-build-nrf21540dk_nrf52840/
 .west/
@@ -17,3 +17,4 @@ nrfxlib/
 test/
 tools/
 zephyr/
+Beluga/pca10040

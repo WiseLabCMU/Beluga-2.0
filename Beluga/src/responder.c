@@ -21,7 +21,6 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p3);
 
     while (true) {
-        k_msleep(20);
         watchdog_red_rocket();
 
         // Check if responding is suspended, return 0 means suspended
