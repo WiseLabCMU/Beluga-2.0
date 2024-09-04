@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <zephyr/random/random.h>
 
 /*
  * Get an exponential distribution random number determined by polling frequency
@@ -21,6 +22,6 @@ uint16_t get_rand_num_exp_collision(uint32_t freq) {
     int lower = MIN_DELAY;
     double lambda = 5.0 / (double)freq;
     double u;
-    u = rand() / (RAND_MAX + 1.0);
+    u = sys_rand32_get() / ((double)RAND_MAX + 1.0);
     return (-log(1 - u) / lambda) + lower;
 }

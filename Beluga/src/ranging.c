@@ -172,111 +172,91 @@ static void resp_reconfig() {
     dwt_setrxtimeout(0);
 }
 
-static void poll_nodes(void) {
-    static bool drop_flag = false;
-    bool break_flag = false;
-    int cur_index = 0;
-
-    // Stop the init task based on the input polling frequency
-    k_sleep(K_MSEC(get_rate()));
-
-    // If previous polling drop, give a random exponential distribution
-    // delay
-    if (drop_flag) {
-        uint16_t rand_small = get_rand_num_exp_collision(get_rate());
-        k_sleep(K_MSEC(rand_small));
-        drop_flag = false;
-    }
-
-    SUSPEND_RESPONDER_TASK;
-
-    dwt_forcetrxoff();
-    init_reconfig();
-
-    /* Do separate ranging (that is, poll only one node in the neighbor
-     * list, see developer documentation to see the scheme)*/
-
-    int search_count = 0;
-    float range1;
-
-    while (seen_list[cur_index].UUID == 0) {
-        cur_index += 1;
-
-        // Back to the head of seen list
-        if (cur_index == MAX_ANCHOR_COUNT) {
-            cur_index = 0;
-        }
-        // Finish search for whole list, no found, then break
-        if (search_count == MAX_ANCHOR_COUNT - 1) {
-            break_flag = true;
-            break;
-        }
-        search_count += 1;
-    }
-
-    // Found a node that we want to poll
-    if (!break_flag) {
-
-        // Init UWB ranging measurment
-        if (get_twr_mode()) {
-            range1 = ds_init_run(seen_list[cur_index].UUID);
-        } else {
-            range1 = ss_init_run(seen_list[cur_index].UUID);
-        }
-
-        // Set up drop flag if the ranging fail
-        if (range1 == -1)
-            drop_flag = true;
-
-        int numThru = 1;
-        if (range1 == -1) {
-            range1 = 0;
-            numThru -= 1;
-        }
-
-        float range = (range1) / numThru;
-
-        if ((numThru != 0) && (range >= -5) && (range <= 100)) {
-            seen_list[cur_index].update_flag = 1;
-            seen_list[cur_index].range = range;
-            seen_list[cur_index].time_stamp = k_uptime_get();
-
-            // Update BLE transfer value to phone
-            // TODO:
-            // update_char_value(seen_list[cur_index].UUID,
-            //                  seen_list[cur_index].range);
-        }
-
-        cur_index += 1;
-        // Back to the head of seen list
-        if (cur_index == MAX_ANCHOR_COUNT) {
-            cur_index = 0;
-        }
-    }
-
-    resp_reconfig();
-    dwt_forcetrxoff();
-
-    RESUME_RESPONDER_TASK;
-}
-
 NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
+    bool drop_flag = false;
+    bool break_flag = false;
+    static int curr_index = 0;
 
     while (true) {
         watchdog_red_rocket();
 
-        // Only the polling node (not passive node) will init a polling message
         if (initiator_freq != 0) {
-            poll_nodes();
+            k_msleep(initiator_freq);
+
+            if (drop_flag) {
+                uint16_t rand_small = get_rand_num_exp_collision(initiator_freq);
+                k_msleep(rand_small);
+                drop_flag = false;
+            }
+
+            SUSPEND_RESPONDER_TASK;
+
+            dwt_forcetrxoff();
+            init_reconfig();
+
+            int search_count = 0;
+            double range1;
+
+            while (seen_list[curr_index].UUID == 0) {
+                curr_index++;
+
+                if (curr_index >= MAX_ANCHOR_COUNT) {
+                    curr_index = 0;
+                }
+                if (search_count >= (MAX_ANCHOR_COUNT - 1)) {
+                    break_flag = true;
+                    break;
+                }
+                search_count += 1;
+            }
+
+            if (!break_flag) {
+                if (twr_mode) {
+                    range1 = ds_init_run(seen_list[curr_index].UUID);
+                } else {
+                    range1 = ss_init_run(seen_list[curr_index].UUID);
+                }
+
+                if (range1 == -1) {
+                    drop_flag = true;
+                }
+
+                int numThru = 1;
+
+                if (range1 == -1) {
+                    range1 = 0;
+                    numThru -= 1;
+                }
+
+                float range = (range1)/numThru;
+
+                if ((numThru != 0) && (range >= -5) && (range <= 100)) {
+                    seen_list[curr_index].update_flag = 1;
+                    seen_list[curr_index].range = range;
+                    seen_list[curr_index].time_stamp = k_uptime_get();
+
+                    // TODO: Update BLE value transfer to phone
+                }
+
+                curr_index += 1;
+
+                if (curr_index >= MAX_ANCHOR_COUNT) {
+                    curr_index = 0;
+                }
+            }
+
+            break_flag = false;
+            resp_reconfig();
+            dwt_forcetrxoff();
+
+            RESUME_RESPONDER_TASK;
         } else {
-            k_sleep(K_MSEC(1000));
+            k_msleep(1000);
         }
 
-        // Check polling flag of each node (see whether there are active nodes
-        // in neighbor list)
         int polling_count = 0;
         for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
             if (seen_list[x].UUID != 0 && seen_list[x].polling_flag != 0) {
@@ -284,23 +264,19 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             }
         }
 
-        // If no polling nodes in the network, suspend UWB response (listening)
         if (polling_count == 0) {
             SUSPEND_RESPONDER_TASK;
             dwt_forcetrxoff();
             resp_reconfig();
             dwt_forcetrxoff();
             RESUME_RESPONDER_TASK;
-
             k_sem_take(&k_sus_resp, K_NO_WAIT);
         } else {
-
             SUSPEND_RESPONDER_TASK;
             dwt_forcetrxoff();
             resp_reconfig();
             dwt_forcetrxoff();
             RESUME_RESPONDER_TASK;
-
             k_sem_give(&k_sus_resp);
         }
     }
