@@ -6,10 +6,12 @@ from typing import List, Dict, Optional, Tuple, Union, TextIO
 import enum
 import threading
 import time
+import json
 
 
 TARGETS = [
-    'CMU Beluga'
+    'CMU Beluga',
+    'SEGGER J-Link'
 ]
 
 
@@ -20,7 +22,7 @@ class BelugaBootMode(enum.IntEnum):
 
 
 class BelugaSerial:
-    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5):
+    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5, max_lines_read: int = 16):
         targets = self._find_ports(TARGETS)
         if not targets:
             raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
@@ -48,6 +50,8 @@ class BelugaSerial:
         self._stop = threading.Event()
         self._outstream: Union[TextIOWrapper, TextIO] = sys.stdout
         self._outstream_lock = threading.Lock()
+        self._neighbor_list: Dict[int, Dict[str, Union[int, float]]] = {}
+        self._read_max_lines: int = max_lines_read
         self.start()
 
     @staticmethod
@@ -65,8 +69,13 @@ class BelugaSerial:
         return ret
 
     def _get_lines(self) -> List[bytes]:
+        lines = []
         self._serial_lock.acquire()
-        lines = self._serial.readlines()
+        for _ in range(self._read_max_lines):
+            line = self._serial.readline()
+            if not line:
+                break
+            lines.append(line)
         self._serial_lock.release()
         return lines
 
@@ -160,19 +169,42 @@ class BelugaSerial:
                 settings_processed += 1
         return lines_processed, settings_processed == NUM_SETTING_LINES
 
+    def get_neighbors_list(self) -> Dict[int, Dict[str, Union[int, str]]]:
+        return self._neighbor_list
+
+    @staticmethod
+    def _parse_entry(line: str) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
+        entries = line.split(',')
+        entry = None
+        try:
+            entry = {'ID': int(entries[0]), 'RANGE': float(entries[1]), 'RSSI': int(entries[2]), 'TIMESTAMP': int(entries[3])}
+        except Exception as e:
+            print(str(e))
+            # Could not parse entry
+            pass
+        return entry
+
     def _write_ranging_batch(self, lines: List[str]) -> int:
         lines_processed = 0
         for line in lines:
-            if line == '# ID, RANGE, RSSI, TIMESTAMP':
+            try:
+                entry = json.loads(line)
                 lines_processed += 1
-            elif line[0].isdigit():
-                lines_processed += 1
-                self._outstream_lock.acquire()
-                self._outstream.write(line)
-                self._outstream.flush()
-                self._outstream_lock.release()
-            else:
-                break
+                self._neighbor_list[entry['ID']] = entry
+            except json.JSONDecodeError:
+                if line == '# ID, RANGE, RSSI, TIMESTAMP':
+                    lines_processed += 1
+                elif line[0].isdigit():
+                    lines_processed += 1
+                    self._outstream_lock.acquire()
+                    self._outstream.write(line)
+                    self._outstream.flush()
+                    self._outstream_lock.release()
+                    entry = self._parse_entry(line)
+                    if entry is not None:
+                        self._neighbor_list[entry['ID']] = entry
+                else:
+                    break
         return lines_processed
 
 
@@ -189,8 +221,8 @@ class BelugaSerial:
             if not lines[i]:
                 # Empty line
                 i += 1
-            elif lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
-                processed = self._write_ranging_batch(lines)
+            elif lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
+                processed = self._write_ranging_batch(lines[i:])
                 i += processed
             elif lines[i].startswith('Node On'):
                 while True:
