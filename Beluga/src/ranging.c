@@ -35,11 +35,8 @@
         k_sem_give(&k_sus_resp);                                               \
     } while (0)
 
-K_MUTEX_DEFINE(twr_mutex);
-K_MUTEX_DEFINE(rate_mutex);
-
-static uint32_t initiator_freq = 100;
-static bool twr_mode = false;
+static int32_t initiator_freq = 100;
+static bool twr_mode = true;
 
 /* DW1000 config struct */
 static dwt_config_t config = {
@@ -102,31 +99,22 @@ void set_tx_power(bool power_max) {
 }
 
 void set_twr_mode(bool value) {
-    k_mutex_lock(&twr_mutex, K_FOREVER);
     twr_mode = value;
-    k_mutex_unlock(&twr_mutex);
 }
 
 bool get_twr_mode(void) {
-    bool retVal;
-    k_mutex_lock(&twr_mutex, K_FOREVER);
-    retVal = twr_mode;
-    k_mutex_unlock(&twr_mutex);
-    return retVal;
+    return twr_mode;
 }
 
 void set_rate(uint32_t rate) {
-    k_mutex_lock(&rate_mutex, K_FOREVER);
-    initiator_freq = rate;
-    k_mutex_unlock(&rate_mutex);
+    if (rate > (uint32_t)INT32_MAX) {
+        return;
+    }
+    initiator_freq = (int32_t)rate;
 }
 
 uint32_t get_rate(void) {
-    uint32_t retVal;
-    k_mutex_lock(&rate_mutex, K_FOREVER);
-    retVal = initiator_freq;
-    k_mutex_unlock(&rate_mutex);
-    return retVal;
+    return initiator_freq;
 }
 
 void init_uwb(void) {

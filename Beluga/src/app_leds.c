@@ -15,11 +15,11 @@
 #define UNUSED_BIT   2
 #define POWER_BIT    3
 
-#define led_mode_om  true
+#define led_mode_on  true
 #define led_mode_off false
 
 static uint8_t ledState = 0;
-static bool led_mode = led_mode_om;
+static bool led_mode = led_mode_on;
 
 static void led_on(uint32_t led) {
     if (led_mode) {
@@ -93,7 +93,7 @@ void restore_led_states(void) {
     if (ledState & BIT(POWER_BIT)) {
         APP_LED_ON(POWER_LED);
     }
-    led_mode = led_mode_om;
+    led_mode = led_mode_on;
     dwt_setleds(DWT_LEDS_ENABLE);
 }
 
@@ -111,4 +111,8 @@ enum led_state get_power_led_state(void) {
 
 enum led_state get_unused_led_state(void) {
     return ledState & BIT(UNUSED_BIT) ? LED_UNUSED_ON : LED_UNUSED_OFF;
+}
+
+bool are_leds_on(void) {
+    return led_mode == led_mode_on;
 }

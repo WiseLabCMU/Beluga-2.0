@@ -5,6 +5,8 @@
 #ifndef BELUGA_APP_LEDS_H
 #define BELUGA_APP_LEDS_H
 
+#include <stdbool.h>
+
 enum led_state {
     LED_BLE_ON,
     LED_BLE_OFF,
@@ -23,5 +25,6 @@ enum led_state get_ble_led_state(void);
 enum led_state get_uwb_led_state(void);
 enum led_state get_power_led_state(void);
 enum led_state get_unused_led_state(void);
+bool are_leds_on(void);
 
 #endif // BELUGA_APP_LEDS_H

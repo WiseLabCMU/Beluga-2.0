@@ -81,7 +81,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
     bool removed = false;
 
     while (1) {
-        k_sleep(K_MSEC(1000));
+        k_msleep(1000);
 
         watchdog_red_rocket();
 
@@ -93,7 +93,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
         for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
             if (seen_list[x].UUID != 0) {
                 if ((k_uptime_get() - seen_list[x].ble_time_stamp) >=
-                    get_node_timeout()) {
+                    timeout) {
                     removed = true;
                     memset(&seen_list[x], 0, sizeof(seen_list[0]));
                 }

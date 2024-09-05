@@ -8,6 +8,8 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <app_leds.h>
+#include <deca_device_api.h>
 
 /**
  * @brief SS TWR Initiator task entry function.
@@ -19,6 +21,12 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
+
+    if (are_leds_on()) {
+        dwt_setleds(DWT_LEDS_ENABLE);
+    } else {
+        dwt_setleds(DWT_LEDS_DISABLE);
+    }
 
     while (true) {
         watchdog_red_rocket();

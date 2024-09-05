@@ -133,7 +133,7 @@ int ds_resp_run(void) {
     uint16_t NODE_UUID = get_NODE_UUID();
     unsigned int suspend_start =
         k_sem_count_get(&k_sus_resp); // Check if responding is suspended
-    if (suspend_start == 1)
+    if (suspend_start == 0)
         return 1;
 
     /* Activate reception immediately. */
@@ -145,7 +145,7 @@ int ds_resp_run(void) {
           (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
         unsigned int suspend = k_sem_count_get(&k_sus_resp);
 
-        if (suspend == 1) {
+        if (suspend == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
@@ -239,7 +239,7 @@ int ds_resp_run(void) {
                      (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO |
                       SYS_STATUS_ALL_RX_ERR))) {
                 unsigned int suspend = k_sem_count_get(&k_sus_resp);
-                if (suspend == 1) {
+                if (suspend == 0) {
                     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
                     /* Reset RX to properly reinitialise LDE operation. */
                     dwt_rxreset();
@@ -408,7 +408,7 @@ int ss_resp_run(void) {
         !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
           (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
         unsigned int suspend = k_sem_count_get(&k_sus_resp);
-        if (suspend == 1) {
+        if (suspend == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
@@ -480,7 +480,7 @@ int ss_resp_run(void) {
 
                 while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
                     unsigned int suspend = k_sem_count_get(&k_sus_resp);
-                    if (suspend == 1) {
+                    if (suspend == 0) {
                         dwt_forcetrxoff();
                         return 1;
                     }

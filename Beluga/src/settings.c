@@ -18,7 +18,7 @@
 #define DEFAULT_BOOTMODE   0
 #define DEFAULT_CHANNEL    5
 #define DEFAULT_TXPOWER    0
-#define DEFAULT_TWR        0
+#define DEFAULT_TWR        1
 
 #if defined(CONFIG_SETTINGS_FILE)
 #include <zephyr/fs/fs.h>
