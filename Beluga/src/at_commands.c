@@ -66,7 +66,8 @@ struct cmd_info {
     }
 
 #define AT_CMD_DATA(_callback, _command...)                                    \
-    CMD_DATA(_callback, ((uint8_t[]){_command}), sizeof((uint8_t[]){_command}))
+    CMD_DATA(_callback, ((uint8_t[]){_command}),                               \
+             (sizeof((uint8_t[]){_command}) - 1))
 
 #define AT_CMD_DATA_TERMINATOR                                                 \
     { NULL, 0, NULL }
