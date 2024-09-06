@@ -1056,9 +1056,12 @@ void dwt_configuresleepcnt(uint16 sleepcnt);
  *
  *
  *      mode: the array and LDE code (OTP/ROM) and LDO tune, and set sleep
- * persist DWT_PRESRV_SLEEP 0x0100 - preserve sleep DWT_LOADOPSET    0x0080 -
- * load operating parameter set on wakeup DWT_CONFIG       0x0040 - download the
- * AON array into the HIF (configuration download) DWT_LOADEUI      0x0008
+ * persist
+ *      DWT_PRESRV_SLEEP 0x0100 - preserve sleep
+ *      DWT_LOADOPSET    0x0080 - load operating parameter set on wakeup
+ *      DWT_CONFIG       0x0040 - download the AON array into the HIF
+ *      (configuration download)
+ *      DWT_LOADEUI      0x0008
  *      DWT_GOTORX       0x0002
  *      DWT_TANDV        0x0001
  *
