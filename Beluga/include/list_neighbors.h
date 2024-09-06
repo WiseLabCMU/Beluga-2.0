@@ -9,6 +9,8 @@
 
 void set_stream_mode(bool value);
 bool get_stream_mode(void);
+void set_format_mode(bool json);
+bool get_format_mode(void);
 void init_print_list_task(void);
 
 extern struct k_sem print_list_sem;

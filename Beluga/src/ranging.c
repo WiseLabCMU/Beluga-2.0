@@ -2,6 +2,7 @@
 // Created by tom on 7/9/24.
 //
 
+#include <app_leds.h>
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <init_main.h>
@@ -14,7 +15,6 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
-#include <app_leds.h>
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
@@ -98,13 +98,9 @@ void set_tx_power(bool power_max) {
     dwt_configuretxrf(&config_tx);
 }
 
-void set_twr_mode(bool value) {
-    twr_mode = value;
-}
+void set_twr_mode(bool value) { twr_mode = value; }
 
-bool get_twr_mode(void) {
-    return twr_mode;
-}
+bool get_twr_mode(void) { return twr_mode; }
 
 void set_rate(uint32_t rate) {
     if (rate > (uint32_t)INT32_MAX) {
@@ -113,9 +109,7 @@ void set_rate(uint32_t rate) {
     initiator_freq = (int32_t)rate;
 }
 
-uint32_t get_rate(void) {
-    return initiator_freq;
-}
+uint32_t get_rate(void) { return initiator_freq; }
 
 void init_uwb(void) {
     setup_DW1000RSTnIRQ(0);
@@ -175,7 +169,8 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             k_msleep(initiator_freq);
 
             if (drop_flag) {
-                uint16_t rand_small = get_rand_num_exp_collision(initiator_freq);
+                uint16_t rand_small =
+                    get_rand_num_exp_collision(initiator_freq);
                 k_msleep(rand_small);
                 drop_flag = false;
             }
@@ -219,7 +214,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
                     numThru -= 1;
                 }
 
-                float range = (range1)/numThru;
+                float range = (range1) / numThru;
 
                 if ((numThru != 0) && (range >= -5) && (range <= 100)) {
                     seen_list[curr_index].update_flag = 1;
@@ -326,9 +321,9 @@ static k_tid_t responder_task_id;
 
 void init_responder_thread(void) {
     responder_task_id = k_thread_create(
-            &responder_data, responder_stack,
-            K_THREAD_STACK_SIZEOF(responder_stack), responder_task_function, NULL,
-            NULL, NULL, CONFIG_BELUGA_RESPONDER_PRIO, 0, K_NO_WAIT);
+        &responder_data, responder_stack,
+        K_THREAD_STACK_SIZEOF(responder_stack), responder_task_function, NULL,
+        NULL, NULL, CONFIG_BELUGA_RESPONDER_PRIO, 0, K_NO_WAIT);
     printk("Started responder\n");
 }
 #else

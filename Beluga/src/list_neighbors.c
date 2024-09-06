@@ -10,32 +10,42 @@
 #include <utils.h>
 #include <zephyr/kernel.h>
 
+#define csv_mode  false
+#define json_mode true
+
+#define format_str(mode)                                                       \
+    ((mode) == json_mode) ? "{\"ID\": %" PRIu16                                \
+                            ", \"RANGE\": %f, \"RSSI\": %" PRId32              \
+                            ", \"TIMESTAMP\": %" PRId64 "} \r\n"               \
+                          : "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n"
+
 K_SEM_DEFINE(print_list_sem, 0, 1);
-K_MUTEX_DEFINE(stream_mode_mutex);
+K_MUTEX_DEFINE(format_mutex);
 
 static bool stream_mode = false;
+static bool format_mode = csv_mode;
 
-void set_stream_mode(bool value) {
-    k_mutex_lock(&stream_mode_mutex, K_FOREVER);
-    stream_mode = value;
-    k_mutex_unlock(&stream_mode_mutex);
+void set_stream_mode(bool value) { stream_mode = value; }
+
+bool get_stream_mode(void) { return stream_mode; }
+
+void set_format_mode(bool json) {
+    k_mutex_lock(&format_mutex, K_FOREVER);
+    format_mode = json;
+    k_mutex_unlock(&format_mutex);
 }
 
-bool get_stream_mode(void) {
-    bool retVal;
-    k_mutex_lock(&stream_mode_mutex, K_FOREVER);
-    retVal = stream_mode;
-    k_mutex_unlock(&stream_mode_mutex);
-    return retVal;
-}
+bool get_format_mode(void) { return format_mode; }
 
 static void normal_print(void) {
-    printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
+    if (format_mode == csv_mode) {
+        printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
+    }
 
     for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
         if (seen_list[j].UUID != 0) {
-            printf("%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n",
-                   seen_list[j].UUID, seen_list[j].range, seen_list[j].RSSI,
+            printf(format_str(format_mode), seen_list[j].UUID,
+                   seen_list[j].range, seen_list[j].RSSI,
                    seen_list[j].time_stamp);
         }
     }
@@ -52,12 +62,14 @@ static void stream_print(void) {
     }
     // If one of node has update flag, print it
     if (count_flag != 0) {
-        printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
+        if (format_mode == csv_mode) {
+            printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
+        }
 
         for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
             if (seen_list[j].UUID != 0 && seen_list[j].update_flag == 1)
-                printf("%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n",
-                       seen_list[j].UUID, seen_list[j].range, seen_list[j].RSSI,
+                printf(format_str(format_mode), seen_list[j].UUID,
+                       seen_list[j].range, seen_list[j].RSSI,
                        seen_list[j].time_stamp);
 
             // Reset update flag of the node
@@ -81,6 +93,7 @@ NO_RETURN void list_task_function(void *p1, void *p2, void *p3) {
         k_sleep(K_MSEC(50));
 
         k_sem_take(&print_list_sem, K_FOREVER);
+        k_mutex_lock(&format_mutex, K_FOREVER);
 
         /* Normal mode to print all neighbor nodes */
         if (!get_stream_mode()) {
@@ -90,6 +103,7 @@ NO_RETURN void list_task_function(void *p1, void *p2, void *p3) {
             stream_print();
         }
 
+        k_mutex_unlock(&format_mutex);
         k_sem_give(&print_list_sem);
     }
 }

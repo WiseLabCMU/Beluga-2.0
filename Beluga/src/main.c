@@ -22,10 +22,10 @@
 #include <utils.h>
 #include <voltage_regulator.h>
 #include <watchdog.h>
-#include <zephyr/drivers/hwinfo.h>
-#include <zephyr/kernel.h>
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/clock_control/nrf_clock_control.h>
+#include <zephyr/drivers/hwinfo.h>
+#include <zephyr/kernel.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
@@ -189,6 +189,12 @@ static void load_twr_mode(void) {
     printf("  Ranging Mode: %d \r\n", twr);
 }
 
+static void load_out_format(void) {
+    int32_t format = retrieveSetting(BELUGA_OUT_FORMAT);
+    set_format_mode(format == 1);
+    printf("  Output Format: %s \r\n", (format == 1) ? "JSON" : "CSV");
+}
+
 static void load_settings(void) {
     printf("Flash Configuration: \r\n");
 
@@ -210,6 +216,8 @@ static void load_settings(void) {
     load_stream_mode();
     watchdog_red_rocket();
     load_twr_mode();
+    watchdog_red_rocket();
+    load_out_format();
     watchdog_red_rocket();
 }
 

@@ -103,8 +103,10 @@ static struct bt_data ad[] = {
 static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
-static const struct bt_data polling_0 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30");
-static const struct bt_data polling_1 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
+static const struct bt_data polling_0 =
+    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30");
+static const struct bt_data polling_1 =
+    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
 
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;

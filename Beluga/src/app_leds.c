@@ -113,6 +113,4 @@ enum led_state get_unused_led_state(void) {
     return ledState & BIT(UNUSED_BIT) ? LED_UNUSED_ON : LED_UNUSED_OFF;
 }
 
-bool are_leds_on(void) {
-    return led_mode == led_mode_on;
-}
+bool are_leds_on(void) { return led_mode == led_mode_on; }

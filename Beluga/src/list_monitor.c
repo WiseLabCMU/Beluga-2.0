@@ -92,8 +92,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
         // Check for timeout eviction
         for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
             if (seen_list[x].UUID != 0) {
-                if ((k_uptime_get() - seen_list[x].ble_time_stamp) >=
-                    timeout) {
+                if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
                     removed = true;
                     memset(&seen_list[x], 0, sizeof(seen_list[0]));
                 }
