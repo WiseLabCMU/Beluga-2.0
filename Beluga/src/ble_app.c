@@ -103,6 +103,9 @@ static struct bt_data ad[] = {
 static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
+static const struct bt_data polling_0 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30");
+static const struct bt_data polling_1 = BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
+
 static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
 
@@ -563,17 +566,12 @@ uint16_t get_NODE_UUID(void) {
 }
 
 void advertising_reconfig(int32_t change) {
-    struct bt_data data_poll_0 =
-                       BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
-                   data_poll_1 =
-                       BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
-
     bt_le_adv_stop();
 
     if (change == 0) {
-        ad[MANF_INDEX] = data_poll_0;
+        ad[MANF_INDEX] = polling_0;
     } else {
-        ad[MANF_INDEX] = data_poll_1;
+        ad[MANF_INDEX] = polling_1;
     }
 
     switch (currentAdvMode) {
