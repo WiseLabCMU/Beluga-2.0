@@ -59,6 +59,18 @@ struct cmd_info {
     void (*cmd_func)(uint16_t argc, char const *const *argv);
 };
 
+#define CMD_DATA(_callback, _command, _command_len)                            \
+    {                                                                          \
+        .command = (const char *)(_command), .cmd_length = (_command_len),     \
+        .cmd_func = (_callback),                                               \
+    }
+
+#define AT_CMD_DATA(_callback, _command...)                                    \
+    CMD_DATA(_callback, ((uint8_t[]){_command}), sizeof((uint8_t[]){_command}))
+
+#define AT_CMD_DATA_TERMINATOR                                                 \
+    { NULL, 0, NULL }
+
 STATIC_INLINE bool int2bool(bool *boolarg, int32_t intarg) {
     if (intarg == 0) {
         *boolarg = false;
@@ -362,17 +374,26 @@ static void at_format(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static struct cmd_info commands[] = {
-    {"STARTUWB", 8, at_start_uwb}, {"STOPUWB", 7, at_stop_uwb},
-    {"STARTBLE", 8, at_start_ble}, {"STOPBLE", 7, at_stop_ble},
-    {"ID", 2, at_change_id},       {"BOOTMODE", 8, at_bootmode},
-    {"RATE", 4, at_rate},          {"CHANNEL", 7, at_channel},
-    {"RESET", 5, at_reset},        {"TIMEOUT", 7, at_timeout},
-    {"TXPOWER", 7, at_txpower},    {"STREAMMODE", 10, at_streammode},
-    {"TWRMODE", 7, at_twrmode},    {"LEDMODE", 7, at_ledmode},
-    {"REBOOT", 6, at_reboot},      {"PWRAMP", 6, at_pwramp},
-    {"ANTENNA", 7, at_antenna},    {"TIME", 4, at_time},
-    {"FORMAT", 6, at_format},      {NULL, 0, NULL}};
+static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
+                                     AT_CMD_DATA(at_stop_uwb, "STOPUWB"),
+                                     AT_CMD_DATA(at_start_ble, "STARTBLE"),
+                                     AT_CMD_DATA(at_stop_ble, "STOPBLE"),
+                                     AT_CMD_DATA(at_change_id, "ID"),
+                                     AT_CMD_DATA(at_bootmode, "BOOTMODE"),
+                                     AT_CMD_DATA(at_rate, "RATE"),
+                                     AT_CMD_DATA(at_channel, "CHANNEL"),
+                                     AT_CMD_DATA(at_reset, "RESET"),
+                                     AT_CMD_DATA(at_timeout, "TIMEOUT"),
+                                     AT_CMD_DATA(at_txpower, "TXPOWER"),
+                                     AT_CMD_DATA(at_streammode, "STREAMMODE"),
+                                     AT_CMD_DATA(at_twrmode, "TWRMODE"),
+                                     AT_CMD_DATA(at_ledmode, "LEDMODE"),
+                                     AT_CMD_DATA(at_reboot, "REBOOT"),
+                                     AT_CMD_DATA(at_pwramp, "PWRAMP"),
+                                     AT_CMD_DATA(at_antenna, "ANTENNA"),
+                                     AT_CMD_DATA(at_time, "TIME"),
+                                     AT_CMD_DATA(at_format, "FORMAT"),
+                                     AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
@@ -459,7 +480,3 @@ void init_commands_thread(void) {
 #else
 void init_commands_thread(void) { printk("Started AT commands\n"); }
 #endif
-
-// int leds_mode;
-// static uwb_lna_status = 0;
-// static uwb_pa_status = 0;
