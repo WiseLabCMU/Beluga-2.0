@@ -343,29 +343,36 @@ static void at_antenna(uint16_t argc, char const *const *argv) {
 }
 
 static void at_time(uint16_t argc, char const *const *argv) {
-    printf("Time: %lld ", k_uptime_get());
+    printf("Time: %" PRId64 " ", k_uptime_get());
     OK;
 }
 
-static struct cmd_info commands[] = {{"STARTUWB", 8, at_start_uwb},
-                                     {"STOPUWB", 7, at_stop_uwb},
-                                     {"STARTBLE", 8, at_start_ble},
-                                     {"STOPBLE", 7, at_stop_ble},
-                                     {"ID", 2, at_change_id},
-                                     {"BOOTMODE", 8, at_bootmode},
-                                     {"RATE", 4, at_rate},
-                                     {"CHANNEL", 7, at_channel},
-                                     {"RESET", 5, at_reset},
-                                     {"TIMEOUT", 7, at_timeout},
-                                     {"TXPOWER", 7, at_txpower},
-                                     {"STREAMMODE", 10, at_streammode},
-                                     {"TWRMODE", 7, at_twrmode},
-                                     {"LEDMODE", 7, at_ledmode},
-                                     {"REBOOT", 6, at_reboot},
-                                     {"PWRAMP", 6, at_pwramp},
-                                     {"ANTENNA", 7, at_antenna},
-                                     {"TIME", 4, at_time},
-                                     {NULL, 0, NULL}};
+static void at_format(uint16_t argc, char const *const *argv) {
+    READ_SETTING(argc, 2, BELUGA_OUT_FORMAT, "Format Mode");
+    int32_t mode;
+    bool success = strtoint32(argv[1], &mode);
+
+    if (!success || mode < 0 || mode > 1) {
+        printf("Format parameter input error \r\n");
+        return;
+    }
+
+    updateSetting(BELUGA_OUT_FORMAT, mode);
+    set_format_mode(mode == 1);
+    OK;
+}
+
+static struct cmd_info commands[] = {
+    {"STARTUWB", 8, at_start_uwb}, {"STOPUWB", 7, at_stop_uwb},
+    {"STARTBLE", 8, at_start_ble}, {"STOPBLE", 7, at_stop_ble},
+    {"ID", 2, at_change_id},       {"BOOTMODE", 8, at_bootmode},
+    {"RATE", 4, at_rate},          {"CHANNEL", 7, at_channel},
+    {"RESET", 5, at_reset},        {"TIMEOUT", 7, at_timeout},
+    {"TXPOWER", 7, at_txpower},    {"STREAMMODE", 10, at_streammode},
+    {"TWRMODE", 7, at_twrmode},    {"LEDMODE", 7, at_ledmode},
+    {"REBOOT", 6, at_reboot},      {"PWRAMP", 6, at_pwramp},
+    {"ANTENNA", 7, at_antenna},    {"TIME", 4, at_time},
+    {"FORMAT", 6, at_format},      {NULL, 0, NULL}};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
