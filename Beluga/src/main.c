@@ -14,7 +14,6 @@
 #include <range_extension.h>
 #include <ranging.h>
 #include <resp_main.h>
-#include <responder.h>
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>
@@ -25,12 +24,11 @@
 #include <watchdog.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/clock_control/nrf_clock_control.h>
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
-
-#include <zephyr/drivers/clock_control.h>
-#include <zephyr/drivers/clock_control/nrf_clock_control.h>
 
 enum clk_cntrl { HIGH_FREQ, LOW_FREQ };
 
