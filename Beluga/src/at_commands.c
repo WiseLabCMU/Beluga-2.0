@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
+#include <power_manager.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -375,6 +376,12 @@ static void at_format(uint16_t argc, char const *const *argv) {
     OK;
 }
 
+static void at_deepsleep(uint16_t argc, char const *const *argv) {
+    OK;
+    printf("\r\n");
+    enter_deep_sleep();
+}
+
 static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
                                      AT_CMD_DATA(at_stop_uwb, "STOPUWB"),
                                      AT_CMD_DATA(at_start_ble, "STARTBLE"),
@@ -394,6 +401,7 @@ static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
                                      AT_CMD_DATA(at_antenna, "ANTENNA"),
                                      AT_CMD_DATA(at_time, "TIME"),
                                      AT_CMD_DATA(at_format, "FORMAT"),
+                                     AT_CMD_DATA(at_deepsleep, "DEEPSLEEP"),
                                      AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
