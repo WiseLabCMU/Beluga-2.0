@@ -25,21 +25,21 @@
 		compatible = "gpio-leds";
 		led0 {
 			label = "led0";
-			gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
 		};
 
 		led1: led1 {
-			gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;
 			label = "led1";
 		};
 
 		led2: led2 {
-			gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;
 			label = "led2";
 		};
 
 		led3: led3 {
-			gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio0 7 GPIO_ACTIVE_LOW>;
 			label = "led3";
 		};
 	};
@@ -78,17 +78,23 @@
 	status = "okay";
 	current-speed = <115200>;
 	pinctrl-0 = <&uart0_default>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&uart0_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 &i2c0 {
 	compatible = "nordic,nrftwi";
 	status = "okay";
 	pinctrl-0 = <&i2c0_default>;
-	pinctrl-names = "default";
-	lis2dh12@19 {
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+	lis2dh12: lis2dh12@19 {
 		compatible = "st,lis2dh12";
 		reg = <0x19>;
+		label = "lis2dh12";
+		anym-on-int1;
+		status = "okay";
+		irq-gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
 	};
 };
 
@@ -97,7 +103,8 @@
 	status = "okay";
 	cs-gpios = <&gpio0 19 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>, <&gpio0 31 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
 	pinctrl-0 = <&spi1_default>;
-	pinctrl-names = "default";
+	pinctrl-1 = <&spi1_sleep>;
+	pinctrl-names = "default", "sleep";
 	nrf_radio_fem_spi: nrf21540-fem-spi@0 {
 		compatible = "nordic,nrf21540-fem-spi";
 		reg = <0x0>;
