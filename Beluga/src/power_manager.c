@@ -13,6 +13,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/sensor.h>
+#include <spi.h>
 
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
 
@@ -24,7 +25,7 @@
 #elif DT_NODE_EXISTS(DT_ALIAS(wake_source))
 #define WAKESOURCE GPIO_DT_SPEC_GET(DT_ALIAS(wake_source), gpios)
 #else
-#error "Wakeup source is not defined. Unable to wake from deep sleep."
+#warning "Wakeup source is not defined. Unable to wake from deep sleep."
 #endif
 
 #if defined(USE_ACCEL) || defined(WAKESOURCE)
@@ -59,7 +60,9 @@ static void sleep_dw1000(void) {
         k_sem_take(&k_sus_init, K_FOREVER);
     }
 
-    // TODO: Place UWB into deep sleep mode
+    dwt_configuresleep(0, DWT_SLP_EN | DWT_WAKE_CS);
+    dwt_entersleep();
+    shutdown_spi();
 }
 
 static void stop_ble(void) {
@@ -70,8 +73,9 @@ static void stop_ble(void) {
 }
 
 void enter_deep_sleep(void) {
-    sleep_dw1000();
+    all_leds_off();
     stop_ble();
+    sleep_dw1000();
     configure_wake_source();
     sys_poweroff();
 }

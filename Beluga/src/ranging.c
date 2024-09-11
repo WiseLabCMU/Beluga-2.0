@@ -15,6 +15,7 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <spi.h>
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
@@ -113,6 +114,7 @@ uint32_t get_rate(void) { return initiator_freq; }
 
 void init_uwb(void) {
     setup_DW1000RSTnIRQ(0);
+    toggle_cs_line(DW1000_SPI_CHANNEL, 400);
 
     reset_DW1000();
 

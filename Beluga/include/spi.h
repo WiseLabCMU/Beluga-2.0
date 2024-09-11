@@ -21,5 +21,7 @@ int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer,
               size_t bufLength);
 int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
              uint8_t *readBuf, size_t bufLength);
+void shutdown_spi(void);
+void toggle_cs_line(beluga_spi_channel_t channel, int32_t us);
 
 #endif // BELUGA_SPI_H

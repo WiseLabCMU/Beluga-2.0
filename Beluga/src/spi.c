@@ -8,6 +8,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>
+#include <zephyr/pm/device.h>
 
 #define NUM_SPI_CONFIGS         4
 #define SPI_BUF_SIZE            255
@@ -239,4 +240,31 @@ int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
     k_mutex_unlock(&spi_lock);
 
     return err;
+}
+
+void shutdown_spi(void) {
+    int rc = pm_device_action_run(spi_device, PM_DEVICE_ACTION_TURN_OFF);
+    if (rc < 0) {
+        printk("Unable to turn off SPI (%d)\n", rc);
+    }
+}
+
+void toggle_cs_line(beluga_spi_channel_t channel, int32_t us) {
+    struct spi_config *_spiConfig;
+    switch(channel) {
+        case DW1000_SPI_CHANNEL:
+            _spiConfig = dw1000SpiConfig;
+            break;
+        case NRF21_SPI_CHANNEL:
+            _spiConfig = nrfSpiConfig;
+            break;
+        default:
+            printk("Invalid SPI channel\n");
+            return;
+    }
+
+    gpio_pin_toggle_dt(&_spiConfig->cs.gpio);
+    k_sleep(K_USEC(us));
+    gpio_pin_toggle_dt(&_spiConfig->cs.gpio);
+    k_sleep(K_USEC(us));
 }
