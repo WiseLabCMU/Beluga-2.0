@@ -10,7 +10,9 @@
 
 typedef enum {
     DW1000_SPI_CHANNEL,
+#if defined(CONFIG_BELUGA_USE_SPI2)
     NRF21_SPI_CHANNEL,
+#endif
     INVALID_SPI_CHANNEL
 } beluga_spi_channel_t;
 
