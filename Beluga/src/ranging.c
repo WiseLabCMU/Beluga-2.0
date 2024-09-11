@@ -10,12 +10,12 @@
 #include <random.h>
 #include <ranging.h>
 #include <resp_main.h>
+#include <spi.h>
 #include <stdbool.h>
 #include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
-#include <spi.h>
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100

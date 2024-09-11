@@ -198,7 +198,7 @@ double dwt_getrangebias(uint8 chan, float range, uint8 prf) {
                 i++; // find index in table corresponding to range
             cmoffseti = i + CM_OFFSET_16M_NB; // nearest centimeter correction
         }
-        }  // end of switch
+        } // end of switch
     } else // 64M PRF
     {
         switch (chan) {
@@ -216,7 +216,7 @@ double dwt_getrangebias(uint8 chan, float range, uint8 prf) {
             cmoffseti = i + CM_OFFSET_64M_NB; // nearest centimeter correction
         }
         } // end of switch
-    }     // end else
+    } // end else
 
     mOffset = (float)cmoffseti; // offset result in centimmetres
 

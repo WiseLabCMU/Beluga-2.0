@@ -7,4 +7,4 @@
 
 void enter_deep_sleep(void);
 
-#endif //BELUGA_POWER_MANAGER_H
+#endif // BELUGA_POWER_MANAGER_H

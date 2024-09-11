@@ -24,6 +24,7 @@
 #include <app_leds.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
+#include <power_manager.h>
 #include <range_extension.h>
 #include <ranging.h>
 #include <settings.h>
@@ -31,7 +32,6 @@
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
-#include <power_manager.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -62,7 +62,8 @@ struct cmd_info {
 
 #define CMD_DATA(_callback, _command, _command_len)                            \
     {                                                                          \
-        .command = (const char *)(_command), .cmd_length = (_command_len),     \
+        .command = (const char *)(_command),                                   \
+        .cmd_length = (_command_len),                                          \
         .cmd_func = (_callback),                                               \
     }
 
@@ -70,8 +71,7 @@ struct cmd_info {
     CMD_DATA(_callback, ((uint8_t[]){_command}),                               \
              (sizeof((uint8_t[]){_command}) - 1))
 
-#define AT_CMD_DATA_TERMINATOR                                                 \
-    { NULL, 0, NULL }
+#define AT_CMD_DATA_TERMINATOR {NULL, 0, NULL}
 
 STATIC_INLINE bool int2bool(bool *boolarg, int32_t intarg) {
     if (intarg == 0) {

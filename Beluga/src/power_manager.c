@@ -2,25 +2,26 @@
 // Created by tom on 9/6/24.
 //
 
-#include <zephyr/kernel.h>
-#include <power_manager.h>
-#include <init_main.h>
-#include <resp_main.h>
-#include <list_neighbors.h>
 #include <app_leds.h>
 #include <ble_app.h>
-#include <zephyr/sys/poweroff.h>
+#include <init_main.h>
+#include <list_neighbors.h>
+#include <power_manager.h>
+#include <resp_main.h>
+#include <spi.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/sensor.h>
-#include <spi.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/poweroff.h>
 
 #define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
 
 #if DT_NODE_EXISTS(DT_NODELABEL(lis2dh12)) && defined(CONFIG_BELUGA_USE_ACCEL)
 #define USE_ACCEL
 // Some other stuff
-#elif DT_NODE_EXISTS(ZEPHYR_USER_NODE) && DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, wake_source_gpios)
+#elif DT_NODE_EXISTS(ZEPHYR_USER_NODE) &&                                      \
+    DT_NODE_HAS_PROP(ZEPHYR_USER_NODE, wake_source_gpios)
 #define WAKESOURCE GPIO_DT_SPEC_GET(ZEPHYR_USER_NODE, wake_source_gpios)
 #elif DT_NODE_EXISTS(DT_ALIAS(wake_source))
 #define WAKESOURCE GPIO_DT_SPEC_GET(DT_ALIAS(wake_source), gpios)
@@ -50,7 +51,9 @@ static void configure_wake_source(void) {
 #endif
 }
 #else
-#define configure_wake_source() do {} while (0)
+#define configure_wake_source()                                                \
+    do {                                                                       \
+    } while (0)
 #endif
 
 static void sleep_dw1000(void) {

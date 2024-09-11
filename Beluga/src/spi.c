@@ -27,9 +27,13 @@
 #define RX_BUF_IDX              1
 #define TX_BUF_IDX              0
 
-#define SPI_NAME                DEVICE_DT_GET(DT_NODELABEL(spi1))
+#define SPI1                    0
+#define SPI2                    1
 
-static const struct device *spi_device;
+#define SPI1_NAME               DEVICE_DT_GET(DT_NODELABEL(spi1))
+#define SPI2_NAME               DEVICE_DT_GET(DT_NODELABEL(spi2))
+
+static const struct device *spi_device[2];
 static struct spi_config *dw1000SpiConfig = NULL;
 static struct spi_config *nrfSpiConfig = NULL;
 static struct spi_config spiConfigs[NUM_SPI_CONFIGS];
@@ -52,12 +56,19 @@ static const struct spi_cs_control nrf_fem_cs =
 static const struct spi_cs_control dw1000_cs =
     SPI_CS_CONTROL_INIT(DT_NODELABEL(dw1000_spi), 0);
 
-K_MUTEX_DEFINE(spi_lock);
+K_MUTEX_DEFINE(spi1_lock);
+K_MUTEX_DEFINE(spi2_lock);
 
 int init_spi1(void) {
-    spi_device = SPI_NAME;
-    if (!device_is_ready(spi_device)) {
+    spi_device[SPI1] = SPI1_NAME;
+    if (!device_is_ready(spi_device[SPI1])) {
         printk("Failed to bind SPI1\n");
+        return -1;
+    }
+
+    spi_device[SPI2] = SPI2_NAME;
+    if (!device_is_ready(spi_device[SPI2])) {
+        printk("Failed to bind SPI2\n");
         return -1;
     }
 
@@ -103,7 +114,7 @@ int init_spi1(void) {
     dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
     nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_SLOW];
 
-    printk("SPI 1 initialized\n");
+    printk("SPI 1 and SPI 2 initialized\n");
 
     return 0;
 }
@@ -155,8 +166,9 @@ int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer,
     struct spi_config *_spiConfig;
     struct spi_buf *spiBuf;
     struct spi_buf_set *tx, *rx;
-    uint8_t *txBuf;
+    uint8_t *txBuf, spi;
     int err;
+    struct k_mutex *lock;
 
     switch (channel) {
     case DW1000_SPI_CHANNEL: {
@@ -165,6 +177,8 @@ int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer,
         spiBuf = dw1000_spiBufs;
         tx = &dw1000_tx;
         rx = &dw1000_rx;
+        spi = SPI1;
+        lock = &spi1_lock;
         break;
     }
     case NRF21_SPI_CHANNEL: {
@@ -173,6 +187,8 @@ int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer,
         spiBuf = nrf21_spiBufs;
         tx = &nrf21_tx;
         rx = &nrf21_rx;
+        spi = SPI2;
+        lock = &spi2_lock;
         break;
     }
     default: {
@@ -182,13 +198,13 @@ int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer,
     }
 
     // Lock here because we are using the shared resources now...
-    k_mutex_lock(&spi_lock, K_FOREVER);
+    k_mutex_lock(lock, K_FOREVER);
     memcpy(txBuf, buffer, bufLength);
     spiBuf[TX_BUF_IDX].len = bufLength;
     spiBuf[RX_BUF_IDX].len = bufLength;
 
-    err = spi_transceive(spi_device, _spiConfig, tx, rx);
-    k_mutex_unlock(&spi_lock);
+    err = spi_transceive(spi_device[spi], _spiConfig, tx, rx);
+    k_mutex_unlock(lock);
 
     return err;
 }
@@ -198,8 +214,9 @@ int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
     struct spi_config *_spiConfig;
     struct spi_buf *spiBuf;
     struct spi_buf_set *tx, *rx;
-    uint8_t *txBuf, *rxBuf;
+    uint8_t *txBuf, *rxBuf, spi;
     int err;
+    struct k_mutex *lock;
 
     switch (channel) {
     case DW1000_SPI_CHANNEL: {
@@ -209,6 +226,8 @@ int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
         spiBuf = dw1000_spiBufs;
         tx = &dw1000_tx;
         rx = &dw1000_rx;
+        spi = SPI1;
+        lock = &spi1_lock;
         break;
     }
     case NRF21_SPI_CHANNEL: {
@@ -218,6 +237,8 @@ int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
         spiBuf = nrf21_spiBufs;
         tx = &nrf21_tx;
         rx = &nrf21_rx;
+        spi = SPI2;
+        lock = &spi2_lock;
         break;
     }
     default: {
@@ -227,40 +248,45 @@ int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
     }
 
     // Lock here because we are using the shared resources now
-    k_mutex_lock(&spi_lock, K_FOREVER);
+    k_mutex_lock(lock, K_FOREVER);
     memcpy(txBuf, writeBuffer, bufLength);
     spiBuf[TX_BUF_IDX].len = bufLength;
     spiBuf[RX_BUF_IDX].len = bufLength;
 
-    err = spi_transceive(spi_device, _spiConfig, tx, rx);
+    err = spi_transceive(spi_device[spi], _spiConfig, tx, rx);
 
     if (err == 0) {
         memcpy(readBuf, rxBuf, bufLength);
     }
-    k_mutex_unlock(&spi_lock);
+    k_mutex_unlock(lock);
 
     return err;
 }
 
 void shutdown_spi(void) {
-    int rc = pm_device_action_run(spi_device, PM_DEVICE_ACTION_TURN_OFF);
+    int rc = pm_device_action_run(spi_device[SPI1], PM_DEVICE_ACTION_TURN_OFF);
     if (rc < 0) {
-        printk("Unable to turn off SPI (%d)\n", rc);
+        printk("Unable to turn off SPI 1 (%d)\n", rc);
+    }
+
+    rc = pm_device_action_run(spi_device[SPI2], PM_DEVICE_ACTION_TURN_OFF);
+    if (rc < 0) {
+        printk("Unable to turn off SPI 2 (%d)\n", rc);
     }
 }
 
 void toggle_cs_line(beluga_spi_channel_t channel, int32_t us) {
     struct spi_config *_spiConfig;
-    switch(channel) {
-        case DW1000_SPI_CHANNEL:
-            _spiConfig = dw1000SpiConfig;
-            break;
-        case NRF21_SPI_CHANNEL:
-            _spiConfig = nrfSpiConfig;
-            break;
-        default:
-            printk("Invalid SPI channel\n");
-            return;
+    switch (channel) {
+    case DW1000_SPI_CHANNEL:
+        _spiConfig = dw1000SpiConfig;
+        break;
+    case NRF21_SPI_CHANNEL:
+        _spiConfig = nrfSpiConfig;
+        break;
+    default:
+        printk("Invalid SPI channel\n");
+        return;
     }
 
     gpio_pin_toggle_dt(&_spiConfig->cs.gpio);
