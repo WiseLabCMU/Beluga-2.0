@@ -195,7 +195,7 @@ static void load_out_format(void) {
     printf("  Output Format: %s \r\n", (format == 1) ? "JSON" : "CSV");
 }
 
-static void load_power_amplifiers(void) {
+UNUSED static void load_power_amplifiers(void) {
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
     if (pwramp == 1) {
@@ -230,8 +230,10 @@ static void load_settings(void) {
     watchdog_red_rocket();
     load_out_format();
     watchdog_red_rocket();
-    load_power_amplifiers();
-    watchdog_red_rocket();
+    if (IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION)) {
+        load_power_amplifiers();
+        watchdog_red_rocket();
+    }
 }
 
 #if defined(CONFIG_BELUGA_RESET_REASON)
