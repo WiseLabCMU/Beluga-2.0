@@ -2,83 +2,78 @@
 // Created by tom on 7/8/24.
 //
 
-#include <stdbool.h>
+#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/watchdog.h>
-#include <zephyr/kernel.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/task_wdt/task_wdt.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <watchdog.h>
 
-#define WDT_MIN_WINDOW 0UL
-
-#ifndef CONFIG_WDT_MAX_WINDOW
-#define WDT_MAX_WINDOW 2000UL
+#if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_wdt)
+#define WDT_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(nordic_nrf_wdt)
 #else
-#define WDT_MAX_WINDOW CONFIG_WDT_MAX_WINDOW
+#warning "No hardware watchdog timer fallback"
+#define WDT_NODE DT_INVALID_NODE
 #endif
 
-#ifdef CONFIG_WATCHDOG
-#define WDT_NAME    DEVICE_DT_GET(DT_NODELABEL(wdt))
-#define WDT_ENABLED true
-#else
-#define WDT_NAME    NULL
-#define WDT_ENABLED false
-#endif
+static void task_wdt_callback(int channel_id, void *user_data) {
+    printf("Watchdog %d has starved. The offending thread (%s) will be tried for animal cruelty\r\n", channel_id,
+           k_thread_name_get((k_tid_t)user_data));
 
-static const struct device *wdt;
-static int watchdog_id = -1;
-static bool starving_dog = false;
+    sys_reboot(SYS_REBOOT_COLD);
+}
 
 int configure_watchdog_timer(void) {
-    int err;
-    wdt = WDT_NAME;
-
-    if (!WDT_ENABLED) {
-        printk("Watchdog disabled\n");
-        return 0;
-    }
+    int ret;
+    const struct device *const wdt = DEVICE_DT_GET_OR_NULL(WDT_NODE);
 
     if (!device_is_ready(wdt)) {
-        printk("%s: device is not ready.\n", wdt->name);
+        printk("Hardware watchdog is not ready\n");
+    }
+
+    ret = task_wdt_init(wdt);
+    if (ret != 0) {
+        printk("Task wdt init failure: %d\n", ret);
+    }
+
+    return ret;
+}
+
+int spawn_task_watchdog(struct task_wdt_attr *attr) {
+    int ret;
+
+    if (attr == NULL) {
+        printk("No attributes detected\n");
         return -1;
     }
 
-    struct wdt_timeout_cfg wdt_config = {.flags = WDT_FLAG_RESET_SOC,
-                                         .window.min = WDT_MIN_WINDOW,
-                                         .window.max = WDT_MAX_WINDOW,
-                                         .callback = NULL};
-
-    watchdog_id = wdt_install_timeout(wdt, &wdt_config);
-
-    if (watchdog_id < 0) {
-        printk("Watchdog install error (%d)\n", watchdog_id);
+    ret = task_wdt_add(attr->period, task_wdt_callback, (void *)k_current_get());
+    if (ret < 0) {
+        printk("Unable to spawn puppy (%d)\n", ret);
         return -1;
     }
 
-    err = wdt_setup(wdt, WDT_OPT_PAUSE_HALTED_BY_DBG);
-
-    if (err < 0) {
-        printk("Watchdog setup failed (%d)\n", err);
-        return -1;
-    }
-
-    err = wdt_feed(wdt, watchdog_id);
-
-    if (err < 0) {
-        printk("Failed to feed the dog (%d)\n", err);
-        return -1;
-    }
-    printk("Watchdog initialized\n");
-
+    attr->id = ret;
+    attr->starving = false;
     return 0;
 }
 
-void let_the_dog_starve(void) { starving_dog = true; }
-
-void watchdog_red_rocket(void) {
-    if (!WDT_ENABLED) {
+void let_the_dog_starve(struct task_wdt_attr *attr) {
+    if (attr == NULL) {
+        printk("No attributes detected\r\n");
         return;
     }
+    attr->starving = true;
+}
 
-    if (!starving_dog) {
-        wdt_feed(wdt, watchdog_id);
+void watchdog_red_rocket(struct task_wdt_attr *attr) {
+    if (attr == NULL) {
+        printk("A non-existent dog cannot get a red rocket\n");
+        return;
+    }
+    if (!attr->starving) {
+        task_wdt_feed(attr->id);
     }
 }
