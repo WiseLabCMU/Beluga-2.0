@@ -29,6 +29,10 @@ int configure_watchdog_timer(void) {
     int ret;
     const struct device *const wdt = DEVICE_DT_GET_OR_NULL(WDT_NODE);
 
+    if (!IS_ENABLED(CONFIG_TASK_WDT)) {
+        return 0;
+    }
+
     if (!device_is_ready(wdt)) {
         printk("Hardware watchdog is not ready\n");
     }
@@ -43,6 +47,10 @@ int configure_watchdog_timer(void) {
 
 int spawn_task_watchdog(struct task_wdt_attr *attr) {
     int ret;
+
+    if (!IS_ENABLED(CONFIG_TASK_WDT)) {
+        return 0;
+    }
 
     if (attr == NULL) {
         printk("No attributes detected\n");
@@ -61,6 +69,10 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
 }
 
 void let_the_dog_starve(struct task_wdt_attr *attr) {
+    if (!IS_ENABLED(CONFIG_TASK_WDT)) {
+        return;
+    }
+
     if (attr == NULL) {
         printk("No attributes detected\r\n");
         return;
@@ -69,6 +81,10 @@ void let_the_dog_starve(struct task_wdt_attr *attr) {
 }
 
 void watchdog_red_rocket(struct task_wdt_attr *attr) {
+    if (!IS_ENABLED(CONFIG_TASK_WDT)) {
+        return;
+    }
+    
     if (attr == NULL) {
         printk("A non-existent dog cannot get a red rocket\n");
         return;
