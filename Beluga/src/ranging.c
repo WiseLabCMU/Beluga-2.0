@@ -57,6 +57,9 @@ static dwt_config_t config = {
 /* DW1000 TX config struct */
 static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 
+static volatile bool rangingStarted = false;
+static struct task_wdt_attr watchdogAttr = {.period = 2000};
+
 bool set_uwb_channel(uint32_t channel) {
     enum pgdelay_ch uwb_pgdelay;
 
@@ -164,8 +167,15 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     bool break_flag = false;
     static int curr_index = 0;
 
+    if (spawn_task_watchdog(&watchdogAttr) < 0) {
+        printk("Unable to spawn ranging watchdog\r\n");
+        while (1)
+            ;
+    }
+    rangingStarted = true;
+
     while (true) {
-        watchdog_red_rocket();
+        watchdog_red_rocket(&watchdogAttr);
 
         if (initiator_freq != 0) {
             k_msleep(initiator_freq);
@@ -284,8 +294,11 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
         dwt_setleds(DWT_LEDS_DISABLE);
     }
 
+    while (!rangingStarted)
+        ;
+
     while (true) {
-        watchdog_red_rocket();
+        watchdog_red_rocket(&watchdogAttr);
 
         // Check if responding is suspended, return 0 means suspended
         unsigned int suspend_start = k_sem_count_get(&k_sus_resp);
@@ -310,6 +323,7 @@ void init_ranging_thread(void) {
         k_thread_create(&ranging_task_data, ranging_stack,
                         K_THREAD_STACK_SIZEOF(ranging_stack), rangingTask, NULL,
                         NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, 0, K_NO_WAIT);
+    k_thread_name_set(ranging_task_id, "Ranging task");
     printk("Started ranging\n");
 }
 #else
@@ -326,6 +340,7 @@ void init_responder_thread(void) {
         &responder_data, responder_stack,
         K_THREAD_STACK_SIZEOF(responder_stack), responder_task_function, NULL,
         NULL, NULL, CONFIG_BELUGA_RESPONDER_PRIO, 0, K_NO_WAIT);
+    k_thread_name_set(responder_task_id, "Responder task");
     printk("Started responder\n");
 }
 #else

@@ -209,30 +209,18 @@ UNUSED static void load_power_amplifiers(void) {
 static void load_settings(void) {
     printf("Flash Configuration: \r\n");
 
-    watchdog_red_rocket();
     load_led_mode();
-    watchdog_red_rocket();
     load_id();
-    watchdog_red_rocket();
     load_bootmode();
-    watchdog_red_rocket();
     load_poll_rate();
-    watchdog_red_rocket();
     load_channel();
-    watchdog_red_rocket();
     load_timeout();
-    watchdog_red_rocket();
     load_tx_power();
-    watchdog_red_rocket();
     load_stream_mode();
-    watchdog_red_rocket();
     load_twr_mode();
-    watchdog_red_rocket();
     load_out_format();
-    watchdog_red_rocket();
     if (IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION)) {
         load_power_amplifiers();
-        watchdog_red_rocket();
     }
 }
 
@@ -356,7 +344,6 @@ int main(void) {
     init_print_list_task();
     init_ranging_thread();
     init_monitor_thread();
-    watchdog_red_rocket();
 
     for (;;) {
         k_sleep(K_FOREVER);

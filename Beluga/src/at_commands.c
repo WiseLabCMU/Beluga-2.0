@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <thread_priorities.h>
 #include <utils.h>
+#include <watchdog.h>
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -424,11 +425,19 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
     uint16_t argc;
 
     struct buffer *commandBuffer = NULL;
+    struct task_wdt_attr watchdogAttr = {.period = 2000};
+
+    if (spawn_task_watchdog(&watchdogAttr) < 0) {
+        printk("Unable to spawn task watchdog in command thread\n");
+        while (1)
+            ;
+    }
 
     while (true) {
         k_msleep(100);
 
         commandBuffer = k_fifo_get(&uart_rx_queue, K_NO_WAIT);
+        watchdog_red_rocket(&watchdogAttr);
 
         if (commandBuffer == NULL) {
             continue;
@@ -486,6 +495,7 @@ void init_commands_thread(void) {
         &command_thread_data, command_stack,
         K_THREAD_STACK_SIZEOF(command_stack), runSerialCommand, NULL, NULL,
         NULL, CONFIG_BELUGA_COMMANDS_PRIO, 0, K_NO_WAIT);
+    k_thread_name_set(command_task_id, "Command thread");
     printk("Started AT commands\n");
 }
 #else
