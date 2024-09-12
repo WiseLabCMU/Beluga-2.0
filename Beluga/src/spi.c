@@ -11,37 +11,37 @@
 #include <zephyr/pm/device.h>
 
 #if defined(CONFIG_BELUGA_USE_SPI2)
-#define NUM_SPI_CONFIGS         4
+#define NUM_SPI_CONFIGS 4
 #else
-#define NUM_SPI_CONFIGS         2
+#define NUM_SPI_CONFIGS 2
 #endif
 
-#define SPI_BUF_SIZE            255
+#define SPI_BUF_SIZE       255
 
-#define DW1000_CONFIG_SLOW      0
-#define DW1000_CONFIG_FAST      1
+#define DW1000_CONFIG_SLOW 0
+#define DW1000_CONFIG_FAST 1
 #if defined(CONFIG_BELUGA_USE_SPI2)
-#define NRF21540_CONFIG_SLOW    2
-#define NRF21540_CONFIG_FAST    3
+#define NRF21540_CONFIG_SLOW 2
+#define NRF21540_CONFIG_FAST 3
 #endif
 
-#define DW1000_SLOW_FREQUENCY   2000000
-#define DW1000_FAST_FREQUENCY   8000000
+#define DW1000_SLOW_FREQUENCY 2000000
+#define DW1000_FAST_FREQUENCY 8000000
 
 #if defined(CONFIG_BELUGA_USE_SPI2)
 #define NRF21540_SLOW_FREQUENCY 1000000
 #define NRF21540_FAST_FREQUENCY 8000000
 #endif
 
-#define RX_BUF_IDX              1
-#define TX_BUF_IDX              0
+#define RX_BUF_IDX 1
+#define TX_BUF_IDX 0
 
-#define SPI1                    0
-#define SPI2                    1
+#define SPI1       0
+#define SPI2       1
 
-#define SPI1_NAME               DEVICE_DT_GET(DT_NODELABEL(spi1))
+#define SPI1_NAME  DEVICE_DT_GET(DT_NODELABEL(spi1))
 #if defined(CONFIG_BELUGA_USE_SPI2)
-#define SPI2_NAME               DEVICE_DT_GET(DT_NODELABEL(spi2))
+#define SPI2_NAME DEVICE_DT_GET(DT_NODELABEL(spi2))
 #endif
 
 #if defined(CONFIG_BELUGA_USE_SPI2)

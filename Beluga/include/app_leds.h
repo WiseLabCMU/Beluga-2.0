@@ -14,8 +14,8 @@ enum led_state {
     LED_UWB_OFF,
     LED_POWER_ON,
     LED_POWER_OFF,
-    LED_UNUSED_ON,
-    LED_UNUSED_OFF
+    LED_PWRAMP_ON,
+    LED_PWRAMP_OFF
 };
 
 void update_led_state(enum led_state update);
@@ -24,7 +24,7 @@ void restore_led_states(void);
 enum led_state get_ble_led_state(void);
 enum led_state get_uwb_led_state(void);
 enum led_state get_power_led_state(void);
-enum led_state get_unused_led_state(void);
+enum led_state get_pwramp_led_state(void);
 bool are_leds_on(void);
 
 #endif // BELUGA_APP_LEDS_H

@@ -195,6 +195,17 @@ static void load_out_format(void) {
     printf("  Output Format: %s \r\n", (format == 1) ? "JSON" : "CSV");
 }
 
+static void load_power_amplifiers(void) {
+    int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
+
+    if (pwramp == 1) {
+        enable_range_extension();
+    } else {
+        disable_range_extension();
+    }
+    printf("  Range Extension: %d \r\n", pwramp);
+}
+
 static void load_settings(void) {
     printf("Flash Configuration: \r\n");
 
@@ -218,6 +229,8 @@ static void load_settings(void) {
     load_twr_mode();
     watchdog_red_rocket();
     load_out_format();
+    watchdog_red_rocket();
+    load_power_amplifiers();
     watchdog_red_rocket();
 }
 

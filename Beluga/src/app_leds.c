@@ -12,7 +12,7 @@
 
 #define BLE_BIT      0
 #define UWB_BIT      1
-#define UNUSED_BIT   2
+#define PWRAMP_BIT   2
 #define POWER_BIT    3
 
 #define led_mode_on  true
@@ -53,13 +53,13 @@ void update_led_state(enum led_state update) {
         ledState &= ~(UINT8_C(1) << POWER_BIT);
         APP_LED_OFF(POWER_LED);
         break;
-    case LED_UNUSED_ON:
-        ledState |= UINT8_C(1) << UNUSED_BIT;
-        led_on(UNUSED_LED);
+    case LED_PWRAMP_ON:
+        ledState |= UINT8_C(1) << PWRAMP_BIT;
+        led_on(PWRAMP_LED);
         break;
-    case LED_UNUSED_OFF:
-        ledState &= ~(UINT8_C(1) << UNUSED_BIT);
-        APP_LED_OFF(UNUSED_LED);
+    case LED_PWRAMP_OFF:
+        ledState &= ~(UINT8_C(1) << PWRAMP_BIT);
+        APP_LED_OFF(PWRAMP_LED);
         break;
     default:
         assert(false);
@@ -70,7 +70,7 @@ void all_leds_off(void) {
     led_mode = led_mode_off;
     APP_LED_OFF(BLE_LED);
     APP_LED_OFF(UWB_LED);
-    APP_LED_OFF(UNUSED_LED);
+    APP_LED_OFF(PWRAMP_LED);
     APP_LED_OFF(POWER_LED);
     dwt_setleds(DWT_LEDS_DISABLE);
 }
@@ -86,8 +86,8 @@ void restore_led_states(void) {
         APP_LED_ON(UWB_LED);
     }
 
-    if (ledState & BIT(UNUSED_BIT)) {
-        APP_LED_ON(UNUSED_LED);
+    if (ledState & BIT(PWRAMP_BIT)) {
+        APP_LED_ON(PWRAMP_LED);
     }
 
     if (ledState & BIT(POWER_BIT)) {
@@ -110,7 +110,7 @@ enum led_state get_power_led_state(void) {
 }
 
 enum led_state get_unused_led_state(void) {
-    return ledState & BIT(UNUSED_BIT) ? LED_UNUSED_ON : LED_UNUSED_OFF;
+    return ledState & BIT(PWRAMP_BIT) ? LED_PWRAMP_ON : LED_PWRAMP_OFF;
 }
 
 bool are_leds_on(void) { return led_mode == led_mode_on; }

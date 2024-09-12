@@ -62,8 +62,7 @@ struct cmd_info {
 
 #define CMD_DATA(_callback, _command, _command_len)                            \
     {                                                                          \
-        .command = (const char *)(_command),                                   \
-        .cmd_length = (_command_len),                                          \
+        .command = (const char *)(_command), .cmd_length = (_command_len),     \
         .cmd_func = (_callback),                                               \
     }
 
@@ -71,7 +70,8 @@ struct cmd_info {
     CMD_DATA(_callback, ((uint8_t[]){_command}),                               \
              (sizeof((uint8_t[]){_command}) - 1))
 
-#define AT_CMD_DATA_TERMINATOR {NULL, 0, NULL}
+#define AT_CMD_DATA_TERMINATOR                                                 \
+    { NULL, 0, NULL }
 
 STATIC_INLINE bool int2bool(bool *boolarg, int32_t intarg) {
     if (intarg == 0) {
@@ -319,7 +319,7 @@ static void at_reboot(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_pwramp(uint16_t argc, char const *const *argv) {
-    CHECK_ARGC(argc, 2);
+    READ_SETTING(argc, 2, BELUGA_RANGE_EXTEND, "Range Extension");
     int32_t pwramp;
     bool success = strtoint32(argv[1], &pwramp);
 
@@ -327,6 +327,8 @@ static void at_pwramp(uint16_t argc, char const *const *argv) {
         printf("Power amp parameter input error \r\n");
         return;
     }
+
+    updateSetting(BELUGA_RANGE_EXTEND, pwramp);
 
     if (pwramp == 0) {
         success = disable_range_extension();

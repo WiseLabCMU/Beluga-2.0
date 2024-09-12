@@ -18,6 +18,7 @@ enum beluga_setting {
     BELUGA_TWR,
     BELUGA_LEDMODE,
     BELUGA_OUT_FORMAT,
+    BELUGA_RANGE_EXTEND,
     BELUGA_RESERVED
 };
 

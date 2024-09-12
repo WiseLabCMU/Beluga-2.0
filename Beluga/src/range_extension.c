@@ -2,6 +2,7 @@
 // Created by tom on 8/5/24.
 //
 
+#include <app_leds.h>
 #include <range_extension.h>
 #include <stdio.h>
 #include <zephyr/kernel.h>
@@ -17,6 +18,9 @@ bool enable_range_extension(void) {
     if (retVal) {
         dwt_setlnapamode(0, 1);
     }
+    if (retVal) {
+        update_led_state(LED_PWRAMP_ON);
+    }
     return retVal;
 }
 
@@ -24,6 +28,9 @@ bool disable_range_extension(void) {
     bool retVal = select_ble_gain(GAIN_0_DB);
     if (retVal) {
         dwt_setlnapamode(0, 1);
+    }
+    if (retVal) {
+        update_led_state(LED_PWRAMP_OFF);
     }
     return retVal;
 }
