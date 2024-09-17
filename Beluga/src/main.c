@@ -199,9 +199,9 @@ UNUSED static void load_power_amplifiers(void) {
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
     if (pwramp == 1) {
-        enable_range_extension();
+        enable_range_extension(false);
     } else {
-        disable_range_extension();
+        disable_range_extension(false);
     }
     printf("  Range Extension: %d \r\n", pwramp);
 }

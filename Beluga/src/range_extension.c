@@ -13,7 +13,8 @@
 
 bool init_range_extension(void) { return init_nrf21540(); }
 
-bool enable_range_extension(void) {
+bool enable_range_extension(bool command) {
+    ARG_UNUSED(command);
     bool retVal = select_ble_gain(GAIN_20_DB);
     if (retVal) {
         dwt_setlnapamode(0, 1);
@@ -24,7 +25,8 @@ bool enable_range_extension(void) {
     return retVal;
 }
 
-bool disable_range_extension(void) {
+bool disable_range_extension(bool command) {
+    ARG_UNUSED(command);
     bool retVal = select_ble_gain(GAIN_0_DB);
     if (retVal) {
         dwt_setlnapamode(0, 1);
@@ -58,13 +60,17 @@ bool init_range_extension(void) {
     return true;
 }
 
-bool enable_range_extension(void) {
-    printf("Not implemented\r\n");
+bool enable_range_extension(bool command) {
+    if (command) {
+        printf("Not implemented\r\n");
+    }
     return false;
 }
 
-bool disable_range_extension(void) {
-    printf("Not implemented\r\n");
+bool disable_range_extension(bool command) {
+    if (command) {
+        printf("Not implemented\r\n");
+    }
     return false;
 }
 

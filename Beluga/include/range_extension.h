@@ -9,8 +9,8 @@
 #include <stdint.h>
 
 bool init_range_extension(void);
-bool enable_range_extension(void);
-bool disable_range_extension(void);
+bool enable_range_extension(bool command);
+bool disable_range_extension(bool command);
 bool select_antenna(int32_t ant);
 
 #endif // BELUGA_RANGE_EXTENSION_H

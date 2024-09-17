@@ -136,6 +136,11 @@ static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
         printf("Cannot start UWB: BLE has not been started\r\n");
         return;
     }
+    if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
+        enable_range_extension(false);
+    } else {
+        disable_range_extension(false);
+    }
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
     update_led_state(LED_UWB_ON);
@@ -329,15 +334,14 @@ static void at_pwramp(uint16_t argc, char const *const *argv) {
         return;
     }
 
-    updateSetting(BELUGA_RANGE_EXTEND, pwramp);
-
     if (pwramp == 0) {
-        success = disable_range_extension();
+        success = disable_range_extension(true);
     } else {
-        success = enable_range_extension();
+        success = enable_range_extension(true);
     }
 
     if (success) {
+        updateSetting(BELUGA_RANGE_EXTEND, pwramp);
         OK;
     }
 }
