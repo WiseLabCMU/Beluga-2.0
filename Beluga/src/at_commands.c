@@ -389,6 +389,41 @@ static void at_deepsleep(uint16_t argc, char const *const *argv) {
     enter_deep_sleep();
 }
 
+static void at_datarate(uint16_t argc, char const *const *argv) {
+    // TODO: Read settings
+    int32_t rate;
+    enum uwb_preamble_length updatedLength;
+    bool success = strtoint32(argv[1], &rate);
+
+    if (!success || rate < 0 || rate > 2) {
+        printf("Data rate parameter input error \r\n");
+        return;
+    }
+
+    success = set_uwb_data_rate((enum uwb_datarate)rate, &updatedLength);
+    if (!success) {
+        printf("Cannot set data rate to %" PRId32 "\r\n", rate);
+        return;
+    }
+
+    switch (updatedLength) {
+        case UWB_PRL_128:
+            printf("Forcing Preamble Length to 128 bytes ");
+            break;
+        case UWB_PRL_512:
+            printf("Forcing Preamble Length to 512 bytes ");
+            break;
+        case UWB_PRL_2048:
+            printf("Forcing Preamble Length to 2048 bytes ");
+            break;
+        default:
+            printf("Forcing Preamble Length to %" PRId32 " ", updatedLength);
+    }
+
+    // TODO: Update settings
+    OK;
+}
+
 static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
                                      AT_CMD_DATA(at_stop_uwb, "STOPUWB"),
                                      AT_CMD_DATA(at_start_ble, "STARTBLE"),
@@ -409,6 +444,7 @@ static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
                                      AT_CMD_DATA(at_time, "TIME"),
                                      AT_CMD_DATA(at_format, "FORMAT"),
                                      AT_CMD_DATA(at_deepsleep, "DEEPSLEEP"),
+                                     AT_CMD_DATA(at_datarate, "DATARATE"),
                                      AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
