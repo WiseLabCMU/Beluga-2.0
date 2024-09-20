@@ -6,13 +6,7 @@
 		 gpios = <&gpio0 6 0>;
 	 };
 
-	zephyr,user {
-		wake-source-gpios = <&gpio0 15 0>;
-	};
- };
-
- &i2c0 {
-	 lis2dh12@19 {
-		status = "disabled";
-	 };
+//	zephyr,user {
+//		wake-source-gpios = <&gpio0 15 0>;
+//	};
  };

@@ -116,6 +116,7 @@ config BELUGA_DUMP_CORE
 
 config BELUGA_USE_ACCEL
     bool "Use the accelerometer to wakeup from deep sleep"
+    select SENSOR
     default n
 
 config BELUGA_USE_SPI2
