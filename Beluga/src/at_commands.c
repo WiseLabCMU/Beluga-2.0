@@ -424,6 +424,53 @@ static void at_datarate(uint16_t argc, char const *const *argv) {
     OK;
 }
 
+static void at_preamble(uint16_t argc, char const *const *argv) {
+    // TODO: Read settings
+    int32_t preamble;
+    enum uwb_preamble_length length;
+    bool success = strtoint32(argv[1], &preamble);
+
+    switch(preamble) {
+        case 0:
+            length = UWB_PRL_64;
+            break;
+        case 1:
+            length = UWB_PRL_128;
+            break;
+        case 2:
+            length = UWB_PRL_256;
+            break;
+        case 3:
+            length = UWB_PRL_512;
+            break;
+        case 4:
+            length = UWB_PRL_1024;
+            break;
+        case 5:
+            length = UWB_PRL_2048;
+            break;
+        case 6:
+            length = UWB_PRL_4096;
+            break;
+        default:
+            success = false;
+    }
+
+    if (!success) {
+        printf("Invalid Preamble length setting \r\n");
+        return;
+    }
+
+    success = set_uwb_preamble_length(length);
+
+    if (!success) {
+        printf("Invalid preamble setting for current data rate \r\n");
+        return;
+    }
+
+    // TODO: Update settings
+}
+
 static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
                                      AT_CMD_DATA(at_stop_uwb, "STOPUWB"),
                                      AT_CMD_DATA(at_start_ble, "STARTBLE"),
@@ -445,6 +492,7 @@ static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
                                      AT_CMD_DATA(at_format, "FORMAT"),
                                      AT_CMD_DATA(at_deepsleep, "DEEPSLEEP"),
                                      AT_CMD_DATA(at_datarate, "DATARATE"),
+                                     AT_CMD_DATA(at_preamble, "PREAMBLE"),
                                      AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
