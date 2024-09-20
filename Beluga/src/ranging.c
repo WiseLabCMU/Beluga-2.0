@@ -62,6 +62,69 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 static volatile bool rangingStarted = false;
 static struct task_wdt_attr watchdogAttr = {.period = 2000};
 
+enum uwb_preamble_length setting_to_preamble_enum(int32_t setting) {
+    enum uwb_preamble_length length;
+
+    switch (setting) {
+    case 0:
+        length = UWB_PRL_64;
+        break;
+    case 1:
+        length = UWB_PRL_128;
+        break;
+    case 2:
+        length = UWB_PRL_256;
+        break;
+    case 3:
+        length = UWB_PRL_512;
+        break;
+    case 4:
+        length = UWB_PRL_1024;
+        break;
+    case 5:
+        length = UWB_PRL_2048;
+        break;
+    case 6:
+        length = UWB_PRL_4096;
+        break;
+    default:
+        length = UWB_PRL_ERROR;
+    }
+
+    return length;
+}
+
+int32_t preamble_length_to_setting(enum uwb_preamble_length length) {
+    int32_t setting;
+
+    switch (length) {
+    case UWB_PRL_64:
+        setting = 0;
+        break;
+    case UWB_PRL_256:
+        setting = 2;
+        break;
+    case UWB_PRL_512:
+        setting = 3;
+        break;
+    case UWB_PRL_1024:
+        setting = 4;
+        break;
+    case UWB_PRL_2048:
+        setting = 5;
+        break;
+    case UWB_PRL_4096:
+        setting = 6;
+        break;
+    case UWB_PRL_128:
+    default:
+        setting = 1;
+        break;
+    }
+
+    return setting;
+}
+
 // Forces Preamble to acceptable value
 bool set_uwb_data_rate(enum uwb_datarate rate,
                        enum uwb_preamble_length *new_preamble) {

@@ -363,7 +363,7 @@ static void at_antenna(uint16_t argc, char const *const *argv) {
     }
 }
 
-static void at_time(uint16_t argc, char const *const *argv) {
+static void at_time(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     printf("Time: %" PRId64 " ", k_uptime_get());
     OK;
 }
@@ -383,15 +383,15 @@ static void at_format(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_deepsleep(uint16_t argc, char const *const *argv) {
+static void at_deepsleep(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
     printf("\r\n");
     enter_deep_sleep();
 }
 
 static void at_datarate(uint16_t argc, char const *const *argv) {
-    // TODO: Read settings
-    int32_t rate;
+    READ_SETTING(argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
+    int32_t rate, preamble;
     enum uwb_preamble_length updatedLength;
     bool success = strtoint32(argv[1], &rate);
 
@@ -420,43 +420,21 @@ static void at_datarate(uint16_t argc, char const *const *argv) {
         printf("Forcing Preamble Length to %" PRId32 " ", updatedLength);
     }
 
-    // TODO: Update settings
+    updateSetting(BELUGA_UWB_DATA_RATE, rate);
+    preamble = preamble_length_to_setting(updatedLength);
+    updateSetting(BELUGA_UWB_PREAMBLE, preamble);
     OK;
 }
 
 static void at_preamble(uint16_t argc, char const *const *argv) {
-    // TODO: Read settings
+    READ_SETTING(argc, 2, BELUGA_UWB_PREAMBLE, "Preamble length");
     int32_t preamble;
     enum uwb_preamble_length length;
     bool success = strtoint32(argv[1], &preamble);
 
-    switch (preamble) {
-    case 0:
-        length = UWB_PRL_64;
-        break;
-    case 1:
-        length = UWB_PRL_128;
-        break;
-    case 2:
-        length = UWB_PRL_256;
-        break;
-    case 3:
-        length = UWB_PRL_512;
-        break;
-    case 4:
-        length = UWB_PRL_1024;
-        break;
-    case 5:
-        length = UWB_PRL_2048;
-        break;
-    case 6:
-        length = UWB_PRL_4096;
-        break;
-    default:
-        success = false;
-    }
+    length = setting_to_preamble_enum(preamble);
 
-    if (!success) {
+    if (!success || length == UWB_PRL_ERROR) {
         printf("Invalid Preamble length setting \r\n");
         return;
     }
@@ -468,12 +446,12 @@ static void at_preamble(uint16_t argc, char const *const *argv) {
         return;
     }
 
-    // TODO: Update settings
+    updateSetting(BELUGA_UWB_PREAMBLE, preamble);
     OK;
 }
 
 static void at_pulse_rate(uint16_t argc, char const *const *argv) {
-    // TODO: Read setting
+    READ_SETTING(argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
     int32_t rate;
     bool success = strtoint32(argv[1], &rate);
 
@@ -489,7 +467,7 @@ static void at_pulse_rate(uint16_t argc, char const *const *argv) {
         return;
     }
 
-    // TODO: Update settings
+    updateSetting(BELUGA_UWB_PULSE_RATE, rate);
     OK;
 }
 

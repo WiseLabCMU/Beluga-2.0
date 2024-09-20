@@ -36,6 +36,8 @@ enum uwb_pulse_rate { UWB_PR_16M, UWB_PR_64M };
 bool set_uwb_data_rate(enum uwb_datarate rate,
                        enum uwb_preamble_length *new_preamble);
 bool set_uwb_preamble_length(enum uwb_preamble_length length);
+enum uwb_preamble_length setting_to_preamble_enum(int32_t setting);
+int32_t preamble_length_to_setting(enum uwb_preamble_length length);
 bool set_pulse_rate(enum uwb_pulse_rate rate);
 
 void set_twr_mode(bool value);
