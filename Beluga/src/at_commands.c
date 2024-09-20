@@ -469,6 +469,28 @@ static void at_preamble(uint16_t argc, char const *const *argv) {
     }
 
     // TODO: Update settings
+    OK;
+}
+
+static void at_pulse_rate(uint16_t argc, char const *const *argv) {
+    // TODO: Read setting
+    int32_t rate;
+    bool success = strtoint32(argv[1], &rate);
+
+    if (!success || rate < 0 || rate > 1) {
+        printf("Invalid pulse rate input parameter \r\n");
+        return;
+    }
+
+    success = set_pulse_rate((enum uwb_pulse_rate)rate);
+
+    if (!success) {
+        printf("Cannot set pulse rate \r\n");
+        return;
+    }
+
+    // TODO: Update settings
+    OK;
 }
 
 static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
@@ -493,6 +515,7 @@ static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
                                      AT_CMD_DATA(at_deepsleep, "DEEPSLEEP"),
                                      AT_CMD_DATA(at_datarate, "DATARATE"),
                                      AT_CMD_DATA(at_preamble, "PREAMBLE"),
+                                     AT_CMD_DATA(at_pulse_rate, "PULSERATE"),
                                      AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
