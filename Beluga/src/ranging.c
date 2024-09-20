@@ -39,6 +39,10 @@
 static int32_t initiator_freq = 100;
 static bool twr_mode = true;
 
+// SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only.
+#define SFD_TO(PREAMBLE, SFD_LENGTH, PAC_SIZE)                                 \
+    ((PREAMBLE) + 1 + (SFD_LENGTH) - (PAC_SIZE))
+
 /* DW1000 config struct */
 static dwt_config_t config = {
     5,               /* Channel number. */
@@ -50,9 +54,7 @@ static dwt_config_t config = {
     0,               /* 0 to use standard SFD, 1 to use non-standard SFD. */
     DWT_BR_6M8,      /* Data rate. */
     DWT_PHRMODE_STD, /* PHY header mode. */
-    (129 + 8 - 8) /* SFD timeout (preamble length + 1 + SFD length - PAC size).
-             Used in RX only. */
-};
+    SFD_TO(128, 8, 8)};
 
 /* DW1000 TX config struct */
 static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
@@ -61,7 +63,8 @@ static volatile bool rangingStarted = false;
 static struct task_wdt_attr watchdogAttr = {.period = 2000};
 
 // Forces Preamble to acceptable value
-bool set_uwb_data_rate(enum uwb_datarate rate, enum uwb_preamble_length *new_preamble) {
+bool set_uwb_data_rate(enum uwb_datarate rate,
+                       enum uwb_preamble_length *new_preamble) {
     uint8 new_data_rate;
 
     if (new_preamble == NULL) {
@@ -69,73 +72,114 @@ bool set_uwb_data_rate(enum uwb_datarate rate, enum uwb_preamble_length *new_pre
     }
 
     switch (rate) {
-        case UWB_DR_6M8:
-            new_data_rate = DWT_BR_6M8;
-            *new_preamble = UWB_PRL_128;
-            break;
-        case UWB_DR_850K:
-            new_data_rate = DWT_BR_850K;
-            *new_preamble = UWB_PRL_512;
-            break;
-        case UWB_DR_110K:
-            new_data_rate = DWT_BR_110K;
-            *new_preamble = UWB_PRL_2048;
-            break;
-        default:
-            return false;
+    case UWB_DR_6M8:
+        new_data_rate = DWT_BR_6M8;
+        *new_preamble = UWB_PRL_128;
+        break;
+    case UWB_DR_850K:
+        new_data_rate = DWT_BR_850K;
+        *new_preamble = UWB_PRL_512;
+        break;
+    case UWB_DR_110K:
+        new_data_rate = DWT_BR_110K;
+        *new_preamble = UWB_PRL_2048;
+        break;
+    default:
+        return false;
     }
 
     config.dataRate = new_data_rate;
     config.txPreambLength = (uint8)*new_preamble;
-    dwt_configure(&config);
 
-    return true;
+    return set_uwb_preamble_length(*new_preamble);
 }
 
 bool set_uwb_preamble_length(enum uwb_preamble_length length) {
-    uint8 newLength = UWB_PRL_ERROR;
+    uint8 newLength = UWB_PRL_ERROR, ns_sfd = 0;
+    uint16 preamble_len = 0, pac_len, sfd_len;
 
-    switch(config.dataRate) {
-        case DWT_BR_6M8: {
-            if (length == UWB_PRL_64 || length == UWB_PRL_128 || length == UWB_PRL_256) {
-                newLength = (uint8)length;
-            }
-            break;
+    switch (config.dataRate) {
+    case DWT_BR_6M8: {
+        if (length == UWB_PRL_64 || length == UWB_PRL_128 ||
+            length == UWB_PRL_256) {
+            newLength = (uint8)length;
+            sfd_len = 8;
         }
-        case DWT_BR_850K: {
-            if (length == UWB_PRL_256 || length == UWB_PRL_512 || length == UWB_PRL_1024) {
-                newLength = (uint8)length;
-            }
-        }
-        case DWT_BR_110K: {
-            if (length == UWB_PRL_2048 || length == UWB_PRL_4096) {
-                newLength = (uint8)length;
-            }
-            break;
-        }
-        default:
-            return false;
+        break;
     }
-
-    if (newLength == UWB_PRL_ERROR) {
+    case DWT_BR_850K: {
+        if (length == UWB_PRL_256 || length == UWB_PRL_512 ||
+            length == UWB_PRL_1024) {
+            newLength = (uint8)length;
+            sfd_len = 16;
+        }
+    }
+    case DWT_BR_110K: {
+        if (length == UWB_PRL_2048 || length == UWB_PRL_4096) {
+            newLength = (uint8)length;
+            sfd_len = 64;
+        }
+        ns_sfd = 1;
+        break;
+    }
+    default:
         return false;
     }
 
+    switch (newLength) {
+    case UWB_PRL_64:
+        preamble_len = -64;
+        // In fallthrough, preamble_len will get 128 added to it, thus
+        // resulting in a preamble_len of 64 (which is the correct value)
+    case UWB_PRL_128:
+        preamble_len += 128;
+        config.rxPAC = DWT_PAC8;
+        pac_len = 8;
+        break;
+    case UWB_PRL_256:
+        preamble_len = -256;
+        // In fallthrough, preamble_len will get 256 added to it, thus
+        // resulting in a preamble_len of 256 (which is the correct value)
+    case UWB_PRL_512:
+        preamble_len += 512;
+        config.rxPAC = DWT_PAC16;
+        pac_len = 16;
+        break;
+    case UWB_PRL_1024:
+        preamble_len = 1024;
+        config.rxPAC = DWT_PAC32;
+        pac_len = 32;
+        break;
+    case UWB_PRL_2048:
+        preamble_len = -2048;
+        // In fallthrough, preamble_len will get 4096 added to it, thus
+        // resulting in a preamble_len of 2048 (which is the correct value)
+    case UWB_PRL_4096:
+        preamble_len += 4096;
+        config.rxPAC = DWT_PAC64;
+        pac_len = 64;
+        break;
+    default:
+        return false;
+    }
+
+    config.nsSFD = ns_sfd;
+    config.sfdTO = SFD_TO(preamble_len, sfd_len, pac_len);
     config.txPreambLength = newLength;
     dwt_configure(&config);
     return true;
 }
 
 bool set_pulse_rate(enum uwb_pulse_rate rate) {
-    switch(rate) {
-        case UWB_PR_16M:
-            config.prf = DWT_PRF_16M;
-            break;
-        case UWB_PR_64M:
-            config.prf = DWT_PRF_64M;
-            break;
-        default:
-            return false;
+    switch (rate) {
+    case UWB_PR_16M:
+        config.prf = DWT_PRF_16M;
+        break;
+    case UWB_PR_64M:
+        config.prf = DWT_PRF_64M;
+        break;
+    default:
+        return false;
     }
 
     dwt_configure(&config);
@@ -198,7 +242,7 @@ void set_rate(uint32_t rate) {
 uint32_t get_rate(void) { return initiator_freq; }
 
 void init_uwb(void) {
-    if(!IS_ENABLED(CONFIG_ENABLE_BELUGA_UWB)) {
+    if (!IS_ENABLED(CONFIG_ENABLE_BELUGA_UWB)) {
         return;
     }
     setup_DW1000RSTnIRQ(0);

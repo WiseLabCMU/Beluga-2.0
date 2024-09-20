@@ -407,17 +407,17 @@ static void at_datarate(uint16_t argc, char const *const *argv) {
     }
 
     switch (updatedLength) {
-        case UWB_PRL_128:
-            printf("Forcing Preamble Length to 128 bytes ");
-            break;
-        case UWB_PRL_512:
-            printf("Forcing Preamble Length to 512 bytes ");
-            break;
-        case UWB_PRL_2048:
-            printf("Forcing Preamble Length to 2048 bytes ");
-            break;
-        default:
-            printf("Forcing Preamble Length to %" PRId32 " ", updatedLength);
+    case UWB_PRL_128:
+        printf("Forcing Preamble Length to 128 bytes ");
+        break;
+    case UWB_PRL_512:
+        printf("Forcing Preamble Length to 512 bytes ");
+        break;
+    case UWB_PRL_2048:
+        printf("Forcing Preamble Length to 2048 bytes ");
+        break;
+    default:
+        printf("Forcing Preamble Length to %" PRId32 " ", updatedLength);
     }
 
     // TODO: Update settings
@@ -430,30 +430,30 @@ static void at_preamble(uint16_t argc, char const *const *argv) {
     enum uwb_preamble_length length;
     bool success = strtoint32(argv[1], &preamble);
 
-    switch(preamble) {
-        case 0:
-            length = UWB_PRL_64;
-            break;
-        case 1:
-            length = UWB_PRL_128;
-            break;
-        case 2:
-            length = UWB_PRL_256;
-            break;
-        case 3:
-            length = UWB_PRL_512;
-            break;
-        case 4:
-            length = UWB_PRL_1024;
-            break;
-        case 5:
-            length = UWB_PRL_2048;
-            break;
-        case 6:
-            length = UWB_PRL_4096;
-            break;
-        default:
-            success = false;
+    switch (preamble) {
+    case 0:
+        length = UWB_PRL_64;
+        break;
+    case 1:
+        length = UWB_PRL_128;
+        break;
+    case 2:
+        length = UWB_PRL_256;
+        break;
+    case 3:
+        length = UWB_PRL_512;
+        break;
+    case 4:
+        length = UWB_PRL_1024;
+        break;
+    case 5:
+        length = UWB_PRL_2048;
+        break;
+    case 6:
+        length = UWB_PRL_4096;
+        break;
+    default:
+        success = false;
     }
 
     if (!success) {

@@ -18,11 +18,7 @@ enum pgdelay_ch {
     ch7 = TC_PGDELAY_CH7,
 };
 
-enum uwb_datarate {
-    UWB_DR_6M8,
-    UWB_DR_850K,
-    UWB_DR_110K
-};
+enum uwb_datarate { UWB_DR_6M8, UWB_DR_850K, UWB_DR_110K };
 
 enum uwb_preamble_length {
     UWB_PRL_64 = DWT_PLEN_64,
@@ -35,12 +31,10 @@ enum uwb_preamble_length {
     UWB_PRL_ERROR
 };
 
-enum uwb_pulse_rate {
-    UWB_PR_16M,
-    UWB_PR_64M
-};
+enum uwb_pulse_rate { UWB_PR_16M, UWB_PR_64M };
 
-bool set_uwb_data_rate(enum uwb_datarate rate, enum uwb_preamble_length *new_preamble);
+bool set_uwb_data_rate(enum uwb_datarate rate,
+                       enum uwb_preamble_length *new_preamble);
 bool set_uwb_preamble_length(enum uwb_preamble_length length);
 bool set_pulse_rate(enum uwb_pulse_rate rate);
 
