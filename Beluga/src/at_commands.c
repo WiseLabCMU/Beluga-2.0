@@ -552,16 +552,14 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
         for (size_t i = 0; commands[i].command != NULL; i++) {
             if (0 == strncmp((const char *)(commandBuffer->buf + 3),
                              commands[i].command, commands[i].cmd_length)) {
-                argc = argparse(commandBuffer->buf, argv);
-                argv[argc] = NULL;
-
-                if (commands[i].cmd_func != NULL) {
-                    commands[i].cmd_func(argc, (const char **)argv);
-                } else {
-                    printf("Not implemented\r\n");
-                }
-
                 found = true;
+                if (commands[i].cmd_func == NULL) {
+                    printf("Not implemented\r\n");
+                } else {
+                    argc = argparse(commandBuffer->buf, argv);
+                    argv[argc] = NULL;
+                    commands[i].cmd_func(argc, (const char **) argv);
+                }
                 break;
             }
         }
