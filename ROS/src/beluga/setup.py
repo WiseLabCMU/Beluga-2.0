@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'talker = beluga.beluga_pub:main',
+            'beluga = beluga.beluga:main',
             'listener = beluga.beluga_sub:main',
         ],
     },
