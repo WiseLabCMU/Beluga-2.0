@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'Beluga'
+package_name = 'beluga'
 
 setup(
     name=package_name,
@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'beluga = Beluga.beluga:main'
+            'talker = beluga.beluga_pub:main',
+            'listener = beluga.beluga_sub:main',
         ],
     },
 )
