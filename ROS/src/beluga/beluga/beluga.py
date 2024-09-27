@@ -36,7 +36,7 @@ class BelugaPublisherService(Node):
             neighbor_msg = BelugaNeighbors()
             neighbor_msg.neighbors = neighbors_list
             self.publisher_.publish(neighbor_msg)
-            self.get_logger().info("Publishing: " + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in neighbors_list))
+            self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in neighbors_list))
 
 
 def main(args=None):
