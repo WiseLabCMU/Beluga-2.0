@@ -195,6 +195,77 @@ static void load_out_format(void) {
     printf("  Output Format: %s \r\n", (format == 1) ? "JSON" : "CSV");
 }
 
+static enum uwb_preamble_length load_data_rate(void) {
+    enum uwb_datarate rate = (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
+    enum uwb_preamble_length length;
+    switch(rate) {
+        case UWB_DR_850K:
+            printf("  UWB Data Rate: 850 kHz \r\n");
+            break;
+        case UWB_DR_110K:
+            printf("  UWB Data Rate: 110 kHz \r\n");
+            break;
+        case UWB_DR_6M8:
+        default:
+            printf("  UWB Data Rate: 6.8MHz \r\n");
+            rate = UWB_DR_6M8;
+            break;
+    }
+
+    set_uwb_data_rate(rate, &length);
+    return length;
+}
+
+static void load_preamble_length(enum uwb_preamble_length forcedLength) {
+    int32_t length = retrieveSetting(BELUGA_UWB_PREAMBLE);
+    enum uwb_preamble_length preambleLength = setting_to_preamble_enum(length);
+    switch(preambleLength) {
+        case UWB_PRL_64:
+            printf("  UWB Preamble Length: 64 \r\n");
+            break;
+        case UWB_PRL_128:
+            printf("  UWB Preamble Length: 128 \r\n");
+            break;
+        case UWB_PRL_256:
+            printf("  UWB Preable Length: 256 \r\n");
+            break;
+        case UWB_PRL_512:
+            printf("  UWB Preamble Length: 512 \r\n");
+            break;
+        case UWB_PRL_1024:
+            printf("  UWB Preamble Length: 1024 \r\n");
+            break;
+        case UWB_PRL_2048:
+            printf("  UWB Preamble Length: 2048 \r\n");
+            break;
+        case UWB_PRL_4096:
+            printf("  UWB Preamble Length: 4096 \r\n");
+            break;
+        default:
+            preambleLength = forcedLength;
+            printf("  UWB Preamble Length: %" PRId32 " \r\n", preamble_length_to_setting(forcedLength));
+            break;
+    }
+
+    set_uwb_preamble_length(preambleLength);
+}
+
+static void load_pulse_rate(void) {
+    enum uwb_pulse_rate rate = (enum uwb_pulse_rate) retrieveSetting(BELUGA_UWB_PULSE_RATE);
+    switch(rate) {
+        case UWB_PR_16M:
+            printf("  UWB Pulse Rate: 16MHz \r\n");
+            break;
+        case UWB_PR_64M:
+        default:
+            printf("  UWB Pulse Rate: 64MHz \r\n");
+            rate = UWB_PR_64M;
+            break;
+    }
+
+    set_pulse_rate(rate);
+}
+
 UNUSED static void load_power_amplifiers(void) {
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
@@ -214,6 +285,9 @@ static void load_settings(void) {
     load_bootmode();
     load_poll_rate();
     load_channel();
+    enum uwb_preamble_length forced = load_data_rate();
+    load_preamble_length(forced);
+    load_pulse_rate();
     load_timeout();
     load_tx_power();
     load_stream_mode();
@@ -332,12 +406,22 @@ int main(void) {
         return 1;
     }
 
+    struct task_wdt_attr task_watchdog = {.period = 2000};
+
+    if (spawn_task_watchdog(&task_watchdog) != 0) {
+        printk("Unable to start watchdog\n");
+        return 0;
+    }
+
+
     init_uwb();
 
     printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
 
     load_settings();
     printf("\r\n");
+
+    kill_task_watchdog(&task_watchdog);
 
     init_responder_thread();
     init_commands_thread();

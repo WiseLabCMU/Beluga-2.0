@@ -100,3 +100,17 @@ void watchdog_red_rocket(struct task_wdt_attr *attr) {
         task_wdt_feed(attr->id);
     }
 }
+
+int kill_task_watchdog(struct task_wdt_attr *attr) {
+    if (!IS_ENABLED(CONFIG_TASK_WDT)) {
+        printk("WDT disabled\n");
+        return 0;
+    }
+
+    if (attr == NULL) {
+        printk("A non-existent dog cannot be euthanized\n");
+        return 1;
+    }
+
+    return task_wdt_delete(attr->id);
+}

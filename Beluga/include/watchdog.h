@@ -18,5 +18,6 @@ int configure_watchdog_timer(void);
 int spawn_task_watchdog(struct task_wdt_attr *attr);
 void let_the_dog_starve(struct task_wdt_attr *attr);
 void watchdog_red_rocket(struct task_wdt_attr *attr);
+int kill_task_watchdog(struct task_wdt_attr *attr);
 
 #endif // BELUGA_WATCHDOG_H
