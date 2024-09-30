@@ -558,7 +558,7 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
                 } else {
                     argc = argparse(commandBuffer->buf, argv);
                     argv[argc] = NULL;
-                    commands[i].cmd_func(argc, (const char **) argv);
+                    commands[i].cmd_func(argc, (const char **)argv);
                 }
                 break;
             }
