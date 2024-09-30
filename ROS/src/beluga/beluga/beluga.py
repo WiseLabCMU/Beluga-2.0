@@ -23,11 +23,10 @@ class BelugaPublisherService(Node):
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
         if not self.dummy_data:
-            self.serial = BelugaSerial()
+            self.serial: BelugaSerial = BelugaSerial()
         return
 
     def publish_neighbors(self):
-        # TODO: get neighbors list
         if self.dummy_data:
             neighbors_dict = {1: {'ID': 1, 'RANGE': 0.5761, 'RSSI': -57, 'TIMESTAMP': 5761},
                         2: {'ID': 2, 'RANGE': 1.7621, 'RSSI': -61, 'TIMESTAMP': 5790},
@@ -49,54 +48,56 @@ class BelugaPublisherService(Node):
             self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in neighbors_list))
 
     def at_command(self, request, response):
-        # TODO: Call AT command interface
-        match request.at_command:
-            case BelugaATCommand.Request.AT_COMMAND_STARTUWB:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_STOPUWB:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_STARTBLE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_STOPBLE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_ID:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_BOOTMODE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_RATE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_CHANNEL:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_RESET:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_TIMEOUT:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_TXPOWER:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_STREAMMODE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_TWRMODE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_LEDMODE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_REBOOT:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_PWRAMP:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_ANTENNA:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_TIME:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_DEEPSLEEP:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_DATARATE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_PREAMBLE:
-                pass
-            case BelugaATCommand.Request.AT_COMMAND_PULSERATE:
-                pass
-            case _:
-                response.response = 'Invalid AT command'
+        if not self.dummy_data:
+            match request.at_command:
+                case BelugaATCommand.Request.AT_COMMAND_STARTUWB:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_STOPUWB:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_STARTBLE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_STOPBLE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_ID:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_BOOTMODE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_RATE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_CHANNEL:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_RESET:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_TIMEOUT:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_TXPOWER:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_STREAMMODE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_TWRMODE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_LEDMODE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_REBOOT:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_PWRAMP:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_ANTENNA:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_TIME:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_DEEPSLEEP:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_DATARATE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_PREAMBLE:
+                    pass
+                case BelugaATCommand.Request.AT_COMMAND_PULSERATE:
+                    pass
+                case _:
+                    response.response = 'Invalid AT command'
+        else:
+            response.response = 'AT commands unavailable in dummy data mode'
         return response
 
 
