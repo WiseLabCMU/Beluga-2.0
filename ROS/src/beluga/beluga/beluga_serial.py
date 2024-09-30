@@ -310,6 +310,48 @@ class BelugaSerial:
         ret = self._send_command(command)
         return ret
 
+    def time(self) -> str:
+        command = b'AT+TIME\r\n'
+        ret = self._send_command(command)
+        return ret
+
+    def format(self, json_format: Optional[int] = None) -> str:
+        if json_format is not None:
+            command = f'AT+FORMAT {json_format}\r\n'.encode()
+        else:
+            command = b'AT+FORMAT\r\n'
+        ret = self._send_command(command)
+        return ret
+
+    def deepsleep(self) -> str:
+        command = b'AT+DEEPSLEEP\r\n'
+        ret = self._send_command(command)
+        return ret
+
+    def datarate(self, rate: Optional[int] = None) -> str:
+        if rate is not None:
+            command = f'AT+DATARATE {rate}\r\n'.encode()
+        else:
+            command = b'AT+DATARATE\r\n'
+        ret = self._send_command(command)
+        return ret
+
+    def preamble(self, length: Optional[int] = None) -> str:
+        if length is not None:
+            command = f'AT+PREAMBLE {length}\r\n'.encode()
+        else:
+            command = b'AT+PREAMBLE\r\n'
+        ret = self._send_command(command)
+        return ret
+
+    def pulserate(self, rate: Optional[int] = None) -> str:
+        if rate is not None:
+            command = f'AT+PULSERATE {rate}\r\n'.encode()
+        else:
+            command = b'AT+PULSERATE\r\n'
+        ret = self._send_command(command)
+        return ret
+
     def start(self):
         if self._rx_thread is not None:
             raise RuntimeError('Please stop before restarting')
