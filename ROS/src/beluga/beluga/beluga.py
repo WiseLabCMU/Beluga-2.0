@@ -7,7 +7,7 @@ from beluga_messages.srv import BelugaATCommand
 
 
 class BelugaPublisherService(Node):
-    def __init__(self, pub_topic: str = 'neighbors_list', pub_history_depth: int = 10, period: typing.Union[float, int] = 1, service_topic: str = 'at_commands'):
+    def __init__(self, pub_topic: str = 'neighbors_list', pub_history_depth: int = 10, period: typing.Union[float, int] = 1, service_topic: str = 'at_commands', dummy_data_mode: bool = False):
         super().__init__('beluga')
         if not isinstance(pub_topic, str):
             raise TypeError('Publisher topic needs to be a string')
@@ -20,13 +20,17 @@ class BelugaPublisherService(Node):
         self.publisher_ = self.create_publisher(BelugaNeighbors, pub_topic, pub_history_depth)
         self.timer = self.create_timer(period, self.publish_neighbors)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
+        self.dummy_data = dummy_data_mode
         return
 
     def publish_neighbors(self):
         # TODO: get neighbors list
-        neighbors_dict = {1: {'ID': 1, 'RANGE': 0.5761, 'RSSI': -57, 'TIMESTAMP': 5761},
-                     2: {'ID': 2, 'RANGE': 1.7621, 'RSSI': -61, 'TIMESTAMP': 5790},
-                     3: {'ID': 3, 'RANGE': 5.7854, 'RSSI': -72, 'TIMESTAMP': 5004}}
+        if self.dummy_data:
+            neighbors_dict = {1: {'ID': 1, 'RANGE': 0.5761, 'RSSI': -57, 'TIMESTAMP': 5761},
+                        2: {'ID': 2, 'RANGE': 1.7621, 'RSSI': -61, 'TIMESTAMP': 5790},
+                        3: {'ID': 3, 'RANGE': 5.7854, 'RSSI': -72, 'TIMESTAMP': 5004}}
+        else:
+            neighbors_dict = {}
         if neighbors_dict:
             neighbors_list = []
             for x in list(neighbors_dict.values()):
@@ -95,7 +99,7 @@ class BelugaPublisherService(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    beluga_pub_serv = BelugaPublisherService()
+    beluga_pub_serv = BelugaPublisherService(dummy_data_mode=True)
     rclpy.spin(beluga_pub_serv)
     beluga_pub_serv.destroy_node()
     rclpy.shutdown()
