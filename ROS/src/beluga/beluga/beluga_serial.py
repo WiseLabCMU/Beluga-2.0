@@ -7,8 +7,6 @@ import threading
 import time
 import json
 
-from zephyr.samples.subsys.zbus.remote_mock.remote_mock import channels
-
 TARGETS = [
     'CMU Beluga',
     'SEGGER J-Link'
@@ -28,6 +26,7 @@ class BelugaSerial:
         self._serial_lock = threading.Lock()
         self._response: str = ''
         self._response_received = threading.BoundedSemaphore()
+        self._response_received.acquire()
         self._timeout = timeout
         self._rx_thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
@@ -61,55 +60,6 @@ class BelugaSerial:
             lines.append(line)
         self._serial_lock.release()
         return lines
-
-    def _update_settings(self, lines: List[str]) -> Tuple[int, bool]:
-        lines_processed = 0
-        settings_processed = 0
-        node_uninit = False
-        NUM_SETTING_LINES = 11
-
-        for line in lines:
-            if settings_processed == NUM_SETTING_LINES:
-                break
-            if line.startswith('Node On:'):
-                lines_processed += 1
-                settings_processed += 1
-            elif line == 'Flash Configuration:':
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('LED Mode: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('!'):
-                lines_processed += 1
-                if not node_uninit:
-                    node_uninit = True
-                    settings_processed += 1
-            elif line.startswith('Node ID: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('Boot Mode: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('UWB Polling Rate: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('UWB Channel: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('BLE Timeout: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('TX Power: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('Stream Mode: '):
-                lines_processed += 1
-                settings_processed += 1
-            elif line.startswith('Ranging Mode: '):
-                lines_processed += 1
-                settings_processed += 1
-        return lines_processed, settings_processed == NUM_SETTING_LINES
 
     def get_neighbors_list(self) -> Dict[int, Dict[str, Union[int, str]]]:
         return self._neighbor_list
@@ -160,28 +110,19 @@ class BelugaSerial:
         lines = [line.decode(errors='ignore').strip() for line in lines]
 
         while i < l:
-            if not lines[i]:
-                # Empty line
-                i += 1
-            elif lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
+            if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
                 processed = self._write_ranging_batch(lines[i:])
                 i += processed
-            elif lines[i].startswith('Node On'):
-                while True:
-                    processed, all_settings = self._update_settings(lines[i:])
-                    if all_settings:
-                        i += processed
-                        break
-                    else:
-                        new_lines = [line.decode().strip() for line in self._get_lines()]
-                        lines += new_lines
-                        l = len(lines)
-            else:
+                continue
+            elif lines[i].endswith('OK'):
                 self._receive_response(lines[i])
-                i += 1
+            elif lines[i].startswith('rm'):
+                uuid = int(lines[i].lstrip('rm '))
+                if uuid in self._neighbor_list.keys():
+                    del self._neighbor_list[uuid]
+            i += 1
 
     def _read_serial(self):
-        self._response_received.acquire(blocking=False)
         while not self._stop.is_set():
             lines = self._get_lines()
             if lines:
@@ -370,3 +311,17 @@ class BelugaSerial:
             self._outstream.close()
         self._outstream = stream
         self._outstream_lock.release()
+
+
+def main():
+    beluga = BelugaSerial()
+    ret = beluga.format(1)
+    ret = beluga.format()
+    print(ret)
+
+    while True:
+        pass
+
+
+if __name__ == '__main__':
+    main()
