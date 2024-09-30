@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import typing
+from beluga.beluga_serial import BelugaSerial
 
 from beluga_messages.msg import BelugaNeighbor, BelugaNeighbors
 from beluga_messages.srv import BelugaATCommand
@@ -21,6 +22,8 @@ class BelugaPublisherService(Node):
         self.timer = self.create_timer(period, self.publish_neighbors)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
+        if not self.dummy_data:
+            self.serial = BelugaSerial()
         return
 
     def publish_neighbors(self):
@@ -30,7 +33,7 @@ class BelugaPublisherService(Node):
                         2: {'ID': 2, 'RANGE': 1.7621, 'RSSI': -61, 'TIMESTAMP': 5790},
                         3: {'ID': 3, 'RANGE': 5.7854, 'RSSI': -72, 'TIMESTAMP': 5004}}
         else:
-            neighbors_dict = {}
+            neighbors_dict = self.serial.get_neighbors_list()
         if neighbors_dict:
             neighbors_list = []
             for x in list(neighbors_dict.values()):
@@ -99,7 +102,7 @@ class BelugaPublisherService(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    beluga_pub_serv = BelugaPublisherService(dummy_data_mode=True)
+    beluga_pub_serv = BelugaPublisherService(dummy_data_mode=False)
     rclpy.spin(beluga_pub_serv)
     beluga_pub_serv.destroy_node()
     rclpy.shutdown()
