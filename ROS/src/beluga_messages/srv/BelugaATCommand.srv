@@ -21,7 +21,7 @@ uint8 AT_COMMAND_DATARATE=19
 uint8 AT_COMMAND_PREAMBLE=20
 uint8 AT_COMMAND_PULSERATE=21
 
-uint16 arg
+string arg
 uint8 at_command
 ---
 string response
