@@ -22,6 +22,7 @@ class BelugaPublisherService(Node):
         self.timer = self.create_timer(period, self.publish_neighbors)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
+        self.serial: typing.Optional[BelugaSerial] = None
         if not self.dummy_data:
             self.serial: BelugaSerial = BelugaSerial()
         return
@@ -49,51 +50,55 @@ class BelugaPublisherService(Node):
 
     def at_command(self, request, response):
         if not self.dummy_data:
+            try:
+                arg = int(request.arg)
+            except ValueError:
+                arg = None
             match request.at_command:
                 case BelugaATCommand.Request.AT_COMMAND_STARTUWB:
-                    pass
+                    response.response = self.serial.start_uwb()
                 case BelugaATCommand.Request.AT_COMMAND_STOPUWB:
-                    pass
+                    response.response = self.serial.stop_uwb()
                 case BelugaATCommand.Request.AT_COMMAND_STARTBLE:
-                    pass
+                    response.response = self.serial.start_ble()
                 case BelugaATCommand.Request.AT_COMMAND_STOPBLE:
-                    pass
+                    response.response = self.serial.stop_ble()
                 case BelugaATCommand.Request.AT_COMMAND_ID:
-                    pass
+                    response.response = self.serial.id(arg)
                 case BelugaATCommand.Request.AT_COMMAND_BOOTMODE:
-                    pass
+                    response.response = self.serial.bootmode(arg)
                 case BelugaATCommand.Request.AT_COMMAND_RATE:
-                    pass
+                    response.response = self.serial.rate(arg)
                 case BelugaATCommand.Request.AT_COMMAND_CHANNEL:
-                    pass
+                    response.response = self.serial.channel(arg)
                 case BelugaATCommand.Request.AT_COMMAND_RESET:
-                    pass
+                    response.response = self.serial.reset()
                 case BelugaATCommand.Request.AT_COMMAND_TIMEOUT:
-                    pass
+                    response.response = self.serial.timeout(arg)
                 case BelugaATCommand.Request.AT_COMMAND_TXPOWER:
-                    pass
+                    response.response = self.serial.tx_power(arg)
                 case BelugaATCommand.Request.AT_COMMAND_STREAMMODE:
-                    pass
+                    response.response = self.serial.stream_mode(arg)
                 case BelugaATCommand.Request.AT_COMMAND_TWRMODE:
-                    pass
+                    response.response = self.serial.twr_mode(arg)
                 case BelugaATCommand.Request.AT_COMMAND_LEDMODE:
-                    pass
+                    response.response = self.serial.led_mode(arg)
                 case BelugaATCommand.Request.AT_COMMAND_REBOOT:
-                    pass
+                    response.response = self.serial.reboot()
                 case BelugaATCommand.Request.AT_COMMAND_PWRAMP:
-                    pass
+                    response.response = self.serial.pwr_amp(arg)
                 case BelugaATCommand.Request.AT_COMMAND_ANTENNA:
-                    pass
+                    response.response = self.serial.antenna(arg)
                 case BelugaATCommand.Request.AT_COMMAND_TIME:
-                    pass
+                    response.response = self.serial.time()
                 case BelugaATCommand.Request.AT_COMMAND_DEEPSLEEP:
-                    pass
+                    response.response = self.serial.deepsleep()
                 case BelugaATCommand.Request.AT_COMMAND_DATARATE:
-                    pass
+                    response.response = self.serial.datarate(arg)
                 case BelugaATCommand.Request.AT_COMMAND_PREAMBLE:
-                    pass
+                    response.response = self.serial.preamble(arg)
                 case BelugaATCommand.Request.AT_COMMAND_PULSERATE:
-                    pass
+                    response.response = self.serial.pulserate(arg)
                 case _:
                     response.response = 'Invalid AT command'
         else:
