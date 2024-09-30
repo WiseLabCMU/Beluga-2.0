@@ -3,6 +3,7 @@ from rclpy.node import Node
 import typing
 
 from beluga_messages.msg import BelugaNeighbor, BelugaNeighbors
+from beluga_messages.srv import BelugaATCommand
 
 
 class BelugaPublisherService(Node):
@@ -14,9 +15,11 @@ class BelugaPublisherService(Node):
             raise TypeError('Publisher history depth must be an integer')
         if not isinstance(period, typing.Union[int, float]):
             raise TypeError('Period needs to be an integer or float')
+        if not isinstance(service_topic, str):
+            raise TypeError('Service topic must be a string')
         self.publisher_ = self.create_publisher(BelugaNeighbors, pub_topic, pub_history_depth)
         self.timer = self.create_timer(period, self.publish_neighbors)
-        # TODO: Service
+        self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         return
 
     def publish_neighbors(self):
@@ -37,6 +40,57 @@ class BelugaPublisherService(Node):
             neighbor_msg.neighbors = neighbors_list
             self.publisher_.publish(neighbor_msg)
             self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in neighbors_list))
+
+    def at_command(self, request, response):
+        # TODO: Call AT command interface
+        match request.at_command:
+            case BelugaATCommand.Request.AT_COMMAND_STARTUWB:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_STOPUWB:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_STARTBLE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_STOPBLE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_ID:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_BOOTMODE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_RATE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_CHANNEL:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_RESET:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_TIMEOUT:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_TXPOWER:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_STREAMMODE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_TWRMODE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_LEDMODE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_REBOOT:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_PWRAMP:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_ANTENNA:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_TIME:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_DEEPSLEEP:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_DATARATE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_PREAMBLE:
+                pass
+            case BelugaATCommand.Request.AT_COMMAND_PULSERATE:
+                pass
+            case _:
+                response.response = 'Invalid AT command'
+        return response
 
 
 def main(args=None):
