@@ -3,22 +3,16 @@ import sys
 import serial
 import serial.tools.list_ports as list_ports
 from typing import List, Dict, Optional, Tuple, Union, TextIO
-import enum
 import threading
 import time
 import json
 
+from zephyr.samples.subsys.zbus.remote_mock.remote_mock import channels
 
 TARGETS = [
     'CMU Beluga',
     'SEGGER J-Link'
 ]
-
-
-class BelugaBootMode(enum.IntEnum):
-    WIRELESS_OFF = 0
-    BLE_ON = 1
-    BLE_UWB_ON = 2
 
 
 class BelugaSerial:
@@ -31,17 +25,6 @@ class BelugaSerial:
                 print(f"Connecting to {target}: {targets[target][0]}")
                 self._serial = serial.Serial(targets[target][0], baudrate=baud, timeout=serial_timeout)
                 break
-        self._beluga_states = {
-            'led_mode': 0,
-            'id': 0,
-            'bootmode': 0,
-            'rate': 100,
-            'channel': 5,
-            'timeout': 9000,
-            'tx_power': 0,
-            'stream': 0,
-            'ranging': 0,
-        }
         self._serial_lock = threading.Lock()
         self._response: str = ''
         self._response_received = threading.BoundedSemaphore()
@@ -95,10 +78,6 @@ class BelugaSerial:
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('LED Mode: '):
-                if 'Off' in line:
-                    self._beluga_states['led_mode'] = 0
-                elif 'On' in line:
-                    self._beluga_states['led_mode'] = 1
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('!'):
@@ -107,64 +86,27 @@ class BelugaSerial:
                     node_uninit = True
                     settings_processed += 1
             elif line.startswith('Node ID: '):
-                self._beluga_states['id'] = int(line[9:])
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('Boot Mode: '):
-                self._beluga_states['bootmode'] = 0
-                if 'BLE ON' in line:
-                    self._beluga_states['bootmode'] = 1
-                if 'UWB ON' in line:
-                    if self._beluga_states['bootmode'] != 1:
-                        raise ValueError(f'Invalid bootmode received: {line}')
-                    self._beluga_states['bootmode'] += 1
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('UWB Polling Rate: '):
-                rate = line[18:]
-                try:
-                    self._beluga_states['rate'] = int(rate)
-                except ValueError:
-                    pass
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('UWB Channel: '):
-                channel = line[13:]
-                try:
-                    self._beluga_states['channel'] = int(channel)
-                except ValueError:
-                    pass
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('BLE Timeout: '):
-                timeout = line[13:]
-                try:
-                    self._beluga_states['timeout'] = int(timeout)
-                except ValueError:
-                    pass
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('TX Power: '):
-                if 'Max' in line:
-                    self._beluga_states['tx_power'] = 1
-                else:
-                    self._beluga_states['tx_power'] = 0
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('Stream Mode: '):
-                mode = line[13:]
-                try:
-                    self._beluga_states['stream'] = int(mode)
-                except ValueError:
-                    pass
                 lines_processed += 1
                 settings_processed += 1
             elif line.startswith('Ranging Mode: '):
-                mode = line[13:]
-                try:
-                    self._beluga_states['ranging'] = int(mode)
-                except ValueError:
-                    pass
                 lines_processed += 1
                 settings_processed += 1
         return lines_processed, settings_processed == NUM_SETTING_LINES
@@ -272,69 +214,100 @@ class BelugaSerial:
         ret = self._send_command(b'AT+STOPBLE\r\n')
         return ret
 
-    def id(self, new_id: int) -> str:
-        command = f'AT+ID {new_id}\r\n'
-        ret = self._send_command(command.encode())
+    def id(self, new_id: Optional[int] = None) -> str:
+        if new_id is not None:
+            command = f'AT+ID {new_id}\r\n'.encode()
+        else:
+            command = b'AT+ID\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def bootmode(self, boot_mode: BelugaBootMode) -> str:
-        if boot_mode not in BelugaBootMode:
-            return 'Invalid bootmode parameter'
-        command = f'AT+BOOTMODE {int(boot_mode)}\r\n'
-        ret = self._send_command(command.encode())
+    def bootmode(self, boot_mode: Optional[int] = None) -> str:
+        if boot_mode is not None:
+            command = f'AT+BOOTMODE {int(boot_mode)}\r\n'.encode()
+        else:
+            command = b'AT+BOOTMODE\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def rate(self, rate: int) -> str:
-        command = f'AT+RATE {rate}\r\n'
-        ret = self._send_command(command.encode())
+    def rate(self, rate: Optional[int] = None) -> str:
+        if rate is not None:
+            command = f'AT+RATE {rate}\r\n'.encode()
+        else:
+            command = b'AT+RATE\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def channel(self, channel: int) -> str:
-        command = f'AT+CHANNEL {channel}\r\n'
-        ret = self._send_command(command.encode())
+    def channel(self, channel: Optional[int] = None) -> str:
+        if channel is not None:
+            command = f'AT+CHANNEL {channel}\r\n'.encode()
+        else:
+            command = b'AT+CHANNEL\r\n'
+        ret = self._send_command(command)
         return ret
 
     def reset(self) -> str:
         ret = self._send_command(b'AT+RESET\r\n')
         return ret
 
-    def timeout(self, timeout: int) -> str:
-        command = f'AT+TIMEOUT {timeout}\r\n'
-        ret = self._send_command(command.encode())
+    def timeout(self, timeout: Optional[int] = None) -> str:
+        if timeout is not None:
+            command = f'AT+TIMEOUT {timeout}\r\n'.encode()
+        else:
+            command = b'AT+TIMEOUT\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def tx_power(self, max_power: int) -> str:
-        command = f'AT+TXPOWER {max_power}\r\n'
-        ret = self._send_command(command.encode())
+    def tx_power(self, max_power: Optional[int] = None) -> str:
+        if max_power is not None:
+            command = f'AT+TXPOWER {max_power}\r\n'.encode()
+        else:
+            command = b'AT+TXPOWER\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def stream_mode(self, updates_only: int) -> str:
-        command = f'AT+STREAMMODE {updates_only}\r\n'
-        ret = self._send_command(command.encode())
+    def stream_mode(self, updates_only: Optional[int] = None) -> str:
+        if updates_only is not None:
+            command = f'AT+STREAMMODE {updates_only}\r\n'.encode()
+        else:
+            command = b'AT+STREAMMODE\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def twr_mode(self, mode: int) -> str:
-        command = f'AT+TWRMODE {mode}\r\n'
-        ret = self._send_command(command.encode())
+    def twr_mode(self, mode: Optional[int] = None) -> str:
+        if mode is not None:
+            command = f'AT+TWRMODE {mode}\r\n'.encode()
+        else:
+            command = b'AT+TWRMODE\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def led_mode(self, led_mode: int) -> str:
-        command = f'AT+LEDMODE {led_mode}\r\n'
-        ret = self._send_command(command.encode())
+    def led_mode(self, led_mode: Optional[int] = None) -> str:
+        if led_mode is not None:
+            command = f'AT+LEDMODE {led_mode}\r\n'.encode()
+        else:
+            command = b'AT+LEDMODE\r\n'
+        ret = self._send_command(command)
         return ret
 
     def reboot(self) -> str:
         ret = self._send_command(b'AT+REBOOT\r\n')
         return ret
 
-    def pwr_amp(self, enable_pwr_amp: int) -> str:
-        command = f'AT+PWRAMP {enable_pwr_amp}\r\n'
-        ret = self._send_command(command.encode())
+    def pwr_amp(self, enable_pwr_amp: Optional[int] = None) -> str:
+        if enable_pwr_amp is not None:
+            command = f'AT+PWRAMP {enable_pwr_amp}\r\n'.encode()
+        else:
+            command = b'AT+PWRAMP\r\n'
+        ret = self._send_command(command)
         return ret
 
-    def antenna(self, antenna: int) -> str:
-        command = f'AT+ANTENNA {antenna}\r\n'
-        ret = self._send_command(command.encode())
+    def antenna(self, antenna: Optional[int] = None) -> str:
+        if antenna is not None:
+            command = f'AT+ANTENNA {antenna}\r\n'.encode()
+        else:
+            command = b'AT+ANTENNA\r\n'
+        ret = self._send_command(command)
         return ret
 
     def start(self):
