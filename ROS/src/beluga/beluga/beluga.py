@@ -8,16 +8,25 @@ from beluga_messages.srv import BelugaATCommand
 
 
 class BelugaPublisherService(Node):
-    def __init__(self, pub_topic: str = 'neighbors_list', pub_history_depth: int = 10, period: typing.Union[float, int] = 1, service_topic: str = 'at_commands', dummy_data_mode: bool = False):
+    def __init__(self):
         super().__init__('beluga')
-        if not isinstance(pub_topic, str):
-            raise TypeError('Publisher topic needs to be a string')
-        if not isinstance(pub_history_depth, int):
-            raise TypeError('Publisher history depth must be an integer')
-        if not isinstance(period, typing.Union[int, float]):
-            raise TypeError('Period needs to be an integer or float')
-        if not isinstance(service_topic, str):
-            raise TypeError('Service topic must be a string')
+
+        # One-off parameters
+        self.declare_parameter('topic_name', 'neighbors_list')
+        pub_topic: str = self.get_parameter('topic_name').get_parameter_value().string_value
+
+        self.declare_parameter('history_depth', 10)
+        pub_history_depth: int = self.get_parameter('history_depth').get_parameter_value().integer_value
+
+        self.declare_parameter('period', 1.0)
+        period: float = self.get_parameter('period').get_parameter_value().double_value
+
+        self.declare_parameter('service_topic', 'at_command')
+        service_topic: str = self.get_parameter('service_topic').get_parameter_value().string_value
+
+        self.declare_parameter('test_mode', False)
+        dummy_data_mode: bool = self.get_parameter('test_mode').get_parameter_value().bool_value
+
         self.publisher_ = self.create_publisher(BelugaNeighbors, pub_topic, pub_history_depth)
         self.timer = self.create_timer(period, self.publish_neighbors)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
@@ -108,7 +117,7 @@ class BelugaPublisherService(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    beluga_pub_serv = BelugaPublisherService(dummy_data_mode=False)
+    beluga_pub_serv = BelugaPublisherService()
     rclpy.spin(beluga_pub_serv)
     beluga_pub_serv.destroy_node()
     rclpy.shutdown()
