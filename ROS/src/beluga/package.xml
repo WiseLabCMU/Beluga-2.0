@@ -5,7 +5,7 @@
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="tschmitz@andrew.cmu.edu">tom</maintainer>
-  <license>BSD-3-Clause</license>
+  <license>TODO</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>beluga_messages</exec_depend>
