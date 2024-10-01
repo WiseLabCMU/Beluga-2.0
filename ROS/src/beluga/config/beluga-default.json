@@ -1,0 +1,15 @@
+{
+  "boot mode": 2,
+  "poll rate": 100,
+  "channel": 5,
+  "timeout": 9000,
+  "tx power": 0,
+  "stream mode": 1,
+  "twr mode": 1,
+  "led mode": 0,
+  "format": 1,
+  "range extend": 0,
+  "uwb data rate": 0,
+  "uwb preamble": 1,
+  "pulse rate": 1
+}

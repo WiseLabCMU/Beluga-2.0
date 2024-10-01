@@ -196,20 +196,21 @@ static void load_out_format(void) {
 }
 
 static enum uwb_preamble_length load_data_rate(void) {
-    enum uwb_datarate rate = (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
+    enum uwb_datarate rate =
+        (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
     enum uwb_preamble_length length;
-    switch(rate) {
-        case UWB_DR_850K:
-            printf("  UWB Data Rate: 850 kHz \r\n");
-            break;
-        case UWB_DR_110K:
-            printf("  UWB Data Rate: 110 kHz \r\n");
-            break;
-        case UWB_DR_6M8:
-        default:
-            printf("  UWB Data Rate: 6.8MHz \r\n");
-            rate = UWB_DR_6M8;
-            break;
+    switch (rate) {
+    case UWB_DR_850K:
+        printf("  UWB Data Rate: 850 kHz \r\n");
+        break;
+    case UWB_DR_110K:
+        printf("  UWB Data Rate: 110 kHz \r\n");
+        break;
+    case UWB_DR_6M8:
+    default:
+        printf("  UWB Data Rate: 6.8MHz \r\n");
+        rate = UWB_DR_6M8;
+        break;
     }
 
     set_uwb_data_rate(rate, &length);
@@ -219,48 +220,50 @@ static enum uwb_preamble_length load_data_rate(void) {
 static void load_preamble_length(enum uwb_preamble_length forcedLength) {
     int32_t length = retrieveSetting(BELUGA_UWB_PREAMBLE);
     enum uwb_preamble_length preambleLength = setting_to_preamble_enum(length);
-    switch(preambleLength) {
-        case UWB_PRL_64:
-            printf("  UWB Preamble Length: 64 \r\n");
-            break;
-        case UWB_PRL_128:
-            printf("  UWB Preamble Length: 128 \r\n");
-            break;
-        case UWB_PRL_256:
-            printf("  UWB Preable Length: 256 \r\n");
-            break;
-        case UWB_PRL_512:
-            printf("  UWB Preamble Length: 512 \r\n");
-            break;
-        case UWB_PRL_1024:
-            printf("  UWB Preamble Length: 1024 \r\n");
-            break;
-        case UWB_PRL_2048:
-            printf("  UWB Preamble Length: 2048 \r\n");
-            break;
-        case UWB_PRL_4096:
-            printf("  UWB Preamble Length: 4096 \r\n");
-            break;
-        default:
-            preambleLength = forcedLength;
-            printf("  UWB Preamble Length: %" PRId32 " \r\n", preamble_length_to_setting(forcedLength));
-            break;
+    switch (preambleLength) {
+    case UWB_PRL_64:
+        printf("  UWB Preamble Length: 64 \r\n");
+        break;
+    case UWB_PRL_128:
+        printf("  UWB Preamble Length: 128 \r\n");
+        break;
+    case UWB_PRL_256:
+        printf("  UWB Preable Length: 256 \r\n");
+        break;
+    case UWB_PRL_512:
+        printf("  UWB Preamble Length: 512 \r\n");
+        break;
+    case UWB_PRL_1024:
+        printf("  UWB Preamble Length: 1024 \r\n");
+        break;
+    case UWB_PRL_2048:
+        printf("  UWB Preamble Length: 2048 \r\n");
+        break;
+    case UWB_PRL_4096:
+        printf("  UWB Preamble Length: 4096 \r\n");
+        break;
+    default:
+        preambleLength = forcedLength;
+        printf("  UWB Preamble Length: %" PRId32 " \r\n",
+               preamble_length_to_setting(forcedLength));
+        break;
     }
 
     set_uwb_preamble_length(preambleLength);
 }
 
 static void load_pulse_rate(void) {
-    enum uwb_pulse_rate rate = (enum uwb_pulse_rate) retrieveSetting(BELUGA_UWB_PULSE_RATE);
-    switch(rate) {
-        case UWB_PR_16M:
-            printf("  UWB Pulse Rate: 16MHz \r\n");
-            break;
-        case UWB_PR_64M:
-        default:
-            printf("  UWB Pulse Rate: 64MHz \r\n");
-            rate = UWB_PR_64M;
-            break;
+    enum uwb_pulse_rate rate =
+        (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
+    switch (rate) {
+    case UWB_PR_16M:
+        printf("  UWB Pulse Rate: 16MHz \r\n");
+        break;
+    case UWB_PR_64M:
+    default:
+        printf("  UWB Pulse Rate: 64MHz \r\n");
+        rate = UWB_PR_64M;
+        break;
     }
 
     set_pulse_rate(rate);
@@ -412,7 +415,6 @@ int main(void) {
         printk("Unable to start watchdog\n");
         return 0;
     }
-
 
     init_uwb();
 

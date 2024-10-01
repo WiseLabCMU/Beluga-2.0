@@ -2,11 +2,12 @@
 // Created by tom on 7/9/24.
 //
 
-#include <list_monitor.h>
-
 #include <ble_app.h>
 #include <init_main.h>
+#include <list_monitor.h>
+#include <list_neighbors.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
@@ -15,6 +16,13 @@
 #define ENABLE_NODE_ADD_SEM 0
 
 K_MUTEX_DEFINE(timeout_mutex);
+
+#define PRINT_REMOVAL(uuid)                                                    \
+    do {                                                                       \
+        if (get_format_mode()) {                                               \
+            printf("rm %" PRId16 "\r\n", uuid);                                \
+        }                                                                      \
+    } while (0)
 
 #if ENABLE_NODE_ADD_SEM
 K_SEM_DEFINE(node_add_sem, 0, 1);
@@ -101,6 +109,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
         for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
             if (seen_list[x].UUID != 0) {
                 if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
+                    PRINT_REMOVAL(seen_list[x].UUID);
                     removed = true;
                     memset(&seen_list[x], 0, sizeof(seen_list[0]));
                 }
