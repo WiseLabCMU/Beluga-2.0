@@ -2,7 +2,7 @@ from io import TextIOWrapper
 import sys
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional, Tuple, Union, TextIO
+from typing import List, Dict, Optional, Union, TextIO, Callable, Any
 import threading
 import time
 import json
@@ -14,7 +14,9 @@ TARGETS = [
 
 
 class BelugaSerial:
-    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5, max_lines_read: int = 16, port: Optional[str] = None):
+    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5, max_lines_read: int = 16,
+                 port: Optional[str] = None, logger_func: Optional[Callable[[Any], None]] = None):
+        self._logger = logger_func
         if port is None:
             targets = self._find_ports(TARGETS)
             self._serial = None
@@ -24,12 +26,13 @@ class BelugaSerial:
                 if target in targets.keys():
                     for port in targets[target]:
                         try:
-                            print(f"Trying to connect to {target}: {port}")
-                            self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout, exclusive=True)
-                            print(f'Connected to {target}: {port}')
+                            self._log(f"Trying to connect to {target}: {port}")
+                            self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout,
+                                                         exclusive=True)
+                            self._log(f'Connected to {target}: {port}')
                             break
                         except serial.SerialException:
-                            print(f'{port} is busy')
+                            self._log(f'{port} is busy')
                             pass
                     break
             if self._serial is None:
@@ -48,6 +51,10 @@ class BelugaSerial:
         self._neighbor_list: Dict[int, Dict[str, Union[int, float]]] = {}
         self._read_max_lines: int = max_lines_read
         self.start()
+
+    def _log(self, s):
+        if self._logger is not None:
+            self._logger(s)
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
@@ -77,14 +84,14 @@ class BelugaSerial:
     def get_neighbors_list(self) -> Dict[int, Dict[str, Union[int, str]]]:
         return self._neighbor_list
 
-    @staticmethod
-    def _parse_entry(line: str) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
+    def _parse_entry(self, line: str) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
         entries = line.split(',')
         entry = None
         try:
-            entry = {'ID': int(entries[0]), 'RANGE': float(entries[1]), 'RSSI': int(entries[2]), 'TIMESTAMP': int(entries[3])}
+            entry = {'ID': int(entries[0]), 'RANGE': float(entries[1]), 'RSSI': int(entries[2]),
+                     'TIMESTAMP': int(entries[3])}
         except Exception as e:
-            print(str(e))
+            self._log(str(e))
             # Could not parse entry
             pass
         return entry
@@ -112,7 +119,6 @@ class BelugaSerial:
                     break
         return lines_processed
 
-
     def _receive_response(self, response: str):
         self._response = response
         self._response_received.release()
@@ -123,6 +129,10 @@ class BelugaSerial:
         lines = [line.decode(errors='ignore').strip() for line in lines]
 
         while i < l:
+            if not lines[i]:
+                # Empty line
+                i += 1
+                continue
             if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
                 processed = self._write_ranging_batch(lines[i:])
                 i += processed

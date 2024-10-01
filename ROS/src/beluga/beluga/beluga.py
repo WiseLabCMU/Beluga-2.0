@@ -2,12 +2,29 @@ import rclpy
 from rclpy.node import Node
 import typing
 from beluga.beluga_serial import BelugaSerial
+import json
 
 from beluga_messages.msg import BelugaNeighbor, BelugaNeighbors
 from beluga_messages.srv import BelugaATCommand
 
 
 class BelugaPublisherService(Node):
+    DEFAULT_CONFIGS = {
+        "boot mode": 2,
+        "poll rate": 100,
+        "channel": 5,
+        "timeout": 9000,
+        "tx power": 0,
+        "stream mode": 1,
+        "twr mode": 1,
+        "led mode": 0,
+        "format": 1,
+        "range extend": 0,
+        "uwb data rate": 0,
+        "uwb preamble": 1,
+        "pulse rate": 1
+    }
+
     def __init__(self):
         super().__init__('beluga')
 
@@ -32,13 +49,54 @@ class BelugaPublisherService(Node):
         if port == 'port not set':
             port = None
 
+        self.declare_parameter('config', 'not provided')
+        config: typing.Optional[str] = self.get_parameter('config').get_parameter_value().string_value
+        if config == 'not provided':
+            configs = self.DEFAULT_CONFIGS
+        else:
+            with open(config, 'r') as f:
+                configs = json.load(f)
+
         self.publisher_ = self.create_publisher(BelugaNeighbors, pub_topic, pub_history_depth)
         self.timer = self.create_timer(period, self.publish_neighbors)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
         self.serial: typing.Optional[BelugaSerial] = None
         if not self.dummy_data:
-            self.serial: BelugaSerial = BelugaSerial(port=port)
+            self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info)
+            callbacks = {
+                "boot mode": self.serial.bootmode,
+                "poll rate": self.serial.rate,
+                "channel": self.serial.channel,
+                "timeout": self.serial.timeout,
+                "tx power": self.serial.tx_power,
+                "stream mode": self.serial.stream_mode,
+                "twr mode": self.serial.twr_mode,
+                "led mode": self.serial.led_mode,
+                "format": self.serial.format,
+                "range extend": self.serial.pwr_amp,
+                "uwb data rate": self.serial.datarate,
+                "uwb preamble": self.serial.preamble,
+                "pulse rate": self.serial.pulserate
+            }
+            
+            # Tell beluga to shut up
+            self.serial.stop_ble()
+            self.serial.stop_uwb()
+
+            for _config in configs:
+                setting = callbacks[_config]()
+                self.get_logger().info(f'Current setting: {setting}')
+                setting = ''.join([c for c in setting if c.isdigit()])
+                if setting:
+                    setting = int(setting)
+                if setting != configs[_config]:
+                    self.get_logger().info(f'Difference in setting. Now setting to {configs[_config]}')
+                    response = callbacks[_config](configs[_config])
+                    if not response.endswith('OK'):
+                        raise RuntimeError(f'Tried setting bad configuration: {setting}, response: {response}')
+            self.serial.reboot()
+            self.get_logger().info('Ready')
         return
 
     def publish_neighbors(self):
