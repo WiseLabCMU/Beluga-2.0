@@ -14,25 +14,28 @@ TARGETS = [
 
 
 class BelugaSerial:
-    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5, max_lines_read: int = 16):
-        targets = self._find_ports(TARGETS)
-        self._serial = None
-        if not targets:
-            raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
-        for target in TARGETS:
-            if target in targets.keys():
-                for port in targets[target]:
-                    try:
-                        print(f"Trying to connect to {target}: {port}")
-                        self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout, exclusive=True)
-                        print(f'Connected to {target}: {port}')
-                        break
-                    except serial.SerialException:
-                        print(f'{port} is busy')
-                        pass
-                break
-        if self._serial is None:
-            raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
+    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5, max_lines_read: int = 16, port: Optional[str] = None):
+        if port is None:
+            targets = self._find_ports(TARGETS)
+            self._serial = None
+            if not targets:
+                raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
+            for target in TARGETS:
+                if target in targets.keys():
+                    for port in targets[target]:
+                        try:
+                            print(f"Trying to connect to {target}: {port}")
+                            self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout, exclusive=True)
+                            print(f'Connected to {target}: {port}')
+                            break
+                        except serial.SerialException:
+                            print(f'{port} is busy')
+                            pass
+                    break
+            if self._serial is None:
+                raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
+        else:
+            self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout, exclusive=True)
         self._serial_lock = threading.Lock()
         self._response: str = ''
         self._response_received = threading.BoundedSemaphore()

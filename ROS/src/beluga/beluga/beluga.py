@@ -27,13 +27,18 @@ class BelugaPublisherService(Node):
         self.declare_parameter('test_mode', False)
         dummy_data_mode: bool = self.get_parameter('test_mode').get_parameter_value().bool_value
 
+        self.declare_parameter('port', 'port not set')
+        port: typing.Optional[str] = self.get_parameter('port').get_parameter_value().string_value
+        if port == 'port not set':
+            port = None
+
         self.publisher_ = self.create_publisher(BelugaNeighbors, pub_topic, pub_history_depth)
         self.timer = self.create_timer(period, self.publish_neighbors)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
         self.serial: typing.Optional[BelugaSerial] = None
         if not self.dummy_data:
-            self.serial: BelugaSerial = BelugaSerial()
+            self.serial: BelugaSerial = BelugaSerial(port=port)
         return
 
     def publish_neighbors(self):
