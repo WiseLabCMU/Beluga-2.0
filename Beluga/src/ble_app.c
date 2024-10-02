@@ -59,6 +59,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <range_extension.h>
+
 K_MUTEX_DEFINE(UUID_mutex);
 K_SEM_DEFINE(ble_state, 1, 1);
 
@@ -496,7 +498,11 @@ int32_t enable_bluetooth(void) {
     int32_t retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
     if (!bluetooth_on) {
-        retVal = _enable_bluetooth();
+        if (!update_fem_shutdown_state(false)) {
+            retVal = -EFAULT;
+        } else {
+            retVal = _enable_bluetooth();
+        }
     }
     k_sem_give(&ble_state);
     return retVal;
@@ -524,6 +530,9 @@ int32_t disable_bluetooth(void) {
     k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
         retVal = _disable_bluetooth();
+        if (!retVal && !update_fem_shutdown_state(true)) {
+            retVal = -EFAULT;
+        }
     }
     k_sem_give(&ble_state);
     return retVal;

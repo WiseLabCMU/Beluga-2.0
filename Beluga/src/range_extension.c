@@ -210,6 +210,19 @@ bool select_antenna(int32_t ant) {
 #endif
 }
 
+bool update_fem_shutdown_state(bool shutdown) {
+    int err;
+
+    err = gpio_pin_set_dt(&_fem_gpios.shutdown, shutdown);
+
+    if (err) {
+        printk("Could not shut down FEM (%d)", err);
+        return false;
+    }
+
+    return true;
+}
+
 #else
 bool init_range_extension(void) {
     printk("Range extension disabled\n");

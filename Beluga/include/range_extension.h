@@ -17,5 +17,6 @@ enum ble_power_mode {
 bool init_range_extension(void);
 bool update_power_mode(enum ble_power_mode mode);
 bool select_antenna(int32_t ant);
+bool update_fem_shutdown_state(bool shutdown);
 
 #endif // BELUGA_RANGE_EXTENSION_H

@@ -81,9 +81,9 @@
 	sky_fem_gpios: amp_control {
 		compatible = "amp-control";
 		ant-sel-gpios = <&gpio0 31 0>;
-		csd-gpios = <&gpio0 30 0>;
-		cps-gpios = <&gpio0 29 0>;
-		chl-gpios = <&gpio0 10 0>;
+		csd-gpios = <&gpio0 30 GPIO_ACTIVE_LOW>;
+		cps-gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
+		chl-gpios = <&gpio0 10 GPIO_ACTIVE_HIGH>;
 	};
 };
 
