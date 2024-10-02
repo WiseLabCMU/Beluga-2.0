@@ -8,9 +8,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+enum ble_power_mode {
+    POWER_MODE_BYPASS, ///< RF Bypass
+    POWER_MODE_LOW,    ///< Amplify a little
+    POWER_MODE_HIGH    ///< Tell FCC to fuck off
+};
+
 bool init_range_extension(void);
-bool enable_range_extension(bool command);
-bool disable_range_extension(bool command);
+bool update_power_mode(enum ble_power_mode mode);
 bool select_antenna(int32_t ant);
 
 #endif // BELUGA_RANGE_EXTENSION_H
