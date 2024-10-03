@@ -229,15 +229,8 @@ bool init_range_extension(void) {
     return true;
 }
 
-bool enable_range_extension(bool command) {
-    if (command) {
-        printf("Not implemented\r\n");
-    }
-    return false;
-}
-
-bool disable_range_extension(bool command) {
-    if (command) {
+bool update_power_mode(enum ble_power_mode mode) {
+    if (true) {
         printf("Not implemented\r\n");
     }
     return false;
@@ -245,6 +238,10 @@ bool disable_range_extension(bool command) {
 
 bool select_antenna(int32_t ant) {
     printf("Not implemented\r\n");
+    return false;
+}
+
+bool update_fem_shutdown_state(bool shutdown) {
     return false;
 }
 #endif

@@ -72,10 +72,11 @@
 		wake-source = &button0;
 	};
 
-	sky_fem: sky66112-11 {
+	nrf_radio_fem: sky66112-11 {
 		compatible = "skyworks,sky66112-11", "generic-fem-two-ctrl-pins";
-		ctx-gpios = <&gpio0 9 0>;
+		ctx-gpios = <&gpio0 11 GPIO_ACTIVE_HIGH>;
 		crx-gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
+		tx-gain-db = <22>;
 	};
 
 	sky_fem_gpios: amp_control {
@@ -88,5 +89,5 @@
 };
 
 &radio {
-	fem = <&sky_fem>;
+	fem = <&nrf_radio_fem>;
 };

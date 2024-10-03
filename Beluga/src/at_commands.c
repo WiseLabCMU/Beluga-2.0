@@ -137,7 +137,7 @@ static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
         return;
     }
     if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
-        update_power_mode(POWER_MODE_LOW);
+        update_power_mode(POWER_MODE_HIGH);
     } else {
         update_power_mode(POWER_MODE_BYPASS);
     }
@@ -337,7 +337,7 @@ static void at_pwramp(uint16_t argc, char const *const *argv) {
     if (pwramp == 0) {
         success = update_power_mode(POWER_MODE_BYPASS);
     } else {
-        success = update_power_mode(POWER_MODE_LOW);
+        success = update_power_mode(POWER_MODE_HIGH);
     }
 
     if (success) {
