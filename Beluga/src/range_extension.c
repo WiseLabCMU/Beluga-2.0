@@ -9,7 +9,7 @@
 
 #define SKY_GPIOS DT_NODELABEL(sky_fem_gpios)
 
-#if !defined(CONFIG_BELUGA_RANGE_EXTENSION) && !DT_NODE_EXISTS(SKY_GPIOS)
+#if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS)
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <zephyr/drivers/gpio.h>
@@ -183,7 +183,7 @@ bool select_antenna(int32_t ant) {
 #if ANTENNA_SELECT
     bool ble_state = save_and_disable_bluetooth();
     bool retVal = true;
-    int err;
+    int err = 0;
 
     switch (ant) {
     case 1:
