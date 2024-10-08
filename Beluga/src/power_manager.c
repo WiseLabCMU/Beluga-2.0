@@ -37,43 +37,43 @@ void accel_trigger_handler(const struct device *dev,
 static const struct gpio_dt_spec wake_source = WAKESOURCE;
 #endif
 
-//#if defined(USE_ACCEL) || defined(WAKESOURCE)
+// #if defined(USE_ACCEL) || defined(WAKESOURCE)
 
 static void configure_wake_source(void) {
-    //#if defined(USE_ACCEL)
-    //    const struct device *accel = DEVICE_DT_GET(ACCEL_NODE);
-    //    struct sensor_trigger trig;
+    // #if defined(USE_ACCEL)
+    //     const struct device *accel = DEVICE_DT_GET(ACCEL_NODE);
+    //     struct sensor_trigger trig;
     //
-    //    if (!device_is_ready(accel)) {
-    //        printk("Accelerometer is not available\n");
-    //        return;
-    //    }
+    //     if (!device_is_ready(accel)) {
+    //         printk("Accelerometer is not available\n");
+    //         return;
+    //     }
     //
-    //    trig.type = SENSOR_TRIG_DELTA;
-    //    trig.chan = SENSOR_CHAN_ACCEL_XYZ;
+    //     trig.type = SENSOR_TRIG_DELTA;
+    //     trig.chan = SENSOR_CHAN_ACCEL_XYZ;
     //
-    //    if (sensor_trigger_set(accel, &trig, accel_trigger_handler)) {
-    //        printk("Could not set trigger\n");
-    //    }
-    //#else
-    //    int rc = gpio_pin_configure_dt(&wake_source, GPIO_INPUT);
-    //    if (rc < 0) {
-    //        printk("Could not configure wake source (%d)\n", rc);
-    //        return;
-    //    }
+    //     if (sensor_trigger_set(accel, &trig, accel_trigger_handler)) {
+    //         printk("Could not set trigger\n");
+    //     }
+    // #else
+    //     int rc = gpio_pin_configure_dt(&wake_source, GPIO_INPUT);
+    //     if (rc < 0) {
+    //         printk("Could not configure wake source (%d)\n", rc);
+    //         return;
+    //     }
     //
-    //    rc = gpio_pin_interrupt_configure_dt(&wake_source,
-    //    GPIO_INT_LEVEL_ACTIVE); if (rc < 0) {
-    //        printk("Could not configure wake source GPIO interrupt (%d)\n",
-    //        rc);
-    //    }
-    //#endif
+    //     rc = gpio_pin_interrupt_configure_dt(&wake_source,
+    //     GPIO_INT_LEVEL_ACTIVE); if (rc < 0) {
+    //         printk("Could not configure wake source GPIO interrupt (%d)\n",
+    //         rc);
+    //     }
+    // #endif
 }
-//#else
-//#define configure_wake_source()
-//    do {
-//    } while (0)
-//#endif
+// #else
+// #define configure_wake_source()
+//     do {
+//     } while (0)
+// #endif
 
 static void sleep_dw1000(void) {
     if (get_uwb_led_state() == LED_UWB_ON) {
