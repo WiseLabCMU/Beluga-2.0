@@ -4,7 +4,7 @@ import typing
 from beluga.beluga_serial import BelugaSerial
 import json
 
-from beluga_messages.msg import BelugaNeighbor, BelugaNeighbors
+from beluga_messages.msg import BelugaNeighbor, BelugaNeighbors, BelugaRange, BelugaRanges
 from beluga_messages.srv import BelugaATCommand
 
 
@@ -29,8 +29,11 @@ class BelugaPublisherService(Node):
         super().__init__('beluga')
 
         # One-off parameters
-        self.declare_parameter('topic_name', 'neighbors_list')
-        pub_topic: str = self.get_parameter('topic_name').get_parameter_value().string_value
+        self.declare_parameter('neighbors_name', 'neighbors_list')
+        pub_topic: str = self.get_parameter('neighbors_name').get_parameter_value().string_value
+
+        self.decalre_parameter('ranges_name', 'range_measurement')
+        pub_topic_ranges: str = self.get_parameter('ranges_name').get_parameter_value().string_value
 
         self.declare_parameter('history_depth', 10)
         pub_history_depth: int = self.get_parameter('history_depth').get_parameter_value().integer_value
@@ -58,7 +61,9 @@ class BelugaPublisherService(Node):
                 configs = json.load(f)
 
         self.publisher_ = self.create_publisher(BelugaNeighbors, pub_topic, pub_history_depth)
+        self.range_publish_ = self.create_publisher(BelugaRanges, pub_topic_ranges, pub_history_depth)
         self.timer = self.create_timer(period, self.publish_neighbors)
+        self.range_timer = self.create_timer(period, self.publish_ranges)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
         self.serial: typing.Optional[BelugaSerial] = None
@@ -100,25 +105,42 @@ class BelugaPublisherService(Node):
         return
 
     def publish_neighbors(self):
+        neighbors_list = None
         if self.dummy_data:
-            neighbors_dict = {1: {'ID': 1, 'RANGE': 0.5761, 'RSSI': -57, 'TIMESTAMP': 5761},
-                        2: {'ID': 2, 'RANGE': 1.7621, 'RSSI': -61, 'TIMESTAMP': 5790},
-                        3: {'ID': 3, 'RANGE': 5.7854, 'RSSI': -72, 'TIMESTAMP': 5004}}
-        else:
-            neighbors_dict = self.serial.get_neighbors_list()
-        if neighbors_dict:
-            neighbors_list = []
-            for x in list(neighbors_dict.values()):
+            neighbors_list = [{'ID': 1, 'RANGE': 0.5761, 'RSSI': -57, 'TIMESTAMP': 5761},
+                        {'ID': 2, 'RANGE': 1.7621, 'RSSI': -61, 'TIMESTAMP': 5790},
+                        {'ID': 3, 'RANGE': 5.7854, 'RSSI': -72, 'TIMESTAMP': 5004}]
+        elif self.serial.neighbors_update:
+            neighbors_list = self.serial.neighbors_list
+
+        if neighbors_list is not None:
+            pub_list = []
+            for x in neighbors_list:
                 neighbor = BelugaNeighbor()
                 neighbor.id = x['ID']
                 neighbor.distance = x['RANGE']
                 neighbor.rssi = x['RSSI']
-                neighbor.timestamp = x['TIMESTAMP']
-                neighbors_list.append(neighbor)
-            neighbor_msg = BelugaNeighbors()
-            neighbor_msg.neighbors = neighbors_list
-            self.publisher_.publish(neighbor_msg)
-            self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in neighbors_list))
+                neighbor.timestamp = x['TIMESTAMP'] # TODO: Sync beluga and ROS
+                pub_list.append(neighbor)
+            msg = BelugaNeighbors()
+            msg.neighbors = pub_list
+            self.publisher_.publish(msg)
+            self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in pub_list))
+
+    def publish_ranges(self):
+        if self.dummy_data:
+            return
+        elif self.serial.range_update:
+            updates = self.serial.range_updates
+            range_updates = []
+            for x in updates:
+                _range = BelugaRange()
+                _range.id = x['ID']
+                _range.range = x['RANGE']
+                range_updates.append(_range)
+            msg = BelugaRanges()
+            msg.ranges = range_updates
+            self.range_publish_.publish(msg)
 
     def at_command(self, request, response):
         if not self.dummy_data:
