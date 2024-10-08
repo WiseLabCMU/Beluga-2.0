@@ -7,6 +7,12 @@
 #include <uart.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
+#include <zephyr/usb/usb_device.h>
+#include <zephyr/usb/usbd.h>
+
+#if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+#define USB_CONSOLE
+#endif
 
 #define RX_BUFFER_SIZE 256
 
@@ -17,22 +23,26 @@ struct uart_data {
 
 K_FIFO_DEFINE(uart_rx_queue);
 
-static const struct device *uart = DEVICE_DT_GET(DT_NODELABEL(uart0));
+static const struct device *serial = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 
 static struct uart_data rx_buf;
 
 static void serial_callback(const struct device *dev, void *user_data) {
     uint8_t c;
 
-    if (!uart_irq_update(uart)) {
+    if (dev == serial) {
         return;
     }
 
-    if (!uart_irq_rx_ready(uart)) {
+    if (!uart_irq_update(dev)) {
         return;
     }
 
-    while (uart_fifo_read(uart, &c, 1) == 1) {
+    if (!uart_irq_rx_ready(dev)) {
+        return;
+    }
+
+    while (uart_fifo_read(dev, &c, 1) == 1) {
         if ((c == '\n' || c == '\r' || c == '\0') && rx_buf.len > 0) {
             struct buffer *_buf;
             rx_buf.data[rx_buf.len] = '\0';
@@ -60,21 +70,41 @@ static void serial_callback(const struct device *dev, void *user_data) {
     }
 }
 
+#if defined(USB_CONSOLE)
+#define device_init() usb_enable(NULL)
+
+#define WAIT_DTR                                                               \
+    do {                                                                       \
+        uint32_t dtr = 0;                                                      \
+        while (!dtr) {                                                         \
+            uart_line_ctrl_get(serial, UART_LINE_CTRL_DTR, &dtr);              \
+            k_sleep(K_MSEC(100));                                              \
+        }                                                                      \
+    } while (0)
+#else
+#define device_init() !device_is_ready(serial)
+#define WAIT_DTR                                                               \
+    do {                                                                       \
+    } while (0)
+#endif
+
 int uart_init(void) {
     int err;
 
-    if (!device_is_ready(uart)) {
-        printk("UART is not ready\n");
+    if (device_init()) {
+        printk("Device is not ready\n");
         return -1;
     }
 
-    err = uart_irq_callback_user_data_set(uart, serial_callback, NULL);
+    err = uart_irq_callback_user_data_set(serial, serial_callback, NULL);
 
     if (err < 0) {
         printk("Unable to set UART callback (err %d)\n", err);
         return err;
     }
-    uart_irq_rx_enable(uart);
+    uart_irq_rx_enable(serial);
+
+    WAIT_DTR;
 
     printk("UART initialized\n");
 
