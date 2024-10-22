@@ -1,11 +1,18 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time, Duration
 import typing
 from beluga.beluga_serial import BelugaSerial
 import json
+from threading import Lock
 
 from beluga_messages.msg import BelugaNeighbor, BelugaNeighbors, BelugaRange, BelugaRanges
 from beluga_messages.srv import BelugaATCommand
+
+"""
+Conversion factor for converting milliseconds to nanoseconds
+"""
+MS_CONVERSION_FACTOR = 1000000
 
 
 class BelugaPublisherService(Node):
@@ -32,7 +39,7 @@ class BelugaPublisherService(Node):
         self.declare_parameter('neighbors_name', 'neighbors_list')
         pub_topic: str = self.get_parameter('neighbors_name').get_parameter_value().string_value
 
-        self.decalre_parameter('ranges_name', 'range_measurement')
+        self.declare_parameter('ranges_name', 'range_measurement')
         pub_topic_ranges: str = self.get_parameter('ranges_name').get_parameter_value().string_value
 
         self.declare_parameter('history_depth', 10)
@@ -62,55 +69,103 @@ class BelugaPublisherService(Node):
 
         self.publisher_ = self.create_publisher(BelugaNeighbors, pub_topic, pub_history_depth)
         self.range_publish_ = self.create_publisher(BelugaRanges, pub_topic_ranges, pub_history_depth)
-        self.timer = self.create_timer(period, self.publish_neighbors)
-        self.range_timer = self.create_timer(period, self.publish_ranges)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
         self.serial: typing.Optional[BelugaSerial] = None
-        if not self.dummy_data:
-            self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info)
-            callbacks = {
-                "boot mode": self.serial.bootmode,
-                "poll rate": self.serial.rate,
-                "channel": self.serial.channel,
-                "timeout": self.serial.timeout,
-                "tx power": self.serial.tx_power,
-                "stream mode": self.serial.stream_mode,
-                "twr mode": self.serial.twr_mode,
-                "led mode": self.serial.led_mode,
-                "format": self.serial.format,
-                "range extend": self.serial.pwr_amp,
-                "uwb data rate": self.serial.datarate,
-                "uwb preamble": self.serial.preamble,
-                "pulse rate": self.serial.pulserate
-            }
-            
-            # Tell beluga to shut up
-            self.serial.stop_ble()
-            self.serial.stop_uwb()
+        self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info)
+        callbacks = {
+            "boot mode": self.serial.bootmode,
+            "poll rate": self.serial.rate,
+            "channel": self.serial.channel,
+            "timeout": self.serial.timeout,
+            "tx power": self.serial.tx_power,
+            "stream mode": self.serial.stream_mode,
+            "twr mode": self.serial.twr_mode,
+            "led mode": self.serial.led_mode,
+            "format": self.serial.format,
+            "range extend": self.serial.pwr_amp,
+            "uwb data rate": self.serial.datarate,
+            "uwb preamble": self.serial.preamble,
+            "pulse rate": self.serial.pulserate
+        }
 
-            for _config in configs:
-                setting = callbacks[_config]()
-                self.get_logger().info(f'Current setting: {setting}')
-                setting = ''.join([c for c in setting if c.isdigit()])
-                if setting:
-                    setting = int(setting)
-                if setting != configs[_config]:
-                    self.get_logger().info(f'Difference in setting. Now setting to {configs[_config]}')
-                    response = callbacks[_config](configs[_config])
-                    if not response.endswith('OK'):
-                        raise RuntimeError(f'Tried setting bad configuration: {setting}, response: {response}')
-            self.serial.reboot()
-            self.get_logger().info('Ready')
+        # Tell beluga to shut up
+        self.serial.stop_ble()
+        self.serial.stop_uwb()
+
+        for _config in configs:
+            setting = callbacks[_config]()
+            self.get_logger().info(f'Current setting: {setting}')
+            setting = ''.join([c for c in setting if c.isdigit()])
+            if setting:
+                setting = int(setting)
+            if setting != configs[_config]:
+                setting_updated = True
+                self.get_logger().info(f'Difference in setting. Now setting to {configs[_config]}')
+                response = callbacks[_config](configs[_config])
+                if not response.endswith('OK'):
+                    raise RuntimeError(f'Tried setting bad configuration: {setting}, response: {response}')
+        self.serial.reboot()
+        # Wait 100 ms for Beluga to reboot
+        self.get_clock().sleep_until(self.get_clock().now() + Duration(nanoseconds=100 * MS_CONVERSION_FACTOR))
+
+        # Time Sync Stuff
+        self._timestamp_sync = Lock()
+        self.get_logger().info('Syncing Time')
+        self._ns_per_timestamp_unit = 0
+        self._last_mapping = {
+            'ros': Time(),
+            'beluga': 0
+        }
+        self._time_sync(True)
+
+        self.timer = self.create_timer(period, self.publish_neighbors)
+        self.range_timer = self.create_timer(period, self.publish_ranges)
+        self.sync_timer = self.create_timer(600, self._time_sync)
+
+        self.get_logger().info('Ready')
         return
+
+    def _time_sync(self, first: bool = False):
+        # Get measurement 1
+        req = self.get_clock().now()
+        t1 = self.serial.time()
+        resp = self.get_clock().now()
+        delta = int((resp - req).nanoseconds / 2)
+        map1 = req + Duration(nanoseconds=delta)
+
+        # Wait 2ms
+        self.get_clock().sleep_until(resp + Duration(nanoseconds=2 * MS_CONVERSION_FACTOR))
+
+        # Get measurement 2
+        req = self.get_clock().now()
+        t2 = self.serial.time()
+        resp = self.get_clock().now()
+        delta = int((resp - req).nanoseconds / 2)
+        map2 = req + Duration(nanoseconds=delta)
+
+        # Convert times into ints
+        t1 = int(''.join([c for c in t1 if c.isdigit()]))
+        t2 = int(''.join([c for c in t2 if c.isdigit()]))
+
+        # Calculate how many nanoseconds there are in a beluga timestamp
+        map_diff = map2 - map1
+        t_diff = t2 - t1
+        self._timestamp_sync.acquire()
+        self._ns_per_timestamp_unit += map_diff.nanoseconds / t_diff
+        if not first:
+            self._ns_per_timestamp_unit /= 2
+
+        # Calculate average time between the mappings and use that as the new mapping for conversion
+        delta = Duration(nanoseconds=(map_diff.nanoseconds / 2))
+        self._last_mapping['ros'] = map1 + delta
+        self._last_mapping['beluga'] = int((t2 - t1) / 2) + t1
+        self.get_logger().info(f'Synced time: {self._last_mapping["beluga"]} -> {self._last_mapping["ros"].seconds_nanoseconds()} ({self._ns_per_timestamp_unit} ns/tick)')
+        self._timestamp_sync.release()
 
     def publish_neighbors(self):
         neighbors_list = None
-        if self.dummy_data:
-            neighbors_list = [{'ID': 1, 'RANGE': 0.5761, 'RSSI': -57, 'TIMESTAMP': 5761},
-                        {'ID': 2, 'RANGE': 1.7621, 'RSSI': -61, 'TIMESTAMP': 5790},
-                        {'ID': 3, 'RANGE': 5.7854, 'RSSI': -72, 'TIMESTAMP': 5004}]
-        elif self.serial.neighbors_update:
+        if self.serial.neighbors_update:
             neighbors_list = self.serial.neighbors_list
 
         if neighbors_list is not None:
@@ -128,19 +183,24 @@ class BelugaPublisherService(Node):
             self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in pub_list))
 
     def publish_ranges(self):
-        if self.dummy_data:
-            return
-        elif self.serial.range_update:
+        if self.serial.range_update:
             updates = self.serial.range_updates
             range_updates = []
+            self._timestamp_sync.acquire()
             for x in updates:
                 _range = BelugaRange()
                 _range.id = x['ID']
                 _range.range = x['RANGE']
+                ts = x['TIMESTAMP']
+                delta = Duration(nanoseconds=((ts - self._last_mapping['beluga']) * self._ns_per_timestamp_unit))
+                ros_ts = self._last_mapping['ros'] + delta
+                self.get_logger().info(f'Timestamp: {ros_ts.seconds_nanoseconds()}')
                 range_updates.append(_range)
+            self._timestamp_sync.release()
             msg = BelugaRanges()
             msg.ranges = range_updates
             self.range_publish_.publish(msg)
+            self.get_logger()
 
     def at_command(self, request, response):
         if not self.dummy_data:

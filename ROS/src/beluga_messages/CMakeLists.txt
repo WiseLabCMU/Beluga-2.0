@@ -29,6 +29,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/BelugaNeighbor.msg"
         "msg/BelugaNeighbors.msg"
         "srv/BelugaATCommand.srv"
+        "msg/BelugaRange.msg"
+        "msg/BelugaRanges.msg"
 )
 
 ament_package()
