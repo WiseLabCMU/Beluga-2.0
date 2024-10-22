@@ -86,7 +86,7 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p3);
     uint32_t count = 0;
     bool removed = false;
-    struct task_wdt_attr watchdogAttr = {.period = 2000};
+    struct task_wdt_attr watchdogAttr = {.period = 3000};
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
         printk("Unable to spawn watchdog for monitor thread.\n");
@@ -152,7 +152,7 @@ void init_monitor_thread(void) {
                                       K_THREAD_STACK_SIZEOF(monitor_stack),
                                       monitor_task_function, NULL, NULL, NULL,
                                       CONFIG_BELUGA_MONITOR_PRIO, 0, K_NO_WAIT);
-    k_thread_name_set(monitor_task_id, "Task monitor");
+    k_thread_name_set(monitor_task_id, "Neighbors monitor");
     printk("Started monitor\n");
 }
 #else

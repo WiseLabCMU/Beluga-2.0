@@ -33,6 +33,9 @@
 #include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(at_commands, LOG_LEVEL_DBG);
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -173,17 +176,23 @@ static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_change_id(uint16_t argc, char const *const *argv) {
+    LOG_DBG("ID Command");
     READ_SETTING(argc, 2, BELUGA_ID, "ID");
+    LOG_DBG("Setting an ID");
     int32_t newID;
     bool success = strtoint32(argv[1], &newID);
+    LOG_DBG("ID getting set to %" PRId32, newID);
 
     if (!success || newID <= 0 || newID > (int32_t)UINT16_MAX) {
         printf("Invalid ID\r\n");
         return;
     }
+    LOG_DBG("ID passed checks");
 
     update_node_id((uint16_t)newID);
+    LOG_DBG("ID pushed to bluetooth");
     updateSetting(BELUGA_ID, newID);
+    LOG_DBG("ID updated in settings");
     OK;
 }
 
@@ -513,6 +522,8 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
     char *argv[MAX_TOKENS];
     uint16_t argc;
 
+    LOG_DBG("Starting commands task\n");
+
     struct buffer *commandBuffer = NULL;
     struct task_wdt_attr watchdogAttr = {.period = 2000};
 
@@ -531,7 +542,7 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
         if (commandBuffer == NULL) {
             continue;
         }
-        printk("Item received\n");
+        LOG_INF("Item received: %s\n", commandBuffer->buf);
 
         if (0 != strncmp((const char *)commandBuffer->buf, "AT+", 3)) {
             if (0 == strncmp((const char *)commandBuffer->buf, "AT", 2)) {
@@ -556,6 +567,7 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
                 if (commands[i].cmd_func == NULL) {
                     printf("Not implemented\r\n");
                 } else {
+                    LOG_DBG("Command found");
                     argc = argparse(commandBuffer->buf, argv);
                     argv[argc] = NULL;
                     commands[i].cmd_func(argc, (const char **)argv);
