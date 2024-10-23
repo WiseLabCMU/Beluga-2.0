@@ -3,7 +3,9 @@ import sys
 import serial
 import serial.tools.list_ports as list_ports
 from typing import List, Dict, Optional, Union, TextIO, Callable, Any
-import threading
+import multiprocessing as mp
+import multiprocessing.queues as mp_queues
+import queue
 import time
 import json
 
@@ -13,10 +15,26 @@ TARGETS = [
 ]
 
 
+class BelugaQueue(mp_queues.Queue):
+    def __init__(self, maxsize: int = 1):
+        super().__init__(maxsize=maxsize, ctx=mp.get_context())
+
+    def put(self, obj, block: bool = True, timeout: Optional[int] = None) -> None:
+        try:
+            super().put(obj, block, timeout)
+        except queue.Full:
+            # Discard oldest item
+            self.get_nowait()
+            super().put(obj, block, timeout)
+        return
+
+
 class BelugaSerial:
     def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5, max_lines_read: int = 16,
                  port: Optional[str] = None, logger_func: Optional[Callable[[Any], None]] = None):
+
         self._logger = logger_func
+
         if port is None:
             targets = self._find_ports(TARGETS)
             self._serial = None
@@ -39,21 +57,12 @@ class BelugaSerial:
                 raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
         else:
             self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout, exclusive=True)
-        self._serial_lock = threading.Lock()
-        self._response: str = ''
-        self._response_received = threading.BoundedSemaphore()
-        self._response_received.acquire()
-        self._timeout = timeout
-        self._rx_thread: Optional[threading.Thread] = None
-        self._stop = threading.Event()
-        self._outstream: Union[TextIOWrapper, TextIO] = sys.stdout
-        self._outstream_lock = threading.Lock()
-        self._list_lock = threading.Lock()
-        self._neighbor_list: Dict[int, Dict[str, Union[Dict[str, Union[int, float]], bool]]] = {}
+
         self._read_max_lines: int = max_lines_read
-        self._update = threading.Event()
-        self._neighbor_list_update = threading.Event()
-        self.start()
+        self._timeout: float = timeout
+
+        self._response_q: BelugaQueue = BelugaQueue()
+        self._rx_task: Optional[mp.Process] = None
 
     def _log(self, s):
         if self._logger is not None:
@@ -75,13 +84,13 @@ class BelugaSerial:
 
     def _get_lines(self) -> List[bytes]:
         lines = []
-        self._serial_lock.acquire()
+        #self._serial_lock.acquire()
         for _ in range(self._read_max_lines):
             line = self._serial.readline()
             if not line:
                 break
             lines.append(line)
-        self._serial_lock.release()
+        #self._serial_lock.release()
         return lines
 
     def _parse_entry(self, line: str) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
@@ -129,10 +138,6 @@ class BelugaSerial:
                 self._list_lock.release()
         return lines_processed
 
-    def _receive_response(self, response: str):
-        self._response = response
-        self._response_received.release()
-
     def _process_lines(self, lines: List[bytes]):
         i = 0
         l = len(lines)
@@ -151,10 +156,9 @@ class BelugaSerial:
                     i += 1
                 continue
             elif lines[i].endswith('OK'):
-                self._receive_response(lines[i])
+                self._response_q.put(lines[i], False)
             elif lines[i].startswith('rm'):
                 uuid = int(lines[i].lstrip('rm '))
-                print(f'Removing {uuid}')
                 self._list_lock.acquire()
                 if uuid in self._neighbor_list.keys():
                     del self._neighbor_list[uuid]
@@ -163,48 +167,18 @@ class BelugaSerial:
             i += 1
 
     def _read_serial(self):
-        while not self._stop.is_set():
+        while not False:
             lines = self._get_lines()
             if lines:
                 self._process_lines(lines)
             time.sleep(0.05)
 
     def _send_command(self, command: bytes) -> str:
-        self._serial_lock.acquire()
         self._serial.write(command)
-        self._serial_lock.release()
-        if not self._response_received.acquire(timeout=self._timeout):
-            return 'Response timed out'
-        ret = self._response
-        self._response = None
-        return ret
-
-    @property
-    def range_update(self) -> bool:
-        return self._update.is_set()
-
-    @property
-    def neighbors_update(self) -> bool:
-        return self._neighbor_list_update.is_set()
-
-    @property
-    def neighbors_list(self) -> List[Dict[str, Union[int, float]]]:
-        self._list_lock.acquire()
-        ret = [self._neighbor_list[x]['entry'] for x in self._neighbor_list]
-        self._neighbor_list_update.clear()
-        self._list_lock.release()
-        return ret
-
-    @property
-    def range_updates(self) -> List[Dict[str, Union[int, float]]]:
-        ret = []
-        self._list_lock.acquire()
-        for x in self._neighbor_list:
-            if self._neighbor_list[x]['update']:
-                ret += [self._neighbor_list[x]['entry']]
-                self._neighbor_list[x]['update'] = False
-        self._update.clear()
-        self._list_lock.release()
+        try:
+            ret = self._response_q.get(timeout=self._timeout)
+        except queue.Empty:
+            ret = 'Response timed out'
         return ret
 
     def start_uwb(self) -> str:
@@ -362,10 +336,11 @@ class BelugaSerial:
         return ret
 
     def start(self):
-        if self._rx_thread is not None:
+        # TODO: Fix this
+        if self._rx_task is not None:
             raise RuntimeError('Please stop before restarting')
-        self._rx_thread = threading.Thread(target=self._read_serial, daemon=True)
-        self._rx_thread.start()
+        self._rx_task = mp.Process(target=self._read_serial, daemon=True)
+        self._rx_task.start()
 
     def stop(self):
         if self._rx_thread is None:
@@ -373,26 +348,29 @@ class BelugaSerial:
         self._stop.set()
         self._rx_thread.join()
 
-    def set_outstream(self, stream: Union[TextIOWrapper, TextIO]):
-        self._outstream_lock.acquire()
-        if self._outstream != sys.stdout:
-            self._outstream.close()
-        self._outstream = stream
-        self._outstream_lock.release()
-
 
 def main():
+    # import datetime as dt
     beluga = BelugaSerial()
+    beluga.start()
     ret = beluga.format(1)
-    beluga.stream_mode(True)
-
-    while True:
-        if beluga.range_update:
-            updates = beluga.range_updates
-            print(f'Ranges {updates}')
-        if beluga.neighbors_update:
-            updates = beluga.neighbors_list
-            print(f'Neighbors: {updates}')
+    print(ret)
+    # beluga.stream_mode(True)
+    # last_tr = dt.datetime.now()
+    #
+    # while True:
+    #     if beluga.range_update:
+    #         updates = beluga.range_updates
+    #         print(f'Ranges {updates}')
+    #     if beluga.neighbors_update:
+    #         updates = beluga.neighbors_list
+    #         print(f'Neighbors: {updates}')
+    #
+    #     elapsed = dt.datetime.now() - last_tr
+    #     if elapsed.microseconds > 100000:
+    #         ret = beluga.time()
+    #         print(ret)
+    #         last_tr = dt.datetime.now()
 
 
 if __name__ == '__main__':
