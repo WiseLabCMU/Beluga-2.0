@@ -48,10 +48,11 @@ class BelugaSerial:
         self._stop = threading.Event()
         self._outstream: Union[TextIOWrapper, TextIO] = sys.stdout
         self._outstream_lock = threading.Lock()
+        self._list_lock = threading.Lock()
         self._neighbor_list: Dict[int, Dict[str, Union[Dict[str, Union[int, float]], bool]]] = {}
         self._read_max_lines: int = max_lines_read
-        self._update: bool = False
-        self._neighbor_list_update: bool = False
+        self._update = threading.Event()
+        self._neighbor_list_update = threading.Event()
         self.start()
 
     def _log(self, s):
@@ -98,13 +99,14 @@ class BelugaSerial:
     def _write_ranging_batch(self, lines: List[str]) -> int:
         lines_processed = 0
         for line in lines:
+            entry = None
             try:
                 entry = json.loads(line)
                 lines_processed += 1
-                self._neighbor_list[entry['ID']] = entry
             except json.JSONDecodeError:
                 if line == '# ID, RANGE, RSSI, TIMESTAMP':
                     lines_processed += 1
+                    continue
                 elif line[0].isdigit():
                     lines_processed += 1
                     self._outstream_lock.acquire()
@@ -112,17 +114,19 @@ class BelugaSerial:
                     self._outstream.flush()
                     self._outstream_lock.release()
                     entry = self._parse_entry(line)
-                    if entry is not None and entry['ID'] in self._neighbor_list.keys():
-                        # Updating neighbor
-                        self._neighbor_list[entry['ID']]['entry'] = entry
-                        self._neighbor_list[entry['ID']]['update'] = True
-                    elif entry is not None:
-                        # New neighbor
-                        self._neighbor_list[entry['ID']] = {'entry': entry, 'update': True}
-                        self._neighbor_list_update = True
-                    self._update = True
-                else:
-                    break
+            finally:
+                self._list_lock.acquire()
+                if entry is not None and entry['ID'] in self._neighbor_list.keys():
+                    # Updating neighbor
+                    self._neighbor_list[entry['ID']]['entry'] = entry
+                    self._neighbor_list[entry['ID']]['update'] = True
+                    self._update.set()
+                elif entry is not None:
+                    # New neighbor
+                    self._neighbor_list[entry['ID']] = {'entry': entry, 'update': True}
+                    self._neighbor_list_update.set()
+                    self._update.set()
+                self._list_lock.release()
         return lines_processed
 
     def _receive_response(self, response: str):
@@ -142,14 +146,20 @@ class BelugaSerial:
             if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
                 processed = self._write_ranging_batch(lines[i:])
                 i += processed
+                if processed == 0:
+                    # Incomplete line
+                    i += 1
                 continue
             elif lines[i].endswith('OK'):
                 self._receive_response(lines[i])
             elif lines[i].startswith('rm'):
                 uuid = int(lines[i].lstrip('rm '))
+                print(f'Removing {uuid}')
+                self._list_lock.acquire()
                 if uuid in self._neighbor_list.keys():
                     del self._neighbor_list[uuid]
-                    self._neighbor_list_update = True
+                    self._neighbor_list_update.set()
+                self._list_lock.release()
             i += 1
 
     def _read_serial(self):
@@ -157,7 +167,7 @@ class BelugaSerial:
             lines = self._get_lines()
             if lines:
                 self._process_lines(lines)
-            time.sleep(0.5)
+            time.sleep(0.05)
 
     def _send_command(self, command: bytes) -> str:
         self._serial_lock.acquire()
@@ -171,23 +181,30 @@ class BelugaSerial:
 
     @property
     def range_update(self) -> bool:
-        return self._update
+        return self._update.is_set()
 
     @property
     def neighbors_update(self) -> bool:
-        return self._neighbor_list_update
+        return self._neighbor_list_update.is_set()
 
     @property
     def neighbors_list(self) -> List[Dict[str, Union[int, float]]]:
-        return [self._neighbor_list[x]['entry'] for x in self._neighbor_list]
+        self._list_lock.acquire()
+        ret = [self._neighbor_list[x]['entry'] for x in self._neighbor_list]
+        self._neighbor_list_update.clear()
+        self._list_lock.release()
+        return ret
 
     @property
     def range_updates(self) -> List[Dict[str, Union[int, float]]]:
         ret = []
+        self._list_lock.acquire()
         for x in self._neighbor_list:
             if self._neighbor_list[x]['update']:
                 ret += [self._neighbor_list[x]['entry']]
                 self._neighbor_list[x]['update'] = False
+        self._update.clear()
+        self._list_lock.release()
         return ret
 
     def start_uwb(self) -> str:
@@ -367,11 +384,15 @@ class BelugaSerial:
 def main():
     beluga = BelugaSerial()
     ret = beluga.format(1)
-    ret = beluga.format()
-    print(ret)
+    beluga.stream_mode(True)
 
     while True:
-        pass
+        if beluga.range_update:
+            updates = beluga.range_updates
+            print(f'Ranges {updates}')
+        if beluga.neighbors_update:
+            updates = beluga.neighbors_list
+            print(f'Neighbors: {updates}')
 
 
 if __name__ == '__main__':
