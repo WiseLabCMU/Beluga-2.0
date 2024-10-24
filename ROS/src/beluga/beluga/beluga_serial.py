@@ -147,7 +147,7 @@ class BelugaQueue(mp_queues.Queue):
     def __init__(self, maxsize: int = 1):
         super().__init__(maxsize=maxsize, ctx=mp.get_context())
 
-    def put(self, obj, block: bool = True, timeout: Optional[int] = None) -> None:
+    def put(self, obj, block: bool = True, timeout: Optional[float] = None) -> None:
         try:
             super().put(obj, block, timeout)
         except queue.Full:
@@ -188,6 +188,7 @@ class BelugaSerial:
 
         self._read_max_lines: int = max_lines_read
         self._timeout: float = timeout
+        self._neighbors = BelugaNeighborsList()
 
         self._rx_task: Optional[mp.Process] = None
         self._batch_queue: BelugaQueue = BelugaQueue(5)
@@ -218,53 +219,20 @@ class BelugaSerial:
                     ret[dev_name] = [port.device]
         return ret
 
-    def _parse_entry(self, line: str) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
-        entries = line.split(',')
-        entry = None
-        try:
-            entry = {'ID': int(entries[0]), 'RANGE': float(entries[1]), 'RSSI': int(entries[2]),
-                     'TIMESTAMP': int(entries[3])}
-        except Exception as e:
-            self._log(str(e))
-            # Could not parse entry
-            pass
-        return entry
-
     def _write_ranging_batch(self, lines: List[str]) -> int:
         lines_processed = 0
         for line in lines:
-            entry = None
             try:
-                entry = json.loads(line)
+                self._neighbors.update(line)
                 lines_processed += 1
-            except json.JSONDecodeError:
-                if line == '# ID, RANGE, RSSI, TIMESTAMP':
+            except BelugaEntryError as e:
+                if e.header:
                     lines_processed += 1
-                    continue
-                elif line[0].isdigit():
-                    lines_processed += 1
-                    self._outstream_lock.acquire()
-                    self._outstream.write(line)
-                    self._outstream.flush()
-                    self._outstream_lock.release()
-                    entry = self._parse_entry(line)
-            finally:
-                self._list_lock.acquire()
-                if entry is not None and entry['ID'] in self._neighbor_list.keys():
-                    # Updating neighbor
-                    self._neighbor_list[entry['ID']]['entry'] = entry
-                    self._neighbor_list[entry['ID']]['update'] = True
-                    self._update.set()
-                elif entry is not None:
-                    # New neighbor
-                    self._neighbor_list[entry['ID']] = {'entry': entry, 'update': True}
-                    self._neighbor_list_update.set()
-                    self._update.set()
-                self._list_lock.release()
+                else:
+                    return lines_processed
         return lines_processed
 
     def _process_lines(self):
-        # TODO: Create neighbors list here
         while True:
             lines = self._batch_queue.get()
             i = 0
@@ -283,13 +251,17 @@ class BelugaSerial:
                         i += 1
                     continue
                 if lines[i].startswith('rm '):
-                    uuid = int(lines[i].lstrip('rm '))
-                    # TODO Check if uuid is in list and remove it. Publish update
+                    self._neighbors.remove_neighbor(lines[i])
                     i += 1
                 if self._command_sent.is_set():
                     self._response_q.put(lines[i])
                     self._command_sent.clear()
                     i += 1
+
+            if self._neighbors.range_update:
+                self._ranges_queue.put(self._neighbors.get_updates(), block=False)
+            if self._neighbors.neighbors_update:
+                self._neighbors_queue.put(self._neighbors.get_list(), block=False)
 
     def _get_lines(self) -> List[bytes]:
         lines = []
@@ -304,7 +276,7 @@ class BelugaSerial:
         while not False:
             lines = self._get_lines()
             if lines:
-                self._batch_queue.put(lines, False, 1)
+                self._batch_queue.put(lines, block=False)
 
     def _send_command(self, command: bytes) -> str:
         self._serial.write(command)
