@@ -61,8 +61,15 @@ class BelugaSerial:
         self._read_max_lines: int = max_lines_read
         self._timeout: float = timeout
 
-        self._response_q: BelugaQueue = BelugaQueue()
         self._rx_task: Optional[mp.Process] = None
+        self._batch_queue: BelugaQueue = BelugaQueue(5)
+
+        self._processing_task: Optional[mp.Process] = None
+        self._response_q: BelugaQueue = BelugaQueue()
+        self._ranges_queue: BelugaQueue = BelugaQueue()
+        self._neighbors_queue: BelugaQueue = BelugaQueue()
+
+        # Start processes
 
     def _log(self, s):
         if self._logger is not None:
@@ -81,17 +88,6 @@ class BelugaSerial:
                 else:
                     ret[dev_name] = [port.device]
         return ret
-
-    def _get_lines(self) -> List[bytes]:
-        lines = []
-        #self._serial_lock.acquire()
-        for _ in range(self._read_max_lines):
-            line = self._serial.readline()
-            if not line:
-                break
-            lines.append(line)
-        #self._serial_lock.release()
-        return lines
 
     def _parse_entry(self, line: str) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
         entries = line.split(',')
@@ -166,12 +162,20 @@ class BelugaSerial:
                 self._list_lock.release()
             i += 1
 
+    def _get_lines(self) -> List[bytes]:
+        lines = []
+        for _ in range(self._read_max_lines):
+            line = self._serial.readline()
+            if not line:
+                break
+            lines.append(line)
+        return lines
+
     def _read_serial(self):
         while not False:
             lines = self._get_lines()
             if lines:
-                self._process_lines(lines)
-            time.sleep(0.05)
+                self._batch_queue.put(lines, False, 1)
 
     def _send_command(self, command: bytes) -> str:
         self._serial.write(command)
