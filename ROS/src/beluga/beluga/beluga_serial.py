@@ -15,6 +15,75 @@ TARGETS = [
 ]
 
 
+class BelugaEntryError(Exception):
+    def __init__(self, msg: str, header: bool = False):
+        self.header = header
+        super().__init__(msg)
+
+
+class BelugaNeighborListEntry:
+    def __init__(self, line: str):
+        self._id = 0
+        self._range = 0
+        self._rssi = 0
+        self._time = 0
+        self._updated = False
+
+        ret = self.update_entry(line)
+        if not ret:
+            raise BelugaEntryError('Line is a header', True)
+        return
+
+    @property
+    def id(self) -> int:
+        return self._id
+
+    @property
+    def range(self) -> float:
+        return self._range
+
+    @property
+    def rssi(self) -> int:
+        return self._rssi
+
+    @property
+    def time(self) -> int:
+        return self._time
+
+    @property
+    def updated(self) -> bool:
+        return self._updated
+
+    @updated.setter
+    def updated(self, update: bool) -> None:
+        self._updated = update
+        return
+
+    @staticmethod
+    def _parse_entry(line):
+        entries = line.split(',')
+        try:
+            entry = {'ID': int(entries[0]), 'RANGE': float(entries[1]), 'RSSI': int(entries[2]),
+                     'TIMESTAMP': int(entries[3])}
+        except Exception as e:
+            raise BelugaEntryError(f'Incomplete entry: {e}')
+        return entry
+
+    def update_entry(self, line: str) -> bool:
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            if line == '# ID, RANGE, RSSI, TIMESTAMP':
+                return False
+            entry = self._parse_entry(line)
+        self._id = entry['ID']
+        self._range = entry['RANGE']
+        self._rssi = entry['RSSI']
+        self._time = entry['TIMESTAMP']
+        self._updated = True
+        return True
+
+
 class BelugaQueue(mp_queues.Queue):
     def __init__(self, maxsize: int = 1):
         super().__init__(maxsize=maxsize, ctx=mp.get_context())
@@ -68,6 +137,7 @@ class BelugaSerial:
         self._response_q: BelugaQueue = BelugaQueue()
         self._ranges_queue: BelugaQueue = BelugaQueue()
         self._neighbors_queue: BelugaQueue = BelugaQueue()
+        self._command_sent: mp.Event = mp.Event()
 
         # Start processes
 
@@ -134,33 +204,33 @@ class BelugaSerial:
                 self._list_lock.release()
         return lines_processed
 
-    def _process_lines(self, lines: List[bytes]):
-        i = 0
-        l = len(lines)
-        lines = [line.decode(errors='ignore').strip() for line in lines]
+    def _process_lines(self):
+        # TODO: Create neighbors list here
+        while True:
+            lines = self._batch_queue.get()
+            i = 0
+            l = len(lines)
+            lines = [line.decode(errors='ignore').strip() for line in lines]
 
-        while i < l:
-            if not lines[i]:
-                # Empty line
-                i += 1
-                continue
-            if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
-                processed = self._write_ranging_batch(lines[i:])
-                i += processed
-                if processed == 0:
-                    # Incomplete line
+            while i < l:
+                if not lines[i]:
                     i += 1
-                continue
-            elif lines[i].endswith('OK'):
-                self._response_q.put(lines[i], False)
-            elif lines[i].startswith('rm'):
-                uuid = int(lines[i].lstrip('rm '))
-                self._list_lock.acquire()
-                if uuid in self._neighbor_list.keys():
-                    del self._neighbor_list[uuid]
-                    self._neighbor_list_update.set()
-                self._list_lock.release()
-            i += 1
+                    continue
+                if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
+                    processed = self._write_ranging_batch(lines[i:])
+                    i += processed
+                    if processed == 0:
+                        # Incomplete line
+                        i += 1
+                    continue
+                if lines[i].startswith('rm '):
+                    uuid = int(lines[i].lstrip('rm '))
+                    # TODO Check if uuid is in list and remove it. Publish update
+                    i += 1
+                if self._command_sent.is_set():
+                    self._response_q.put(lines[i])
+                    self._command_sent.clear()
+                    i += 1
 
     def _get_lines(self) -> List[bytes]:
         lines = []
