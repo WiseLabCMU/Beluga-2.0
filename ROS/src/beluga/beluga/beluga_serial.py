@@ -8,6 +8,7 @@ import multiprocessing.queues as mp_queues
 import queue
 import time
 import json
+import re
 
 TARGETS = [
     'CMU Beluga',
@@ -82,6 +83,64 @@ class BelugaNeighborListEntry:
         self._time = entry['TIMESTAMP']
         self._updated = True
         return True
+
+
+class BelugaNeighborsList:
+    def __init__(self):
+        self._list: Dict[str, BelugaNeighborListEntry] = {}
+        self._neighbors_update: bool = False
+        self._range_update: bool = False
+        return
+
+    @staticmethod
+    def _parse_id(line: str) -> str:
+        return re.sub('[^0-9]', "", line.split(',', 1)[0])
+
+    def update(self, line: str) -> None:
+        _id = self._parse_id(line)
+        if not _id:
+            return
+        if _id not in self._list.keys():
+            self._list[_id] = BelugaNeighborListEntry(line)
+            self._range_update = True
+            self._neighbors_update = True
+            return
+        if self._list[_id].update_entry(line):
+            self._range_update = True
+        return
+
+    def remove_neighbor(self, line: str):
+        _id = self._parse_id(line)
+        if not _id:
+            return
+        if _id in self._list.keys():
+            del self._list[_id]
+            self._neighbors_update = True
+        return
+
+    def get_updates(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        ret = {}
+        for x in self._list.values():
+            if x.updated:
+                ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time}
+                x.updated = False
+        self._range_update = False
+        return ret
+
+    def get_list(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        ret = {}
+        for x in self._list.values():
+            ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time}
+        self._neighbors_update = False
+        return ret
+
+    @property
+    def neighbors_update(self) -> bool:
+        return self._neighbors_update
+
+    @property
+    def range_update(self) -> bool:
+        return self._range_update
 
 
 class BelugaQueue(mp_queues.Queue):
