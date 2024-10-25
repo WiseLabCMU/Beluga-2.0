@@ -107,9 +107,10 @@ class BelugaPublisherService(Node):
                 response = callbacks[_config](configs[_config])
                 if not response.endswith('OK'):
                     raise RuntimeError(f'Tried setting bad configuration: {setting}, response: {response}')
-        self.serial.reboot()
-        # Wait 100 ms for Beluga to reboot
-        self.get_clock().sleep_until(self.get_clock().now() + Duration(nanoseconds=1000 * MS_CONVERSION_FACTOR))
+        self.get_logger().info('Rebooting beluga')
+        response = self.serial.reboot()
+        self.get_logger().info(f'Reboot response {response}')
+        self.get_logger().info('Done rebooting')
 
         # Time Sync Stuff
         self._timestamp_sync = Lock()
@@ -120,8 +121,14 @@ class BelugaPublisherService(Node):
             'beluga': 0
         }
         self._time_sync(True)
+        time_init = 11
+        while time_init > 0:
+            # Sync the first few
+            self.get_clock().sleep_until(self.get_clock().now() + Duration(nanoseconds=500 * MS_CONVERSION_FACTOR))
+            self._time_sync()
+            time_init -= 1
 
-        self.timer = self.create_timer(period, self.publish_neighbors)
+        # self.timer = self.create_timer(period, self.publish_neighbors)
         # self.range_timer = self.create_timer(period, self.publish_ranges)
         self.sync_timer = self.create_timer(300, self._time_sync)
 
@@ -171,6 +178,7 @@ class BelugaPublisherService(Node):
                 retries -= 1
                 if retries > 0:
                     self.get_logger().error('No time difference, retrying...')
+                    # Assuming all previous data was invalid
                     self._ns_per_timestamp_unit = 0
                     first = True
                 else:
