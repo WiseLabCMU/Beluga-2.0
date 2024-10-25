@@ -24,13 +24,19 @@ if(BUILD_TESTING)
 endif()
 
 find_package(rosidl_default_generators REQUIRED)
+find_package(builtin_interfaces REQUIRED)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
+set(msg_files
         "msg/BelugaNeighbor.msg"
         "msg/BelugaNeighbors.msg"
         "srv/BelugaATCommand.srv"
         "msg/BelugaRange.msg"
         "msg/BelugaRanges.msg"
+)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+        ${msg_files}
+        DEPENDENCIES builtin_interfaces
 )
 
 ament_package()

@@ -1,4 +1,4 @@
 uint16 id
 float32 distance
 int8 rssi
-uint64 timestamp
+builtin_interfaces/Time timestamp
