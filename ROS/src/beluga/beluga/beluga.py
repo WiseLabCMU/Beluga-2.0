@@ -1,3 +1,5 @@
+from decimal import DivisionByZero
+
 import rclpy
 from rclpy.node import Node
 from rclpy.time import Time, Duration
@@ -73,6 +75,7 @@ class BelugaPublisherService(Node):
         self.dummy_data = dummy_data_mode
         self.serial: typing.Optional[BelugaSerial] = None
         self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info)
+        self.serial.start()
         callbacks = {
             "boot mode": self.serial.bootmode,
             "poll rate": self.serial.rate,
@@ -100,14 +103,13 @@ class BelugaPublisherService(Node):
             if setting:
                 setting = int(setting)
             if setting != configs[_config]:
-                setting_updated = True
                 self.get_logger().info(f'Difference in setting. Now setting to {configs[_config]}')
                 response = callbacks[_config](configs[_config])
                 if not response.endswith('OK'):
                     raise RuntimeError(f'Tried setting bad configuration: {setting}, response: {response}')
         self.serial.reboot()
         # Wait 100 ms for Beluga to reboot
-        self.get_clock().sleep_until(self.get_clock().now() + Duration(nanoseconds=100 * MS_CONVERSION_FACTOR))
+        self.get_clock().sleep_until(self.get_clock().now() + Duration(nanoseconds=1000 * MS_CONVERSION_FACTOR))
 
         # Time Sync Stuff
         self._timestamp_sync = Lock()
@@ -120,48 +122,72 @@ class BelugaPublisherService(Node):
         self._time_sync(True)
 
         self.timer = self.create_timer(period, self.publish_neighbors)
-        self.range_timer = self.create_timer(period, self.publish_ranges)
-        self.sync_timer = self.create_timer(600, self._time_sync)
+        # self.range_timer = self.create_timer(period, self.publish_ranges)
+        self.sync_timer = self.create_timer(300, self._time_sync)
 
         self.get_logger().info('Ready')
         return
 
+    def _time_sync_get_measurement(self) -> typing.Tuple[str, Time, Time]:
+        req = self.get_clock().now()
+        t = self.serial.time()
+        resp = self.get_clock().now()
+        return t, req, resp
+
     def _time_sync(self, first: bool = False):
-        # Get measurement 1
-        req = self.get_clock().now()
-        t1 = self.serial.time()
-        resp = self.get_clock().now()
-        delta = int((resp - req).nanoseconds / 2)
-        map1 = req + Duration(nanoseconds=delta)
+        retries = 5
 
-        # Wait 2ms
-        self.get_clock().sleep_until(resp + Duration(nanoseconds=2 * MS_CONVERSION_FACTOR))
+        while retries > 0:
+            # Get measurement 1
+            t1_, req1, resp1 = self._time_sync_get_measurement()
 
-        # Get measurement 2
-        req = self.get_clock().now()
-        t2 = self.serial.time()
-        resp = self.get_clock().now()
-        delta = int((resp - req).nanoseconds / 2)
-        map2 = req + Duration(nanoseconds=delta)
+            delta = int((resp1 - req1).nanoseconds / 2)
+            map1 = req1 + Duration(nanoseconds=delta)
 
-        # Convert times into ints
-        t1 = int(''.join([c for c in t1 if c.isdigit()]))
-        t2 = int(''.join([c for c in t2 if c.isdigit()]))
+            # Wait 100ms
+            self.get_clock().sleep_until(resp1 + Duration(nanoseconds=100 * MS_CONVERSION_FACTOR))
 
-        # Calculate how many nanoseconds there are in a beluga timestamp
-        map_diff = map2 - map1
-        t_diff = t2 - t1
-        self._timestamp_sync.acquire()
-        self._ns_per_timestamp_unit += map_diff.nanoseconds / t_diff
-        if not first:
-            self._ns_per_timestamp_unit /= 2
+            # Get measurement 2
+            t2_, req2, resp2 = self._time_sync_get_measurement()
 
-        # Calculate average time between the mappings and use that as the new mapping for conversion
-        delta = Duration(nanoseconds=(map_diff.nanoseconds / 2))
-        self._last_mapping['ros'] = map1 + delta
-        self._last_mapping['beluga'] = int((t2 - t1) / 2) + t1
-        self.get_logger().info(f'Synced time: {self._last_mapping["beluga"]} -> {self._last_mapping["ros"].seconds_nanoseconds()} ({self._ns_per_timestamp_unit} ns/tick)')
-        self._timestamp_sync.release()
+            delta = int((resp2 - req2).nanoseconds / 2)
+            map2 = req2 + Duration(nanoseconds=delta)
+
+            try:
+                t1 = int(''.join([c for c in t1_ if c.isdigit()]))
+                t2 = int(''.join([c for c in t2_ if c.isdigit()]))
+                map_diff = map2 - map1
+                t_diff = t2 - t1
+                self._timestamp_sync.acquire()
+                self._ns_per_timestamp_unit += map_diff.nanoseconds / t_diff
+            except ValueError:
+                retries -= 1
+                if retries > 0:
+                    self.get_logger().error(f'Unable to sync time. t1: {t1_}, t2: {t2_}')
+                else:
+                    self.get_logger().error('Unable to sync time. Will retry in 10 minutes')
+                continue
+            except ZeroDivisionError:
+                retries -= 1
+                if retries > 0:
+                    self.get_logger().error('No time difference, retrying...')
+                    self._ns_per_timestamp_unit = 0
+                    first = True
+                else:
+                    self.get_logger().error('No time difference. Will retry in 10 minutes')
+                self._timestamp_sync.release()
+                continue
+            else:
+                if not first:
+                    self._ns_per_timestamp_unit /= 2
+
+                # Calculate average time between the mappings and use that as the new mapping for conversion
+                delta = Duration(nanoseconds=(map_diff.nanoseconds / 2))
+                self._last_mapping['ros'] = map1 + delta
+                self._last_mapping['beluga'] = int(t_diff / 2) + t1
+                self.get_logger().info(f'Synced time: {self._last_mapping["beluga"]} -> {self._last_mapping["ros"].seconds_nanoseconds()} ({self._ns_per_timestamp_unit} ns/tick)')
+                self._timestamp_sync.release()
+                retries = -1
 
     def publish_neighbors(self):
         neighbors_list = None
