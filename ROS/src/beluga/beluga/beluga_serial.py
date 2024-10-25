@@ -198,6 +198,7 @@ class BelugaSerial:
         self._ranges_queue: BelugaQueue = BelugaQueue()
         self._neighbors_queue: BelugaQueue = BelugaQueue()
         self._command_sent: mp.Event = mp.Event()
+        self._reboot_done: mp.Event = mp.Event()
 
         # Start processes
 
@@ -233,6 +234,7 @@ class BelugaSerial:
         return lines_processed
 
     def _process_lines(self):
+        rebooting = False
         while True:
             lines = self._batch_queue.get()
             i = 0
@@ -241,6 +243,9 @@ class BelugaSerial:
 
             while i < l:
                 if not lines[i]:
+                    if rebooting:
+                        rebooting = False
+                        self._reboot_done.set()
                     i += 1
                     continue
                 if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
@@ -254,8 +259,12 @@ class BelugaSerial:
                     self._neighbors.remove_neighbor(lines[i])
                     i += 1
                 if self._command_sent.is_set() and i < l:
-                    self._response_q.put(lines[i])
                     self._command_sent.clear()
+                    self._response_q.put(lines[i])
+                    i += 1
+                else:
+                    # Probably boot info, wait until settings are printed to resume
+                    rebooting = True
                     i += 1
 
             if self._neighbors.range_update:
@@ -381,6 +390,8 @@ class BelugaSerial:
 
     def reboot(self) -> str:
         ret = self._send_command(b'AT+REBOOT\r\n')
+        self._reboot_done.wait()
+        self._reboot_done.clear()
         return ret
 
     def pwr_amp(self, enable_pwr_amp: Optional[int] = None) -> str:
@@ -486,7 +497,7 @@ def main():
     import datetime as dt
     beluga = BelugaSerial()
     beluga.start()
-    beluga.format(1)
+    beluga.reboot()
     beluga.stream_mode(True)
     last_tr = dt.datetime.now()
 
