@@ -2,7 +2,7 @@ from io import TextIOWrapper
 import sys
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional, Union, TextIO, Callable, Any
+from typing import List, Dict, Optional, Union, TextIO, Callable, Any, Tuple
 import multiprocessing as mp
 import multiprocessing.queues as mp_queues
 import queue
@@ -158,7 +158,7 @@ class BelugaQueue(mp_queues.Queue):
 
 
 class BelugaSerial:
-    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.5, max_lines_read: int = 16,
+    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.1, max_lines_read: int = 16,
                  port: Optional[str] = None, logger_func: Optional[Callable[[Any], None]] = None):
 
         self._logger = logger_func
@@ -253,7 +253,7 @@ class BelugaSerial:
                 if lines[i].startswith('rm '):
                     self._neighbors.remove_neighbor(lines[i])
                     i += 1
-                if self._command_sent.is_set():
+                if self._command_sent.is_set() and i < l:
                     self._response_q.put(lines[i])
                     self._command_sent.clear()
                     i += 1
@@ -273,7 +273,7 @@ class BelugaSerial:
         return lines
 
     def _read_serial(self):
-        while not False:
+        while True:
             lines = self._get_lines()
             if lines:
                 self._batch_queue.put(lines, block=False)
@@ -281,6 +281,7 @@ class BelugaSerial:
     def _send_command(self, command: bytes) -> str:
         self._serial.write(command)
         try:
+            self._command_sent.set()
             ret = self._response_q.get(timeout=self._timeout)
         except queue.Empty:
             ret = 'Response timed out'
@@ -441,41 +442,70 @@ class BelugaSerial:
         return ret
 
     def start(self):
-        # TODO: Fix this
-        if self._rx_task is not None:
+        if self._rx_task is not None or self._processing_task is not None:
             raise RuntimeError('Please stop before restarting')
-        self._rx_task = mp.Process(target=self._read_serial, daemon=True)
+        self._processing_task = mp.Process(target=self._process_lines)
+        self._rx_task = mp.Process(target=self._read_serial)
+
+        self._processing_task.start()
         self._rx_task.start()
 
     def stop(self):
-        if self._rx_thread is None:
-            return
-        self._stop.set()
-        self._rx_thread.join()
+        if self._rx_task is not None:
+            self._rx_task.kill()
+            while self._rx_task.is_alive():
+                time.sleep(0.1)
+            self._rx_task.close()
+        if self._processing_task is not None:
+            self._processing_task.kill()
+            while self._processing_task.is_alive():
+                pass
+            self._processing_task.close()
+        return
+
+    def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
+        # Needed to indicate if the queue is just empty or if the only neighbor got removed
+        update = True
+        ret = {}
+        try:
+            ret = self._neighbors_queue.get_nowait()
+        except queue.Empty:
+            update = False
+        return update, ret
+
+    def get_ranges(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        ret = {}
+        try:
+            ret = self._ranges_queue.get_nowait()
+        except queue.Empty:
+            pass
+        return ret
 
 
 def main():
-    # import datetime as dt
+    import datetime as dt
     beluga = BelugaSerial()
     beluga.start()
-    ret = beluga.format(1)
-    print(ret)
-    # beluga.stream_mode(True)
-    # last_tr = dt.datetime.now()
-    #
-    # while True:
-    #     if beluga.range_update:
-    #         updates = beluga.range_updates
-    #         print(f'Ranges {updates}')
-    #     if beluga.neighbors_update:
-    #         updates = beluga.neighbors_list
-    #         print(f'Neighbors: {updates}')
-    #
-    #     elapsed = dt.datetime.now() - last_tr
-    #     if elapsed.microseconds > 100000:
-    #         ret = beluga.time()
-    #         print(ret)
-    #         last_tr = dt.datetime.now()
+    beluga.format(1)
+    beluga.stream_mode(True)
+    last_tr = dt.datetime.now()
+
+    try:
+        while True:
+            ranges = beluga.get_ranges()
+            if ranges:
+                print(f'Ranges {ranges}')
+            update, neighbors = beluga.get_neighbors()
+            if update:
+                print(f'Neighbors: {neighbors}')
+
+            elapsed = dt.datetime.now() - last_tr
+            if elapsed.microseconds > 100000:
+                ret = beluga.time()
+                print(ret)
+                last_tr = dt.datetime.now()
+    except KeyboardInterrupt:
+        beluga.stop()
 
 
 if __name__ == '__main__':
