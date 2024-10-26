@@ -128,7 +128,7 @@ class BelugaPublisherService(Node):
             self._time_sync()
             time_init -= 1
 
-        # self.timer = self.create_timer(period, self.publish_neighbors)
+        self.timer = self.create_timer(period, self.publish_neighbors)
         # self.range_timer = self.create_timer(period, self.publish_ranges)
         self.sync_timer = self.create_timer(300, self._time_sync)
 
@@ -197,19 +197,24 @@ class BelugaPublisherService(Node):
                 self._timestamp_sync.release()
                 retries = -1
 
-    def publish_neighbors(self):
-        neighbors_list = None
-        if self.serial.neighbors_update:
-            neighbors_list = self.serial.neighbors_list
+    def _beluga_to_ros_time(self, t: int) -> Time:
+        self._timestamp_sync.acquire()
+        t_delta = int((t - self._last_mapping['beluga']) * self._ns_per_timestamp_unit)
+        ros_time = self._last_mapping['ros']
+        self._timestamp_sync.release()
+        return ros_time + Duration(nanoseconds=t_delta)
 
-        if neighbors_list is not None:
+    def publish_neighbors(self):
+        update, neighbors_list = self.serial.get_neighbors()
+        if update:
             pub_list = []
-            for x in neighbors_list:
+            for x in neighbors_list.keys():
                 neighbor = BelugaNeighbor()
-                neighbor.id = x['ID']
-                neighbor.distance = x['RANGE']
-                neighbor.rssi = x['RSSI']
-                neighbor.timestamp = x['TIMESTAMP'] # TODO: Sync beluga and ROS
+                neighbor.id = x
+                neighbor.distance = neighbors_list[x]['RANGE']
+                neighbor.rssi = neighbors_list[x]['RSSI']
+                timestamp = self._beluga_to_ros_time(neighbors_list[x]['TIMESTAMP'])
+                neighbor.timestamp = timestamp.to_msg()
                 pub_list.append(neighbor)
             msg = BelugaNeighbors()
             msg.neighbors = pub_list
