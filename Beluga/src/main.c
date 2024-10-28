@@ -26,6 +26,9 @@
 #include <zephyr/drivers/clock_control/nrf_clock_control.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(main_logger, CONFIG_MAIN_LOG_LEVEL);
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
