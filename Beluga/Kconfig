@@ -1,98 +1,113 @@
-source "Kconfig.zephyr"
+# mainmenu "Beluga application"
+#
+# menu "Application Logging Configurations"
+# module = MAIN_MODULE
+# module-str = Main module
+# source "subsys/logging/Kconfig.template.log_config"
+# endmenu
 
-config ENABLE_BELUGA_THREADS
-    bool "Enables threads for Beluga"
+menu "Beluga Thread Configurations"
+menuconfig ENABLE_BELUGA_THREADS
+    bool "Enable threads for Beluga"
     default y
 
-config ENABLE_COMMANDS
-    bool "Enables commands for Beluga"
+if ENABLE_BELUGA_THREADS
+
+menuconfig ENABLE_COMMANDS
+    bool "Enable commands for Beluga"
     default n
 
-config ENABLE_LIST
-    bool "Enables the list thread for Beluga"
-    default n
-
-config ENABLE_RANGING
-    bool "Enables the ranging thread for Beluga"
-    default n
-
-config ENABLE_MONITOR
-    bool "Enables the monitor thread in Beluga"
-    default n
-
-config ENABLE_RESPONDER
-    bool "Enables the responder thread in Beluga"
-    default n
+if ENABLE_COMMANDS
 
 config BELUGA_COMMANDS_PRIO
     int "Priority for commands thread"
     depends on ENABLE_COMMANDS
     default 8
 
+config COMMANDS_STACK_SIZE
+    int "Stack size (bytes) for commands thread"
+    depends on ENABLE_COMMANDS
+    default 1024
+endif
+
+menuconfig ENABLE_LIST
+    bool "Enable the list thread for Beluga"
+    default n
+
+if ENABLE_LIST
 config BELUGA_LIST_PRIO
     int "Priority for list thread"
     depends on ENABLE_LIST
     default 8
 
+config LIST_STACK_SIZE
+    int "Stack size (bytes) for list thread"
+    depends on ENABLE_LIST
+    default 1024
+endif
+
+menuconfig ENABLE_RANGING
+    bool "Enable the ranging thread for Beluga"
+    default n
+
+if ENABLE_RANGING
 config BELUGA_RANGING_PRIO
     int "Priority for ranging thread"
     depends on ENABLE_RANGING
     default 8
 
+config RANGING_STACK_SIZE
+    int "Stack size (bytes) for ranging thread"
+    depends on ENABLE_RANGING
+    default 1024
+endif
+
+menuconfig ENABLE_MONITOR
+    bool "Enable the monitor thread in Beluga"
+    default n
+
+if ENABLE_MONITOR
 config BELUGA_MONITOR_PRIO
     int "Priority for monitor thread"
     depends on ENABLE_MONITOR
     default 8
 
+config MONITOR_STACK_SIZE
+    int "Stack size (bytes) for monitor task"
+    depends on ENABLE_MONITOR
+    default 1024
+endif
+
+menuconfig ENABLE_RESPONDER
+    bool "Enable the responder thread in Beluga"
+    default n
+
+if ENABLE_RESPONDER
 config BELUGA_RESPONDER_PRIO
     int "Priority for responder thread"
     depends on ENABLE_RESPONDER
     default 7
 
-config COMMANDS_STACK_SIZE
-    int "Stack size (bytes) for commands thread"
-    depends on ENABLE_COMMANDS
-    default 1024
-
-config LIST_STACK_SIZE
-    int "Stack size (bytes) for list thread"
-    depends on ENABLE_LIST
-    default 1024
-
-config RANGING_STACK_SIZE
-    int "Stack size (bytes) for ranging thread"
-    depends on ENABLE_RANGING
-    default 1024
-
-config MONITOR_STACK_SIZE
-    int "Stack size (bytes) for monitor task"
-    depends on ENABLE_MONITOR
-    default 1024
-
 config RESPONDER_STACK_SIZE
     int "Stack size (bytes) for responder task"
     depends on ENABLE_RESPONDER
     default 1024
+endif
+endif
 
 config ENABLE_BELUGA_UWB
     bool "Enables DecaDriver library for UWB"
     default y
 
+menu "Beluga LEDs"
 config BELUGA_LEDS
-    bool "Enables the LED driver for Beluga"
+    bool "Enable the LED driver"
     default n
 
 config BELUGA_BLE_LEDS
     bool "Use the LEDs to indicate BLE states"
     default n
-
-config WDT_MAX_WINDOW
-    int "Maximum window of the watchdog timer"
-    default 2000
-
-config DEBUG_BELUGA_CLOCK
-    bool "Debug oscillating crystals"
-    default n
+endmenu
 
 config BELUGA_RANGE_EXTENSION
     bool "Enable range extension for Beluga"
@@ -101,6 +116,16 @@ config BELUGA_RANGE_EXTENSION
 config BELUGA_NETWORK_SIZE
     int "The number of nodes in the network"
     default 12
+
+config BELUGA_USE_ACCEL
+    bool "Use the accelerometer to wakeup from deep sleep"
+    select SENSOR
+    default n
+
+menu "Beluga Debugging"
+config DEBUG_BELUGA_CLOCK
+    bool "Debug oscillating crystals"
+    default n
 
 config BELUGA_RESET_REASON
     bool "Print the reset reason"
@@ -111,18 +136,16 @@ config BELUGA_RESET_REASON
 config BELUGA_DUMP_CORE
     bool "Dump the core on crashes"
     select DEBUG_COREDUMP
-#     imply DEBUG_COREDUMP_BACKEND_LOGGING
-#     imply DEBUG_COREDUMP_MEMORY_DUMP_MIN
-
-config BELUGA_USE_ACCEL
-    bool "Use the accelerometer to wakeup from deep sleep"
-    select SENSOR
-    default n
-
-config BELUGA_USE_SPI2
-    bool "Ability to send SPI messages on SPI channel 2"
-    default n
 
 config BELUGA_EVAL_BLE_STRENGTH
     bool "Evaluate the signal strength of BLE regardless if UWB is on or not"
     default n
+endmenu
+
+config WDT_MAX_WINDOW
+    int "Maximum window of the watchdog timer"
+    default 2000
+
+endmenu
+
+source "Kconfig.zephyr"
