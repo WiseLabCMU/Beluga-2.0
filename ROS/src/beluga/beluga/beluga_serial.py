@@ -158,6 +158,7 @@ class BelugaQueue(mp_queues.Queue):
 
 
 class BelugaSerial:
+    # TODO: Discuss how we want to handle case where USB communication fails. Do we want to log the error and try to reconnect? Do we want to terminate the node?
     def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.1, max_lines_read: int = 16,
                  port: Optional[str] = None, logger_func: Optional[Callable[[Any], None]] = None):
 
@@ -199,8 +200,6 @@ class BelugaSerial:
         self._neighbors_queue: BelugaQueue = BelugaQueue()
         self._command_sent: mp.Event = mp.Event()
         self._reboot_done: mp.Event = mp.Event()
-
-        # Start processes
 
     def _log(self, s):
         if self._logger is not None:
