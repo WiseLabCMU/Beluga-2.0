@@ -129,7 +129,7 @@ class BelugaPublisherService(Node):
             time_init -= 1
 
         self.timer = self.create_timer(period, self.publish_neighbors)
-        # self.range_timer = self.create_timer(period, self.publish_ranges)
+        self.range_timer = self.create_timer(period, self.publish_ranges)
         self.sync_timer = self.create_timer(300, self._time_sync)
 
         self.get_logger().info('Ready')
@@ -222,24 +222,20 @@ class BelugaPublisherService(Node):
             self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in pub_list))
 
     def publish_ranges(self):
-        if self.serial.range_update:
-            updates = self.serial.range_updates
-            range_updates = []
-            self._timestamp_sync.acquire()
-            for x in updates:
-                _range = BelugaRange()
-                _range.id = x['ID']
-                _range.range = x['RANGE']
-                ts = x['TIMESTAMP']
-                delta = Duration(nanoseconds=((ts - self._last_mapping['beluga']) * self._ns_per_timestamp_unit))
-                ros_ts = self._last_mapping['ros'] + delta
-                self.get_logger().info(f'Timestamp: {ros_ts.seconds_nanoseconds()}')
-                range_updates.append(_range)
-            self._timestamp_sync.release()
+        range_updates = self.serial.get_ranges()
+        if range_updates:
+            updates = []
+            for x in range_updates.keys():
+                range_ = BelugaRange()
+                range_.id = x
+                range_.range = range_updates[x]['RANGE']
+                timestamp = self._beluga_to_ros_time(range_updates[x]['TIMESTAMP'])
+                range_.timestamp = timestamp.to_msg()
+                updates.append(range_)
             msg = BelugaRanges()
-            msg.ranges = range_updates
+            msg.ranges = updates
             self.range_publish_.publish(msg)
-            self.get_logger()
+            self.get_logger().info("Publishing Ranges:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.range}, "TIMESTAMP": {x.timestamp}}}' for x in updates))
 
     def at_command(self, request, response):
         if not self.dummy_data:
