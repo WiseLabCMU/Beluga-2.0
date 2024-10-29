@@ -9,6 +9,9 @@
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>
 #include <zephyr/pm/device.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(spi_logger, CONFIG_SPI_MODULE_LOG_LEVEL);
 
 #if defined(CONFIG_BELUGA_USE_SPI2)
 #define NUM_SPI_CONFIGS 4
@@ -89,14 +92,14 @@ K_MUTEX_DEFINE(spi2_lock);
 int init_spi1(void) {
     spi_device[SPI1] = SPI1_NAME;
     if (!device_is_ready(spi_device[SPI1])) {
-        printk("Failed to bind SPI1\n");
+        LOG_ERR("Failed to bind SPI1");
         return -1;
     }
 
 #if defined(CONFIG_BELUGA_USE_SPI2)
     spi_device[SPI2] = SPI2_NAME;
     if (!device_is_ready(spi_device[SPI2])) {
-        printk("Failed to bind SPI2\n");
+        LOG_ERR("Failed to bind SPI2");
         return -1;
     }
 #endif
@@ -156,7 +159,7 @@ int init_spi1(void) {
     nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_SLOW];
 #endif
 
-    printk("SPI 1 and SPI 2 initialized\n");
+    LOG_INF("SPI 1 and SPI 2 initialized");
 
     return 0;
 }
@@ -240,7 +243,7 @@ int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer,
     }
 #endif
     default: {
-        printk("Invalid SPI channel!");
+        LOG_ERR("Invalid SPI channel!");
         return -1;
     }
     }
@@ -292,7 +295,7 @@ int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
     }
 #endif
     default: {
-        printk("Invalid SPI channel!");
+        LOG_ERR("Invalid SPI channel!");
         return -1;
     }
     }
@@ -316,13 +319,13 @@ int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
 void shutdown_spi(void) {
     int rc = pm_device_action_run(spi_device[SPI1], PM_DEVICE_ACTION_TURN_OFF);
     if (rc < 0) {
-        printk("Unable to turn off SPI 1 (%d)\n", rc);
+        LOG_ERR("Unable to turn off SPI 1 (%d)\n", rc);
     }
 
 #if defined(CONFIG_BELUGA_USE_SPI2)
     rc = pm_device_action_run(spi_device[SPI2], PM_DEVICE_ACTION_TURN_OFF);
     if (rc < 0) {
-        printk("Unable to turn off SPI 2 (%d)\n", rc);
+        LOG_ERR("Unable to turn off SPI 2 (%d)", rc);
     }
 #endif
 }
@@ -339,7 +342,7 @@ void toggle_cs_line(beluga_spi_channel_t channel, int32_t us) {
         break;
 #endif
     default:
-        printk("Invalid SPI channel\n");
+        LOG_ERR("Invalid SPI channel\n");
         return;
     }
 
