@@ -28,7 +28,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(main_logger, CONFIG_MAIN_LOG_LEVEL);
+LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"

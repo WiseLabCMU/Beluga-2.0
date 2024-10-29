@@ -3,12 +3,15 @@
 //
 
 #include <app_leds.h>
-#include <assert.h>
 #include <deca_device_api.h>
 #include <led_config.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_instance.h>
 #include <zephyr/sys/util.h>
+
+LOG_MODULE_REGISTER(app_leds, CONFIG_APP_LEDS_LOG_LEVEL);
 
 #define BLE_BIT      0
 #define UWB_BIT      1
@@ -62,7 +65,7 @@ void update_led_state(enum led_state update) {
         APP_LED_OFF(PWRAMP_LED);
         break;
     default:
-        assert(false);
+        LOG_ERR("Attempted to update invalid LED: %d", update);
     }
 }
 

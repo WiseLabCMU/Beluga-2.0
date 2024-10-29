@@ -7,9 +7,9 @@
 #include <uart.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/usb/usbd.h>
-#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(uart_log, LOG_LEVEL_INF);
 
@@ -92,7 +92,7 @@ static void serial_callback(const struct device *dev, void *user_data) {
     } while (0)
 #else
 #define device_init() !device_is_ready(serial)
-#define WAIT_DTR LOG_INF("UART ready")
+#define WAIT_DTR      LOG_INF("UART ready")
 #endif
 
 int uart_init(void) {

@@ -6,10 +6,6 @@ menuconfig BELUGA_LOGGING
     bool "Enable logging for beluga"
     default n
     select LOG
-    select USE_SEGGER_RTT
-    select LOG_BACKEND_UART
-    select LOG_MODE_IMMEDIATE
-    select LOG_PRINTK
 
 if BELUGA_LOGGING
 
