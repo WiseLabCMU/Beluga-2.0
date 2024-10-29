@@ -23,7 +23,6 @@
 #include <voltage_regulator.h>
 #include <watchdog.h>
 #include <zephyr/drivers/clock_control.h>
-#include <zephyr/drivers/clock_control/nrf_clock_control.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -33,9 +32,12 @@ LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 /* Firmware version */
 #define FIRMWARE_VERSION "2.0"
 
+#ifdef CONFIG_DEBUG_BELUGA_CLOCK
+#include <zephyr/drivers/clock_control/nrf_clock_control.h>
+
 enum clk_cntrl { HIGH_FREQ, LOW_FREQ };
 
-UNUSED static bool clock_init(enum clk_cntrl clk_subsys) {
+static bool clock_init(enum clk_cntrl clk_subsys) {
     int err;
     int res;
     struct onoff_manager *clk_mgr;
@@ -53,7 +55,7 @@ UNUSED static bool clock_init(enum clk_cntrl clk_subsys) {
     }
 
     if (!clk_mgr) {
-        printk("Unable to get the Clock manager\n");
+        LOG_ERR("Unable to get the Clock manager");
         return false;
     }
 
@@ -61,7 +63,7 @@ UNUSED static bool clock_init(enum clk_cntrl clk_subsys) {
 
     err = onoff_request(clk_mgr, &clk_cli);
     if (err < 0) {
-        printk("Clock request failed: %d\n", err);
+        LOG_ERR("Clock request failed: %d", err);
         return false;
     }
 
@@ -72,22 +74,21 @@ UNUSED static bool clock_init(enum clk_cntrl clk_subsys) {
             ;
         err = sys_notify_fetch_result(&clk_cli.notify, &res);
         if (!err && res) {
-            printk("Clock could not be started: %d\n", res);
+            LOG_ERR("Clock could not be started: %d", res);
             return false;
         } else if (err) {
-            printk("sys_notify_fetch_result(): %d\n", err);
+            LOG_ERR("sys_notify_fetch_result(): %d", err);
         }
         retries--;
     } while (err && retries);
 
     if (err == 0) {
-        printk("Clock has started\n");
+        LOG_INF("Clock has started\n");
     }
     return err == 0;
 }
 
-#ifdef CONFIG_DEBUG_BELUGA_CLOCK
-#define INIT_CLOCKS                                                            \
+#define INIT_CLOCKS()                                                          \
     do {                                                                       \
         bool retVal = clock_init(LOW_FREQ);                                    \
         while (!retVal)                                                        \
@@ -97,9 +98,65 @@ UNUSED static bool clock_init(enum clk_cntrl clk_subsys) {
             ;                                                                  \
     } while (0)
 #else
-#define INIT_CLOCKS                                                            \
-    do {                                                                       \
-    } while (0)
+#define INIT_CLOCKS() (void)0
+#endif
+
+#if defined(CONFIG_BELUGA_RESET_REASON)
+static void get_reset_cause(void) {
+    uint32_t reason;
+    hwinfo_get_reset_cause(&reason);
+    hwinfo_clear_reset_cause();
+
+    if (reason & RESET_PIN) {
+        LOG_INF("External pin reset");
+    }
+    if (reason & RESET_SOFTWARE) {
+        LOG_INF("Software reset\n");
+    }
+    if (reason & RESET_BROWNOUT) {
+        LOG_INF("Brownout\n");
+    }
+    if (reason & RESET_POR) {
+        LOG_INF("Power-on reset\n");
+    }
+    if (reason & RESET_WATCHDOG) {
+        LOG_INF("Watchdog timer expiration\n");
+    }
+    if (reason & RESET_DEBUG) {
+        LOG_INF("Debug event\n");
+    }
+    if (reason & RESET_SECURITY) {
+        LOG_INF("Security violation\n");
+    }
+    if (reason & RESET_LOW_POWER_WAKE) {
+        LOG_INF("Waking up from low power mode\n");
+    }
+    if (reason & RESET_CPU_LOCKUP) {
+        LOG_INF("CPU lock-up detected\n");
+    }
+    if (reason & RESET_PARITY) {
+        LOG_INF("Parity error\n");
+    }
+    if (reason & RESET_PLL) {
+        LOG_INF("PLL error\n");
+    }
+    if (reason & RESET_CLOCK) {
+        LOG_INF("Clock error\n");
+    }
+    if (reason & RESET_HARDWARE) {
+        LOG_INF("Hardware reset\n");
+    }
+    if (reason & RESET_USER) {
+        LOG_INF("User reset\n");
+    }
+    if (reason & RESET_TEMPERATURE) {
+        LOG_INF("Temperature reset\n");
+    }
+}
+
+#define RESET_CAUSE() get_reset_cause()
+#else
+#define RESET_CAUSE() (void)0
 #endif
 
 static void load_led_mode(void) {
@@ -304,77 +361,12 @@ static void load_settings(void) {
     }
 }
 
-#if defined(CONFIG_BELUGA_RESET_REASON)
-static void get_reset_cause(void) {
-    uint32_t reason;
-    hwinfo_get_reset_cause(&reason);
-    hwinfo_clear_reset_cause();
-
-    printk("Reset causes: \n");
-
-    if (reason & RESET_PIN) {
-        printk("External pin\n");
-    }
-    if (reason & RESET_SOFTWARE) {
-        printk("Software reset\n");
-    }
-    if (reason & RESET_BROWNOUT) {
-        printk("Brownout\n");
-    }
-    if (reason & RESET_POR) {
-        printk("Power-on reset\n");
-    }
-    if (reason & RESET_WATCHDOG) {
-        printk("Watchdog timer expiration\n");
-    }
-    if (reason & RESET_DEBUG) {
-        printk("Debug event\n");
-    }
-    if (reason & RESET_SECURITY) {
-        printk("Security violation\n");
-    }
-    if (reason & RESET_LOW_POWER_WAKE) {
-        printk("Waking up from low power mode\n");
-    }
-    if (reason & RESET_CPU_LOCKUP) {
-        printk("CPU lock-up detected\n");
-    }
-    if (reason & RESET_PARITY) {
-        printk("Parity error\n");
-    }
-    if (reason & RESET_PLL) {
-        printk("PLL error\n");
-    }
-    if (reason & RESET_CLOCK) {
-        printk("Clock error\n");
-    }
-    if (reason & RESET_HARDWARE) {
-        printk("Hardware reset\n");
-    }
-    if (reason & RESET_USER) {
-        printk("User reset\n");
-    }
-    if (reason & RESET_TEMPERATURE) {
-        printk("Temperature reset\n");
-    }
-}
-
-#define RESET_CAUSE                                                            \
-    do {                                                                       \
-        get_reset_cause();                                                     \
-    } while (0)
-#else
-#define RESET_CAUSE                                                            \
-    do {                                                                       \
-    } while (0)
-#endif
-
 int main(void) {
-    RESET_CAUSE;
+    RESET_CAUSE();
 
     memset(seen_list, 0, ARRAY_SIZE(seen_list));
 
-    INIT_CLOCKS;
+    INIT_CLOCKS();
 
     if (!init_voltage_regulator()) {
         printk("Failed to initialize voltage regulator\n");
