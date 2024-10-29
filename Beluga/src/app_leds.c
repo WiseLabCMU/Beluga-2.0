@@ -11,6 +11,7 @@
 #include <zephyr/logging/log_instance.h>
 #include <zephyr/sys/util.h>
 
+// The LED macros have logger statements in them
 LOG_MODULE_REGISTER(app_leds, CONFIG_APP_LEDS_LOG_LEVEL);
 
 #define BLE_BIT      0

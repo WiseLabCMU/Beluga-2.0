@@ -139,6 +139,10 @@ static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
         printf("Cannot start UWB: BLE has not been started\r\n");
         return;
     }
+    if (get_uwb_led_state() == LED_UWB_ON) {
+        printf("UWB is already on\r\n");
+        return;
+    }
     if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
         enable_range_extension(false);
     } else {
@@ -151,6 +155,10 @@ static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+    if (get_uwb_led_state() == LED_UWB_OFF) {
+        printf("UWB is not running\r\n");
+        return;
+    }
     k_sem_take(&k_sus_resp, K_FOREVER);
     k_sem_take(&k_sus_init, K_FOREVER);
     update_led_state(LED_UWB_OFF);
@@ -161,6 +169,9 @@ static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     if (get_NODE_UUID() == 0) {
         printf("Cannot start BLE: Node ID is not set\r\n");
         return;
+    } else if (get_ble_led_state() == LED_UWB_ON) {
+        printf("BLE is already on\r\n");
+        return;
     }
     k_sem_give(&print_list_sem);
     enable_bluetooth();
@@ -169,6 +180,10 @@ static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+    if (get_ble_led_state() == LED_UWB_OFF) {
+        printf("BLE is already off\r\n");
+        return;
+    }
     disable_bluetooth();
     k_sem_take(&print_list_sem, K_FOREVER);
     update_led_state(LED_BLE_OFF);
@@ -176,23 +191,17 @@ static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
 }
 
 static void at_change_id(uint16_t argc, char const *const *argv) {
-    LOG_DBG("ID Command");
     READ_SETTING(argc, 2, BELUGA_ID, "ID");
-    LOG_DBG("Setting an ID");
     int32_t newID;
     bool success = strtoint32(argv[1], &newID);
-    LOG_DBG("ID getting set to %" PRId32, newID);
 
     if (!success || newID <= 0 || newID > (int32_t)UINT16_MAX) {
         printf("Invalid ID\r\n");
         return;
     }
-    LOG_DBG("ID passed checks");
 
     update_node_id((uint16_t)newID);
-    LOG_DBG("ID pushed to bluetooth");
     updateSetting(BELUGA_ID, newID);
-    LOG_DBG("ID updated in settings");
     OK;
 }
 
