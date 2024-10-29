@@ -115,6 +115,7 @@ static uint16_t argparse(char *s, char **argv) {
             temp++;
         }
     }
+    LOG_INF("Parsed %" PRIu16 " arguments", argc);
 
     return argc;
 }
@@ -137,6 +138,7 @@ static bool strtoint32(const char *str, int32_t *result) {
 }
 
 AT_CMD_DEFINE(STARTUWB) {
+    LOG_INF("Running STARTUWB command");
     if (get_ble_led_state() == LED_BLE_OFF) {
         // Avoid undefined behavior
         printf("Cannot start UWB: BLE has not been started\r\n");
@@ -158,6 +160,7 @@ AT_CMD_DEFINE(STARTUWB) {
 }
 
 AT_CMD_DEFINE(STOPUWB) {
+    LOG_INF("Running STOPUWB command");
     if (get_uwb_led_state() == LED_UWB_OFF) {
         printf("UWB is not running\r\n");
         return;
@@ -169,6 +172,7 @@ AT_CMD_DEFINE(STOPUWB) {
 }
 
 AT_CMD_DEFINE(STARTBLE) {
+    LOG_INF("Running STARTBLE) command");
     if (get_NODE_UUID() == 0) {
         printf("Cannot start BLE: Node ID is not set\r\n");
         return;
@@ -183,6 +187,7 @@ AT_CMD_DEFINE(STARTBLE) {
 }
 
 AT_CMD_DEFINE(STOPBLE) {
+    LOG_INF("Running STOPBLE command");
     if (get_ble_led_state() == LED_UWB_OFF) {
         printf("BLE is already off\r\n");
         return;
@@ -194,6 +199,7 @@ AT_CMD_DEFINE(STOPBLE) {
 }
 
 AT_CMD_DEFINE(ID) {
+    LOG_INF("Running ID command");
     READ_SETTING(argc, 2, BELUGA_ID, "ID");
     int32_t newID;
     bool success = strtoint32(argv[1], &newID);
@@ -209,6 +215,7 @@ AT_CMD_DEFINE(ID) {
 }
 
 AT_CMD_DEFINE(BOOTMODE) {
+    LOG_INF("Running BOOTMODE command");
     READ_SETTING(argc, 2, BELUGA_BOOTMODE, "Bootmode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
@@ -224,6 +231,7 @@ AT_CMD_DEFINE(BOOTMODE) {
 }
 
 AT_CMD_DEFINE(RATE) {
+    LOG_INF("Running RATE command");
     READ_SETTING(argc, 2, BELUGA_POLL_RATE, "Rate");
     int32_t rate;
     bool success = strtoint32(argv[1], &rate);
@@ -243,6 +251,7 @@ AT_CMD_DEFINE(RATE) {
 }
 
 AT_CMD_DEFINE(CHANNEL) {
+    LOG_INF("Running CHANNEL command");
     READ_SETTING(argc, 2, BELUGA_UWB_CHANNEL, "Channel");
     int32_t channel;
     bool success = strtoint32(argv[1], &channel);
@@ -256,12 +265,14 @@ AT_CMD_DEFINE(CHANNEL) {
 }
 
 AT_CMD_DEFINE(RESET) {
+    LOG_INF("Running RESET command");
     resetBelugaSettings();
     printf("Reset ");
     OK;
 }
 
 AT_CMD_DEFINE(TIMEOUT) {
+    LOG_INF("Running TIMEOUT command");
     READ_SETTING(argc, 2, BELUGA_BLE_TIMEOUT, "Timeout");
     int32_t timeout;
     bool success = strtoint32(argv[1], &timeout);
@@ -277,6 +288,7 @@ AT_CMD_DEFINE(TIMEOUT) {
 }
 
 AT_CMD_DEFINE(TXPOWER) {
+    LOG_INF("Running TXPOWER command");
     READ_SETTING(argc, 2, BELUGA_TX_POWER, "TX Power");
     int32_t power;
     bool value, success = strtoint32(argv[1], &power);
@@ -291,6 +303,7 @@ AT_CMD_DEFINE(TXPOWER) {
 }
 
 AT_CMD_DEFINE(STREAMMODE) {
+    LOG_INF("Running STREAMMODE command");
     READ_SETTING(argc, 2, BELUGA_STREAMMODE, "Stream Mode");
     int32_t mode;
     bool value, success = strtoint32(argv[1], &mode);
@@ -305,6 +318,7 @@ AT_CMD_DEFINE(STREAMMODE) {
 }
 
 AT_CMD_DEFINE(TWRMODE) {
+    LOG_INF("Running TWRMODE command");
     READ_SETTING(argc, 2, BELUGA_TWR, "TWR");
     int32_t twr;
     bool value, success = strtoint32(argv[1], &twr);
@@ -319,6 +333,7 @@ AT_CMD_DEFINE(TWRMODE) {
 }
 
 AT_CMD_DEFINE(LEDMODE) {
+    LOG_INF("Running LEDMODE command");
     READ_SETTING(argc, 2, BELUGA_LEDMODE, "LED Mode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
@@ -339,6 +354,7 @@ AT_CMD_DEFINE(LEDMODE) {
 }
 
 AT_CMD_DEFINE(REBOOT) {
+    LOG_INF("Running REBOOT command");
     OK;
     printf("\r\n");
     disable_bluetooth();
@@ -346,6 +362,7 @@ AT_CMD_DEFINE(REBOOT) {
 }
 
 AT_CMD_DEFINE(PWRAMP) {
+    LOG_INF("Running PWRAMP command");
     READ_SETTING(argc, 2, BELUGA_RANGE_EXTEND, "Range Extension");
     int32_t pwramp;
     bool success = strtoint32(argv[1], &pwramp);
@@ -368,6 +385,7 @@ AT_CMD_DEFINE(PWRAMP) {
 }
 
 AT_CMD_DEFINE(ANTENNA) {
+    LOG_INF("Running ANTENNA command");
     CHECK_ARGC(argc, 2);
     int32_t antenna;
     bool success = strtoint32(argv[1], &antenna);
@@ -385,11 +403,13 @@ AT_CMD_DEFINE(ANTENNA) {
 }
 
 AT_CMD_DEFINE(TIME) {
+    LOG_INF("Running TIME command");
     printf("Time: %" PRId64 " ", k_uptime_get());
     OK;
 }
 
 AT_CMD_DEFINE(FORMAT) {
+    LOG_INF("Running FORMAT command");
     READ_SETTING(argc, 2, BELUGA_OUT_FORMAT, "Format Mode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
@@ -405,12 +425,14 @@ AT_CMD_DEFINE(FORMAT) {
 }
 
 AT_CMD_DEFINE(DEEPSLEEP) {
+    LOG_INF("Running DEEPSLEEP command");
     OK;
     printf("\r\n");
     enter_deep_sleep();
 }
 
 AT_CMD_DEFINE(DATARATE) {
+    LOG_INF("Running DATARATE command");
     READ_SETTING(argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
     int32_t rate, preamble;
     enum uwb_preamble_length updatedLength;
@@ -448,6 +470,7 @@ AT_CMD_DEFINE(DATARATE) {
 }
 
 AT_CMD_DEFINE(PREAMBLE) {
+    LOG_INF("Running PREAMBLE command");
     READ_SETTING(argc, 2, BELUGA_UWB_PREAMBLE, "Preamble length");
     int32_t preamble;
     enum uwb_preamble_length length;
@@ -472,6 +495,7 @@ AT_CMD_DEFINE(PREAMBLE) {
 }
 
 AT_CMD_DEFINE(PULSERATE) {
+    LOG_INF("Running PULSERATE command");
     READ_SETTING(argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
     int32_t rate;
     bool success = strtoint32(argv[1], &rate);
@@ -592,8 +616,8 @@ void init_commands_thread(void) {
         K_THREAD_STACK_SIZEOF(command_stack), runSerialCommand, NULL, NULL,
         NULL, CONFIG_BELUGA_COMMANDS_PRIO, 0, K_NO_WAIT);
     k_thread_name_set(command_task_id, "Command thread");
-    printk("Started AT commands\n");
+    LOG_INF("Started AT commands");
 }
 #else
-void init_commands_thread(void) { printk("Started AT commands\n"); }
+void init_commands_thread(void) { LOG_INF("Started AT commands"); }
 #endif
