@@ -68,14 +68,19 @@ bool get_format_mode(void) { return format_mode; }
     } while (0)
 
 static void normal_print(void) {
+    LOG_INF("Dumping all neighbors");
     if (format_mode == csv_mode) {
+        LOG_INF("Logging in CSV mode");
         printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
     }
 
     PRINT_LIST();
 }
 
-static void stream_print(void) { PRINT_LIST(seen_list[j].update_flag != 0); }
+static void stream_print(void) {
+    LOG_INF("Dumping updated neighbors");
+    PRINT_LIST(seen_list[j].update_flag != 0);
+}
 
 /**
  * @brief Task to print out visible nodes information
@@ -117,8 +122,8 @@ void init_print_list_task(void) {
                                          K_THREAD_STACK_SIZEOF(list_stack),
                                          list_task_function, NULL, NULL, NULL,
                                          CONFIG_BELUGA_LIST_PRIO, 0, K_NO_WAIT);
-    printk("Started neighbors list\n");
+    LOG_INF("Started neighbors list");
 }
 #else
-void init_print_list_task(void) { printk("Neighbors list disabled\n"); }
+void init_print_list_task(void) { LOG_INF("Neighbors list disabled"); }
 #endif
