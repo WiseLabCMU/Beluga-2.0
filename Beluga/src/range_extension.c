@@ -6,12 +6,18 @@
 #include <range_extension.h>
 #include <stdio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
 
 #if defined(CONFIG_BELUGA_RANGE_EXTENSION)
 #include <deca_device_api.h>
 #include <nrf21540.h>
 
-bool init_range_extension(void) { return init_nrf21540(); }
+bool init_range_extension(void) {
+    LOG_INF("Initializing range extension");
+    return init_nrf21540();
+}
 
 bool enable_range_extension(bool command) {
     ARG_UNUSED(command);
@@ -56,7 +62,7 @@ bool select_antenna(int32_t ant) {
 
 #else
 bool init_range_extension(void) {
-    printk("Range extension disabled\n");
+    LOG_INF("Range extension disabled");
     return true;
 }
 
