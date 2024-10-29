@@ -11,6 +11,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
+
 #define DEFAULT_RATE          250
 #define DEFAULT_TIMEOUT       9000
 #define DEFAULT_STREAMMODE    0
@@ -89,7 +93,7 @@ static int beluga_handle_set(const char *name, size_t len,
             rc = read_cb(cb_arg, &settingValues[i].value,
                          sizeof(settingValues[0].value));
             if (rc > 0) {
-                printk("<beluga/%s> = %d\n", settingValues[i].key,
+                LOG_INF("<beluga/%s> = %d", settingValues[i].key,
                        settingValues[i].value);
             }
             break;
@@ -100,14 +104,14 @@ static int beluga_handle_set(const char *name, size_t len,
 }
 
 static int beluga_handle_commit(void) {
-    printk("Loading all settings under <beluga> handler is done\n");
+    LOG_INF("Loading all settings under <beluga> handler is done");
     return 0;
 }
 
 static int beluga_handle_export(int (*cb)(const char *name, const void *value,
                                           size_t val_len)) {
     char name[2 * MAX_NAME_LENGTH];
-    printk("export keys under <beluga> handler\n");
+    LOG_INF("export keys under <beluga> handler\n");
 
     for (size_t i = 0; i < ARRAY_SIZE(settingValues); i++) {
         snprintf(name, MAX_NAME_LENGTH, "beluga/%s", settingValues[i].key);
@@ -133,7 +137,7 @@ void updateSetting(enum beluga_setting setting, int32_t value) {
     rc = settings_save_one(name, (const void *)&value, sizeof(value));
 
     if (rc) {
-        printk("Error saving %s (%d)\n", name, rc);
+        LOG_ERR("Error saving %s (%d)", name, rc);
     } else {
         settingValues[setting].value = value;
     }
@@ -158,7 +162,7 @@ void resetBelugaSettings(void) {
         settingValues[i].value = default_settings[i];
     }
 
-    printk("Reset all settings\n");
+    LOG_INF("Reset all settings");
     settings_save();
 }
 
@@ -182,16 +186,16 @@ int initBelugaSettings(void) {
 
     rc = fs_mount(&littlefs_mnt);
     if (rc != 0) {
-        printk("mounting littlefs error: [%d]\n", rc);
+        LOG_ERR("mounting littlefs error: [%d]", rc);
         return rc;
     } else {
 
         rc = fs_unlink(CONFIG_SETTINGS_FILE_PATH);
         if ((rc != 0) && (rc != -ENOENT)) {
-            printk("can't delete config file%d\n", rc);
+            LOG_ERR("can't delete config file%d", rc);
             return rc;
         } else {
-            printk("FS initialized: OK\n");
+            LOG_INF("FS initialized: OK\n");
         }
     }
 #endif
@@ -199,13 +203,13 @@ int initBelugaSettings(void) {
     rc = settings_subsys_init();
 
     if (rc) {
-        printk("settings subsys initialization: fail (err %d)\n", rc);
+        LOG_ERR("settings subsys initialization: fail (err %d)\n", rc);
         return rc;
     }
 
     settings_load();
 
-    printk("settings subsys initialization: OK.\n");
+    LOG_INF("settings subsys initialization: OK.\n");
 
     // Init any dynamic settings here
 
