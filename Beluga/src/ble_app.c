@@ -59,6 +59,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
+
 K_MUTEX_DEFINE(UUID_mutex);
 K_SEM_DEFINE(ble_state, 1, 1);
 
@@ -236,7 +240,7 @@ static int32_t scan_start(void) {
     int err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found_callback);
 
     if (err != 0) {
-        printk("Scanning failed to start (err %d)\n", err);
+        LOG_ERR("Scanning failed to start (err %d)", err);
     }
     return err;
 }
@@ -250,7 +254,7 @@ static int32_t adv_scan_start(void) {
         bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 
     if (err != 0) {
-        printk("Advertising failed to start (err %d)\n", err);
+        LOG_ERR("Advertising failed to start (err %d)", err);
         BLE_LED_OFF(CENTRAL_SCANNING_LED);
         currentAdvMode = ADVERTISING_OFF;
         return 1;
@@ -260,7 +264,7 @@ static int32_t adv_scan_start(void) {
     err = bt_le_scan_start(BT_LE_SCAN_ACTIVE, device_found_callback);
 
     if (err != 0) {
-        printk("Scanning failed to start (err %d)\n", err);
+        LOG_ERR("Scanning failed to start (err %d)", err);
         return 1;
     }
     return 0;
@@ -276,7 +280,7 @@ static void adv_no_connect_start(void) {
                               ARRAY_SIZE(sd));
 
         if (err != 0) {
-            printk("Advertising failed to start (err %d)\n", err);
+            LOG_ERR("Advertising failed to start (err %d)", err);
             BLE_LED_OFF(CENTRAL_SCANNING_LED);
             currentAdvMode = ADVERTISING_OFF;
         }
@@ -295,12 +299,12 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm,
 
 static void discovery_not_found_cb(UNUSED struct bt_conn *conn,
                                    UNUSED void *context) {
-    printk("Heart Rate Service could not be found during the discovery\n");
+    LOG_WRN("Heart Rate Service could not be found during the discovery");
 }
 
 static void discovery_error_found_cb(UNUSED struct bt_conn *conn, int err,
                                      UNUSED void *context) {
-    printk("The discovery procedure failed with %d\n", err);
+    LOG_ERR("The discovery procedure failed with %d", err);
 }
 
 static const struct bt_gatt_dm_cb discovery_cb = {
@@ -314,18 +318,18 @@ static void gatt_discover(struct bt_conn *conn) {
     err = bt_gatt_dm_start(conn, BT_UUID_GAP, &discovery_cb, NULL);
 
     if (err) {
-        printk("Could not start the discovery procedure, error "
-               "code: %d\n",
-               err);
+        LOG_ERR("Could not start the discovery procedure, error "
+                "code: %d",
+                err);
     }
 }
 
 static void exchange_func(struct bt_conn *conn, uint8_t err,
                           struct bt_gatt_exchange_params *params) {
     if (!err) {
-        printk("MTU exchange done\n");
+        LOG_INF("MTU exchange done\n");
     } else {
-        printk("MTU exchange failed (err %d)\n", err);
+        LOG_ERR("MTU exchange failed (err %d)", err);
     }
 }
 
@@ -337,7 +341,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
     if (conn_err) {
-        printk("Failed to connect to %s (%u)\n", addr, conn_err);
+        LOG_ERR("Failed to connect to %s (%u)", addr, conn_err);
 
         if (conn == central_conn) {
             bt_conn_unref(central_conn);
@@ -349,13 +353,13 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
         return;
     }
 
-    printk("Connected: %s\n", addr);
+    LOG_INF("Connected: %s", addr);
 
     static struct bt_gatt_exchange_params exchange_params;
     exchange_params.func = exchange_func;
     err = bt_gatt_exchange_mtu(conn, &exchange_params);
     if (err != 0) {
-        printk("MTU exchange failed (err %d)\n", err);
+        LOG_ERR("MTU exchange failed (err %d)", err);
     }
 
     bt_conn_get_info(conn, &info);
@@ -365,7 +369,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
 
         err = bt_conn_set_security(conn, BT_SECURITY_L2);
         if (err) {
-            printk("Failed to set security (err %d)\n", err);
+            LOG_ERR("Failed to set security (err %d)", err);
 
             gatt_discover(conn);
         }
@@ -381,7 +385,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-    printk("Disconnected: %s (reason %u)\n", addr, reason);
+    LOG_INF("Disconnected: %s (reason %u)", addr, reason);
 
     if (conn == central_conn) {
         BLE_LED_OFF(CENTRAL_CONNECTED_LED);
@@ -404,9 +408,9 @@ static void security_changed(struct bt_conn *conn, bt_security_t level,
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
     if (!err) {
-        printk("Security changed: %s level %u\n", addr, level);
+        LOG_INF("Security changed: %s level %u", addr, level);
     } else {
-        printk("Security failed: %s level %u err %d\n", addr, level, err);
+        LOG_ERR("Security failed: %s level %u err %d", addr, level, err);
     }
 
     if (conn == central_conn) {
@@ -425,11 +429,11 @@ static void scan_filter_match(struct bt_scan_device_info *device_info,
 
     bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
 
-    printk("Filters matched. Address: %s connectable: %d\n", addr, connectable);
+    LOG_INF("Filters matched. Address: %s connectable: %d", addr, connectable);
 }
 
 static void scan_connecting_error(struct bt_scan_device_info *device_info) {
-    printk("Connecting failed\n");
+    LOG_INF("Connecting failed");
 }
 
 static void scan_connecting(struct bt_scan_device_info *device_info,
@@ -452,13 +456,13 @@ static int32_t scan_init(void) {
 
     err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_HRS);
     if (err) {
-        printk("Scanning filters cannot be set (err %d)\n", err);
+        LOG_ERR("Scanning filters cannot be set (err %d)", err);
         return 1;
     }
 
     err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
     if (err) {
-        printk("Filters cannot be turned on (err %d)\n", err);
+        LOG_ERR("Filters cannot be turned on (err %d)", err);
         return 1;
     }
     return 0;
@@ -471,7 +475,7 @@ int32_t init_bt_stack(void) {
     if (err) {
         return 1;
     }
-    printk("Bluetooth stack loaded\n");
+    LOG_INF("Bluetooth stack loaded");
 
     return scan_init();
 }
@@ -505,13 +509,13 @@ int32_t enable_bluetooth(void) {
 static int32_t _disable_bluetooth(void) {
     int err;
     if ((err = bt_le_adv_stop()) != 0) {
-        printk("Unable to stop advertising (err: %d)\n", err);
+        LOG_ERR("Unable to stop advertising (err: %d)", err);
         return 1;
     }
     currentAdvMode = ADVERTISING_OFF;
 
     if ((err = bt_le_scan_stop()) != 0) {
-        printk("Unable to stop scanning (err: %d)\n", err);
+        LOG_ERR("Unable to stop scanning (err: %d)", err);
         return 1;
     }
     bluetooth_on = false;
