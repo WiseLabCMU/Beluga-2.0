@@ -16,6 +16,9 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
@@ -316,7 +319,7 @@ void init_uwb(void) {
     port_set_dw1000_slowrate();
 
     if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR) {
-        printk("Failed to load UWB code\r\n");
+        LOG_ERR("Failed to load UWB code");
         while (true)
             ;
     }
@@ -332,7 +335,7 @@ void init_uwb(void) {
     /* Set expected response's timeout. (keep listening so timeout is 0) */
     dwt_setrxtimeout(0);
 
-    printk("UWB initialized\n");
+    LOG_INF("UWB initialized");
 }
 
 /**
@@ -360,7 +363,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     static int curr_index = 0;
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
-        printk("Unable to spawn ranging watchdog\r\n");
+        LOG_ERR("Unable to spawn ranging watchdog");
         while (1)
             ;
     }
@@ -516,10 +519,10 @@ void init_ranging_thread(void) {
                         K_THREAD_STACK_SIZEOF(ranging_stack), rangingTask, NULL,
                         NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, 0, K_NO_WAIT);
     k_thread_name_set(ranging_task_id, "Ranging task");
-    printk("Started ranging\n");
+    LOG_INF("Started ranging");
 }
 #else
-void init_ranging_thread(void) { printk("Ranging disabled\n"); }
+void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
 #endif
 
 #if ENABLE_THREADS && ENABLE_RESPONDER
@@ -533,8 +536,8 @@ void init_responder_thread(void) {
         K_THREAD_STACK_SIZEOF(responder_stack), responder_task_function, NULL,
         NULL, NULL, CONFIG_BELUGA_RESPONDER_PRIO, 0, K_NO_WAIT);
     k_thread_name_set(responder_task_id, "Responder task");
-    printk("Started responder\n");
+    LOG_INF("Started responder");
 }
 #else
-void init_responder_thread(void) { printk("Responder disabled\n"); }
+void init_responder_thread(void) { LOG_INF("Responder disabled"); }
 #endif
