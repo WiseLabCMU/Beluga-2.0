@@ -116,7 +116,7 @@
 #define BLE_LED_ON(LED, ...)  LED_ON(LED, __VA_ARGS__)
 #define BLE_LED_OFF(LED, ...) LED_OFF(LED, __VA_ARGS__)
 #else
-#define BLE_LED_ON(LED) (void)0
+#define BLE_LED_ON(LED)  (void)0
 #define BLE_LED_OFF(LED) BLE_LED_ON(LED)
 #endif
 
@@ -124,7 +124,7 @@
 #define APP_LED_ON(LED, ...)  LED_ON(LED, __VA_ARGS__)
 #define APP_LED_OFF(LED, ...) LED_OFF(LED, __VA_ARGS__)
 #else
-#define APP_LED_ON(LED) (void)0
+#define APP_LED_ON(LED)  (void)0
 #define APP_LED_OFF(LED) APP_LED_ON(LED)
 #endif
 

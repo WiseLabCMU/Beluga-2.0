@@ -64,15 +64,18 @@ struct cmd_info {
     void (*cmd_func)(uint16_t argc, char const *const *argv);
 };
 
+#define AT_CMD_DEFINE(_command)                                                \
+    static void at_##_command(uint16_t argc, char const *const *argv)
+
 #define CMD_DATA(_callback, _command, _command_len)                            \
     {                                                                          \
         .command = (const char *)(_command), .cmd_length = (_command_len),     \
         .cmd_func = (_callback),                                               \
     }
 
-#define AT_CMD_DATA(_callback, _command...)                                    \
-    CMD_DATA(_callback, ((uint8_t[]){_command}),                               \
-             (sizeof((uint8_t[]){_command}) - 1))
+#define AT_CMD_DATA(_command...)                                               \
+    CMD_DATA((at_##_command), ((uint8_t[]){#_command}),                        \
+             (sizeof((uint8_t[]){#_command}) - 1))
 
 #define AT_CMD_DATA_TERMINATOR                                                 \
     { NULL, 0, NULL }
@@ -133,7 +136,7 @@ static bool strtoint32(const char *str, int32_t *result) {
     return true;
 }
 
-static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(STARTUWB) {
     if (get_ble_led_state() == LED_BLE_OFF) {
         // Avoid undefined behavior
         printf("Cannot start UWB: BLE has not been started\r\n");
@@ -154,7 +157,7 @@ static void at_start_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
 }
 
-static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(STOPUWB) {
     if (get_uwb_led_state() == LED_UWB_OFF) {
         printf("UWB is not running\r\n");
         return;
@@ -165,7 +168,7 @@ static void at_stop_uwb(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
 }
 
-static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(STARTBLE) {
     if (get_NODE_UUID() == 0) {
         printf("Cannot start BLE: Node ID is not set\r\n");
         return;
@@ -179,7 +182,7 @@ static void at_start_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
 }
 
-static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(STOPBLE) {
     if (get_ble_led_state() == LED_UWB_OFF) {
         printf("BLE is already off\r\n");
         return;
@@ -190,7 +193,7 @@ static void at_stop_ble(UNUSED uint16_t argc, UNUSED char const *const *argv) {
     OK;
 }
 
-static void at_change_id(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(ID) {
     READ_SETTING(argc, 2, BELUGA_ID, "ID");
     int32_t newID;
     bool success = strtoint32(argv[1], &newID);
@@ -205,7 +208,7 @@ static void at_change_id(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_bootmode(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(BOOTMODE) {
     READ_SETTING(argc, 2, BELUGA_BOOTMODE, "Bootmode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
@@ -220,7 +223,7 @@ static void at_bootmode(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_rate(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(RATE) {
     READ_SETTING(argc, 2, BELUGA_POLL_RATE, "Rate");
     int32_t rate;
     bool success = strtoint32(argv[1], &rate);
@@ -239,7 +242,7 @@ static void at_rate(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_channel(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(CHANNEL) {
     READ_SETTING(argc, 2, BELUGA_UWB_CHANNEL, "Channel");
     int32_t channel;
     bool success = strtoint32(argv[1], &channel);
@@ -252,13 +255,13 @@ static void at_channel(uint16_t argc, char const *const *argv) {
     }
 }
 
-static void at_reset(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(RESET) {
     resetBelugaSettings();
     printf("Reset ");
     OK;
 }
 
-static void at_timeout(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(TIMEOUT) {
     READ_SETTING(argc, 2, BELUGA_BLE_TIMEOUT, "Timeout");
     int32_t timeout;
     bool success = strtoint32(argv[1], &timeout);
@@ -273,7 +276,7 @@ static void at_timeout(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_txpower(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(TXPOWER) {
     READ_SETTING(argc, 2, BELUGA_TX_POWER, "TX Power");
     int32_t power;
     bool value, success = strtoint32(argv[1], &power);
@@ -287,7 +290,7 @@ static void at_txpower(uint16_t argc, char const *const *argv) {
     }
 }
 
-static void at_streammode(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(STREAMMODE) {
     READ_SETTING(argc, 2, BELUGA_STREAMMODE, "Stream Mode");
     int32_t mode;
     bool value, success = strtoint32(argv[1], &mode);
@@ -301,7 +304,7 @@ static void at_streammode(uint16_t argc, char const *const *argv) {
     }
 }
 
-static void at_twrmode(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(TWRMODE) {
     READ_SETTING(argc, 2, BELUGA_TWR, "TWR");
     int32_t twr;
     bool value, success = strtoint32(argv[1], &twr);
@@ -315,7 +318,7 @@ static void at_twrmode(uint16_t argc, char const *const *argv) {
     }
 }
 
-static void at_ledmode(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(LEDMODE) {
     READ_SETTING(argc, 2, BELUGA_LEDMODE, "LED Mode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
@@ -335,14 +338,14 @@ static void at_ledmode(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_reboot(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(REBOOT) {
     OK;
     printf("\r\n");
     disable_bluetooth();
     sys_reboot(SYS_REBOOT_COLD);
 }
 
-static void at_pwramp(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(PWRAMP) {
     READ_SETTING(argc, 2, BELUGA_RANGE_EXTEND, "Range Extension");
     int32_t pwramp;
     bool success = strtoint32(argv[1], &pwramp);
@@ -364,7 +367,7 @@ static void at_pwramp(uint16_t argc, char const *const *argv) {
     }
 }
 
-static void at_antenna(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(ANTENNA) {
     CHECK_ARGC(argc, 2);
     int32_t antenna;
     bool success = strtoint32(argv[1], &antenna);
@@ -381,12 +384,12 @@ static void at_antenna(uint16_t argc, char const *const *argv) {
     }
 }
 
-static void at_time(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(TIME) {
     printf("Time: %" PRId64 " ", k_uptime_get());
     OK;
 }
 
-static void at_format(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(FORMAT) {
     READ_SETTING(argc, 2, BELUGA_OUT_FORMAT, "Format Mode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
@@ -401,13 +404,13 @@ static void at_format(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_deepsleep(UNUSED uint16_t argc, UNUSED char const *const *argv) {
+AT_CMD_DEFINE(DEEPSLEEP) {
     OK;
     printf("\r\n");
     enter_deep_sleep();
 }
 
-static void at_datarate(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(DATARATE) {
     READ_SETTING(argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
     int32_t rate, preamble;
     enum uwb_preamble_length updatedLength;
@@ -444,7 +447,7 @@ static void at_datarate(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_preamble(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(PREAMBLE) {
     READ_SETTING(argc, 2, BELUGA_UWB_PREAMBLE, "Preamble length");
     int32_t preamble;
     enum uwb_preamble_length length;
@@ -468,7 +471,7 @@ static void at_preamble(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static void at_pulse_rate(uint16_t argc, char const *const *argv) {
+AT_CMD_DEFINE(PULSERATE) {
     READ_SETTING(argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
     int32_t rate;
     bool success = strtoint32(argv[1], &rate);
@@ -489,30 +492,15 @@ static void at_pulse_rate(uint16_t argc, char const *const *argv) {
     OK;
 }
 
-static struct cmd_info commands[] = {AT_CMD_DATA(at_start_uwb, "STARTUWB"),
-                                     AT_CMD_DATA(at_stop_uwb, "STOPUWB"),
-                                     AT_CMD_DATA(at_start_ble, "STARTBLE"),
-                                     AT_CMD_DATA(at_stop_ble, "STOPBLE"),
-                                     AT_CMD_DATA(at_change_id, "ID"),
-                                     AT_CMD_DATA(at_bootmode, "BOOTMODE"),
-                                     AT_CMD_DATA(at_rate, "RATE"),
-                                     AT_CMD_DATA(at_channel, "CHANNEL"),
-                                     AT_CMD_DATA(at_reset, "RESET"),
-                                     AT_CMD_DATA(at_timeout, "TIMEOUT"),
-                                     AT_CMD_DATA(at_txpower, "TXPOWER"),
-                                     AT_CMD_DATA(at_streammode, "STREAMMODE"),
-                                     AT_CMD_DATA(at_twrmode, "TWRMODE"),
-                                     AT_CMD_DATA(at_ledmode, "LEDMODE"),
-                                     AT_CMD_DATA(at_reboot, "REBOOT"),
-                                     AT_CMD_DATA(at_pwramp, "PWRAMP"),
-                                     AT_CMD_DATA(at_antenna, "ANTENNA"),
-                                     AT_CMD_DATA(at_time, "TIME"),
-                                     AT_CMD_DATA(at_format, "FORMAT"),
-                                     AT_CMD_DATA(at_deepsleep, "DEEPSLEEP"),
-                                     AT_CMD_DATA(at_datarate, "DATARATE"),
-                                     AT_CMD_DATA(at_preamble, "PREAMBLE"),
-                                     AT_CMD_DATA(at_pulse_rate, "PULSERATE"),
-                                     AT_CMD_DATA_TERMINATOR};
+static struct cmd_info commands[] = {
+    AT_CMD_DATA(STARTUWB), AT_CMD_DATA(STOPUWB),   AT_CMD_DATA(STARTBLE),
+    AT_CMD_DATA(STOPBLE),  AT_CMD_DATA(ID),        AT_CMD_DATA(BOOTMODE),
+    AT_CMD_DATA(RATE),     AT_CMD_DATA(CHANNEL),   AT_CMD_DATA(RESET),
+    AT_CMD_DATA(TIMEOUT),  AT_CMD_DATA(TXPOWER),   AT_CMD_DATA(STREAMMODE),
+    AT_CMD_DATA(TWRMODE),  AT_CMD_DATA(LEDMODE),   AT_CMD_DATA(REBOOT),
+    AT_CMD_DATA(PWRAMP),   AT_CMD_DATA(ANTENNA),   AT_CMD_DATA(TIME),
+    AT_CMD_DATA(FORMAT),   AT_CMD_DATA(DEEPSLEEP), AT_CMD_DATA(DATARATE),
+    AT_CMD_DATA(PREAMBLE), AT_CMD_DATA(PULSERATE), AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
