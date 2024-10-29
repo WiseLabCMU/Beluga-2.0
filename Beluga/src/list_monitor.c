@@ -12,29 +12,24 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
-#define ENABLE_NODE_ADD_SEM 0
+LOG_MODULE_REGISTER(list_monitor, CONFIG_LIST_MONITOR_LOG_LEVEL);
+
+#define LIST_SORT_PERIOD_S     5
+#define LIST_MONITOR_PERIOD_MS 1000
+
+#define ENABLE_NODE_ADD_SEM    0
 
 K_MUTEX_DEFINE(timeout_mutex);
-
-#define PRINT_REMOVAL(uuid)                                                    \
-    do {                                                                       \
-        if (get_format_mode()) {                                               \
-            printf("rm %" PRId16 "\r\n", uuid);                                \
-        }                                                                      \
-    } while (0)
 
 #if ENABLE_NODE_ADD_SEM
 K_SEM_DEFINE(node_add_sem, 0, 1);
 #define SEM_NODE_TAKE k_sem_take(&node_add_sem, K_FOREVER)
 #define SEM_NODE_GIVE k_sem_give(&node_add_sem)
 #else
-#define SEM_NODE_TAKE                                                          \
-    do {                                                                       \
-    } while (0)
-#define SEM_NODE_GIVE                                                          \
-    do {                                                                       \
-    } while (0)
+#define SEM_NODE_TAKE (void)0
+#define SEM_NODE_GIVE (void)0
 #endif
 
 static uint64_t timeout = UINT64_C(9000);
@@ -89,13 +84,13 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
     struct task_wdt_attr watchdogAttr = {.period = 3000};
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
-        printk("Unable to spawn watchdog for monitor thread.\n");
+        LOG_ERR("Unable to spawn watchdog for monitor thread.\n");
         while (1)
             ;
     }
 
     while (1) {
-        k_msleep(1000);
+        k_msleep(LIST_MONITOR_PERIOD_MS);
 
         watchdog_red_rocket(&watchdogAttr);
 
@@ -109,7 +104,10 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
         for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
             if (seen_list[x].UUID != 0) {
                 if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
-                    PRINT_REMOVAL(seen_list[x].UUID);
+                    LOG_INF("Removing node %" PRId16, seen_list[x].UUID);
+                    if (get_format_mode()) {
+                        printf("rm %" PRId16 "\r\n", seen_list[x].UUID);
+                    }
                     removed = true;
                     memset(&seen_list[x], 0, sizeof(seen_list[0]));
                 }
@@ -118,7 +116,9 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
 
         // Re-sort seen list by RSSI value when a node is removed, added, or a
         // period of time
-        if (removed || check_node_added() || ((count % 5) == 0)) {
+        if (removed || check_node_added() ||
+            ((count % LIST_SORT_PERIOD_S) == 0)) {
+            LOG_INF("Sorting list");
             disable_bluetooth();
 
             for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
@@ -153,8 +153,8 @@ void init_monitor_thread(void) {
                                       monitor_task_function, NULL, NULL, NULL,
                                       CONFIG_BELUGA_MONITOR_PRIO, 0, K_NO_WAIT);
     k_thread_name_set(monitor_task_id, "Neighbors monitor");
-    printk("Started monitor\n");
+    LOG_INF("Started monitor");
 }
 #else
-void init_monitor_thread(void) { printk("Monitor disabled\n"); }
+void init_monitor_thread(void) { LOG_INF("Monitor disabled"); }
 #endif
