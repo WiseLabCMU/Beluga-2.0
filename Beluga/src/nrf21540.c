@@ -14,8 +14,11 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #define NRF21540_NODE DT_NODELABEL(nrf_radio_fem)
+
+LOG_MODULE_REGISTER(nrf21540_logger, CONFIG_NRF21540_MODULE_LOG_LEVEL);
 
 #if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(NRF21540_NODE) && \
     DT_NODE_HAS_STATUS(NRF21540_NODE, okay)
@@ -59,27 +62,27 @@ static bool configure_nrf21_gpios(void) {
 
 #if ANTENNA_GPIO
     if (!device_is_ready(nrf21_gpios.ant_sel.port)) {
-        printk("Antenna device was not ready\n");
+        LOG_ERR("Antenna device was not ready");
         return false;
     }
 
     err = gpio_pin_configure_dt(&nrf21_gpios.ant_sel, GPIO_OUTPUT_INACTIVE);
 
     if (err) {
-        printk("Antenna GPIO configure (%d)\n", err);
+        LOG_ERR("Antenna GPIO configure (%d)", err);
         return false;
     }
 #endif
 
     if (!device_is_ready(nrf21_gpios.power_mode.port)) {
-        printk("Power mode device was not ready\n");
+        LOG_ERR("Power mode device was not ready");
         return false;
     }
 
     err = gpio_pin_configure_dt(&nrf21_gpios.power_mode, GPIO_OUTPUT_ACTIVE);
 
     if (err) {
-        printk("Power mode GPIO configure (%d)\n", err);
+        LOG_ERR("Power mode GPIO configure (%d)", err);
         return false;
     }
 
@@ -96,7 +99,7 @@ bool init_nrf21540(void) {
 
     restore_bluetooth(state);
 
-    printk("Front end module configured\n");
+    LOG_INF("Front end module configured");
 
     return retVal;
 }
@@ -116,12 +119,12 @@ bool select_ble_antenna(enum antenna_select antenna) {
         restore_bluetooth(state);
         break;
     default:
-        printk("Invalid value\n");
+        LOG_ERR("Invalid value");
         return false;
     }
 
     if (err) {
-        printk("Failed to set GPIO: %d\n", err);
+        LOG_ERR("Failed to set GPIO: %d", err);
     }
 #else
     printf("Not implemented\r\n");
@@ -144,12 +147,12 @@ bool select_ble_gain(enum ble_gain gain) {
         restore_bluetooth(state);
         break;
     default:
-        printk("Invalid gain case\n");
+        LOG_ERR("Invalid gain case\n");
         return false;
     }
 
     if (err) {
-        printk("Unable to set gain: %d\n", err);
+        LOG_ERR("Unable to set gain: %d\n", err);
     }
 
     return err == 0;
@@ -157,7 +160,7 @@ bool select_ble_gain(enum ble_gain gain) {
 
 #else
 bool init_nrf21540(void) {
-    printk("nrf21540 disabled\r\n");
+    LOG_INF("nrf21540 disabled\r\n");
     return true;
 }
 
