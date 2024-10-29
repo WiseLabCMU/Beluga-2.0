@@ -9,6 +9,9 @@
 #include <thread_priorities.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
 
 #define csv_mode  false
 #define json_mode true
@@ -37,46 +40,42 @@ void set_format_mode(bool json) {
 
 bool get_format_mode(void) { return format_mode; }
 
+#define PRINT_CONDITION(...)                                                   \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (true), (GET_ARG_N(1, __VA_ARGS__)))
+#define UPDATE_AFTER_PRINT(...)                                                \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (seen_list[j].update_flag = 0;))
+#define HEADER_VAR(...)                                                        \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (int header_flag = 0;))
+#define PRINT_HEADER(...)                                                      \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (),                                     \
+                (if (header_flag == 0 && format_mode == csv_mode) {            \
+                    printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");                \
+                    header_flag = 1;                                           \
+                }))
+
+#define PRINT_LIST(...)                                                        \
+    do {                                                                       \
+        HEADER_VAR(__VA_ARGS__)                                                \
+        for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {                           \
+            if (seen_list[j].UUID != 0 && PRINT_CONDITION(__VA_ARGS__)) {      \
+                PRINT_HEADER(__VA_ARGS__)                                      \
+                printf(format_str(format_mode), seen_list[j].UUID,             \
+                       seen_list[j].range, seen_list[j].RSSI,                  \
+                       seen_list[j].time_stamp);                               \
+                UPDATE_AFTER_PRINT(__VA_ARGS__)                                \
+            }                                                                  \
+        }                                                                      \
+    } while (0)
+
 static void normal_print(void) {
     if (format_mode == csv_mode) {
         printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
     }
 
-    for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
-        if (seen_list[j].UUID != 0) {
-            printf(format_str(format_mode), seen_list[j].UUID,
-                   seen_list[j].range, seen_list[j].RSSI,
-                   seen_list[j].time_stamp);
-        }
-    }
+    PRINT_LIST();
 }
 
-static void stream_print(void) {
-    int count_flag = 0;
-
-    // Check whether alive nodes have update flag or not
-    for (int i = 0; i < MAX_ANCHOR_COUNT; i++) {
-        if (seen_list[i].UUID != 0 && seen_list[i].update_flag != 0) {
-            count_flag++;
-        }
-    }
-    // If one of node has update flag, print it
-    if (count_flag != 0) {
-        if (format_mode == csv_mode) {
-            printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
-        }
-
-        for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
-            if (seen_list[j].UUID != 0 && seen_list[j].update_flag == 1)
-                printf(format_str(format_mode), seen_list[j].UUID,
-                       seen_list[j].range, seen_list[j].RSSI,
-                       seen_list[j].time_stamp);
-
-            // Reset update flag of the node
-            seen_list[j].update_flag = 0;
-        }
-    }
-}
+static void stream_print(void) { PRINT_LIST(seen_list[j].update_flag != 0); }
 
 /**
  * @brief Task to print out visible nodes information
