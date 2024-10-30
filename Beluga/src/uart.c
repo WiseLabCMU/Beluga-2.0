@@ -11,7 +11,7 @@
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/usb/usbd.h>
 
-LOG_MODULE_REGISTER(uart_log, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(serial_log, CONFIG_SERIAL_MODULE_LOG_LEVEL);
 
 #if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
 #define USB_CONSOLE
@@ -99,14 +99,14 @@ int uart_init(void) {
     int err;
 
     if (device_init()) {
-        printk("Device is not ready\n");
+        LOG_ERR("Device is not ready\n");
         return -1;
     }
 
     err = uart_irq_callback_user_data_set(serial, serial_callback, NULL);
 
     if (err < 0) {
-        printk("Unable to set UART callback (err %d)\n", err);
+        LOG_ERR("Unable to set UART callback (err %d)\n", err);
         return err;
     }
     LOG_DBG("UART IRQ set");
@@ -116,7 +116,7 @@ int uart_init(void) {
 
     WAIT_DTR;
 
-    printk("UART initialized\n");
+    LOG_INF("UART initialized\n");
 
     return 0;
 }
