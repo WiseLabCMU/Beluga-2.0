@@ -206,7 +206,7 @@ class BelugaSerial:
         self._batch_queue: BelugaQueue = BelugaQueue(5, False)
 
         self._processing_task: Optional[mp.Process] = None
-        self._response_q: BelugaQueue = BelugaQueue()
+        self._response_q: BelugaQueue = BelugaQueue(update_old_items=False)
         self._ranges_queue: BelugaQueue = BelugaQueue()
         self._neighbors_queue: BelugaQueue = BelugaQueue()
         self._command_sent: mp.Event = mp.Event()
