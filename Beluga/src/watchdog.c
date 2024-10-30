@@ -10,6 +10,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/task_wdt/task_wdt.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_wdt) && IS_ENABLED(CONFIG_WATCHDOG)
 #define WDT_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(nordic_nrf_wdt)
@@ -19,10 +22,9 @@
 #endif
 
 static void task_wdt_callback(int channel_id, void *user_data) {
-    printk("Watchdog %d has starved. The offending thread (%s) will be tried "
-           "for animal cruelty\n",
+    LOG_ERR("Watchdog %d has starved. The offending thread (%s) will be tried "
+           "for animal cruelty",
            channel_id, k_thread_name_get((k_tid_t)user_data));
-    printk("\r\n");
 
     sys_reboot(SYS_REBOOT_COLD);
 }
@@ -32,17 +34,17 @@ int configure_watchdog_timer(void) {
     const struct device *const wdt = DEVICE_DT_GET_OR_NULL(WDT_NODE);
 
     if (!IS_ENABLED(CONFIG_TASK_WDT)) {
-        printk("WDT disabled\n");
+        LOG_WRN("WDT disabled");
         return 0;
     }
 
     if (!device_is_ready(wdt)) {
-        printk("Hardware watchdog is not ready\n");
+        LOG_ERR("Hardware watchdog is not ready");
     }
 
     ret = task_wdt_init(wdt);
     if (ret != 0) {
-        printk("Task wdt init failure: %d\n", ret);
+        LOG_ERR("Task wdt init failure: %d", ret);
     }
 
     return ret;
