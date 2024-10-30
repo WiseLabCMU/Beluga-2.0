@@ -151,9 +151,12 @@ class BelugaQueue(mp_queues.Queue):
         try:
             super().put(obj, block, timeout)
         except queue.Full:
-            # Discard oldest item
-            self.get_nowait()
-            super().put(obj, block, timeout)
+            # Merge old
+            old = self.get_nowait()
+            # This will update the existing keys, add new key-value pairs if not present, and keep keys that are not
+            # present in the new obj unchanged
+            old.update(obj)
+            super().put(old, block, timeout)
         return
 
 
