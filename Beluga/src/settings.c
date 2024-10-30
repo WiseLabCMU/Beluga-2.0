@@ -94,7 +94,7 @@ static int beluga_handle_set(const char *name, size_t len,
                          sizeof(settingValues[0].value));
             if (rc > 0) {
                 LOG_INF("<beluga/%s> = %d", settingValues[i].key,
-                       settingValues[i].value);
+                        settingValues[i].value);
             }
             break;
         }

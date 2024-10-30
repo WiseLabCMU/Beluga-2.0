@@ -6,7 +6,10 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/sys/printk.h>
+
+LOG_MODULE_REGISTER(vr_logger, CONFIG_VOLTAGE_REG_MODULE_LOG_LEVEL);
 
 static enum voltage_level currentLevel = VR_3V3;
 
@@ -15,24 +18,19 @@ static enum voltage_level currentLevel = VR_3V3;
 #if !VR_NODE_EXISTS
 #define VR_RET_SUCCESS                                                         \
     do {                                                                       \
-        printk("No voltage regulator node present\n");                         \
+        LOG_WRN("No voltage regulator node present");                          \
         return true;                                                           \
     } while (0)
 #define VR_RET_LEVEL                                                           \
     do {                                                                       \
-        printk(                                                                \
-            "No voltage regulator node present. Returning default level\n");   \
+        LOG_WRN("No voltage regulator node present. Returning default level"); \
         return VR_3V3;                                                         \
     } while (0)
 
 static const struct gpio_dt_spec _vr_adjust;
 #else
-#define VR_RET_SUCCESS                                                         \
-    do {                                                                       \
-    } while (0)
-#define VR_RET_LEVEL                                                           \
-    do {                                                                       \
-    } while (0)
+#define VR_RET_SUCCESS (void)0
+#define VR_RET_LEVEL   (void)0
 
 static const struct gpio_dt_spec _vr_adjust =
     GPIO_DT_SPEC_GET(DT_NODELABEL(vr_adjust), gpios);
@@ -43,16 +41,16 @@ bool init_voltage_regulator(void) {
 
     int err;
     if (!device_is_ready(_vr_adjust.port)) {
-        printk("Voltage regulator gpio not ready\n");
+        LOG_ERR("Voltage regulator gpio not ready");
         return false;
     }
 
     err = gpio_pin_configure_dt(&_vr_adjust, GPIO_DISCONNECTED);
     currentLevel = VR_3V3;
     if (!err) {
-        printk("Voltage regulator configured\n");
+        LOG_INF("Voltage regulator configured");
     } else {
-        printk("An error occurred when configuring voltage regulator\n");
+        LOG_ERR("An error occurred when configuring voltage regulator");
     }
     return err == 0;
 }
@@ -73,7 +71,7 @@ bool update_voltage_level(enum voltage_level level) {
         err = gpio_pin_configure_dt(&_vr_adjust, GPIO_OUTPUT_INACTIVE);
         break;
     default:
-        printk("Received an invalid voltage level\n");
+        LOG_WRN("Received an invalid voltage level");
         err = 1;
         break;
     }

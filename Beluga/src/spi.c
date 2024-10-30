@@ -8,8 +8,8 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>
-#include <zephyr/pm/device.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/pm/device.h>
 
 LOG_MODULE_REGISTER(spi_logger, CONFIG_SPI_MODULE_LOG_LEVEL);
 
