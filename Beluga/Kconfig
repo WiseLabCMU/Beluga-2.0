@@ -2,13 +2,6 @@ mainmenu "Beluga application"
 
 menu "Logger configurations"
 
-menuconfig BELUGA_LOGGING
-    bool "Enable logging for beluga"
-    default n
-    select LOG
-
-if BELUGA_LOGGING
-
 menu "App LEDs"
 module = APP_LEDS
 module-str = App LEDs
@@ -99,7 +92,6 @@ module-str = watchdog module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
-endif
 endmenu
 
 menu "Beluga Configurations"
