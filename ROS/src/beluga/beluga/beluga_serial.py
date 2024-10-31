@@ -9,6 +9,7 @@ import queue
 import time
 import json
 import re
+import itertools
 
 TARGETS = [
     'CMU Beluga',
@@ -134,6 +135,13 @@ class BelugaNeighborsList:
         self._neighbors_update = False
         return ret
 
+    def clear(self) -> None:
+        if self._list:
+            self._list.clear()
+            self._neighbors_update = True
+            self._range_update = False
+        return
+
     @property
     def neighbors_update(self) -> bool:
         return self._neighbors_update
@@ -166,6 +174,14 @@ class BelugaQueue(mp_queues.Queue):
                 # else drop the old item...
             super().put(obj, block, timeout)
         return
+
+    def clear(self):
+        for _ in itertools.repeat(None, self.qsize()):
+            try:
+                self.get_nowait()
+            except queue.Empty:
+                # Queue is now empty
+                break
 
 
 class BelugaSerial:
