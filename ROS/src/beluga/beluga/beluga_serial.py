@@ -1,5 +1,7 @@
 from io import TextIOWrapper
 import sys
+import os
+import signal
 import serial
 import serial.tools.list_ports as list_ports
 from typing import List, Dict, Optional, Union, TextIO, Callable, Any, Tuple
@@ -226,6 +228,7 @@ class BelugaSerial:
         self._ranges_queue: BelugaQueue = BelugaQueue()
         self._neighbors_queue: BelugaQueue = BelugaQueue()
         self._command_sent: mp.Event = mp.Event()
+        # Used to block the reboot command until done rebooting
         self._reboot_done: mp.Event = mp.Event()
 
     def _log(self, s):
@@ -261,6 +264,7 @@ class BelugaSerial:
 
     def _process_lines(self):
         rebooting = False
+        self._rebooting.set()
         while True:
             lines = self._batch_queue.get()
             i = 0
@@ -268,9 +272,13 @@ class BelugaSerial:
             lines = [line.decode(errors='ignore').strip() for line in lines]
 
             while i < l:
-                if not lines[i]:
-                    if rebooting:
+                if not lines[i] or rebooting:
+                    if rebooting and not lines[i]:
+                        # Reboot is done, send signal to resume parent process
                         rebooting = False
+                        if self._reboot_done.is_set():
+                            # Reboot was due to something that happened on beluga and not an explicit reboot command
+                            os.kill(os.getppid(), signal.SIGUSR1)
                         self._reboot_done.set()
                     i += 1
                     continue
@@ -278,7 +286,7 @@ class BelugaSerial:
                     processed = self._write_ranging_batch(lines[i:])
                     i += processed
                     if processed == 0:
-                        # Incomplete line
+                        # Incomplete line, skip it
                         i += 1
                     continue
                 if lines[i].startswith('rm '):
@@ -288,8 +296,14 @@ class BelugaSerial:
                     self._command_sent.clear()
                     self._response_q.put(lines[i])
                     i += 1
-                else:
-                    # Probably boot info, wait until settings are printed to resume
+                elif lines[i].startswith('Node On: Firmware version'):
+                    # Node just rebooted
+                    # Clear ranges and neighbors since the timestamps are wrong now
+                    self._ranges_queue.clear()
+                    self._neighbors_queue.clear()
+                    self._neighbors.clear()
+
+                    # Wait until settings are printed to resume
                     rebooting = True
                     i += 1
 
@@ -416,8 +430,8 @@ class BelugaSerial:
 
     def reboot(self) -> str:
         ret = self._send_command(b'AT+REBOOT\r\n')
-        self._reboot_done.wait()
         self._reboot_done.clear()
+        self._reboot_done.wait()
         return ret
 
     def pwr_amp(self, enable_pwr_amp: Optional[int] = None) -> str:
