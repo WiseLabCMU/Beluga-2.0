@@ -6,7 +6,9 @@ from rclpy.time import Time, Duration
 import typing
 from beluga.beluga_serial import BelugaSerial
 import json
-from threading import Lock
+from threading import Lock, Event
+import os
+import signal
 
 from beluga_messages.msg import BelugaNeighbor, BelugaNeighbors, BelugaRange, BelugaRanges
 from beluga_messages.srv import BelugaATCommand
@@ -73,6 +75,9 @@ class BelugaPublisherService(Node):
         self.range_publish_ = self.create_publisher(BelugaRanges, pub_topic_ranges, pub_history_depth)
         self.srv = self.create_service(BelugaATCommand, service_topic, self.at_command)
         self.dummy_data = dummy_data_mode
+
+        signal.signal(signal.SIGUSR1, self._resync_time)
+
         self.serial: typing.Optional[BelugaSerial] = None
         self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info)
         self.serial.start()
@@ -114,6 +119,32 @@ class BelugaPublisherService(Node):
 
         # Time Sync Stuff
         self._timestamp_sync = Lock()
+        self._init_time_sync()
+
+        self.timer = self.create_timer(period, self.publish_neighbors)
+        self.range_timer = self.create_timer(period, self.publish_ranges)
+        self.sync_timer = self.create_timer(300, self._time_sync)
+        self.resync_timer = self.create_timer(1, self._resync_time_callback)
+        self.resync_timer.cancel()
+
+        self.get_logger().info('Ready')
+        return
+
+    def _resync_time(self, signum, frame) -> None:
+        self.get_logger().info('Node rebooted')
+        self.timer.cancel()
+        self.range_timer.cancel()
+        self.sync_timer.cancel()
+        self.resync_timer.reset()
+
+    def _resync_time_callback(self):
+        self.resync_timer.cancel()
+        self._init_time_sync()
+        self.timer.reset()
+        self.range_timer.reset()
+        self.sync_timer.reset()
+
+    def _init_time_sync(self):
         self.get_logger().info('Syncing Time')
         self._ns_per_timestamp_unit = 0
         self._last_mapping = {
@@ -127,13 +158,7 @@ class BelugaPublisherService(Node):
             self.get_clock().sleep_until(self.get_clock().now() + Duration(nanoseconds=500 * MS_CONVERSION_FACTOR))
             self._time_sync()
             time_init -= 1
-
-        self.timer = self.create_timer(period, self.publish_neighbors)
-        self.range_timer = self.create_timer(period, self.publish_ranges)
-        self.sync_timer = self.create_timer(300, self._time_sync)
-
-        self.get_logger().info('Ready')
-        return
+        self.get_logger().info('Time is synced')
 
     def _time_sync_get_measurement(self) -> typing.Tuple[str, Time, Time]:
         req = self.get_clock().now()
@@ -274,6 +299,8 @@ class BelugaPublisherService(Node):
                     response.response = self.serial.led_mode(arg)
                 case BelugaATCommand.Request.AT_COMMAND_REBOOT:
                     response.response = self.serial.reboot()
+                    # Node just got rebooted, need to resync time
+                    self._resync_time(0, '')
                 case BelugaATCommand.Request.AT_COMMAND_PWRAMP:
                     response.response = self.serial.pwr_amp(arg)
                 case BelugaATCommand.Request.AT_COMMAND_ANTENNA:
