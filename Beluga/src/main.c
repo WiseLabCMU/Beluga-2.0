@@ -283,16 +283,16 @@ static void load_data_rate(void) {
 
 static void load_pulse_rate(void) {
     enum uwb_pulse_rate rate =
-            (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
+        (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
     switch (rate) {
-        case UWB_PR_16M:
-            printf("  UWB Pulse Rate: 16MHz \r\n");
-            break;
-        case UWB_PR_64M:
-        default:
-            printf("  UWB Pulse Rate: 64MHz \r\n");
-            rate = UWB_PR_64M;
-            break;
+    case UWB_PR_16M:
+        printf("  UWB Pulse Rate: 16MHz \r\n");
+        break;
+    case UWB_PR_64M:
+    default:
+        printf("  UWB Pulse Rate: 64MHz \r\n");
+        rate = UWB_PR_64M;
+        break;
     }
 
     uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
@@ -307,23 +307,23 @@ static void load_preamble_length(void) {
 static void load_pac_size(void) {
     int32_t pac = retrieveSetting(BELUGA_UWB_PAC);
 
-    switch((enum uwb_pac)pac) {
-        case UWB_PAC8:
-            printf("  UWB PAC Size: 8 \r\n");
-            break;
-        case UWB_PAC16:
-            printf("  UWB PAC Size: 16 \r\n");
-            break;
-        case UWB_PAC32:
-            printf("  UWB PAC Size: 32 \r\n");
-            break;
-        case UWB_PAC64:
-            printf("  UWB PAC Size: 16 \r\n");
-            break;
-        default:
-            printf("  UWB PAC Size: 8 \r\n");
-            pac = (int32_t)UWB_PAC8;
-            break;
+    switch ((enum uwb_pac)pac) {
+    case UWB_PAC8:
+        printf("  UWB PAC Size: 8 \r\n");
+        break;
+    case UWB_PAC16:
+        printf("  UWB PAC Size: 16 \r\n");
+        break;
+    case UWB_PAC32:
+        printf("  UWB PAC Size: 32 \r\n");
+        break;
+    case UWB_PAC64:
+        printf("  UWB PAC Size: 16 \r\n");
+        break;
+    default:
+        printf("  UWB PAC Size: 8 \r\n");
+        pac = (int32_t)UWB_PAC8;
+        break;
     }
 
     set_pac_size((enum uwb_pac)pac);

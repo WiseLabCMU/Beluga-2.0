@@ -265,6 +265,40 @@ int set_sfd_mode(enum uwb_sfd mode) {
     return 0;
 }
 
+int set_uwb_channel(uint32_t channel) {
+    enum pgdelay_ch delay;
+    CHECK_UWB_STATE();
+
+    switch (channel) {
+    case 1:
+        delay = ch1;
+        break;
+    case 2:
+        delay = ch2;
+        break;
+    case 3:
+        delay = ch3;
+        break;
+    case 4:
+        delay = ch4;
+        break;
+    case 5:
+        delay = ch5;
+        break;
+    case 7:
+        delay = ch7;
+        break;
+    default:
+        return -EINVAL;
+    }
+
+    config_tx.PGdly = delay;
+    config.chan = (uint8_t)channel;
+    dwt_configure(&config);
+    dwt_configuretxrf(&config_tx);
+    return 0;
+}
+
 void set_tx_power(bool power_max) {
     if (power_max) {
         config_tx.power = TX_POWER_MAX;

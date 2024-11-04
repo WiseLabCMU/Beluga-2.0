@@ -254,14 +254,25 @@ AT_CMD_DEFINE(CHANNEL) {
     LOG_INF("Running CHANNEL command");
     READ_SETTING(argc, 2, BELUGA_UWB_CHANNEL, "Channel");
     int32_t channel;
+    int retVal;
     bool success = strtoint32(argv[1], &channel);
 
-    if (success && set_uwb_channel(channel)) {
-        updateSetting(BELUGA_UWB_CHANNEL, channel);
-        OK;
-    } else {
-        printf("Invalid channel\r\n");
+    if (!success) {
+        printf("Channel parameter input error \r\n");
+        return;
     }
+
+    retVal = set_uwb_channel(channel);
+    if (retVal == -EBUSY) {
+        printf("Cannot set UWB parameter: UWB is active \r\n");
+        return;
+    } else if (retVal != 0) {
+        printf("Channel parameter input error \r\n");
+        return;
+    }
+
+    updateSetting(BELUGA_UWB_CHANNEL, channel);
+    OK;
 }
 
 AT_CMD_DEFINE(RESET) {
