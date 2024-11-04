@@ -18,27 +18,34 @@ enum pgdelay_ch {
     ch7 = TC_PGDELAY_CH7,
 };
 
-enum uwb_datarate { UWB_DR_6M8, UWB_DR_850K, UWB_DR_110K };
+enum uwb_phr_mode { UWB_PHR_MODE_STD, UWB_PWR_MODE_EXT };
 
-enum uwb_preamble_length {
-    UWB_PRL_64 = DWT_PLEN_64,
-    UWB_PRL_128 = DWT_PLEN_128,
-    UWB_PRL_256 = DWT_PLEN_256,
-    UWB_PRL_512 = DWT_PLEN_512,
-    UWB_PRL_1024 = DWT_PLEN_1024,
-    UWB_PRL_2048 = DWT_PLEN_2048,
-    UWB_PRL_4096 = DWT_PLEN_4096,
-    UWB_PRL_ERROR
-};
+enum uwb_datarate { UWB_DR_6M8, UWB_DR_850K, UWB_DR_110K };
 
 enum uwb_pulse_rate { UWB_PR_16M, UWB_PR_64M };
 
-bool set_uwb_data_rate(enum uwb_datarate rate,
-                       enum uwb_preamble_length *new_preamble);
-bool set_uwb_preamble_length(enum uwb_preamble_length length);
-enum uwb_preamble_length setting_to_preamble_enum(int32_t setting);
-int32_t preamble_length_to_setting(enum uwb_preamble_length length);
-bool set_pulse_rate(enum uwb_pulse_rate rate);
+enum uwb_preamble_length {
+    UWB_PRL_64 = 64,
+    UWB_PRL_128 = 128,
+    UWB_PRL_256 = 256,
+    UWB_PRL_512 = 512,
+    UWB_PRL_1024 = 1024,
+    UWB_PRL_1536 = 1536,
+    UWB_PRL_2048 = 2048,
+    UWB_PRL_4096 = 4096,
+    UWB_PRL_ERROR
+};
+
+enum uwb_pac { UWB_PAC8, UWB_PAC16, UWB_PAC32, UWB_PAC64 };
+
+enum uwb_sfd { UWB_STD_SFD, UWB_NSTD_SFD };
+
+int uwb_set_phr_mode(enum uwb_phr_mode mode);
+int uwb_set_datarate(enum uwb_datarate rate);
+int uwb_set_pulse_rate(enum uwb_pulse_rate rate);
+int uwb_set_preamble(enum uwb_preamble_length length);
+int set_pac_size(enum uwb_pac pac);
+int set_sfd_mode(enum uwb_sfd mode);
 
 void set_twr_mode(bool value);
 bool get_twr_mode(void);

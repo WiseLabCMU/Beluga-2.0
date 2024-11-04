@@ -65,178 +65,105 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 static volatile bool rangingStarted = false;
 static struct task_wdt_attr watchdogAttr = {.period = 2000};
 
-enum uwb_preamble_length setting_to_preamble_enum(int32_t setting) {
-    enum uwb_preamble_length length;
+#define CHECK_UWB_STATE()                                                      \
+    if (get_uwb_led_state() == LED_UWB_ON) {                                   \
+        return -EBUSY;                                                         \
+    }
 
-    switch (setting) {
-    case 0:
-        length = UWB_PRL_64;
+int uwb_set_phr_mode(enum uwb_phr_mode mode) {
+    CHECK_UWB_STATE();
+
+    switch (mode) {
+    case UWB_PHR_MODE_STD:
+        config.phrMode = DWT_PHRMODE_STD;
         break;
-    case 1:
-        length = UWB_PRL_128;
-        break;
-    case 2:
-        length = UWB_PRL_256;
-        break;
-    case 3:
-        length = UWB_PRL_512;
-        break;
-    case 4:
-        length = UWB_PRL_1024;
-        break;
-    case 5:
-        length = UWB_PRL_2048;
-        break;
-    case 6:
-        length = UWB_PRL_4096;
+    case UWB_PWR_MODE_EXT:
+        config.phrMode = DWT_PHRMODE_EXT;
         break;
     default:
-        length = UWB_PRL_ERROR;
+        return -EINVAL;
     }
 
-    return length;
+    dwt_configure(&config);
+    return 0;
 }
 
-int32_t preamble_length_to_setting(enum uwb_preamble_length length) {
-    int32_t setting;
-
-    switch (length) {
-    case UWB_PRL_64:
-        setting = 0;
-        break;
-    case UWB_PRL_256:
-        setting = 2;
-        break;
-    case UWB_PRL_512:
-        setting = 3;
-        break;
-    case UWB_PRL_1024:
-        setting = 4;
-        break;
-    case UWB_PRL_2048:
-        setting = 5;
-        break;
-    case UWB_PRL_4096:
-        setting = 6;
-        break;
-    case UWB_PRL_128:
+static uint16_t get_preamble_length(void) {
+    switch (config.txPreambLength) {
+    case DWT_PLEN_64:
+        return 64;
+    case DWT_PLEN_128:
+        return 128;
+    case DWT_PLEN_256:
+        return 256;
+    case DWT_PLEN_512:
+        return 512;
+    case DWT_PLEN_1024:
+        return 1024;
+    case DWT_PLEN_1536:
+        return 1536;
+    case DWT_PLEN_2048:
+        return 2048;
+    case DWT_PLEN_4096:
     default:
-        setting = 1;
-        break;
+        return 4096;
     }
-
-    return setting;
 }
 
-// Forces Preamble to acceptable value
-bool set_uwb_data_rate(enum uwb_datarate rate,
-                       enum uwb_preamble_length *new_preamble) {
-    uint8 new_data_rate;
-
-    if (new_preamble == NULL) {
-        return false;
+static uint16_t get_pac_size(void) {
+    switch (config.rxPAC) {
+    case DWT_PAC8:
+        return 8;
+    case DWT_PAC16:
+        return 16;
+    case DWT_PAC32:
+        return 32;
+    case DWT_PAC64:
+    default:
+        return 64;
     }
+}
+
+static uint16_t get_sfd_length(void) {
+    switch (config.dataRate) {
+    case DWT_BR_6M8:
+        return DW_NS_SFD_LEN_6M8;
+    case DWT_BR_850K:
+        return (config.nsSFD) ? DW_NS_SFD_LEN_850K : DW_NS_SFD_LEN_6M8;
+    case DWT_BR_110K:
+    default:
+        return DW_NS_SFD_LEN_110K;
+    }
+}
+
+int uwb_set_datarate(enum uwb_datarate rate) {
+    CHECK_UWB_STATE();
 
     switch (rate) {
     case UWB_DR_6M8:
-        new_data_rate = DWT_BR_6M8;
-        *new_preamble = UWB_PRL_128;
+        config.dataRate = DWT_BR_6M8;
         break;
     case UWB_DR_850K:
-        new_data_rate = DWT_BR_850K;
-        *new_preamble = UWB_PRL_512;
+        config.dataRate = DWT_BR_850K;
         break;
     case UWB_DR_110K:
-        new_data_rate = DWT_BR_110K;
-        *new_preamble = UWB_PRL_2048;
+        config.dataRate = DWT_BR_110K;
         break;
     default:
-        return false;
+        return -EINVAL;
     }
 
-    config.dataRate = new_data_rate;
-    config.txPreambLength = (uint8)*new_preamble;
+    // Update the SFD length according to the data rate
+    config.sfdTO =
+        SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
-    return set_uwb_preamble_length(*new_preamble);
-}
-
-bool set_uwb_preamble_length(enum uwb_preamble_length length) {
-    uint8 newLength = UWB_PRL_ERROR, ns_sfd = 0;
-    uint16 preamble_len = 0, pac_len, sfd_len;
-
-    switch (config.dataRate) {
-    case DWT_BR_6M8: {
-        if (length == UWB_PRL_64 || length == UWB_PRL_128 ||
-            length == UWB_PRL_256) {
-            newLength = (uint8)length;
-            sfd_len = 8;
-        }
-        break;
-    }
-    case DWT_BR_850K: {
-        if (length == UWB_PRL_256 || length == UWB_PRL_512 ||
-            length == UWB_PRL_1024) {
-            newLength = (uint8)length;
-            sfd_len = 16;
-        }
-    }
-    case DWT_BR_110K: {
-        if (length == UWB_PRL_2048 || length == UWB_PRL_4096) {
-            newLength = (uint8)length;
-            sfd_len = 64;
-        }
-        ns_sfd = 1;
-        break;
-    }
-    default:
-        return false;
-    }
-
-    switch (newLength) {
-    case UWB_PRL_64:
-        preamble_len = -64;
-        // In fallthrough, preamble_len will get 128 added to it, thus
-        // resulting in a preamble_len of 64 (which is the correct value)
-    case UWB_PRL_128:
-        preamble_len += 128;
-        config.rxPAC = DWT_PAC8;
-        pac_len = 8;
-        break;
-    case UWB_PRL_256:
-        preamble_len = -256;
-        // In fallthrough, preamble_len will get 256 added to it, thus
-        // resulting in a preamble_len of 256 (which is the correct value)
-    case UWB_PRL_512:
-        preamble_len += 512;
-        config.rxPAC = DWT_PAC16;
-        pac_len = 16;
-        break;
-    case UWB_PRL_1024:
-        preamble_len = 1024;
-        config.rxPAC = DWT_PAC32;
-        pac_len = 32;
-        break;
-    case UWB_PRL_2048:
-        preamble_len = -2048;
-        // In fallthrough, preamble_len will get 4096 added to it, thus
-        // resulting in a preamble_len of 2048 (which is the correct value)
-    case UWB_PRL_4096:
-        preamble_len += 4096;
-        config.rxPAC = DWT_PAC64;
-        pac_len = 64;
-        break;
-    default:
-        return false;
-    }
-
-    config.nsSFD = ns_sfd;
-    config.sfdTO = SFD_TO(preamble_len, sfd_len, pac_len);
-    config.txPreambLength = newLength;
     dwt_configure(&config);
-    return true;
+    return 0;
 }
 
-bool set_pulse_rate(enum uwb_pulse_rate rate) {
+int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
+    CHECK_UWB_STATE();
+
     switch (rate) {
     case UWB_PR_16M:
         config.prf = DWT_PRF_16M;
@@ -245,44 +172,97 @@ bool set_pulse_rate(enum uwb_pulse_rate rate) {
         config.prf = DWT_PRF_64M;
         break;
     default:
-        return false;
+        return -EINVAL;
     }
 
     dwt_configure(&config);
-    return true;
+    return 0;
 }
 
-bool set_uwb_channel(uint32_t channel) {
-    enum pgdelay_ch uwb_pgdelay;
+int uwb_set_preamble(enum uwb_preamble_length length) {
+    CHECK_UWB_STATE();
 
-    switch (channel) {
-    case 1:
-        uwb_pgdelay = ch1;
+    switch (length) {
+    case UWB_PRL_64:
+        config.txPreambLength = DWT_PLEN_64;
         break;
-    case 2:
-        uwb_pgdelay = ch2;
+    case UWB_PRL_128:
+        config.txPreambLength = DWT_PLEN_128;
         break;
-    case 3:
-        uwb_pgdelay = ch3;
+    case UWB_PRL_256:
+        config.txPreambLength = DWT_PLEN_256;
         break;
-    case 4:
-        uwb_pgdelay = ch4;
+    case UWB_PRL_512:
+        config.txPreambLength = DWT_PLEN_512;
         break;
-    case 5:
-        uwb_pgdelay = ch5;
+    case UWB_PRL_1024:
+        config.txPreambLength = DWT_PLEN_1024;
         break;
-    case 7:
-        uwb_pgdelay = ch7;
+    case UWB_PRL_1536:
+        config.txPreambLength = DWT_PLEN_1536;
         break;
+    case UWB_PRL_2048:
+        config.txPreambLength = DWT_PLEN_2048;
+        break;
+    case UWB_PRL_4096:
+        config.txPreambLength = DWT_PLEN_4096;
     default:
-        return false;
+        return -EINVAL;
     }
 
-    config_tx.PGdly = uwb_pgdelay;
-    config.chan = channel;
+    config.sfdTO =
+        SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
+
     dwt_configure(&config);
-    dwt_configuretxrf(&config_tx);
-    return true;
+    return 0;
+}
+
+int set_pac_size(enum uwb_pac pac) {
+    CHECK_UWB_STATE();
+
+    switch (pac) {
+    case UWB_PAC8:
+        config.rxPAC = DWT_PAC8;
+        break;
+    case UWB_PAC16:
+        config.rxPAC = DWT_PAC16;
+        break;
+    case UWB_PAC32:
+        config.rxPAC = DWT_PAC32;
+        break;
+    case UWB_PAC64:
+        config.rxPAC = DWT_PAC64;
+        break;
+    default:
+        return -EINVAL;
+    }
+
+    config.sfdTO =
+        SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
+
+    dwt_configure(&config);
+    return 0;
+}
+
+int set_sfd_mode(enum uwb_sfd mode) {
+    CHECK_UWB_STATE();
+
+    switch (mode) {
+    case UWB_STD_SFD:
+        config.nsSFD = 0;
+        break;
+    case UWB_NSTD_SFD:
+        config.nsSFD = 1;
+        break;
+    default:
+        return -EINVAL;
+    }
+
+    config.sfdTO =
+        SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
+
+    dwt_configure(&config);
+    return 0;
 }
 
 void set_tx_power(bool power_max) {

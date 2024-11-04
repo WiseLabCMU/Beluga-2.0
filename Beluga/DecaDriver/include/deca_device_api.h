@@ -213,9 +213,7 @@ typedef signed long int32;
         return 0.0;                                                            \
     } while (0)
 #else
-#define DWT_DISABLED_RET_SUCCESS                                               \
-    do {                                                                       \
-    } while (0)
+#define DWT_DISABLED_RET_SUCCESS  (void)0
 #define DWT_DISABLED_RET_DEV_CODE DWT_DISABLED_RET_SUCCESS
 #define DWT_DISABLED_RET_VOID     DWT_DISABLED_RET_SUCCESS
 #define DWT_DISABLED_RET_DOUBLE   DWT_DISABLED_RET_SUCCESS

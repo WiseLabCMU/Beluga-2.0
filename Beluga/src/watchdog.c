@@ -8,9 +8,9 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/watchdog.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/task_wdt/task_wdt.h>
-#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
 
@@ -23,8 +23,8 @@ LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
 
 static void task_wdt_callback(int channel_id, void *user_data) {
     LOG_ERR("Watchdog %d has starved. The offending thread (%s) will be tried "
-           "for animal cruelty",
-           channel_id, k_thread_name_get((k_tid_t)user_data));
+            "for animal cruelty",
+            channel_id, k_thread_name_get((k_tid_t)user_data));
 
     sys_reboot(SYS_REBOOT_COLD);
 }
