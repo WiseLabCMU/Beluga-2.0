@@ -431,66 +431,53 @@ AT_CMD_DEFINE(DEEPSLEEP) {
     enter_deep_sleep();
 }
 
+AT_CMD_DEFINE(PHR) {
+    LOG_INF("Running PHR command");
+    READ_SETTING(argc, 2, BELUGA_UWB_PHR, "UWB PHR mode");
+    int32_t phr;
+    int retVal;
+    bool success = strtoint32(argv[1], &phr);
+
+    if (!success) {
+        printf("PHR mode parameter input error \r\n");
+        return;
+    }
+
+    retVal = uwb_set_phr_mode((enum uwb_phr_mode)phr);
+    if (retVal == -EBUSY) {
+        printf("Cannot set UWB parameter: UWB is active \r\n");
+        return;
+    } else if (retVal != 0) {
+        printf("PHR mode parameter input error \r\n");
+        return;
+    }
+
+    updateSetting(BELUGA_UWB_PHR, phr);
+    OK;
+}
+
 AT_CMD_DEFINE(DATARATE) {
     LOG_INF("Running DATARATE command");
     READ_SETTING(argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
-    int32_t rate, preamble;
-    enum uwb_preamble_length updatedLength;
+    int32_t rate;
+    int retVal;
     bool success = strtoint32(argv[1], &rate);
 
-    if (!success || rate < 0 || rate > 2) {
+    if (!success) {
         printf("Data rate parameter input error \r\n");
         return;
     }
 
-    success = set_uwb_data_rate((enum uwb_datarate)rate, &updatedLength);
-    if (!success) {
-        printf("Cannot set data rate to %" PRId32 "\r\n", rate);
+    retVal = uwb_set_datarate((enum uwb_datarate)rate);
+    if (retVal == -EBUSY) {
+        printf("Cannot set UWB parameter: UWB is active \r\n");
         return;
-    }
-
-    switch (updatedLength) {
-    case UWB_PRL_128:
-        printf("Forcing Preamble Length to 128 bytes ");
-        break;
-    case UWB_PRL_512:
-        printf("Forcing Preamble Length to 512 bytes ");
-        break;
-    case UWB_PRL_2048:
-        printf("Forcing Preamble Length to 2048 bytes ");
-        break;
-    default:
-        printf("Forcing Preamble Length to %" PRId32 " ", updatedLength);
+    } else if (retVal != 0) {
+        printf("Data rate parameter input error \r\n");
+        return;
     }
 
     updateSetting(BELUGA_UWB_DATA_RATE, rate);
-    preamble = preamble_length_to_setting(updatedLength);
-    updateSetting(BELUGA_UWB_PREAMBLE, preamble);
-    OK;
-}
-
-AT_CMD_DEFINE(PREAMBLE) {
-    LOG_INF("Running PREAMBLE command");
-    READ_SETTING(argc, 2, BELUGA_UWB_PREAMBLE, "Preamble length");
-    int32_t preamble;
-    enum uwb_preamble_length length;
-    bool success = strtoint32(argv[1], &preamble);
-
-    length = setting_to_preamble_enum(preamble);
-
-    if (!success || length == UWB_PRL_ERROR) {
-        printf("Invalid Preamble length setting \r\n");
-        return;
-    }
-
-    success = set_uwb_preamble_length(length);
-
-    if (!success) {
-        printf("Invalid preamble setting for current data rate \r\n");
-        return;
-    }
-
-    updateSetting(BELUGA_UWB_PREAMBLE, preamble);
     OK;
 }
 
@@ -498,21 +485,99 @@ AT_CMD_DEFINE(PULSERATE) {
     LOG_INF("Running PULSERATE command");
     READ_SETTING(argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
     int32_t rate;
+    int retVal;
     bool success = strtoint32(argv[1], &rate);
 
-    if (!success || rate < 0 || rate > 1) {
+    if (!success) {
         printf("Invalid pulse rate input parameter \r\n");
         return;
     }
 
-    success = set_pulse_rate((enum uwb_pulse_rate)rate);
-
-    if (!success) {
-        printf("Cannot set pulse rate \r\n");
+    retVal = uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
+    if (retVal == -EBUSY) {
+        printf("Cannot set UWB parameter: UWB is active \r\n");
+        return;
+    } else if (retVal != 0) {
+        printf("Pulse rate parameter input error \r\n");
         return;
     }
 
     updateSetting(BELUGA_UWB_PULSE_RATE, rate);
+    OK;
+}
+
+AT_CMD_DEFINE(PREAMBLE) {
+    LOG_INF("Running PREAMBLE command");
+    READ_SETTING(argc, 2, BELUGA_UWB_PREAMBLE, "Preamble length");
+    int32_t preamble;
+    int retVal;
+    bool success = strtoint32(argv[1], &preamble);
+
+    if (!success) {
+        printf("Invalid Preamble length setting \r\n");
+        return;
+    }
+
+    retVal = uwb_set_preamble((enum uwb_preamble_length)preamble);
+    if (retVal == -EBUSY) {
+        printf("Cannot set UWB parameter: UWB is active \r\n");
+        return;
+    } else if (retVal != 0) {
+        printf("Preamble parameter input error \r\n");
+        return;
+    }
+
+    updateSetting(BELUGA_UWB_PREAMBLE, preamble);
+    OK;
+}
+
+AT_CMD_DEFINE(PAC) {
+    LOG_INF("Running PAC command");
+    READ_SETTING(argc, 2, BELUGA_UWB_PAC, "PAC Size");
+    int32_t pac_size;
+    int retVal;
+    bool success = strtoint32(argv[1], &pac_size);
+
+    if (!success) {
+        printf("Invalid PAC size setting\r\n");
+        return;
+    }
+
+    retVal = set_pac_size((enum uwb_pac)pac_size);
+    if (retVal == -EBUSY) {
+        printf("Cannot set UWB parameter: UWB is active \r\n");
+        return;
+    } else if (retVal != 0) {
+        printf("PAC Size parameter input error \r\n");
+        return;
+    }
+
+    updateSetting(BELUGA_UWB_PAC, pac_size);
+    OK;
+}
+
+AT_CMD_DEFINE(SFD) {
+    LOG_INF("Running SFD command");
+    READ_SETTING(argc, 2, BELUGA_UWB_NSSFD, "Nonstandard SFD");
+    int32_t sfd;
+    int retVal;
+    bool success = strtoint32(argv[1], &sfd);
+
+    if (!success) {
+        printf("Invalid Preamble length setting \r\n");
+        return;
+    }
+
+    retVal = set_sfd_mode((enum uwb_sfd)sfd);
+    if (retVal == -EBUSY) {
+        printf("Cannot set UWB parameter: UWB is active \r\n");
+        return;
+    } else if (retVal != 0) {
+        printf("SFD parameter input error \r\n");
+        return;
+    }
+
+    updateSetting(BELUGA_UWB_NSSFD, sfd);
     OK;
 }
 
@@ -523,8 +588,9 @@ static struct cmd_info commands[] = {
     AT_CMD_DATA(TIMEOUT),  AT_CMD_DATA(TXPOWER),   AT_CMD_DATA(STREAMMODE),
     AT_CMD_DATA(TWRMODE),  AT_CMD_DATA(LEDMODE),   AT_CMD_DATA(REBOOT),
     AT_CMD_DATA(PWRAMP),   AT_CMD_DATA(ANTENNA),   AT_CMD_DATA(TIME),
-    AT_CMD_DATA(FORMAT),   AT_CMD_DATA(DEEPSLEEP), AT_CMD_DATA(DATARATE),
-    AT_CMD_DATA(PREAMBLE), AT_CMD_DATA(PULSERATE), AT_CMD_DATA_TERMINATOR};
+    AT_CMD_DATA(FORMAT),   AT_CMD_DATA(DEEPSLEEP), AT_CMD_DATA(PHR),
+    AT_CMD_DATA(DATARATE), AT_CMD_DATA(PULSERATE), AT_CMD_DATA(PREAMBLE),
+    AT_CMD_DATA(PAC),      AT_CMD_DATA(SFD),       AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
