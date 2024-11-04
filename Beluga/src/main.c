@@ -255,10 +255,15 @@ static void load_out_format(void) {
     printf("  Output Format: %s \r\n", (format == 1) ? "JSON" : "CSV");
 }
 
-static enum uwb_preamble_length load_data_rate(void) {
+static void load_phr_mode(void) {
+    int32_t mode = retrieveSetting(BELUGA_UWB_PHR);
+    printf("  UWB PHR Mode: %" PRId32 " \r\n", mode);
+    uwb_set_phr_mode((enum uwb_phr_mode)mode);
+}
+
+static void load_data_rate(void) {
     enum uwb_datarate rate =
         (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
-    enum uwb_preamble_length length;
     switch (rate) {
     case UWB_DR_850K:
         printf("  UWB Data Rate: 850 kHz \r\n");
@@ -273,60 +278,61 @@ static enum uwb_preamble_length load_data_rate(void) {
         break;
     }
 
-    set_uwb_data_rate(rate, &length);
-    return length;
-}
-
-static void load_preamble_length(enum uwb_preamble_length forcedLength) {
-    int32_t length = retrieveSetting(BELUGA_UWB_PREAMBLE);
-    enum uwb_preamble_length preambleLength = setting_to_preamble_enum(length);
-    switch (preambleLength) {
-    case UWB_PRL_64:
-        printf("  UWB Preamble Length: 64 \r\n");
-        break;
-    case UWB_PRL_128:
-        printf("  UWB Preamble Length: 128 \r\n");
-        break;
-    case UWB_PRL_256:
-        printf("  UWB Preable Length: 256 \r\n");
-        break;
-    case UWB_PRL_512:
-        printf("  UWB Preamble Length: 512 \r\n");
-        break;
-    case UWB_PRL_1024:
-        printf("  UWB Preamble Length: 1024 \r\n");
-        break;
-    case UWB_PRL_2048:
-        printf("  UWB Preamble Length: 2048 \r\n");
-        break;
-    case UWB_PRL_4096:
-        printf("  UWB Preamble Length: 4096 \r\n");
-        break;
-    default:
-        preambleLength = forcedLength;
-        printf("  UWB Preamble Length: %" PRId32 " \r\n",
-               preamble_length_to_setting(forcedLength));
-        break;
-    }
-
-    set_uwb_preamble_length(preambleLength);
+    uwb_set_datarate(rate);
 }
 
 static void load_pulse_rate(void) {
     enum uwb_pulse_rate rate =
-        (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
+            (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
     switch (rate) {
-    case UWB_PR_16M:
-        printf("  UWB Pulse Rate: 16MHz \r\n");
-        break;
-    case UWB_PR_64M:
-    default:
-        printf("  UWB Pulse Rate: 64MHz \r\n");
-        rate = UWB_PR_64M;
-        break;
+        case UWB_PR_16M:
+            printf("  UWB Pulse Rate: 16MHz \r\n");
+            break;
+        case UWB_PR_64M:
+        default:
+            printf("  UWB Pulse Rate: 64MHz \r\n");
+            rate = UWB_PR_64M;
+            break;
     }
 
-    set_pulse_rate(rate);
+    uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
+}
+
+static void load_preamble_length(void) {
+    int32_t length = retrieveSetting(BELUGA_UWB_PREAMBLE);
+    printf("  UWB Preamble Length: %" PRId32 "\r\n", length);
+    uwb_set_preamble((enum uwb_preamble_length)length);
+}
+
+static void load_pac_size(void) {
+    int32_t pac = retrieveSetting(BELUGA_UWB_PAC);
+
+    switch((enum uwb_pac)pac) {
+        case UWB_PAC8:
+            printf("  UWB PAC Size: 8 \r\n");
+            break;
+        case UWB_PAC16:
+            printf("  UWB PAC Size: 16 \r\n");
+            break;
+        case UWB_PAC32:
+            printf("  UWB PAC Size: 32 \r\n");
+            break;
+        case UWB_PAC64:
+            printf("  UWB PAC Size: 16 \r\n");
+            break;
+        default:
+            printf("  UWB PAC Size: 8 \r\n");
+            pac = (int32_t)UWB_PAC8;
+            break;
+    }
+
+    set_pac_size((enum uwb_pac)pac);
+}
+
+static void load_sfd_mode(void) {
+    int32_t mode = retrieveSetting(BELUGA_UWB_NSSFD);
+    printf("  UWB Nonstandard SFD Length: %" PRId32 " \r\n", mode);
+    set_sfd_mode((enum uwb_sfd)mode);
 }
 
 UNUSED static void load_power_amplifiers(void) {
@@ -346,11 +352,24 @@ static void load_settings(void) {
     load_led_mode();
     load_id();
     load_bootmode();
+
+    // Disable UWB LED since setters check LED if UWB is active or not
+    enum led_state uwb_state = get_uwb_led_state();
+    update_led_state(LED_UWB_OFF);
+
+    // Load UWB settings since ranging task has not started yet
     load_poll_rate();
     load_channel();
-    enum uwb_preamble_length forced = load_data_rate();
-    load_preamble_length(forced);
+    load_phr_mode();
+    load_data_rate();
     load_pulse_rate();
+    load_preamble_length();
+    load_pac_size();
+    load_sfd_mode();
+
+    // Restore UWB state in the LEDs
+    update_led_state(uwb_state);
+
     load_timeout();
     load_tx_power();
     load_stream_mode();
