@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
 K_SEM_DEFINE(k_sus_init, 0, 1);
 
@@ -119,6 +122,7 @@ double ds_init_run(uint8 id) {
         /* Clear TXFRS event. */
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
     } else {
+        LOG_INF("Failed to send poll message");
         return -1;
     }
 
@@ -142,6 +146,7 @@ double ds_init_run(uint8 id) {
         if (frame_len <= RX_BUF_LEN) {
             dwt_readrxdata(rx_buffer, frame_len, 0);
         }
+        LOG_INF("Frame length: %" PRId32, frame_len);
 
         /* Check that the frame is the expected response from the companion
          * frame and extract ID from sender's message */

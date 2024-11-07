@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_INF);
 
 K_SEM_DEFINE(k_sus_resp, 0, 1);
 
@@ -149,6 +152,7 @@ int ds_resp_run(void) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             /* Reset RX to properly reinitialise LDE operation. */
             dwt_rxreset();
+            LOG_INF("Responder suspended");
             return 1;
         }
     }
@@ -230,6 +234,7 @@ int ds_resp_run(void) {
 
                 /* Reset RX to properly reinitialise LDE operation. */
                 dwt_rxreset();
+                LOG_INF("Failed to transmit");
                 return 1;
             }
 
@@ -243,6 +248,7 @@ int ds_resp_run(void) {
                     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
                     /* Reset RX to properly reinitialise LDE operation. */
                     dwt_rxreset();
+                    LOG_INF("Responder got suspended");
                     return 1;
                 }
             };
@@ -307,8 +313,10 @@ int ds_resp_run(void) {
                     roundA = (double)(resp_rx_ts - poll_tx_ts);
                     replyA = (double)(final_tx_ts - resp_rx_ts);
 
-                    if ((roundA * roundB - replyA * replyB) <= 0)
+                    if ((roundA * roundB - replyA * replyB) <= 0) {
+                        LOG_INF("Bad TOF response");
                         return 1;
+                    }
 
                     /* Compute time of flight and distance, using clock offset
                      * ratio to correct for differing local and remote clock
@@ -361,6 +369,7 @@ int ds_resp_run(void) {
                         */
                         /* Reset RX to properly reinitialise LDE operation. */
                         dwt_rxreset();
+                        LOG_INF("Failed to transmit");
                         return 1;
                     }
                 }
