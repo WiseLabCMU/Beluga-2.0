@@ -26,11 +26,9 @@
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <app_version.h>
 
 LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
-
-/* Firmware version */
-#define FIRMWARE_VERSION "2.0"
 
 #ifdef CONFIG_DEBUG_BELUGA_CLOCK
 #include <zephyr/drivers/clock_control/nrf_clock_control.h>
@@ -432,7 +430,7 @@ int main(void) {
 
     init_uwb();
 
-    printf("Node On: Firmware version %s\r\n", FIRMWARE_VERSION);
+    printf("Node On: " APP_VERSION_STRING "\r\n");
 
     load_settings();
     printf("\r\n");
