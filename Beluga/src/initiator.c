@@ -1,12 +1,11 @@
 
 
-#include "init_main.h"
+#include "initiator.h"
 #include "deca_device_api.h"
 #include "deca_regs.h"
 #include "port_platform.h"
 #include "random.h"
 #include <app_leds.h>
-#include <stdio.h>
 #include <string.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
@@ -91,6 +90,7 @@ static uint8 rx_buffer[RX_BUF_LEN];
 #define FINAL_MSG_FINAL_TX_TS_IDX 18
 #define FINAL_MSG_TS_LEN          4
 #define RESP_MSG_POLL_RX_TS_IDX   10
+#define RESP_MSG_RESP_TX_TS_IDX 14
 
 /* Speed of light in air, in metres per second. */
 #define SPEED_OF_LIGHT 299702547
@@ -211,9 +211,8 @@ ALWAYS_INLINE static int wait_for_response(void) {
     return 0;
 }
 
-ALWAYS_INLINE static int read_response(uint64_t *poll_tx_ts,
+ALWAYS_INLINE static int ds_read_response(uint64_t *poll_tx_ts,
                                        uint64_t *resp_rx_ts) {
-    int ret;
     uint32 frame_len;
     UNUSED uint8 rx_seq;
 
@@ -315,7 +314,68 @@ ALWAYS_INLINE static int read_report(double *distance) {
     return 0;
 }
 
-int ds_init(uint16_t id, double *distance) {
+ALWAYS_INLINE static int ss_read_response(void) {
+    uint32_t frame_length;
+    uint8 rx_seq;
+
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
+
+    frame_length = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFLEN_MASK;
+    if (frame_length <= RX_BUF_LEN) {
+        dwt_readrxdata(rx_buffer, frame_length, 0);
+    }
+
+    // TODO: Figure out if sequence counter is sufficient for the logic clock
+    rx_seq = rx_buffer[SEQUENCE_COUNTER_OFFSET];
+    rx_buffer[SEQUENCE_COUNTER_OFFSET] = 0;
+
+    if (memcmp(rx_buffer, rx_resp_msg, DW_BASE_LENGTH) != 0) {
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
+ALWAYS_INLINE static int ss_calculate_distance(uint8_t channel, double *distance) {
+    uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
+    int64_t rtd_init, rtd_resp;
+    double clock_offset_ratio, ppm_multiplier, tof;
+
+    poll_tx_ts = dwt_readtxtimestamplo32();
+    resp_rx_ts = dwt_readrxtimestamplo32();
+
+    switch(channel) {
+        case 1:
+            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
+            break;
+        case 2:
+            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
+            break;
+        case 3:
+            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
+            break;
+        case 5:
+            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    clock_offset_ratio = dwt_readcarrierintegrator() * (FREQ_OFFSET_MULTIPLIER * ppm_multiplier / 1.0e6);
+
+    GET_UWB_MSG_TIMESTAMP(poll_rx_ts, rx_buffer, RESP_MSG_POLL_RX_TS_IDX);
+    GET_UWB_MSG_TIMESTAMP(resp_tx_ts, rx_buffer, RESP_MSG_RESP_TX_TS_IDX);
+
+    rtd_init = resp_rx_ts - poll_tx_ts;
+    rtd_resp = resp_tx_ts - poll_rx_ts;
+
+    tof = (((double)rtd_init - (double)rtd_resp * (1 - clock_offset_ratio)) / 2.0) * DWT_TIME_UNITS;
+    *distance = tof * SPEED_OF_LIGHT;
+
+    return 0;
+}
+
+int double_sided_init(uint16_t id, double *distance) {
     int ret;
     uint64_t poll_tx_ts, resp_rx_ts;
 
@@ -333,7 +393,7 @@ int ds_init(uint16_t id, double *distance) {
         return ret;
     }
 
-    if ((ret = read_response(&poll_tx_ts, &resp_rx_ts)) < 0) {
+    if ((ret = ds_read_response(&poll_tx_ts, &resp_rx_ts)) < 0) {
         return ret;
     }
 
@@ -346,6 +406,34 @@ int ds_init(uint16_t id, double *distance) {
     }
 
     if ((ret = read_report(distance)) < 0) {
+        return ret;
+    }
+
+    return 0;
+}
+
+int single_sided_init(uint16_t id, double *distance, uint8_t channel) {
+    int ret;
+
+    if (distance == NULL) {
+        return -EINVAL;
+    }
+
+    set_destination(id);
+
+    if ((ret = send_poll_message()) < 0) {
+        return ret;
+    }
+
+    if ((ret = wait_for_response()) < 0) {
+        return ret;
+    }
+
+    if ((ret = ss_read_response()) < 0) {
+        return ret;
+    }
+
+    if ((ret = ss_calculate_distance(channel, distance)) < 0) {
         return ret;
     }
 

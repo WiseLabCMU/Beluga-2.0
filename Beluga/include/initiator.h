@@ -21,10 +21,10 @@
 #include <stdint.h>
 #include <zephyr/kernel.h>
 
-extern int debug_print;
-
-double ds_init_run(uint8 id);
-double ss_init_run(uint8 id);
+int set_pan_id(uint16_t id);
+int set_initializer_id(uint16_t id);
+int double_sided_init(uint16_t id, double *distance);
+int single_sided_init(uint16_t id, double *distance, uint8_t channel);
 
 extern struct k_sem k_sus_init;
 
