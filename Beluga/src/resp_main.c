@@ -17,7 +17,7 @@
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
-#include "init_main.h"
+#include "initiator.h"
 #include "port_platform.h"
 #include "random.h"
 #include <ble_app.h>

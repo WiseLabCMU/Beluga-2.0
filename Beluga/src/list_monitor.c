@@ -3,7 +3,7 @@
 //
 
 #include <ble_app.h>
-#include <init_main.h>
+#include <initiator.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <stdint.h>

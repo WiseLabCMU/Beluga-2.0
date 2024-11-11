@@ -90,7 +90,7 @@ static uint8 rx_buffer[RX_BUF_LEN];
 #define FINAL_MSG_FINAL_TX_TS_IDX 18
 #define FINAL_MSG_TS_LEN          4
 #define RESP_MSG_POLL_RX_TS_IDX   10
-#define RESP_MSG_RESP_TX_TS_IDX 14
+#define RESP_MSG_RESP_TX_TS_IDX   14
 
 /* Speed of light in air, in metres per second. */
 #define SPEED_OF_LIGHT 299702547
@@ -212,7 +212,7 @@ ALWAYS_INLINE static int wait_for_response(void) {
 }
 
 ALWAYS_INLINE static int ds_read_response(uint64_t *poll_tx_ts,
-                                       uint64_t *resp_rx_ts) {
+                                          uint64_t *resp_rx_ts) {
     uint32 frame_len;
     UNUSED uint8 rx_seq;
 
@@ -336,7 +336,8 @@ ALWAYS_INLINE static int ss_read_response(void) {
     return 0;
 }
 
-ALWAYS_INLINE static int ss_calculate_distance(uint8_t channel, double *distance) {
+ALWAYS_INLINE static int ss_calculate_distance(uint8_t channel,
+                                               double *distance) {
     uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
     int64_t rtd_init, rtd_resp;
     double clock_offset_ratio, ppm_multiplier, tof;
@@ -344,24 +345,25 @@ ALWAYS_INLINE static int ss_calculate_distance(uint8_t channel, double *distance
     poll_tx_ts = dwt_readtxtimestamplo32();
     resp_rx_ts = dwt_readrxtimestamplo32();
 
-    switch(channel) {
-        case 1:
-            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
-            break;
-        case 2:
-            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
-            break;
-        case 3:
-            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
-            break;
-        case 5:
-            ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
-            break;
-        default:
-            return -EINVAL;
+    switch (channel) {
+    case 1:
+        ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
+        break;
+    case 2:
+        ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
+        break;
+    case 3:
+        ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
+        break;
+    case 5:
+        ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
+        break;
+    default:
+        return -EINVAL;
     }
 
-    clock_offset_ratio = dwt_readcarrierintegrator() * (FREQ_OFFSET_MULTIPLIER * ppm_multiplier / 1.0e6);
+    clock_offset_ratio = dwt_readcarrierintegrator() *
+                         (FREQ_OFFSET_MULTIPLIER * ppm_multiplier / 1.0e6);
 
     GET_UWB_MSG_TIMESTAMP(poll_rx_ts, rx_buffer, RESP_MSG_POLL_RX_TS_IDX);
     GET_UWB_MSG_TIMESTAMP(resp_tx_ts, rx_buffer, RESP_MSG_RESP_TX_TS_IDX);
@@ -369,7 +371,9 @@ ALWAYS_INLINE static int ss_calculate_distance(uint8_t channel, double *distance
     rtd_init = resp_rx_ts - poll_tx_ts;
     rtd_resp = resp_tx_ts - poll_rx_ts;
 
-    tof = (((double)rtd_init - (double)rtd_resp * (1 - clock_offset_ratio)) / 2.0) * DWT_TIME_UNITS;
+    tof = (((double)rtd_init - (double)rtd_resp * (1 - clock_offset_ratio)) /
+           2.0) *
+          DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
 
     return 0;

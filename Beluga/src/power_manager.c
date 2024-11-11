@@ -4,7 +4,7 @@
 
 #include <app_leds.h>
 #include <ble_app.h>
-#include <init_main.h>
+#include <initiator.h>
 #include <list_neighbors.h>
 #include <power_manager.h>
 #include <resp_main.h>

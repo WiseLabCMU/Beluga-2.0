@@ -5,7 +5,7 @@
 #include <app_leds.h>
 #include <ble_app.h>
 #include <deca_device_api.h>
-#include <init_main.h>
+#include <initiator.h>
 #include <port_platform.h>
 #include <random.h>
 #include <ranging.h>
@@ -17,6 +17,7 @@
 #include <watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <math.h>
 
 LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 
@@ -402,7 +403,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             init_reconfig();
 
             int search_count = 0;
-            double range1;
+            double range;
 
             while (seen_list[curr_index].UUID == 0) {
                 curr_index++;
@@ -418,38 +419,21 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             }
 
             if (!break_flag) {
-                if (twr_mode) {
-                    range1 = ds_init_run(seen_list[curr_index].UUID);
-                } else {
-                    range1 = ss_init_run(seen_list[curr_index].UUID);
-                }
+                drop_flag = (twr_mode)
+                                ? double_sided_init(seen_list[curr_index].UUID,
+                                                    &range) != 0
+                                : single_sided_init(seen_list[curr_index].UUID,
+                                                    &range, config.chan) != 0;
 
-                if (range1 == -1) {
-                    drop_flag = true;
-                }
-
-                int numThru = 1;
-
-                if (range1 == -1) {
-                    range1 = 0;
-                    numThru -= 1;
-                }
-
-                float range = (range1) / numThru;
-
-                if ((numThru != 0) && (range >= -5) && (range <= 100)) {
-                    seen_list[curr_index].update_flag = 1;
-                    seen_list[curr_index].range = range;
+                if (!drop_flag && isgreaterequal(range, -5.0) && islessequal(range, 100.0)) {
+                    seen_list[curr_index].update_flag = true;
+                    seen_list[curr_index].range = (float)range;
                     seen_list[curr_index].time_stamp = k_uptime_get();
 
                     // TODO: Update BLE value transfer to phone
                 }
 
-                curr_index += 1;
-
-                if (curr_index >= MAX_ANCHOR_COUNT) {
-                    curr_index = 0;
-                }
+                curr_index = (curr_index + 1) % MAX_ANCHOR_COUNT;
             }
 
             break_flag = false;

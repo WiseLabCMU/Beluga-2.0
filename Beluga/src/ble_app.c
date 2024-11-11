@@ -604,6 +604,7 @@ void advertising_reconfig(int32_t change) {
 
 bool check_ble_enabled(void) { return bluetooth_on; }
 
+// TODO
 // void update_ble_service(float range) {
 //     union {
 //         uint16_t uuid;
