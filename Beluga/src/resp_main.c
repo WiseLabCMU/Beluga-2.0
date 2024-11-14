@@ -357,3 +357,17 @@ int ds_respond(void) {
     return 0;
 }
 
+int ss_respond(void) {
+    int err;
+
+    if (k_sem_count_get(&k_sus_resp) == 0) {
+        return -EBUSY;
+    }
+
+    if ((err = wait_for_poll_message()) < 0) {
+        return err;
+    }
+
+    return 0;
+}
+

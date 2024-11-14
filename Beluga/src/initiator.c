@@ -142,7 +142,7 @@ static void final_msg_set_ts(uint8 *ts_field, uint64_t ts) {
     }
 }
 
-int set_pan_id(uint16_t id) {
+int set_initializer_pan_id(uint16_t id) {
     CHECK_UWB_ACTIVE();
 
     memcpy(tx_poll_msg + PAN_ID_OFFSET, &id, PAN_ID_BYTES);
