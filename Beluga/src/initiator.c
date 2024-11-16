@@ -10,32 +10,38 @@
 #include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <init_resp_common.h>
 
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
 K_SEM_DEFINE(k_sus_init, 0, 1);
 
-// TODO: Build config for this
-#define DW_LOGIC_CLOCK_OVERHEAD 0
+#define POLL_MSG_LEN (DW_FRAME_OVERHEAD)
+#define RESP_MSG_LEN (DW_FRAME_OVERHEAD + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD)
+#define FINAL_MSG_LEN (DW_FRAME_OVERHEAD + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD)
+#define REPORT_MSG_LEN (DW_FRAME_OVERHEAD + TIMESTAMP_OVERHEAD)
 
-#define DW_BASE_LENGTH          10
-#define DW_TIME_OVERHEAD        4
-#define DW_CRC_OVERHEAD         2
+#define RX_BUF_LEN MAX(RESP_MSG_LEN, REPORT_MSG_LEN)
 
-#define POLL_MSG_LEN                                                           \
-    (DW_BASE_LENGTH + DW_LOGIC_CLOCK_OVERHEAD + DW_CRC_OVERHEAD)
-#define RESP_MSG_LEN                                                           \
-    (DW_BASE_LENGTH + DW_TIME_OVERHEAD + DW_LOGIC_CLOCK_OVERHEAD +             \
-     DW_CRC_OVERHEAD)
-#define FINAL_MSG_LEN                                                          \
-    (DW_BASE_LENGTH + DW_TIME_OVERHEAD + DW_TIME_OVERHEAD +                    \
-     DW_LOGIC_CLOCK_OVERHEAD + DW_CRC_OVERHEAD)
-#define REPORT_MSG_LEN                                                         \
-    (DW_BASE_LENGTH + DW_TIME_OVERHEAD + DW_LOGIC_CLOCK_OVERHEAD +             \
-     DW_CRC_OVERHEAD)
+// Specific Message Offsets. Leaving out logic clock for now...
+// Poll Message Offsets
+// None so far
 
-#define RX_BUF_LEN                                                             \
-    MAX(MAX(POLL_MSG_LEN, RESP_MSG_LEN), MAX(FINAL_MSG_LEN, REPORT_MSG_LEN))
+// Response Message Offsets
+#define DS_RESP_TOF_OFFSET DW_BASE_PAYLOAD_OFFSET // 10
+#define DS_RESP_TS_OFFSET (DS_RESP_TOF_OFFSET + TIME_OVERHEAD) // 14
+
+// Final Message Offsets
+#define FINAL_TX_POLL_TS_OFFSET DW_BASE_PAYLOAD_OFFSET// 10
+#define FINAL_RX_RESP_TS_OFFSET (FINAL_TX_POLL_TS_OFFSET + TIMESTAMP_OVERHEAD) // 14
+#define FINAL_TX_FINAL_TS_OFFSET (FINAL_RX_RESP_TS_OFFSET + TIMESTAMP_OVERHEAD) // 18
+
+// Report Message Offsets
+#define REPORT_TOF_OFFSET DW_BASE_PAYLOAD_OFFSET // 10
+
+// Single-sided Response Message Offsets
+#define SS_RESP_RX_POLL_TS_OFFSET DW_BASE_PAYLOAD_OFFSET // 10
+#define SS_RESP_TX_RESP_TS_OFFSET (SS_RESP_RX_POLL_TS_OFFSET + TIMESTAMP_OVERHEAD) // 14
 
 static uint8 tx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
                                           'A',  'V',  'E', 0x21, 0,    0};
@@ -47,108 +53,41 @@ static uint8 tx_final_msg[FINAL_MSG_LEN] = {
 static uint8 rx_report_msg[REPORT_MSG_LEN] = {
     0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0xE3, 0, 0, 0, 0, 0, 0};
 
-#define FC_OFFSET               0
-#define FC_BYTES                sizeof(uint16_t)
-
-#define SEQUENCE_COUNTER_OFFSET 2
-#define SEQUENCE_COUNTER_BYTES  sizeof(uint8_t)
-
-#define PAN_ID_OFFSET           3
-#define PAN_ID_BYTES            sizeof(uint16_t)
-
-#define DESTINATION_OFFSET      5
-#define DESTINATION_BYTES       sizeof(uint16_t)
-
-#define SOURCE_OFFSET           7
-#define SOURCE_BYTES            sizeof(uint16_t)
-
-#define FUNCTION_CODE_OFFSET    9
-#define FUNCTION_CODE_BYTES     sizeof(uint8_t)
-
 static uint8 sequence_count = 0;
 static uint8 rx_buffer[RX_BUF_LEN];
 
-/* UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion
- * factor. 1 uus = 512 / 499.2 µs and 1 µs = 499.2 * 128 dtu. */
-#define UUS_TO_DWT_TIME 65536
-
-/* Delay between frames, in UWB microseconds. See NOTE 4 below. */
-/* This is the delay from the end of the frame transmission to the enable of the
- * receiver, as programmed for the DW1000's wait for response feature. */
-#define POLL_TX_TO_RESP_RX_DLY_UUS 300
-/* This is the delay from Frame RX timestamp to TX reply timestamp used for
- * calculating/setting the DW1000's delayed TX function. This includes the frame
- * length of approximately 2.66 ms with above configuration. */
-#define RESP_RX_TO_FINAL_TX_DLY_UUS 3100
-/* Receive response timeout. See NOTE 5 below. */
-#define RESP_RX_TIMEOUT_UUS 2700
-/* Preamble timeout, in multiple of PAC size. See NOTE 6 below. */
-#define PRE_TIMEOUT               8
-
-#define FINAL_MSG_POLL_TX_TS_IDX  10
-#define FINAL_MSG_RESP_RX_TS_IDX  14
-#define FINAL_MSG_FINAL_TX_TS_IDX 18
-#define FINAL_MSG_TS_LEN          4
-#define RESP_MSG_POLL_RX_TS_IDX   10
-#define RESP_MSG_RESP_TX_TS_IDX   14
-
-/* Speed of light in air, in metres per second. */
-#define SPEED_OF_LIGHT 299702547
-
-#define CHECK_UWB_ACTIVE()                                                     \
-    do {                                                                       \
-        if (get_uwb_led_state() == LED_UWB_ON) {                               \
-            return -EBUSY;                                                     \
-        }                                                                      \
-    } while (0)
-
-#define UWB_WAIT(cond) while (!(cond))
-
-#define GET_UWB_MSG_TIMESTAMP(ts, ts_buf, offset)                              \
-    do {                                                                       \
-        (ts) = 0;                                                              \
-        for (int i = offset; i < 4; i++) {                                     \
-            (ts) += (ts_buf)[i] << ((i - (offset)) * 8);                       \
-        }                                                                      \
-    } while (0)
-
-#define GET_UWB_TIMESTAMP(type, stamp)                                         \
-    do {                                                                       \
-        uint8 ts_tab[5];                                                       \
-        (stamp) = 0;                                                           \
-        dwt_read##type##timestamp(ts_tab);                                     \
-        for (int i = 4; i >= 0; i--) {                                         \
-            (stamp) <<= 8;                                                     \
-            (stamp) |= ts_tab[i];                                              \
-        }                                                                      \
-    } while (0)
+#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+static uint32_t logic_clk = 0;
+#define set_logic_clock_ts(buf) memcpy(buf + LOGIC_CLK_OFFSET, &logic_clk, LOGIC_CLOCK_OVERHEAD)
+#define update_logic_clk() logic_clk++
+#else
+#define set_logic_clock_ts(buf) (void)0
+#define update_logic_clk() (void)0
+#endif  // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
 
 static uint64_t get_tx_timestamp_u64(void) {
-    uint64_t ts;
-    GET_UWB_TIMESTAMP(tx, ts);
+    uint64_t ts = 0;
+    uint8 ts_tab[5];
+    dwt_readtxtimestamp(ts_tab);
+    memcpy(&ts, ts_tab, TIMESTAMP_OVERHEAD);
     return ts;
 }
 
 static uint64_t get_rx_timestamp_u64(void) {
     uint64_t ts;
-    GET_UWB_TIMESTAMP(rx, ts);
+    uint8 ts_tab[5];
+    dwt_readrxtimestamp(ts_tab);
+    memcpy(&ts, ts_tab, TIMESTAMP_OVERHEAD);
     return ts;
-}
-
-static void final_msg_set_ts(uint8 *ts_field, uint64_t ts) {
-    for (int i = 0; i < FINAL_MSG_TS_LEN; i++) {
-        ts_field[i] = (uint8)ts;
-        ts >>= 8;
-    }
 }
 
 int set_initializer_pan_id(uint16_t id) {
     CHECK_UWB_ACTIVE();
 
-    memcpy(tx_poll_msg + PAN_ID_OFFSET, &id, PAN_ID_BYTES);
-    memcpy(rx_resp_msg + PAN_ID_OFFSET, &id, PAN_ID_BYTES);
-    memcpy(tx_final_msg + PAN_ID_OFFSET, &id, PAN_ID_BYTES);
-    memcpy(rx_report_msg + PAN_ID_OFFSET, &id, PAN_ID_BYTES);
+    memcpy(tx_poll_msg + PAN_ID_OFFSET, &id, PAN_ID_OVERHEAD);
+    memcpy(rx_resp_msg + PAN_ID_OFFSET, &id, PAN_ID_OVERHEAD);
+    memcpy(tx_final_msg + PAN_ID_OFFSET, &id, PAN_ID_OVERHEAD);
+    memcpy(rx_report_msg + PAN_ID_OFFSET, &id, PAN_ID_OVERHEAD);
 
     return 0;
 }
@@ -156,25 +95,25 @@ int set_initializer_pan_id(uint16_t id) {
 int set_initializer_id(uint16_t id) {
     CHECK_UWB_ACTIVE();
 
-    memcpy(tx_poll_msg + SOURCE_OFFSET, &id, SOURCE_BYTES);
-    memcpy(rx_resp_msg + DESTINATION_OFFSET, &id, DESTINATION_BYTES);
-    memcpy(tx_final_msg + SOURCE_OFFSET, &id, SOURCE_BYTES);
-    memcpy(rx_report_msg + DESTINATION_OFFSET, &id, DESTINATION_BYTES);
+    memcpy(tx_poll_msg + SRC_OFFSET, &id, SRC_OVERHEAD);
+    memcpy(rx_resp_msg + DEST_OFFSET, &id, DEST_OVERHEAD);
+    memcpy(tx_final_msg + SRC_OFFSET, &id, SRC_OVERHEAD);
+    memcpy(rx_report_msg + DEST_OFFSET, &id, DEST_OVERHEAD);
 
     return 0;
 }
 
 static void set_destination(uint16_t id) {
-    memcpy(tx_poll_msg + DESTINATION_OFFSET, &id, DESTINATION_BYTES);
-    memcpy(rx_resp_msg + SOURCE_OFFSET, &id, SOURCE_BYTES);
-    memcpy(tx_final_msg + DESTINATION_OFFSET, &id, DESTINATION_BYTES);
-    memcpy(rx_report_msg + SOURCE_OFFSET, &id, SOURCE_BYTES);
+    memcpy(tx_poll_msg + DEST_OFFSET, &id, DEST_OVERHEAD);
+    memcpy(rx_resp_msg + SRC_OFFSET, &id, SRC_OVERHEAD);
+    memcpy(tx_final_msg + DEST_OFFSET, &id, DEST_OVERHEAD);
+    memcpy(rx_report_msg + SRC_OFFSET, &id, SRC_OVERHEAD);
 }
 
 ALWAYS_INLINE static int send_poll_message(void) {
     int status;
 
-    tx_poll_msg[SEQUENCE_COUNTER_OFFSET] = sequence_count;
+    tx_poll_msg[SEQ_CNT_OFFSET] = sequence_count;
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
     dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg, 0);
     dwt_writetxfctrl(sizeof(tx_poll_msg), 0, 1);
@@ -224,12 +163,12 @@ ALWAYS_INLINE static int ds_read_response(uint64_t *poll_tx_ts,
     }
 
     // TODO: Figure out if sequence counter is sufficient for the logic clock
-    rx_seq = rx_buffer[SEQUENCE_COUNTER_OFFSET];
+    rx_seq = rx_buffer[SEQ_CNT_OFFSET];
 
     // Cleared to simplify validation of the frame
-    rx_buffer[SEQUENCE_COUNTER_OFFSET] = 0;
+    rx_buffer[SEQ_CNT_OFFSET] = 0;
 
-    if (memcmp(rx_buffer, rx_resp_msg, DW_BASE_LENGTH) != 0) {
+    if (memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) != 0) {
         return -EINVAL;
     }
 
@@ -252,11 +191,11 @@ ALWAYS_INLINE static int send_final_message(uint64_t poll_tx_ts,
     final_tx_ts =
         (((uint64_t)(final_tx_time & UINT32_C(0xFFFFFFFE))) << 8) + TX_ANT_DLY;
 
-    final_msg_set_ts(tx_final_msg + FINAL_MSG_POLL_TX_TS_IDX, poll_tx_ts);
-    final_msg_set_ts(tx_final_msg + FINAL_MSG_RESP_RX_TS_IDX, resp_rx_ts);
-    final_msg_set_ts(tx_final_msg + FINAL_MSG_FINAL_TX_TS_IDX, final_tx_ts);
+    memcpy(tx_final_msg + FINAL_TX_POLL_TS_OFFSET, &poll_tx_ts, TIMESTAMP_OVERHEAD);
+    memcpy(tx_final_msg + FINAL_RX_RESP_TS_OFFSET, &resp_rx_ts, TIMESTAMP_OVERHEAD);
+    memcpy(tx_final_msg + FINAL_TX_FINAL_TS_OFFSET, &final_tx_ts, TIMESTAMP_OVERHEAD);
 
-    tx_final_msg[SEQUENCE_COUNTER_OFFSET] = sequence_count;
+    tx_final_msg[SEQ_CNT_OFFSET] = sequence_count;
     dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0);
     dwt_writetxfctrl(sizeof(tx_final_msg), 0, 1);
     ret = dwt_starttx(DWT_START_TX_DELAYED);
@@ -301,14 +240,15 @@ ALWAYS_INLINE static int read_report(double *distance) {
         dwt_readrxdata(rx_buffer, frame_length, 0);
     }
 
-    seq_count = rx_buffer[SEQUENCE_COUNTER_OFFSET];
-    rx_buffer[SEQUENCE_COUNTER_OFFSET] = 0;
+    seq_count = rx_buffer[SEQ_CNT_OFFSET];
+    rx_buffer[SEQ_CNT_OFFSET] = 0;
 
-    if (memcmp(rx_buffer, rx_report_msg, DW_BASE_LENGTH) != 0) {
+    if (memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) != 0) {
         return -EINVAL;
     }
 
-    GET_UWB_MSG_TIMESTAMP(msg_tof_dtu, rx_buffer, RESP_MSG_POLL_RX_TS_IDX);
+    memcpy(&msg_tof_dtu, rx_buffer + REPORT_TOF_OFFSET, TIMESTAMP_OVERHEAD);
+
     tof = msg_tof_dtu * DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
     return 0;
@@ -326,10 +266,10 @@ ALWAYS_INLINE static int ss_read_response(void) {
     }
 
     // TODO: Figure out if sequence counter is sufficient for the logic clock
-    rx_seq = rx_buffer[SEQUENCE_COUNTER_OFFSET];
-    rx_buffer[SEQUENCE_COUNTER_OFFSET] = 0;
+    rx_seq = rx_buffer[SEQ_CNT_OFFSET];
+    rx_buffer[SEQ_CNT_OFFSET] = 0;
 
-    if (memcmp(rx_buffer, rx_resp_msg, DW_BASE_LENGTH) != 0) {
+    if (memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) != 0) {
         return -EINVAL;
     }
 
@@ -365,8 +305,8 @@ ALWAYS_INLINE static int ss_calculate_distance(uint8_t channel,
     clock_offset_ratio = dwt_readcarrierintegrator() *
                          (FREQ_OFFSET_MULTIPLIER * ppm_multiplier / 1.0e6);
 
-    GET_UWB_MSG_TIMESTAMP(poll_rx_ts, rx_buffer, RESP_MSG_POLL_RX_TS_IDX);
-    GET_UWB_MSG_TIMESTAMP(resp_tx_ts, rx_buffer, RESP_MSG_RESP_TX_TS_IDX);
+    memcpy(&poll_rx_ts, rx_buffer + SS_RESP_RX_POLL_TS_OFFSET, TIMESTAMP_OVERHEAD);
+    memcpy(&resp_tx_ts, rx_buffer + SS_RESP_TX_RESP_TS_OFFSET, TIMESTAMP_OVERHEAD);
 
     rtd_init = resp_rx_ts - poll_tx_ts;
     rtd_resp = resp_tx_ts - poll_rx_ts;
