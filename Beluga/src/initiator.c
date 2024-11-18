@@ -6,45 +6,20 @@
 #include "port_platform.h"
 #include "random.h"
 #include <app_leds.h>
+#include <init_resp_common.h>
 #include <string.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <init_resp_common.h>
 
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
 K_SEM_DEFINE(k_sus_init, 0, 1);
 
-#define POLL_MSG_LEN (DW_FRAME_OVERHEAD)
-#define RESP_MSG_LEN (DW_FRAME_OVERHEAD + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD)
-#define FINAL_MSG_LEN (DW_FRAME_OVERHEAD + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD)
-#define REPORT_MSG_LEN (DW_FRAME_OVERHEAD + TIMESTAMP_OVERHEAD)
-
 #define RX_BUF_LEN MAX(RESP_MSG_LEN, REPORT_MSG_LEN)
 
-// Specific Message Offsets. Leaving out logic clock for now...
-// Poll Message Offsets
-// None so far
-
-// Response Message Offsets
-#define DS_RESP_TOF_OFFSET DW_BASE_PAYLOAD_OFFSET // 10
-#define DS_RESP_TS_OFFSET (DS_RESP_TOF_OFFSET + TIME_OVERHEAD) // 14
-
-// Final Message Offsets
-#define FINAL_TX_POLL_TS_OFFSET DW_BASE_PAYLOAD_OFFSET// 10
-#define FINAL_RX_RESP_TS_OFFSET (FINAL_TX_POLL_TS_OFFSET + TIMESTAMP_OVERHEAD) // 14
-#define FINAL_TX_FINAL_TS_OFFSET (FINAL_RX_RESP_TS_OFFSET + TIMESTAMP_OVERHEAD) // 18
-
-// Report Message Offsets
-#define REPORT_TOF_OFFSET DW_BASE_PAYLOAD_OFFSET // 10
-
-// Single-sided Response Message Offsets
-#define SS_RESP_RX_POLL_TS_OFFSET DW_BASE_PAYLOAD_OFFSET // 10
-#define SS_RESP_TX_RESP_TS_OFFSET (SS_RESP_RX_POLL_TS_OFFSET + TIMESTAMP_OVERHEAD) // 14
-
 static uint8 tx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
-                                          'A',  'V',  'E', 0x21, 0,    0};
+                                          'A',  'V',  'E', 0x61, 0,    0};
 static uint8 rx_resp_msg[RESP_MSG_LEN] = {
     0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0x50, 0, 0, 0, 0, 0, 0};
 static uint8 tx_final_msg[FINAL_MSG_LEN] = {
@@ -58,28 +33,13 @@ static uint8 rx_buffer[RX_BUF_LEN];
 
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
 static uint32_t logic_clk = 0;
-#define set_logic_clock_ts(buf) memcpy(buf + LOGIC_CLK_OFFSET, &logic_clk, LOGIC_CLOCK_OVERHEAD)
+#define set_logic_clock_ts(buf)                                                \
+    memcpy(buf + LOGIC_CLK_OFFSET, &logic_clk, LOGIC_CLOCK_OVERHEAD)
 #define update_logic_clk() logic_clk++
 #else
 #define set_logic_clock_ts(buf) (void)0
-#define update_logic_clk() (void)0
-#endif  // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
-
-static uint64_t get_tx_timestamp_u64(void) {
-    uint64_t ts = 0;
-    uint8 ts_tab[5];
-    dwt_readtxtimestamp(ts_tab);
-    memcpy(&ts, ts_tab, TIMESTAMP_OVERHEAD);
-    return ts;
-}
-
-static uint64_t get_rx_timestamp_u64(void) {
-    uint64_t ts;
-    uint8 ts_tab[5];
-    dwt_readrxtimestamp(ts_tab);
-    memcpy(&ts, ts_tab, TIMESTAMP_OVERHEAD);
-    return ts;
-}
+#define update_logic_clk()      (void)0
+#endif // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
 
 int set_initializer_pan_id(uint16_t id) {
     CHECK_UWB_ACTIVE();
@@ -191,9 +151,12 @@ ALWAYS_INLINE static int send_final_message(uint64_t poll_tx_ts,
     final_tx_ts =
         (((uint64_t)(final_tx_time & UINT32_C(0xFFFFFFFE))) << 8) + TX_ANT_DLY;
 
-    memcpy(tx_final_msg + FINAL_TX_POLL_TS_OFFSET, &poll_tx_ts, TIMESTAMP_OVERHEAD);
-    memcpy(tx_final_msg + FINAL_RX_RESP_TS_OFFSET, &resp_rx_ts, TIMESTAMP_OVERHEAD);
-    memcpy(tx_final_msg + FINAL_TX_FINAL_TS_OFFSET, &final_tx_ts, TIMESTAMP_OVERHEAD);
+    memcpy(tx_final_msg + FINAL_TX_POLL_TS_OFFSET, &poll_tx_ts,
+           TIMESTAMP_OVERHEAD);
+    memcpy(tx_final_msg + FINAL_RX_RESP_TS_OFFSET, &resp_rx_ts,
+           TIMESTAMP_OVERHEAD);
+    memcpy(tx_final_msg + FINAL_TX_FINAL_TS_OFFSET, &final_tx_ts,
+           TIMESTAMP_OVERHEAD);
 
     tx_final_msg[SEQ_CNT_OFFSET] = sequence_count;
     dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0);
@@ -305,8 +268,10 @@ ALWAYS_INLINE static int ss_calculate_distance(uint8_t channel,
     clock_offset_ratio = dwt_readcarrierintegrator() *
                          (FREQ_OFFSET_MULTIPLIER * ppm_multiplier / 1.0e6);
 
-    memcpy(&poll_rx_ts, rx_buffer + SS_RESP_RX_POLL_TS_OFFSET, TIMESTAMP_OVERHEAD);
-    memcpy(&resp_tx_ts, rx_buffer + SS_RESP_TX_RESP_TS_OFFSET, TIMESTAMP_OVERHEAD);
+    memcpy(&poll_rx_ts, rx_buffer + SS_RESP_RX_POLL_TS_OFFSET,
+           TIMESTAMP_OVERHEAD);
+    memcpy(&resp_tx_ts, rx_buffer + SS_RESP_TX_RESP_TS_OFFSET,
+           TIMESTAMP_OVERHEAD);
 
     rtd_init = resp_rx_ts - poll_tx_ts;
     rtd_resp = resp_tx_ts - poll_rx_ts;

@@ -11,7 +11,7 @@
 #include <zephyr/sys/reboot.h>
 
 #include "deca_types.h"
-#include "resp_main.h"
+#include "responder.h"
 #include <initiator.h>
 
 #include <at_commands.h>

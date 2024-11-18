@@ -7,7 +7,7 @@
 #include <initiator.h>
 #include <list_neighbors.h>
 #include <power_manager.h>
-#include <resp_main.h>
+#include <responder.h>
 #include <spi.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>

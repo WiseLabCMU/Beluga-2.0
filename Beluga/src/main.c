@@ -14,7 +14,7 @@
 #include <list_neighbors.h>
 #include <range_extension.h>
 #include <ranging.h>
-#include <resp_main.h>
+#include <responder.h>
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>

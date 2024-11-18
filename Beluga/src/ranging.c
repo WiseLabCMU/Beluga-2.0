@@ -6,10 +6,11 @@
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <initiator.h>
+#include <math.h>
 #include <port_platform.h>
 #include <random.h>
 #include <ranging.h>
-#include <resp_main.h>
+#include <responder.h>
 #include <spi.h>
 #include <stdbool.h>
 #include <thread_priorities.h>
@@ -17,7 +18,6 @@
 #include <watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <math.h>
 
 LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 
@@ -425,7 +425,8 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
                                 : single_sided_init(seen_list[curr_index].UUID,
                                                     &range, config.chan) != 0;
 
-                if (!drop_flag && isgreaterequal(range, -5.0) && islessequal(range, 100.0)) {
+                if (!drop_flag && isgreaterequal(range, -5.0) &&
+                    islessequal(range, 100.0)) {
                     seen_list[curr_index].update_flag = true;
                     seen_list[curr_index].range = (float)range;
                     seen_list[curr_index].time_stamp = k_uptime_get();
