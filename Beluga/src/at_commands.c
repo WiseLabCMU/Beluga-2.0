@@ -22,11 +22,13 @@
 #include <uart.h>
 
 #include <app_leds.h>
+#include <initiator.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <power_manager.h>
 #include <range_extension.h>
 #include <ranging.h>
+#include <responder.h>
 #include <settings.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +37,7 @@
 #include <watchdog.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(at_commands, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(at_commands, LOG_LEVEL_ERR);
 
 #define OK         printf("OK\r\n")
 #define MAX_TOKENS 20
@@ -206,6 +208,15 @@ AT_CMD_DEFINE(ID) {
 
     if (!success || newID <= 0 || newID > (int32_t)UINT16_MAX) {
         printf("Invalid ID\r\n");
+        return;
+    }
+
+    if (set_initializer_id((uint16_t)newID) != 0) {
+        printf("Unable to set ID while UWB is active\r\n");
+        return;
+    }
+    if (set_responder_id((uint16_t)newID) != 0) {
+        printf("Unable to set ID while UWB is active\r\n");
         return;
     }
 

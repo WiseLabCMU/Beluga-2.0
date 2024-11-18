@@ -499,9 +499,9 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
 
         if (suspend_start != 0) {
             if (twr_mode) {
-                ds_resp_run();
+                ds_respond();
             } else {
-                ss_resp_run();
+                ss_respond();
             }
         }
     }

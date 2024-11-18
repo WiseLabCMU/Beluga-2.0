@@ -15,17 +15,14 @@
  * @author Decawave
  */
 
-#include "deca_device_api.h"
-#include "deca_regs.h"
-#include "initiator.h"
-#include "port_platform.h"
-#include "random.h"
 #include <app_leds.h>
-#include <ble_app.h>
+#include <deca_device_api.h>
+#include <deca_regs.h>
 #include <init_resp_common.h>
 #include <math.h>
+#include <port_platform.h>
+#include <random.h>
 #include <responder.h>
-#include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -72,8 +69,12 @@ int set_responder_id(uint16_t id) {
     return 0;
 }
 
-ALWAYS_INLINE static int wait_for_poll_message(void) {
+static int double_sided_poll_and_respond(uint16_t *id, uint64_t *poll_rx_ts) {
     int status;
+    uint32_t frame_len, resp_tx_time;
+    uint8 seq_cnt;
+    uint16_t src_id;
+    uint64_t poll_rx_ts_;
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
 
     UWB_WAIT(
@@ -82,25 +83,17 @@ ALWAYS_INLINE static int wait_for_poll_message(void) {
         if (k_sem_count_get(&k_sus_resp) == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             dwt_rxreset();
-            LOG_INF("Responder suspended by initiator");
+            LOG_DBG("Responder suspended by initiator while polling");
             return -EBUSY;
         }
     }
 
     if (!(status & SYS_STATUS_RXFCG)) {
-        dwt_write32bitreg(SYS_STATUS_ID,
-                          (SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
         dwt_rxreset();
         LOG_WRN("Receive error detected");
         return -ETIME;
     }
-
-    return 0;
-}
-
-ALWAYS_INLINE static int receive_poll_message(uint16_t *poll_src) {
-    uint32_t frame_len;
-    uint8 seq_cnt;
 
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
 
@@ -109,34 +102,28 @@ ALWAYS_INLINE static int receive_poll_message(uint16_t *poll_src) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    memcpy(poll_src, rx_buffer + SRC_OFFSET, sizeof(*poll_src));
-    memset(rx_buffer + SRC_OFFSET, 0, sizeof(*poll_src));
-    seq_cnt = rx_buffer[SEQ_CNT_OFFSET];
+    memcpy(&src_id, rx_buffer + SRC_OFFSET, sizeof(src_id));
+    memset(rx_buffer + SRC_OFFSET, 0, sizeof(src_id));
 
+    seq_cnt = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
     if (memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) != 0) {
-        // Not meant for this node
+        LOG_WRN("Received bad poll message");
         return -EINVAL;
     }
 
-    return 0;
-}
+    // POLL MESSAGE RX'ED SUCCESSFULLY, TIME TO RESPOND
 
-ALWAYS_INLINE static int double_sided_respond(uint16_t id,
-                                              uint64_t *poll_rx_ts) {
-    uint32_t resp_tx_time;
+    poll_rx_ts_ = get_rx_timestamp_u64();
 
-    *poll_rx_ts = get_rx_timestamp_u64();
+    memcpy(tx_resp_msg + DEST_OFFSET, &src_id, DEST_OVERHEAD);
 
     resp_tx_time =
-        (*poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+        (uint32)(poll_rx_ts_ + ((uint64_t)POLL_RX_TO_RESP_TX_DLY_UUS *
+                                (uint64_t)UUS_TO_DWT_TIME)) >>
+        8;
     dwt_setdelayedtrxtime(resp_tx_time);
-
-    memcpy(tx_resp_msg + DEST_OFFSET, &id, DEST_OVERHEAD);
-
-    dwt_setrxaftertxdelay(RESP_TX_TO_FINAL_RX_DLY_UUS);
-    dwt_setrxtimeout(FINAL_RX_TIMEOUT_UUS);
 
     tx_resp_msg[SEQ_CNT_OFFSET] = sequence_count;
     dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg, 0);
@@ -144,15 +131,28 @@ ALWAYS_INLINE static int double_sided_respond(uint16_t id,
     if (dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED) !=
         DWT_SUCCESS) {
         dwt_rxreset();
-        LOG_WRN("Unable to start response transmission");
+        LOG_WRN("Unable to start response transmission. TX time %" PRIu32,
+                resp_tx_time);
         return -ETIME;
     }
+    LOG_INF("Successfully responded");
+
+    *id = src_id;
+    *poll_rx_ts = poll_rx_ts_;
 
     return 0;
 }
 
-ALWAYS_INLINE static int wait_for_final(void) {
+static int ds_wait_and_process_final_message(uint16_t src_id,
+                                             uint64_t poll_rx_ts,
+                                             int64_t *tof_dtu) {
     int status;
+    uint32_t frame_len;
+    uint8 seq_count;
+    uint64_t resp_tx_ts, final_rx_ts;
+    uint32 poll_tx_ts, resp_rx_ts, final_tx_ts;
+    uint32 poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
+    double Ra, Rb, Da, Db, tof_dtu_num;
 
     UWB_WAIT(
         (status = dwt_read32bitreg(SYS_STATUS_ID)) &
@@ -160,7 +160,7 @@ ALWAYS_INLINE static int wait_for_final(void) {
         if (k_sem_count_get(&k_sus_resp) == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             dwt_rxreset();
-            LOG_INF("Responder suspended by initiator");
+            LOG_DBG("Responder suspended by initiator while waiting for final");
             return -EBUSY;
         }
     }
@@ -173,13 +173,6 @@ ALWAYS_INLINE static int wait_for_final(void) {
         dwt_rxreset();
         return -ETIME;
     }
-
-    return 0;
-}
-
-ALWAYS_INLINE static int receive_final(uint16_t src_id) {
-    uint32_t frame_len;
-    uint8 seq_count;
 
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
 
@@ -194,18 +187,9 @@ ALWAYS_INLINE static int receive_final(uint16_t src_id) {
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
     if (memcmp(rx_buffer, rx_final_msg, DW_BASE_LEN) != 0) {
+        LOG_WRN("Received bad final message");
         return -EINVAL;
     }
-
-    return 0;
-}
-
-ALWAYS_INLINE static int process_final_message(uint64_t poll_rx_ts,
-                                               int64_t *tof_dtu) {
-    uint64_t resp_tx_ts, final_rx_ts;
-    uint32 poll_tx_ts, resp_rx_ts, final_tx_ts;
-    uint32 poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
-    double Ra, Rb, Da, Db, tof_dtu_num, tof;
 
     resp_tx_ts = get_tx_timestamp_u64();
     final_rx_ts = get_rx_timestamp_u64();
@@ -237,7 +221,7 @@ ALWAYS_INLINE static int process_final_message(uint64_t poll_rx_ts,
     return 0;
 }
 
-ALWAYS_INLINE static int send_report(uint16_t src_id, int64_t tof_dtu) {
+static int send_report(uint16_t src_id, int64_t tof_dtu) {
     int ret;
 
     memcpy(tx_report_msg + DEST_OFFSET, &src_id, DEST_OVERHEAD);
@@ -249,6 +233,7 @@ ALWAYS_INLINE static int send_report(uint16_t src_id, int64_t tof_dtu) {
     ret = dwt_starttx(DWT_START_TX_IMMEDIATE);
 
     if (ret != DWT_SUCCESS) {
+        LOG_WRN("Unable to send report");
         return -EAGAIN;
     }
 
@@ -269,33 +254,20 @@ int ds_respond(void) {
         return -EBUSY;
     }
 
-    if ((err = wait_for_poll_message()) < 0) {
+    if ((err = double_sided_poll_and_respond(&src_id, &poll_rx_ts)) < 0) {
         return err;
     }
 
-    if ((err = receive_poll_message(&src_id)) < 0) {
-        return err;
-    }
-
-    if ((err = double_sided_respond(src_id, &poll_rx_ts)) < 0) {
-        return err;
-    }
-
-    if ((err = wait_for_final()) < 0) {
-        return err;
-    }
-
-    if ((err = receive_final(src_id)) < 0) {
-        return err;
-    }
-
-    if ((err = process_final_message(poll_rx_ts, &tof_dtu)) < 0) {
+    if ((err = ds_wait_and_process_final_message(src_id, poll_rx_ts,
+                                                 &tof_dtu)) < 0) {
         return err;
     }
 
     if ((err = send_report(src_id, tof_dtu)) < 0) {
         return err;
     }
+
+    LOG_INF("Responder executed successfully");
 
     return 0;
 }
@@ -354,17 +326,17 @@ int ss_respond(void) {
         return -EBUSY;
     }
 
-    if ((err = wait_for_poll_message()) < 0) {
-        return err;
-    }
+    //    if ((err = wait_for_poll_message()) < 0) {
+    //        return err;
+    //    }
 
-    if ((err = receive_poll_message(&src_id)) < 0) {
-        return err;
-    }
+    //    if ((err = receive_poll_message(&src_id)) < 0) {
+    //        return err;
+    //    }
 
-    if ((err = single_sided_respond(src_id)) < 0) {
-        return err;
-    }
+    //    if ((err = single_sided_respond(src_id)) < 0) {
+    //        return err;
+    //    }
 
     return 0;
 }

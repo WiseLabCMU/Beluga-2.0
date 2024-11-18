@@ -94,15 +94,21 @@ static inline uint64_t get_tx_timestamp_u64(void) {
     uint64_t ts = 0;
     uint8 ts_tab[5];
     dwt_readtxtimestamp(ts_tab);
-    memcpy(&ts, ts_tab, TIMESTAMP_OVERHEAD);
+    for (int i = 4; i >= 0; i--) {
+        ts <<= 8;
+        ts |= ts_tab[i];
+    }
     return ts;
 }
 
 static uint64_t get_rx_timestamp_u64(void) {
-    uint64_t ts;
+    uint64_t ts = 0;
     uint8 ts_tab[5];
     dwt_readrxtimestamp(ts_tab);
-    memcpy(&ts, ts_tab, TIMESTAMP_OVERHEAD);
+    for (int i = 4; i >= 0; i--) {
+        ts <<= 8;
+        ts |= ts_tab[i];
+    }
     return ts;
 }
 
