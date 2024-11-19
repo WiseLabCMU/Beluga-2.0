@@ -27,9 +27,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_ERR);
 
 K_SEM_DEFINE(k_sus_resp, 0, 1);
+
+#define POLL_RX_TO_RESP_TX_DLY_UUS  1500
 
 #define RX_BUF_LEN MAX(POLL_MSG_LEN, FINAL_MSG_LEN)
 

@@ -55,7 +55,6 @@
 #define RESP_RX_TIMEOUT_UUS         2700
 #define SPEED_OF_LIGHT              299702547
 
-#define POLL_RX_TO_RESP_TX_DLY_UUS  2750
 #define RESP_TX_TO_FINAL_RX_DLY_UUS 500
 #define FINAL_RX_TIMEOUT_UUS        3300
 

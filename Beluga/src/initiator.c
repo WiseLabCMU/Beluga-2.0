@@ -16,6 +16,8 @@ LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
 K_SEM_DEFINE(k_sus_init, 0, 1);
 
+#define POLL_RX_TO_RESP_TX_DLY_UUS 2000
+
 #define RX_BUF_LEN MAX(RESP_MSG_LEN, REPORT_MSG_LEN)
 
 static uint8 tx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
@@ -70,7 +72,7 @@ static void set_destination(uint16_t id) {
     memcpy(rx_report_msg + SRC_OFFSET, &id, SRC_OVERHEAD);
 }
 
-ALWAYS_INLINE static int send_poll_message(void) {
+static int send_poll_message(void) {
     int status;
 
     tx_poll_msg[SEQ_CNT_OFFSET] = sequence_count;
@@ -80,6 +82,7 @@ ALWAYS_INLINE static int send_poll_message(void) {
     status = dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 
     if (status != DWT_SUCCESS) {
+        LOG_WRN("Unable to send polling message");
         return -ETIMEDOUT;
     }
 
@@ -91,29 +94,47 @@ ALWAYS_INLINE static int send_poll_message(void) {
     return 0;
 }
 
-ALWAYS_INLINE static int wait_for_response(void) {
-    int status;
+static int wait_response_and_respond_final(void) {
+    int status, ret;
+    uint32 frame_len;
+    UNUSED uint8 rx_seq;
+    uint64_t poll_tx_ts, resp_rx_ts;
+    uint32 final_tx_time;
+    uint64_t final_tx_ts;
 
     UWB_WAIT((status = dwt_read32bitreg(SYS_STATE_ID)) &
              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
 
-    if (status & (SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)) {
+    if (!(status & SYS_STATUS_RXFCG)) {
         /* Clear RX error/timeout events in the DW1000 status register. */
         dwt_write32bitreg(SYS_STATUS_ID,
                           SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
         /* Reset RX to properly reinitialise LDE operation. */
         dwt_rxreset();
-
+        LOG_WRN("Not able to receive response");
+        if (status & SYS_STATUS_RXPHE) {
+            LOG_WRN("SYS_STATUS_RXPHE");
+        }
+        if (status & SYS_STATUS_RXFCE) {
+            LOG_WRN("SYS_STATUS_RXFCE");
+        }
+        if (status & SYS_STATUS_RXRFSL) {
+            LOG_WRN("SYS_STATUS_RXRFSL");
+        }
+        if (status & SYS_STATUS_RXSFDTO) {
+            LOG_WRN("SYS_STATUS_RXSFDTO");
+        }
+        if (status & SYS_STATUS_AFFREJ) {
+            LOG_WRN("SYS_STATUS_AFFREJ");
+        }
+        if (status & SYS_STATUS_ALL_RX_TO) {
+            LOG_WRN("SYS_STATUS_LDEERR");
+        }
+        if (status & SYS_STATUS_ALL_RX_TO) {
+            LOG_WRN("SYS_STATUS_ALL_RX_TO (timeout)");
+        }
         return -ETIME;
     }
-
-    return 0;
-}
-
-ALWAYS_INLINE static int ds_read_response(uint64_t *poll_tx_ts,
-                                          uint64_t *resp_rx_ts) {
-    uint32 frame_len;
-    UNUSED uint8 rx_seq;
 
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
     frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFLEN_MASK;
@@ -129,27 +150,19 @@ ALWAYS_INLINE static int ds_read_response(uint64_t *poll_tx_ts,
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
     if (memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) != 0) {
+        LOG_WRN("Response invalid");
         return -EINVAL;
     }
 
-    *poll_tx_ts = get_tx_timestamp_u64();
-    *resp_rx_ts = get_rx_timestamp_u64();
-
-    return 0;
-}
-
-ALWAYS_INLINE static int send_final_message(uint64_t poll_tx_ts,
-                                            uint64_t resp_rx_ts) {
-    int ret;
-    uint32 final_tx_time;
-    uint64_t final_tx_ts;
+    poll_tx_ts = get_tx_timestamp_u64();
+    resp_rx_ts = get_rx_timestamp_u64();
 
     final_tx_time =
-        (resp_rx_ts + (RESP_RX_TO_FINAL_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+            (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(final_tx_time);
 
     final_tx_ts =
-        (((uint64_t)(final_tx_time & UINT32_C(0xFFFFFFFE))) << 8) + TX_ANT_DLY;
+            (((uint64_t)(final_tx_time & UINT32_C(0xFFFFFFFE))) << 8) + TX_ANT_DLY;
 
     memcpy(tx_final_msg + FINAL_TX_POLL_TS_OFFSET, &poll_tx_ts,
            TIMESTAMP_OVERHEAD);
@@ -161,10 +174,11 @@ ALWAYS_INLINE static int send_final_message(uint64_t poll_tx_ts,
     tx_final_msg[SEQ_CNT_OFFSET] = sequence_count;
     dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0);
     dwt_writetxfctrl(sizeof(tx_final_msg), 0, 1);
-    ret = dwt_starttx(DWT_START_TX_DELAYED);
+    ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
 
     if (ret != DWT_SUCCESS) {
         dwt_rxreset();
+        LOG_WRN("Unable to transmit final message");
         return -ETIME;
     }
 
@@ -176,7 +190,7 @@ ALWAYS_INLINE static int send_final_message(uint64_t poll_tx_ts,
     return 0;
 }
 
-ALWAYS_INLINE static int wait_for_report(void) {
+static int wait_for_report(void) {
     int status;
 
     UWB_WAIT((status = dwt_read32bitreg(SYS_STATUS_ID)) &
@@ -298,15 +312,7 @@ int double_sided_init(uint16_t id, double *distance) {
         return ret;
     }
 
-    if ((ret = wait_for_response()) < 0) {
-        return ret;
-    }
-
-    if ((ret = ds_read_response(&poll_tx_ts, &resp_rx_ts)) < 0) {
-        return ret;
-    }
-
-    if ((ret = send_final_message(poll_tx_ts, resp_rx_ts)) < 0) {
+    if ((ret = wait_response_and_respond_final()) < 0) {
         return ret;
     }
 
@@ -330,21 +336,21 @@ int single_sided_init(uint16_t id, double *distance, uint8_t channel) {
 
     set_destination(id);
 
-    if ((ret = send_poll_message()) < 0) {
-        return ret;
-    }
-
-    if ((ret = wait_for_response()) < 0) {
-        return ret;
-    }
-
-    if ((ret = ss_read_response()) < 0) {
-        return ret;
-    }
-
-    if ((ret = ss_calculate_distance(channel, distance)) < 0) {
-        return ret;
-    }
+//    if ((ret = send_poll_message()) < 0) {
+//        return ret;
+//    }
+//
+//    if ((ret = wait_for_response()) < 0) {
+//        return ret;
+//    }
+//
+//    if ((ret = ss_read_response()) < 0) {
+//        return ret;
+//    }
+//
+//    if ((ret = ss_calculate_distance(channel, distance)) < 0) {
+//        return ret;
+//    }
 
     return 0;
 }

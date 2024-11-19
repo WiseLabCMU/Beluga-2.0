@@ -358,7 +358,7 @@ void init_uwb(void) {
  */
 static void init_reconfig() {
     dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
-    dwt_setrxtimeout(2000);
+    dwt_setrxtimeout(3000);
 }
 
 /**
