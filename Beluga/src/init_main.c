@@ -146,7 +146,6 @@ double ds_init_run(uint8 id) {
         if (frame_len <= RX_BUF_LEN) {
             dwt_readrxdata(rx_buffer, frame_len, 0);
         }
-        LOG_INF("Frame length: %" PRId32, frame_len);
 
         /* Check that the frame is the expected response from the companion
          * frame and extract ID from sender's message */
@@ -219,15 +218,6 @@ double ds_init_run(uint8 id) {
                       SYS_STATUS_ALL_RX_ERR))) {
             };
 
-#if 0 // Include to determine the type of timeout if required.
-            int temp = 0;
-        // (frame wait timeout and preamble detect timeout)
-        if(status_reg & SYS_STATUS_RXRFTO )
-        temp =1;
-        else if(status_reg & SYS_STATUS_RXPTO )
-        temp =2;
-#endif
-
             if (status_reg & SYS_STATUS_RXFCG) {
                 uint32 frame_len;
 
@@ -273,6 +263,28 @@ double ds_init_run(uint8 id) {
                           SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
         /* Reset RX to properly reinitialise LDE operation. */
         dwt_rxreset();
+//        LOG_WRN("Not able to receive response");
+//        if (status_reg & SYS_STATUS_RXPHE) {
+//            LOG_WRN("SYS_STATUS_RXPHE");
+//        }
+//        if (status_reg & SYS_STATUS_RXFCE) {
+//            LOG_WRN("SYS_STATUS_RXFCE");
+//        }
+//        if (status_reg & SYS_STATUS_RXRFSL) {
+//            LOG_WRN("SYS_STATUS_RXRFSL");
+//        }
+//        if (status_reg & SYS_STATUS_RXSFDTO) {
+//            LOG_WRN("SYS_STATUS_RXSFDTO");
+//        }
+//        if (status_reg & SYS_STATUS_AFFREJ) {
+//            LOG_WRN("SYS_STATUS_AFFREJ");
+//        }
+//        if (status_reg & SYS_STATUS_ALL_RX_TO) {
+//            LOG_WRN("SYS_STATUS_LDEERR");
+//        }
+//        if (status_reg & SYS_STATUS_ALL_RX_TO) {
+//            LOG_WRN("SYS_STATUS_ALL_RX_TO (timeout)");
+//        }
     }
 
     return -1;
