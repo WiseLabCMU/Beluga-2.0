@@ -111,29 +111,29 @@ static int wait_response_and_respond_final(void) {
                           SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
         /* Reset RX to properly reinitialise LDE operation. */
         dwt_rxreset();
-        LOG_WRN("Not able to receive response");
-        if (status & SYS_STATUS_RXPHE) {
-            LOG_WRN("SYS_STATUS_RXPHE");
-        }
-        if (status & SYS_STATUS_RXFCE) {
-            LOG_WRN("SYS_STATUS_RXFCE");
-        }
-        if (status & SYS_STATUS_RXRFSL) {
-            LOG_WRN("SYS_STATUS_RXRFSL");
-        }
-        if (status & SYS_STATUS_RXSFDTO) {
-            LOG_WRN("SYS_STATUS_RXSFDTO");
-        }
-        if (status & SYS_STATUS_AFFREJ) {
-            LOG_WRN("SYS_STATUS_AFFREJ");
-        }
-        if (status & SYS_STATUS_ALL_RX_TO) {
-            LOG_WRN("SYS_STATUS_LDEERR");
-        }
-        if (status & SYS_STATUS_ALL_RX_TO) {
-            LOG_WRN("SYS_STATUS_ALL_RX_TO (timeout)");
-        }
-        return -ETIME;
+//        LOG_WRN("Not able to receive response");
+//        if (status & SYS_STATUS_RXPHE) {
+//            LOG_WRN("SYS_STATUS_RXPHE");
+//        }
+//        if (status & SYS_STATUS_RXFCE) {
+//            LOG_WRN("SYS_STATUS_RXFCE");
+//        }
+//        if (status & SYS_STATUS_RXRFSL) {
+//            LOG_WRN("SYS_STATUS_RXRFSL");
+//        }
+//        if (status & SYS_STATUS_RXSFDTO) {
+//            LOG_WRN("SYS_STATUS_RXSFDTO");
+//        }
+//        if (status & SYS_STATUS_AFFREJ) {
+//            LOG_WRN("SYS_STATUS_AFFREJ");
+//        }
+//        if (status & SYS_STATUS_ALL_RX_TO) {
+//            LOG_WRN("SYS_STATUS_LDEERR");
+//        }
+//        if (status & SYS_STATUS_ALL_RX_TO) {
+//            LOG_WRN("SYS_STATUS_ALL_RX_TO (timeout)");
+//        }
+        return __LINE__;
     }
 
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
@@ -153,6 +153,7 @@ static int wait_response_and_respond_final(void) {
         LOG_WRN("Response invalid");
         return -EINVAL;
     }
+    LOG_WRN("Response received");
 
     poll_tx_ts = get_tx_timestamp_u64();
     resp_rx_ts = get_rx_timestamp_u64();
@@ -181,6 +182,7 @@ static int wait_response_and_respond_final(void) {
         LOG_WRN("Unable to transmit final message");
         return -ETIME;
     }
+    LOG_WRN("Final message sent");
 
     UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
@@ -312,7 +314,8 @@ int double_sided_init(uint16_t id, double *distance) {
         return ret;
     }
 
-    if ((ret = wait_response_and_respond_final()) < 0) {
+    if ((ret = wait_response_and_respond_final()) != 0) {
+        LOG_WRN("Returned %" PRId32, ret);
         return ret;
     }
 
