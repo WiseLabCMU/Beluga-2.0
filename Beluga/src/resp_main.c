@@ -266,6 +266,31 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu) {
     return 0;
 }
 
+static int send_report(uint16 NODE_UUID, uint64 tof_dtu) {
+    /* Write all timestamps in the report message. */
+    resp_msg_set_ts(&tx_report_msg[RESP_MSG_POLL_RX_TS_IDX], tof_dtu);
+
+    /* Write and send the report message. */
+    tx_report_msg[SEQ_CNT_OFFSET] = NODE_UUID;
+    dwt_writetxdata(sizeof(tx_report_msg), tx_report_msg,
+                    0); /* Zero offset in TX buffer. See Note 5 below.*/
+    dwt_writetxfctrl(sizeof(tx_report_msg), 0,
+                     1); /* Zero offset in TX buffer, ranging. */
+    int ret = dwt_starttx(DWT_START_TX_IMMEDIATE);
+
+    if (ret != DWT_SUCCESS) {
+        dwt_rxreset();
+        LOG_INF("Failed to transmit");
+        return -EBADMSG;
+    }
+
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    /* Clear TXFRS event. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+
+    return 0;
+}
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn ss_resp_run()
@@ -278,7 +303,6 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu) {
  */
 int ds_resp_run(void) {
     int err;
-    uint32 status_reg;
     uint16_t NODE_UUID = get_NODE_UUID();
     uint64 tof_dtu;
 
@@ -300,49 +324,11 @@ int ds_resp_run(void) {
         return err;
     }
 
-    //----- Send report message
-
-    /* Write all timestamps in the report message. */
-    resp_msg_set_ts(&tx_report_msg[RESP_MSG_POLL_RX_TS_IDX], tof_dtu);
-
-    /* Write and send the report message. */
-    tx_report_msg[SEQ_CNT_OFFSET] = NODE_UUID;
-    dwt_writetxdata(sizeof(tx_report_msg), tx_report_msg,
-                    0); /* Zero offset in TX buffer. See Note 5 below.*/
-    dwt_writetxfctrl(sizeof(tx_report_msg), 0,
-                     1); /* Zero offset in TX buffer, ranging. */
-    int ret_report = dwt_starttx(DWT_START_TX_IMMEDIATE);
-
-    if (ret_report == DWT_SUCCESS) {
-        /* Poll DW1000 until TX frame sent event set. See NOTE 5
-         * below. */
-        UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
-        /* Clear TXFRS event. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+    if ((err = send_report(NODE_UUID, tof_dtu)) < 0) {
+        return err;
     }
 
-    else {
-        /* If we end up in here then we have not succeded in
-        transmitting the packet we sent up.
-        POLL_RX_TO_RESP_TX_DLY_UUS is a critical value for
-        porting to different processors. For slower platforms
-        where the SPI is at a slower speed or the processor is
-        operating at a lower frequency (Comparing to STM32F, SPI
-        of 18MHz and Processor internal 72MHz)this value needs
-        to be increased. Knowing the exact time when the
-        responder is going to send its response is vital for
-        time of flight calculation. The specification of the
-        time of respnse must allow the processor enough time to
-        do its calculations and put the packet in the Tx buffer.
-        So more time is required for a slower system(processor).
-        */
-        /* Reset RX to properly reinitialise LDE operation. */
-        dwt_rxreset();
-        LOG_INF("Failed to transmit");
-        return 1;
-    }
-
-    return (1);
+    return 0;
 }
 
 /*!
