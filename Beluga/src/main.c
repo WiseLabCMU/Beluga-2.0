@@ -6,6 +6,7 @@
 
 #include "ble_app.h"
 #include <app_leds.h>
+#include <app_version.h>
 #include <at_commands.h>
 #include <init_main.h>
 #include <led_config.h>
@@ -26,7 +27,6 @@
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <app_version.h>
 
 LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 
