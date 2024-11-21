@@ -148,6 +148,40 @@ static int wait_poll_message(uint16_t NODE_UUID) {
     return 0;
 }
 
+static int ds_respond(uint16 NODE_UUID) {
+    uint32 resp_tx_time;
+    int ret;
+
+    /* Retrieve poll reception timestamp. */
+    poll_rx_ts = get_rx_timestamp_u64();
+
+    /* Compute final message transmission time. See NOTE 7 below. */
+    resp_tx_time =
+            (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+    dwt_setdelayedtrxtime(resp_tx_time);
+
+    /* Write and send the response message. See NOTE 9 below. */
+    tx_resp_msg[SEQ_CNT_OFFSET] = NODE_UUID;
+    dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg,
+                    0); /* Zero offset in TX buffer. See Note 5 below.*/
+    dwt_writetxfctrl(sizeof(tx_resp_msg), 0,
+                     1); /* Zero offset in TX buffer, ranging. */
+
+    /* Send Response message */
+    ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
+
+    if (ret != DWT_SUCCESS) {
+        dwt_rxreset();
+        return -EBADMSG;
+    }
+
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    /* Clear TXFRS event. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+
+    return 0;
+}
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn ss_resp_run()
@@ -172,55 +206,8 @@ int ds_resp_run(void) {
         return err;
     }
 
-    uint32 resp_tx_time;
-    int ret;
-
-    /* Retrieve poll reception timestamp. */
-    poll_rx_ts = get_rx_timestamp_u64();
-
-    /* Compute final message transmission time. See NOTE 7 below. */
-    resp_tx_time =
-        (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
-    dwt_setdelayedtrxtime(resp_tx_time);
-
-    /* Write and send the response message. See NOTE 9 below. */
-    tx_resp_msg[SEQ_CNT_OFFSET] = NODE_UUID;
-    dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg,
-                    0); /* Zero offset in TX buffer. See Note 5 below.*/
-    dwt_writetxfctrl(sizeof(tx_resp_msg), 0,
-                     1); /* Zero offset in TX buffer, ranging. */
-
-    /* Send Response message */
-    ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
-
-    /* If dwt_starttx() returns an error, abandon this ranging exchange
-     * and proceed to the next one. */
-    if (ret == DWT_SUCCESS) {
-
-        /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
-         */
-        UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
-        /* Clear TXFRS event. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-    } else {
-        /* If we end up in here then we have not succeded in
-        transmitting the packet we sent up. POLL_RX_TO_RESP_TX_DLY_UUS
-        is a critical value for porting to different processors. For
-        slower platforms where the SPI is at a slower speed or the
-        processor is operating at a lower frequency (Comparing to
-        STM32F, SPI of 18MHz and Processor internal 72MHz)this value
-        needs to be increased. Knowing the exact time when the responder
-        is going to send its response is vital for time of flight
-        calculation. The specification of the time of respnse must allow
-        the processor enough time to do its calculations and put the
-        packet in the Tx buffer. So more time is required for a slower
-        system(processor).
-        */
-
-        /* Reset RX to properly reinitialise LDE operation. */
-        dwt_rxreset();
-        LOG_INF("Failed to transmit");
-        return 1;
+    if ((err = ds_respond(NODE_UUID)) < 0) {
+        return err;
     }
 
     /* Poll for reception of a frame or error/timeout. See NOTE 5 below.
