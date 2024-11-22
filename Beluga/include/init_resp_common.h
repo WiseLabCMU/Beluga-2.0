@@ -5,8 +5,8 @@
 #ifndef BELUGA_INIT_RESP_COMMON_H
 #define BELUGA_INIT_RESP_COMMON_H
 
-#include <zephyr/kernel.h>
 #include <deca_device_api.h>
+#include <zephyr/kernel.h>
 
 #define FC_OVERHEAD        2
 #define SEQ_CNT_OVERHEAD   1
@@ -61,19 +61,20 @@
 #define FINAL_MSG_FINAL_TX_TS_IDX                                              \
     (DW_BASE_PAYLOAD_OFFSET + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD)
 
+#define SPEED_OF_LIGHT 299702547
 
 /*!
-* ------------------------------------------------------------------------------------------------------------------
-* @fn get_rx_timestamp_u64()
-*
-* @brief Get the RX time-stamp in a 64-bit variable.
-*        /!\ This function assumes that length of time-stamps is 40 bits, for
-* both TX and RX!
-*
-* @param  none
-*
-* @return  64-bit value of the read time-stamp.
-*/
+ * ------------------------------------------------------------------------------------------------------------------
+ * @fn get_rx_timestamp_u64()
+ *
+ * @brief Get the RX time-stamp in a 64-bit variable.
+ *        /!\ This function assumes that length of time-stamps is 40 bits, for
+ * both TX and RX!
+ *
+ * @param  none
+ *
+ * @return  64-bit value of the read time-stamp.
+ */
 static inline uint64_t get_rx_timestamp_u64(void) {
     uint8_t ts_tab[5];
     uint64_t ts = 0;
