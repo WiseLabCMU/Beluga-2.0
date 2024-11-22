@@ -136,28 +136,7 @@ static int ds_rx_response(uint8 id) {
     return 0;
 }
 
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn ds_init_run()
- *
- * @brief Initiate UWB double-sided two way ranging
- *
- * @param  node ID
- *
- * @return distance between sending nodes and id node
- */
-int ds_init_run(uint8 id, double *distance) {
-    int err;
-    uint32 status_reg;
-
-    if ((err = send_poll(id)) < 0) {
-        return err;
-    }
-
-    if ((err = ds_rx_response(id)) < 0) {
-        return err;
-    }
-
+static int send_final(uint8 id) {
     /* Retrieve poll transmission and response reception timestamps. See
      * NOTE 4 below. */
     uint64 poll_tx_ts, resp_rx_ts;
@@ -169,7 +148,7 @@ int ds_init_run(uint8 id, double *distance) {
 
     uint32 resp_tx_time;
     resp_tx_time =
-        (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+            (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
     /* Response TX timestamp is the transmission time we programmed plus
@@ -193,19 +172,41 @@ int ds_init_run(uint8 id, double *distance) {
     /* Send Final message */
     int ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
 
-    /* If dwt_starttx() returns an error, abandon this ranging exchange
-     * and proceed to the next one. */
-    if (ret == DWT_SUCCESS) {
-        /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
-         */
-        while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
-        };
-        /* Clear TXFRS event. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-    } else {
-        /* Reset RX to properly reinitialise LDE operation. */
+    if (ret != DWT_SUCCESS) {
         dwt_rxreset();
-        return -1;
+        return -ETIMEDOUT;
+    }
+
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+
+    return 0;
+}
+
+/*!
+ * ------------------------------------------------------------------------------------------------------------------
+ * @fn ds_init_run()
+ *
+ * @brief Initiate UWB double-sided two way ranging
+ *
+ * @param  node ID
+ *
+ * @return distance between sending nodes and id node
+ */
+int ds_init_run(uint8 id, double *distance) {
+    int err;
+    uint32 status_reg;
+
+    if ((err = send_poll(id)) < 0) {
+        return err;
+    }
+
+    if ((err = ds_rx_response(id)) < 0) {
+        return err;
+    }
+
+    if ((err = send_final(id)) < 0) {
+        return err;
     }
 
     /* ------ Receive Report message ------ */
