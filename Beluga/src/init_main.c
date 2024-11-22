@@ -148,7 +148,7 @@ static int send_final(uint8 id) {
 
     uint32 resp_tx_time;
     resp_tx_time =
-            (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+        (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
     /* Response TX timestamp is the transmission time we programmed plus
@@ -260,6 +260,73 @@ int ds_init_run(uint8 id, double *distance) {
     return 0;
 }
 
+static int ss_rx_response(uint8 id, double *distance) {
+    uint32 status_reg;
+
+    UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
+
+    if (!(status_reg & SYS_STATUS_RXFCG)) {
+        /* Clear RX error/timeout events in the DW1000 status register. */
+        dwt_write32bitreg(SYS_STATUS_ID,
+                          SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
+        /* Reset RX to properly reinitialise LDE operation. */
+        dwt_rxreset();
+        return -EBADMSG;
+    }
+
+    uint32 frame_len;
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
+
+    /* A frame has been received, read it into the local buffer. */
+    frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFLEN_MASK;
+    if (frame_len <= RX_BUF_LEN) {
+        dwt_readrxdata(rx_buffer, frame_len, 0);
+    }
+
+    /* Check that the frame is the expected response from the companion "SS
+     * TWR responder" example. As the sequence number field of the frame is
+     * not relevant, it is cleared to simplify the validation of the frame.
+     */
+    int got = rx_buffer[SEQ_CNT_OFFSET];
+    rx_buffer[SEQ_CNT_OFFSET] = 0;
+
+    if (!((got == id) && memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
+        dwt_rxreset();
+        return -EBADMSG;
+    }
+
+    uint32 poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
+    int32 rtd_init, rtd_resp;
+    float clockOffsetRatio;
+
+    /* Retrieve poll transmission and response reception timestamps. See
+     * NOTE 4 below. */
+    poll_tx_ts = dwt_readtxtimestamplo32();
+    resp_rx_ts = dwt_readrxtimestamplo32();
+
+    /* Read carrier integrator value and calculate clock offset ratio.
+     * See NOTE 6 below. */
+    clockOffsetRatio =
+        dwt_readcarrierintegrator() *
+        (FREQ_OFFSET_MULTIPLIER * HERTZ_TO_PPM_MULTIPLIER_CHAN_5 / 1.0e6);
+
+    /* Get timestamps embedded in response message. */
+    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
+    resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
+
+    /* Compute time of flight and distance, using clock offset ratio to
+     * correct for differing local and remote clock rates */
+    rtd_init = resp_rx_ts - poll_tx_ts;
+    rtd_resp = resp_tx_ts - poll_rx_ts;
+
+    tof = ((rtd_init - rtd_resp * (1.0f - clockOffsetRatio)) / 2.0f) *
+          DWT_TIME_UNITS; // Specifying 1.0f and 2.0f are floats to
+    // clear warning
+    *distance = tof * SPEED_OF_LIGHT;
+    return 0;
+}
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn ss_init_run()
@@ -271,78 +338,17 @@ int ds_init_run(uint8 id, double *distance) {
  * @return distance between sending nodes and id node
  */
 int ss_init_run(uint8 id, double *distance) {
-    uint32 status_reg;
     int err;
 
     if ((err = send_poll(id)) < 0) {
         return err;
     }
 
-    while (
-        !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-          (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
-    };
-
-    if (status_reg & SYS_STATUS_RXFCG) {
-        uint32 frame_len;
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
-
-        /* A frame has been received, read it into the local buffer. */
-        frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFLEN_MASK;
-        if (frame_len <= RX_BUF_LEN) {
-            dwt_readrxdata(rx_buffer, frame_len, 0);
-        }
-
-        /* Check that the frame is the expected response from the companion "SS
-         * TWR responder" example. As the sequence number field of the frame is
-         * not relevant, it is cleared to simplify the validation of the frame.
-         */
-        int got = rx_buffer[SEQ_CNT_OFFSET];
-        rx_buffer[SEQ_CNT_OFFSET] = 0;
-        if ((got == id) && memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0) {
-
-            uint32 poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-            int32 rtd_init, rtd_resp;
-            float clockOffsetRatio;
-
-            /* Retrieve poll transmission and response reception timestamps. See
-             * NOTE 4 below. */
-            poll_tx_ts = dwt_readtxtimestamplo32();
-            resp_rx_ts = dwt_readrxtimestamplo32();
-
-            /* Read carrier integrator value and calculate clock offset ratio.
-             * See NOTE 6 below. */
-            clockOffsetRatio = dwt_readcarrierintegrator() *
-                               (FREQ_OFFSET_MULTIPLIER *
-                                HERTZ_TO_PPM_MULTIPLIER_CHAN_5 / 1.0e6);
-
-            /* Get timestamps embedded in response message. */
-            resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
-            resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
-
-            /* Compute time of flight and distance, using clock offset ratio to
-             * correct for differing local and remote clock rates */
-            rtd_init = resp_rx_ts - poll_tx_ts;
-            rtd_resp = resp_tx_ts - poll_rx_ts;
-
-            tof = ((rtd_init - rtd_resp * (1.0f - clockOffsetRatio)) / 2.0f) *
-                  DWT_TIME_UNITS; // Specifying 1.0f and 2.0f are floats to
-            // clear warning
-            *distance = tof * SPEED_OF_LIGHT;
-            return 0;
-
-        } else {
-            dwt_rxreset();
-        }
-
-    } else {
-        /* Clear RX error/timeout events in the DW1000 status register. */
-        dwt_write32bitreg(SYS_STATUS_ID,
-                          SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-        /* Reset RX to properly reinitialise LDE operation. */
-        dwt_rxreset();
+    if ((err = ss_rx_response(id, distance)) < 0) {
+        return err;
     }
-    return -1;
+
+    return 0;
 }
 
 /*!
