@@ -402,7 +402,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             init_reconfig();
 
             int search_count = 0;
-            double range1;
+            double range;
 
             while (seen_list[curr_index].UUID == 0) {
                 curr_index++;
@@ -418,28 +418,22 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             }
 
             if (!break_flag) {
+                int err = 0;
                 if (twr_mode) {
-                    range1 = ds_init_run(seen_list[curr_index].UUID);
+                    err = ds_init_run(seen_list[curr_index].UUID, &range);
+                    LOG_INF("Double sided ranging returned %d", err);
                 } else {
-                    range1 = ss_init_run(seen_list[curr_index].UUID);
+                    err = ss_init_run(seen_list[curr_index].UUID, &range);
+                    LOG_INF("Single sided ranging returned %d", err);
                 }
 
-                if (range1 == -1) {
+                if (err != 0) {
                     drop_flag = true;
                 }
 
-                int numThru = 1;
-
-                if (range1 == -1) {
-                    range1 = 0;
-                    numThru -= 1;
-                }
-
-                float range = (range1) / numThru;
-
-                if ((numThru != 0) && (range >= -5) && (range <= 100)) {
+                if (!drop_flag && (range >= -5) && (range <= 100)) {
                     seen_list[curr_index].update_flag = 1;
-                    seen_list[curr_index].range = range;
+                    seen_list[curr_index].range = (float)range;
                     seen_list[curr_index].time_stamp = k_uptime_get();
 
                     // TODO: Update BLE value transfer to phone

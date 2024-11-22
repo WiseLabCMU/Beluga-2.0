@@ -73,7 +73,6 @@ static uint32 status_reg = 0;
 /* Hold copies of computed time of flight and distance here for reference so
  * that it can be examined at a debug breakpoint. */
 static double tof;
-static double distance;
 
 /* Declaration of static functions. */
 static void resp_msg_get_ts(uint8 *ts_field, uint32 *ts);
@@ -98,8 +97,7 @@ static uint64 get_rx_timestamp_u64(void);
  *
  * @return distance between sending nodes and id node
  */
-double ds_init_run(uint8 id) {
-
+int ds_init_run(uint8 id, double *distance) {
     /* Write frame data to DW1000 and prepare transmission. See NOTE 3 below. */
     tx_poll_msg[ALL_MSG_SN_IDX] = id;
     dwt_write32bitreg(SYS_STATUS_ID,
@@ -247,8 +245,8 @@ double ds_init_run(uint8 id) {
                      * ratio to correct for differing local and remote clock
                      * rates */
                     tof = msg_tof_dtu * DWT_TIME_UNITS;
-                    distance = tof * SPEED_OF_LIGHT;
-                    return distance;
+                    *distance = tof * SPEED_OF_LIGHT;
+                    return 0;
                 }
             } else {
                 /* Clear RX error events in the DW1000 status register. */
@@ -263,28 +261,6 @@ double ds_init_run(uint8 id) {
                           SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
         /* Reset RX to properly reinitialise LDE operation. */
         dwt_rxreset();
-        //        LOG_WRN("Not able to receive response");
-        //        if (status_reg & SYS_STATUS_RXPHE) {
-        //            LOG_WRN("SYS_STATUS_RXPHE");
-        //        }
-        //        if (status_reg & SYS_STATUS_RXFCE) {
-        //            LOG_WRN("SYS_STATUS_RXFCE");
-        //        }
-        //        if (status_reg & SYS_STATUS_RXRFSL) {
-        //            LOG_WRN("SYS_STATUS_RXRFSL");
-        //        }
-        //        if (status_reg & SYS_STATUS_RXSFDTO) {
-        //            LOG_WRN("SYS_STATUS_RXSFDTO");
-        //        }
-        //        if (status_reg & SYS_STATUS_AFFREJ) {
-        //            LOG_WRN("SYS_STATUS_AFFREJ");
-        //        }
-        //        if (status_reg & SYS_STATUS_ALL_RX_TO) {
-        //            LOG_WRN("SYS_STATUS_LDEERR");
-        //        }
-        //        if (status_reg & SYS_STATUS_ALL_RX_TO) {
-        //            LOG_WRN("SYS_STATUS_ALL_RX_TO (timeout)");
-        //        }
     }
 
     return -1;
@@ -300,7 +276,7 @@ double ds_init_run(uint8 id) {
  *
  * @return distance between sending nodes and id node
  */
-double ss_init_run(uint8 id) {
+int ss_init_run(uint8 id, double *distance) {
 
     /* Write frame data to DW1000 and prepare transmission. See NOTE 3 below. */
     tx_poll_msg[ALL_MSG_SN_IDX] = id;
@@ -366,8 +342,8 @@ double ss_init_run(uint8 id) {
             tof = ((rtd_init - rtd_resp * (1.0f - clockOffsetRatio)) / 2.0f) *
                   DWT_TIME_UNITS; // Specifying 1.0f and 2.0f are floats to
             // clear warning
-            distance = tof * SPEED_OF_LIGHT;
-            return distance;
+            *distance = tof * SPEED_OF_LIGHT;
+            return 0;
 
         } else {
             dwt_rxreset();
