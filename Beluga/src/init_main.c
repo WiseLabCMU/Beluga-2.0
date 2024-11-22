@@ -20,11 +20,11 @@
 #include "deca_regs.h"
 #include "port_platform.h"
 #include "random.h"
+#include <init_resp_common.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <init_resp_common.h>
 
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
@@ -47,10 +47,6 @@ static uint8 rx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
  * handle. */
 #define RX_BUF_LEN 20
 static uint8 rx_buffer[RX_BUF_LEN];
-
-/* Hold copy of status register state here for reference so that it can be
- * examined at a debug breakpoint. */
-static uint32 status_reg = 0;
 
 /* UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion
  * factor. 1 uus = 512 / 499.2 s and 1 s = 499.2 * 128 dtu. */
@@ -90,7 +86,7 @@ static int send_poll(uint8 id) {
 
     /* ----- Send Poll message ----- */
     int check_poll_msg =
-            dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
+        dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 
     if (check_poll_msg != DWT_SUCCESS) {
         return -EBADMSG;
@@ -98,6 +94,44 @@ static int send_poll(uint8 id) {
 
     UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+
+    return 0;
+}
+
+static int ds_rx_response(uint8 id) {
+    uint32 status_reg, frame_len;
+
+    UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
+
+    if (!(status_reg & SYS_STATUS_RXFCG)) {
+        /* Clear RX error/timeout events in the DW1000 status register. */
+        dwt_write32bitreg(SYS_STATUS_ID,
+                          SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
+        /* Reset RX to properly reinitialise LDE operation. */
+        dwt_rxreset();
+        return -EBADMSG;
+    }
+
+    /* Clear good RX frame event in the DW1000 status register. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
+
+    /* A frame has been received, read it into the local buffer. */
+    frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFLEN_MASK;
+
+    if (frame_len <= RX_BUF_LEN) {
+        dwt_readrxdata(rx_buffer, frame_len, 0);
+    }
+
+    /* Check that the frame is the expected response from the companion
+     * frame and extract ID from sender's message */
+    int got = rx_buffer[SEQ_CNT_OFFSET];
+
+    rx_buffer[SEQ_CNT_OFFSET] = 0;
+
+    if (!((got == id) && memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
+        return -EBADMSG;
+    }
 
     return 0;
 }
@@ -114,19 +148,75 @@ static int send_poll(uint8 id) {
  */
 int ds_init_run(uint8 id, double *distance) {
     int err;
+    uint32 status_reg;
 
     if ((err = send_poll(id)) < 0) {
         return err;
     }
 
-    /*  Poll for reception of 1. a frame 2. error 3. timeout. See NOTE 4 below.
+    if ((err = ds_rx_response(id)) < 0) {
+        return err;
+    }
+
+    /* Retrieve poll transmission and response reception timestamps. See
+     * NOTE 4 below. */
+    uint64 poll_tx_ts, resp_rx_ts;
+    uint64 ts_replyA_end;
+
+    poll_tx_ts = get_tx_timestamp_u64(); /* Get tx poll message transmit
+                                            timestamp */
+    resp_rx_ts = get_rx_timestamp_u64(); /* Get rx response message timestamp */
+
+    uint32 resp_tx_time;
+    resp_tx_time =
+        (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+    dwt_setdelayedtrxtime(resp_tx_time);
+
+    /* Response TX timestamp is the transmission time we programmed plus
+     * the antenna delay. */
+    ts_replyA_end = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+
+    /* ------ Send Final (third) message ------ */
+
+    /* Write all timestamps in the final message */
+    resp_msg_set_ts(&tx_final_msg[RESP_MSG_POLL_RX_TS_IDX], poll_tx_ts);
+    resp_msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);
+    resp_msg_set_ts(&tx_final_msg[FINAL_MSG_FINAL_TX_TS_IDX], ts_replyA_end);
+
+    /* Write and send the response message. */
+    tx_final_msg[SEQ_CNT_OFFSET] = id;
+    dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg,
+                    0); /* Zero offset in TX buffer. See Note 5 below.*/
+    dwt_writetxfctrl(sizeof(tx_final_msg), 0,
+                     1); /* Zero offset in TX buffer, ranging. */
+
+    /* Send Final message */
+    int ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
+
+    /* If dwt_starttx() returns an error, abandon this ranging exchange
+     * and proceed to the next one. */
+    if (ret == DWT_SUCCESS) {
+        /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
+         */
+        while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
+        };
+        /* Clear TXFRS event. */
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+    } else {
+        /* Reset RX to properly reinitialise LDE operation. */
+        dwt_rxreset();
+        return -1;
+    }
+
+    /* ------ Receive Report message ------ */
+
+    /* Poll for reception of a frame or error/timeout. See NOTE 5 below.
      */
     while (
         !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
           (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
     };
 
-    /* Check the status register is a frame or not */
     if (status_reg & SYS_STATUS_RXFCG) {
         uint32 frame_len;
 
@@ -134,127 +224,32 @@ int ds_init_run(uint8 id, double *distance) {
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
 
         /* A frame has been received, read it into the local buffer. */
-        frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFLEN_MASK;
-
-        if (frame_len <= RX_BUF_LEN) {
+        frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
+        if (frame_len <= RX_BUFFER_LEN) {
             dwt_readrxdata(rx_buffer, frame_len, 0);
         }
 
-        /* Check that the frame is the expected response from the companion
-         * frame and extract ID from sender's message */
+        /* Check that the frame is a poll sent by "SS TWR initiator"
+         * example. As the sequence number field of the frame is not
+         * relevant, it is cleared to simplify the validation of the
+         * frame. */
         int got = rx_buffer[SEQ_CNT_OFFSET];
-
         rx_buffer[SEQ_CNT_OFFSET] = 0;
-        if ((got == id) &&
-            memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0) {
-
-            /* Retrieve poll transmission and response reception timestamps. See
-             * NOTE 4 below. */
-            uint64 poll_tx_ts, resp_rx_ts;
-            uint64 ts_replyA_end;
-
-            poll_tx_ts = get_tx_timestamp_u64(); /* Get tx poll message transmit
-                                                    timestamp */
-            resp_rx_ts =
-                get_rx_timestamp_u64(); /* Get rx response message timestamp */
-
-            uint32 resp_tx_time;
-            resp_tx_time =
-                (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
-                8;
-            dwt_setdelayedtrxtime(resp_tx_time);
-
-            /* Response TX timestamp is the transmission time we programmed plus
-             * the antenna delay. */
-            ts_replyA_end =
-                (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
-
-            /* ------ Send Final (third) message ------ */
-
-            /* Write all timestamps in the final message */
-            resp_msg_set_ts(&tx_final_msg[RESP_MSG_POLL_RX_TS_IDX], poll_tx_ts);
-            resp_msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);
-            resp_msg_set_ts(&tx_final_msg[FINAL_MSG_FINAL_TX_TS_IDX],
-                            ts_replyA_end);
-
-            /* Write and send the response message. */
-            tx_final_msg[SEQ_CNT_OFFSET] = id;
-            dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg,
-                            0); /* Zero offset in TX buffer. See Note 5 below.*/
-            dwt_writetxfctrl(sizeof(tx_final_msg), 0,
-                             1); /* Zero offset in TX buffer, ranging. */
-
-            /* Send Final message */
-            int ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
-
-            /* If dwt_starttx() returns an error, abandon this ranging exchange
-             * and proceed to the next one. */
-            if (ret == DWT_SUCCESS) {
-                /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
-                 */
-                while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
-                };
-                /* Clear TXFRS event. */
-                dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-            } else {
-                /* Reset RX to properly reinitialise LDE operation. */
-                dwt_rxreset();
-                return -1;
-            }
-
-            /* ------ Receive Report message ------ */
-
-            /* Poll for reception of a frame or error/timeout. See NOTE 5 below.
-             */
-            while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-                     (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO |
-                      SYS_STATUS_ALL_RX_ERR))) {
-            };
-
-            if (status_reg & SYS_STATUS_RXFCG) {
-                uint32 frame_len;
-
-                /* Clear good RX frame event in the DW1000 status register. */
-                dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
-
-                /* A frame has been received, read it into the local buffer. */
-                frame_len =
-                    dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
-                if (frame_len <= RX_BUFFER_LEN) {
-                    dwt_readrxdata(rx_buffer, frame_len, 0);
-                }
-
-                /* Check that the frame is a poll sent by "SS TWR initiator"
-                 * example. As the sequence number field of the frame is not
-                 * relevant, it is cleared to simplify the validation of the
-                 * frame. */
-                int got = rx_buffer[SEQ_CNT_OFFSET];
-                rx_buffer[SEQ_CNT_OFFSET] = 0;
-                if ((got == id) &&
-                    memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0) {
-                    uint32 msg_tof_dtu;
-                    /* Get timestamps embedded in response message. */
-                    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX],
-                                    &msg_tof_dtu);
-                    /* Compute time of flight and distance, using clock offset
-                     * ratio to correct for differing local and remote clock
-                     * rates */
-                    tof = msg_tof_dtu * DWT_TIME_UNITS;
-                    *distance = tof * SPEED_OF_LIGHT;
-                    return 0;
-                }
-            } else {
-                /* Clear RX error events in the DW1000 status register. */
-                dwt_write32bitreg(SYS_STATUS_ID,
-                                  SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-                dwt_rxreset();
-            }
+        if ((got == id) && memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0) {
+            uint32 msg_tof_dtu;
+            /* Get timestamps embedded in response message. */
+            resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
+            /* Compute time of flight and distance, using clock offset
+             * ratio to correct for differing local and remote clock
+             * rates */
+            tof = msg_tof_dtu * DWT_TIME_UNITS;
+            *distance = tof * SPEED_OF_LIGHT;
+            return 0;
         }
     } else {
-        /* Clear RX error/timeout events in the DW1000 status register. */
+        /* Clear RX error events in the DW1000 status register. */
         dwt_write32bitreg(SYS_STATUS_ID,
                           SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-        /* Reset RX to properly reinitialise LDE operation. */
         dwt_rxreset();
     }
 
@@ -272,7 +267,7 @@ int ds_init_run(uint8 id, double *distance) {
  * @return distance between sending nodes and id node
  */
 int ss_init_run(uint8 id, double *distance) {
-
+    uint32 status_reg;
     /* Write frame data to DW1000 and prepare transmission. See NOTE 3 below. */
     tx_poll_msg[SEQ_CNT_OFFSET] = id;
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
@@ -307,8 +302,7 @@ int ss_init_run(uint8 id, double *distance) {
          */
         int got = rx_buffer[SEQ_CNT_OFFSET];
         rx_buffer[SEQ_CNT_OFFSET] = 0;
-        if ((got == id) &&
-            memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0) {
+        if ((got == id) && memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0) {
 
             uint32 poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
             int32 rtd_init, rtd_resp;
