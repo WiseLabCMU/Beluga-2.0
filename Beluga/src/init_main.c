@@ -24,6 +24,7 @@
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <init_resp_common.h>
 
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
@@ -40,16 +41,6 @@ static uint8 tx_final_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
                                0,    0,    0, 0,    0,    0,   0,   0};
 static uint8 rx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
                                 'A',  0xE3, 0, 0,    0,    0,   0,   0};
-
-/* Length of the common part of the message (up to and including the function
- * code, see NOTE 1 below). */
-#define ALL_MSG_COMMON_LEN 10
-/* Indexes to access some of the fields in the frames defined above. */
-#define ALL_MSG_SN_IDX            2
-#define RESP_MSG_POLL_RX_TS_IDX   10
-#define RESP_MSG_RESP_TX_TS_IDX   14
-#define FINAL_MSG_FINAL_TX_TS_IDX 18
-#define RESP_MSG_TS_LEN           4
 
 /* Buffer to store received response message.
  * Its size is adjusted to longest frame that this example code is supposed to
@@ -99,7 +90,7 @@ static uint64 get_rx_timestamp_u64(void);
  */
 int ds_init_run(uint8 id, double *distance) {
     /* Write frame data to DW1000 and prepare transmission. See NOTE 3 below. */
-    tx_poll_msg[ALL_MSG_SN_IDX] = id;
+    tx_poll_msg[SEQ_CNT_OFFSET] = id;
     dwt_write32bitreg(SYS_STATUS_ID,
                       SYS_STATUS_TXFRS); /* Clear Transmit sent frame flag */
     dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg,
@@ -147,11 +138,11 @@ int ds_init_run(uint8 id, double *distance) {
 
         /* Check that the frame is the expected response from the companion
          * frame and extract ID from sender's message */
-        int got = rx_buffer[ALL_MSG_SN_IDX];
+        int got = rx_buffer[SEQ_CNT_OFFSET];
 
-        rx_buffer[ALL_MSG_SN_IDX] = 0;
+        rx_buffer[SEQ_CNT_OFFSET] = 0;
         if ((got == id) &&
-            memcmp(rx_buffer, rx_resp_msg, ALL_MSG_COMMON_LEN) == 0) {
+            memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0) {
 
             /* Retrieve poll transmission and response reception timestamps. See
              * NOTE 4 below. */
@@ -183,7 +174,7 @@ int ds_init_run(uint8 id, double *distance) {
                             ts_replyA_end);
 
             /* Write and send the response message. */
-            tx_final_msg[ALL_MSG_SN_IDX] = id;
+            tx_final_msg[SEQ_CNT_OFFSET] = id;
             dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg,
                             0); /* Zero offset in TX buffer. See Note 5 below.*/
             dwt_writetxfctrl(sizeof(tx_final_msg), 0,
@@ -233,10 +224,10 @@ int ds_init_run(uint8 id, double *distance) {
                  * example. As the sequence number field of the frame is not
                  * relevant, it is cleared to simplify the validation of the
                  * frame. */
-                int got = rx_buffer[ALL_MSG_SN_IDX];
-                rx_buffer[ALL_MSG_SN_IDX] = 0;
+                int got = rx_buffer[SEQ_CNT_OFFSET];
+                rx_buffer[SEQ_CNT_OFFSET] = 0;
                 if ((got == id) &&
-                    memcmp(rx_buffer, rx_report_msg, ALL_MSG_COMMON_LEN) == 0) {
+                    memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0) {
                     uint32 msg_tof_dtu;
                     /* Get timestamps embedded in response message. */
                     resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX],
@@ -279,7 +270,7 @@ int ds_init_run(uint8 id, double *distance) {
 int ss_init_run(uint8 id, double *distance) {
 
     /* Write frame data to DW1000 and prepare transmission. See NOTE 3 below. */
-    tx_poll_msg[ALL_MSG_SN_IDX] = id;
+    tx_poll_msg[SEQ_CNT_OFFSET] = id;
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
     dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg,
                     0); /* Zero offset in TX buffer. */
@@ -310,10 +301,10 @@ int ss_init_run(uint8 id, double *distance) {
          * TWR responder" example. As the sequence number field of the frame is
          * not relevant, it is cleared to simplify the validation of the frame.
          */
-        int got = rx_buffer[ALL_MSG_SN_IDX];
-        rx_buffer[ALL_MSG_SN_IDX] = 0;
+        int got = rx_buffer[SEQ_CNT_OFFSET];
+        rx_buffer[SEQ_CNT_OFFSET] = 0;
         if ((got == id) &&
-            memcmp(rx_buffer, rx_resp_msg, ALL_MSG_COMMON_LEN) == 0) {
+            memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0) {
 
             uint32 poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
             int32 rtd_init, rtd_resp;
@@ -375,7 +366,7 @@ int ss_init_run(uint8 id, double *distance) {
 static void resp_msg_get_ts(uint8 *ts_field, uint32 *ts) {
     int i;
     *ts = 0;
-    for (i = 0; i < RESP_MSG_TS_LEN; i++) {
+    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
         *ts += ts_field[i] << (i * 8);
     }
 }
@@ -395,7 +386,7 @@ static void resp_msg_get_ts(uint8 *ts_field, uint32 *ts) {
  */
 static void resp_msg_set_ts(uint8 *ts_field, const uint64 ts) {
     int i;
-    for (i = 0; i < RESP_MSG_TS_LEN; i++) {
+    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
         ts_field[i] = (ts >> (i * 8)) & 0xFF;
     }
 }
