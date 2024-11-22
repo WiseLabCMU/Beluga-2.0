@@ -53,12 +53,6 @@ static uint8 rx_buffer[RX_BUF_LEN];
 // See note 6 at the end of this file
 #define POLL_RX_TO_RESP_TX_DLY_UUS 1500
 
-/* Timestamps of frames transmission/reception.
- * As they are 40-bit wide, we need to define a 64-bit int type to handle them.
- */
-static uint64_t resp_tx_ts;
-static uint64_t final_rx_ts;
-
 static int wait_poll_message(uint16_t NODE_UUID) {
     uint32 status_reg, frame_len;
 
@@ -166,12 +160,12 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu,
         return -EBADMSG;
     }
 
-    uint32 resp_rx_ts, poll_tx_ts, final_tx_ts;
+    uint32_t resp_rx_ts, poll_tx_ts, final_tx_ts;
     uint32 poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
     double roundA, replyA, roundB, replyB;
 
-    final_rx_ts = get_rx_timestamp_u64();
-    resp_tx_ts = get_tx_timestamp_u64();
+    uint64_t final_rx_ts = get_rx_timestamp_u64();
+    uint64_t resp_tx_ts = get_tx_timestamp_u64();
 
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_tx_ts);
     msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_rx_ts);
@@ -267,7 +261,8 @@ static int ss_respond(uint16 NODE_UUID) {
         (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
-    resp_tx_ts = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+    uint64_t resp_tx_ts =
+        (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
 
     msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
     msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);

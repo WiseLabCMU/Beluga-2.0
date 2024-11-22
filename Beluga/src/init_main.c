@@ -50,12 +50,8 @@ static uint8 rx_buffer[RX_BUF_LEN];
 
 #define POLL_RX_TO_RESP_TX_DLY_UUS 2000
 
-/* Hold copies of computed time of flight and distance here for reference so
- * that it can be examined at a debug breakpoint. */
-static double tof;
-
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
-#define POLL_TX_TO_RESP_RX_DLY_UUS  300
+#define POLL_TX_TO_RESP_RX_DLY_UUS 300
 
 static int send_poll(uint8 id) {
     tx_poll_msg[SEQ_CNT_OFFSET] = id;
@@ -170,9 +166,9 @@ static int rx_report(uint8 id, double *distance) {
         return -EBADMSG;
     }
 
-    uint32 msg_tof_dtu;
+    uint32_t msg_tof_dtu;
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
-    tof = msg_tof_dtu * DWT_TIME_UNITS;
+    double tof = msg_tof_dtu * DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
     return 0;
 }
@@ -238,25 +234,27 @@ static int ss_rx_response(uint8 id, double *distance) {
         return -EBADMSG;
     }
 
-    uint32 poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-    int32 rtd_init, rtd_resp;
+    uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
+    int32_t rtd_init, rtd_resp;
     float clockOffsetRatio;
 
     poll_tx_ts = dwt_readtxtimestamplo32();
     resp_rx_ts = dwt_readrxtimestamplo32();
 
-    clockOffsetRatio =
-        dwt_readcarrierintegrator() *
-        (FREQ_OFFSET_MULTIPLIER * HERTZ_TO_PPM_MULTIPLIER_CHAN_5 / 1.0e6);
+    clockOffsetRatio = (float)(dwt_readcarrierintegrator() *
+                               (FREQ_OFFSET_MULTIPLIER *
+                                HERTZ_TO_PPM_MULTIPLIER_CHAN_5 / 1.0e6));
 
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
     msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
 
-    rtd_init = resp_rx_ts - poll_tx_ts;
-    rtd_resp = resp_tx_ts - poll_rx_ts;
+    rtd_init = (int32_t)(resp_rx_ts - poll_tx_ts);
+    rtd_resp = (int32_t)(resp_tx_ts - poll_rx_ts);
 
-    tof = ((rtd_init - rtd_resp * (1.0f - clockOffsetRatio)) / 2.0f) *
-          DWT_TIME_UNITS;
+    double tof =
+        (((float)rtd_init - (float)rtd_resp * (1.0f - clockOffsetRatio)) /
+         2.0f) *
+        DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
     return 0;
 }
