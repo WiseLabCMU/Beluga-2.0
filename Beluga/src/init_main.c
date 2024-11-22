@@ -183,6 +183,51 @@ static int send_final(uint8 id) {
     return 0;
 }
 
+static int rx_report(uint8 id, double *distance) {
+    uint32 status_reg, frame_len;
+
+    UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
+
+    if (!(status_reg & SYS_STATUS_RXFCG)) {
+        /* Clear RX error events in the DW1000 status register. */
+        dwt_write32bitreg(SYS_STATUS_ID,
+                          SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
+        dwt_rxreset();
+        return -EBADMSG;
+    }
+
+    /* Clear good RX frame event in the DW1000 status register. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
+
+    /* A frame has been received, read it into the local buffer. */
+    frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
+    if (frame_len <= RX_BUFFER_LEN) {
+        dwt_readrxdata(rx_buffer, frame_len, 0);
+    }
+
+    /* Check that the frame is a poll sent by "SS TWR initiator"
+     * example. As the sequence number field of the frame is not
+     * relevant, it is cleared to simplify the validation of the
+     * frame. */
+    int got = rx_buffer[SEQ_CNT_OFFSET];
+    rx_buffer[SEQ_CNT_OFFSET] = 0;
+
+    if (!((got == id) && memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0)) {
+        return -EBADMSG;
+    }
+
+    uint32 msg_tof_dtu;
+    /* Get timestamps embedded in response message. */
+    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
+    /* Compute time of flight and distance, using clock offset
+     * ratio to correct for differing local and remote clock
+     * rates */
+    tof = msg_tof_dtu * DWT_TIME_UNITS;
+    *distance = tof * SPEED_OF_LIGHT;
+    return 0;
+}
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn ds_init_run()
@@ -195,7 +240,6 @@ static int send_final(uint8 id) {
  */
 int ds_init_run(uint8 id, double *distance) {
     int err;
-    uint32 status_reg;
 
     if ((err = send_poll(id)) < 0) {
         return err;
@@ -209,52 +253,11 @@ int ds_init_run(uint8 id, double *distance) {
         return err;
     }
 
-    /* ------ Receive Report message ------ */
-
-    /* Poll for reception of a frame or error/timeout. See NOTE 5 below.
-     */
-    while (
-        !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-          (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
-    };
-
-    if (status_reg & SYS_STATUS_RXFCG) {
-        uint32 frame_len;
-
-        /* Clear good RX frame event in the DW1000 status register. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
-
-        /* A frame has been received, read it into the local buffer. */
-        frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
-        if (frame_len <= RX_BUFFER_LEN) {
-            dwt_readrxdata(rx_buffer, frame_len, 0);
-        }
-
-        /* Check that the frame is a poll sent by "SS TWR initiator"
-         * example. As the sequence number field of the frame is not
-         * relevant, it is cleared to simplify the validation of the
-         * frame. */
-        int got = rx_buffer[SEQ_CNT_OFFSET];
-        rx_buffer[SEQ_CNT_OFFSET] = 0;
-        if ((got == id) && memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0) {
-            uint32 msg_tof_dtu;
-            /* Get timestamps embedded in response message. */
-            resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
-            /* Compute time of flight and distance, using clock offset
-             * ratio to correct for differing local and remote clock
-             * rates */
-            tof = msg_tof_dtu * DWT_TIME_UNITS;
-            *distance = tof * SPEED_OF_LIGHT;
-            return 0;
-        }
-    } else {
-        /* Clear RX error events in the DW1000 status register. */
-        dwt_write32bitreg(SYS_STATUS_ID,
-                          SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-        dwt_rxreset();
+    if ((err = rx_report(id, distance)) < 0) {
+        return err;
     }
 
-    return -1;
+    return 0;
 }
 
 /*!
