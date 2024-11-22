@@ -331,6 +331,54 @@ int ds_resp_run(void) {
     return 0;
 }
 
+static int ss_respond(uint16 NODE_UUID) {
+    uint32 resp_tx_time;
+    int ret;
+
+    /* Retrieve poll reception timestamp. */
+    poll_rx_ts = get_rx_timestamp_u64();
+
+    /* Compute final message transmission time. See NOTE 7 below. */
+    resp_tx_time =
+        (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+    dwt_setdelayedtrxtime(resp_tx_time);
+
+    /* Response TX timestamp is the transmission time we programmed plus
+     * the antenna delay. */
+    resp_tx_ts = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+
+    /* Write all timestamps in the final message. See NOTE 8 below. */
+    resp_msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
+    resp_msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
+
+    /* Write and send the response message. See NOTE 9 below. */
+    tx_resp_msg[SEQ_CNT_OFFSET] = NODE_UUID;
+    dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg,
+                    0); /* Zero offset in TX buffer. See Note 5 below.*/
+    dwt_writetxfctrl(sizeof(tx_resp_msg), 0,
+                     1); /* Zero offset in TX buffer, ranging. */
+
+    ret = dwt_starttx(DWT_START_TX_DELAYED);
+
+    if (ret != DWT_SUCCESS) {
+        dwt_rxreset();
+        return -EBADMSG;
+    }
+
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS) {
+        unsigned int suspend = k_sem_count_get(&k_sus_resp);
+        if (suspend == 0) {
+            dwt_forcetrxoff();
+            return -EBUSY;
+        }
+    }
+
+    /* Clear TXFRS event. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+
+    return 0;
+}
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn ss_resp_run()
@@ -342,119 +390,24 @@ int ds_resp_run(void) {
  * @return int represent task complete or abort
  */
 int ss_resp_run(void) {
-    uint32 status_reg;
+    int err;
     uint16_t NODE_UUID = get_NODE_UUID();
     unsigned int suspend_start =
         k_sem_count_get(&k_sus_resp); // Check if responding is suspended
-    if (suspend_start == 0)
-        return 1;
-
-    /* Activate reception immediately. */
-    dwt_rxenable(DWT_START_RX_IMMEDIATE);
-
-    while (
-        !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-          (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR))) {
-        unsigned int suspend = k_sem_count_get(&k_sus_resp);
-        if (suspend == 0) {
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
-            /* Reset RX to properly reinitialise LDE operation. */
-            dwt_rxreset();
-            return 1;
-        }
+    if (suspend_start == 0) {
+        return -EBUSY;
     }
 
-#if 0 // Include to determine the type of timeout if required.
-    int temp = 0;
-    // (frame wait timeout and preamble detect timeout)
-    if(status_reg & SYS_STATUS_RXRFTO )
-    temp =1;
-    else if(status_reg & SYS_STATUS_RXPTO )
-    temp =2;
-#endif
-
-    if (status_reg & SYS_STATUS_RXFCG) {
-        uint32 frame_len;
-        /* Clear good RX frame event in the DW1000 status register. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
-
-        /* A frame has been received, read it into the local buffer. */
-        frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
-        if (frame_len <= RX_BUFFER_LEN) {
-            dwt_readrxdata(rx_buffer, frame_len, 0);
-        }
-
-        /* Check that the frame is a poll sent by "SS TWR initiator" example.
-         * As the sequence number field of the frame is not relevant, it is
-         * cleared to simplify the validation of the frame. */
-        int id = rx_buffer[SEQ_CNT_OFFSET];
-        rx_buffer[SEQ_CNT_OFFSET] = 0;
-
-        if ((memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) == 0) &&
-            (id == NODE_UUID)) {
-            uint32 resp_tx_time;
-            int ret;
-
-            /* Retrieve poll reception timestamp. */
-            poll_rx_ts = get_rx_timestamp_u64();
-
-            /* Compute final message transmission time. See NOTE 7 below. */
-            resp_tx_time =
-                (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >>
-                8;
-            dwt_setdelayedtrxtime(resp_tx_time);
-
-            /* Response TX timestamp is the transmission time we programmed plus
-             * the antenna delay. */
-            resp_tx_ts =
-                (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
-
-            /* Write all timestamps in the final message. See NOTE 8 below. */
-            resp_msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
-            resp_msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
-
-            /* Write and send the response message. See NOTE 9 below. */
-            tx_resp_msg[SEQ_CNT_OFFSET] = NODE_UUID;
-            dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg,
-                            0); /* Zero offset in TX buffer. See Note 5 below.*/
-            dwt_writetxfctrl(sizeof(tx_resp_msg), 0,
-                             1); /* Zero offset in TX buffer, ranging. */
-
-            ret = dwt_starttx(DWT_START_TX_DELAYED);
-
-            /* If dwt_starttx() returns an error, abandon this ranging exchange
-             * and proceed to the next one. */
-            if (ret == DWT_SUCCESS) {
-
-                while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
-                    unsigned int suspend = k_sem_count_get(&k_sus_resp);
-                    if (suspend == 0) {
-                        dwt_forcetrxoff();
-                        return 1;
-                    }
-                }
-
-                /* Clear TXFRS event. */
-                dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-
-                /* Increment frame sequence number after transmission of the
-                 * poll message (modulo 256). */
-                frame_seq_nb++;
-            } else {
-                /* Reset RX to properly reinitialise LDE operation. */
-                dwt_rxreset();
-            }
-        } else {
-            dwt_rxreset();
-        }
-
-    } else {
-        /* Clear RX error events in the DW1000 status register. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
-        /* Reset RX to properly reinitialise LDE operation. */
+    if ((err = wait_poll_message(NODE_UUID)) < 0) {
         dwt_rxreset();
+        return err;
     }
-    return (1);
+
+    if ((err = ss_respond(NODE_UUID)) < 0) {
+        return err;
+    }
+
+    return 0;
 }
 
 /*!
