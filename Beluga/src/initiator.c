@@ -15,13 +15,11 @@
  * @author Decawave
  */
 
-#include "init_main.h"
-#include "deca_device_api.h"
-#include "deca_regs.h"
-#include "port_platform.h"
-#include "random.h"
+#include <deca_device_api.h>
+#include <deca_regs.h>
 #include <init_resp_common.h>
-#include <string.h>
+#include <initiator.h>
+#include <port_platform.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -43,10 +41,6 @@ static uint8 rx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
 
 #define RX_BUF_LEN MAX(RESP_MSG_LEN, REPORT_MSG_LEN)
 static uint8 rx_buffer[RX_BUF_LEN];
-
-/* UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion
- * factor. 1 uus = 512 / 499.2 s and 1 s = 499.2 * 128 dtu. */
-#define UUS_TO_DWT_TIME            65536
 
 #define POLL_RX_TO_RESP_TX_DLY_UUS 2000
 

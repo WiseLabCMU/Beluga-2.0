@@ -8,13 +8,13 @@
 #include <app_leds.h>
 #include <app_version.h>
 #include <at_commands.h>
-#include <init_main.h>
+#include <initiator.h>
 #include <led_config.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <range_extension.h>
 #include <ranging.h>
-#include <resp_main.h>
+#include <responder.h>
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>

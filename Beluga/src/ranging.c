@@ -5,11 +5,11 @@
 #include <app_leds.h>
 #include <ble_app.h>
 #include <deca_device_api.h>
-#include <init_main.h>
+#include <initiator.h>
 #include <port_platform.h>
 #include <random.h>
 #include <ranging.h>
-#include <resp_main.h>
+#include <responder.h>
 #include <spi.h>
 #include <stdbool.h>
 #include <thread_priorities.h>

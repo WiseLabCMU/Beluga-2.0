@@ -15,13 +15,12 @@
  * @author Decawave
  */
 
-#include "deca_device_api.h"
-#include "deca_regs.h"
-#include "port_platform.h"
-#include "random.h"
 #include <ble_app.h>
+#include <deca_device_api.h>
+#include <deca_regs.h>
 #include <init_resp_common.h>
-#include <string.h>
+#include <port_platform.h>
+#include <responder.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -43,10 +42,6 @@ static uint8 tx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
 
 #define RX_BUF_LEN MAX(POLL_MSG_LEN, FINAL_MSG_LEN)
 static uint8 rx_buffer[RX_BUF_LEN];
-
-/* UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion
- * factor. 1 uus = 512 / 499.2 ?s and 1 ?s = 499.2 * 128 dtu. */
-#define UUS_TO_DWT_TIME 65536
 
 // Not enough time to write the data so TX timeout extended for nRF operation.
 // Might be able to get away with 800 uSec but would have to test

@@ -63,6 +63,10 @@
 
 #define SPEED_OF_LIGHT 299702547
 
+/* UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion
+ * factor. 1 uus = 512 / 499.2 ?s and 1 ?s = 499.2 * 128 dtu. */
+#define UUS_TO_DWT_TIME 65536
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn get_rx_timestamp_u64()
@@ -145,7 +149,7 @@ static void msg_get_ts(const uint8_t *ts_field, uint32_t *ts) {
  *
  * @return none
  */
-static void msg_set_ts(uint8 *ts_field, const uint64 ts) {
+static void msg_set_ts(uint8 *ts_field, const uint64_t ts) {
     int i;
     for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
         ts_field[i] = (ts >> (i * 8)) & 0xFF;

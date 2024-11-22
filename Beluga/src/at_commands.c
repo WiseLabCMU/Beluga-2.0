@@ -11,8 +11,8 @@
 #include <zephyr/sys/reboot.h>
 
 #include "deca_types.h"
-#include "init_main.h"
-#include "resp_main.h"
+#include <initiator.h>
+#include <responder.h>
 
 #include <at_commands.h>
 #include <ble_app.h>
