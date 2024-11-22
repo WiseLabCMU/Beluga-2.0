@@ -6,6 +6,7 @@
 #define BELUGA_INIT_RESP_COMMON_H
 
 #include <zephyr/kernel.h>
+#include <deca_device_api.h>
 
 #define FC_OVERHEAD        2
 #define SEQ_CNT_OVERHEAD   1
@@ -59,5 +60,95 @@
 #define RESP_MSG_RESP_TX_TS_IDX (DW_BASE_PAYLOAD_OFFSET + TIMESTAMP_OVERHEAD)
 #define FINAL_MSG_FINAL_TX_TS_IDX                                              \
     (DW_BASE_PAYLOAD_OFFSET + TIMESTAMP_OVERHEAD + TIMESTAMP_OVERHEAD)
+
+
+/*!
+* ------------------------------------------------------------------------------------------------------------------
+* @fn get_rx_timestamp_u64()
+*
+* @brief Get the RX time-stamp in a 64-bit variable.
+*        /!\ This function assumes that length of time-stamps is 40 bits, for
+* both TX and RX!
+*
+* @param  none
+*
+* @return  64-bit value of the read time-stamp.
+*/
+static inline uint64_t get_rx_timestamp_u64(void) {
+    uint8_t ts_tab[5];
+    uint64_t ts = 0;
+    int i;
+    dwt_readrxtimestamp(ts_tab);
+    for (i = 4; i >= 0; i--) {
+        ts <<= 8;
+        ts |= ts_tab[i];
+    }
+    return ts;
+}
+
+/*!
+ * ------------------------------------------------------------------------------------------------------------------
+ * @fn get_tx_timestamp_u64()
+ *
+ * @brief Get the TX time-stamp in a 64-bit variable.
+ *        /!\ This function assumes that length of time-stamps is 40 bits, for
+ * both TX and RX!
+ *
+ * @param  none
+ *
+ * @return  64-bit value of the read time-stamp.
+ */
+static inline uint64_t get_tx_timestamp_u64(void) {
+    uint8_t ts_tab[5];
+    uint64_t ts = 0;
+    int i;
+    dwt_readtxtimestamp(ts_tab);
+    for (i = 4; i >= 0; i--) {
+        ts <<= 8;
+        ts |= ts_tab[i];
+    }
+    return ts;
+}
+
+/*!
+ * ------------------------------------------------------------------------------------------------------------------
+ * @fn msg_get_ts()
+ *
+ * @brief Read a given timestamp value from the message. In the
+ * timestamp fields of the response message, the least significant byte is at
+ * the lower address.
+ *
+ * @param  ts_field  pointer on the first byte of the timestamp field to get
+ *         ts  timestamp value
+ *
+ * @return none
+ */
+static void msg_get_ts(const uint8_t *ts_field, uint32_t *ts) {
+    int i;
+    *ts = 0;
+    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
+        *ts += ts_field[i] << (i * 8);
+    }
+}
+
+/*!
+ * ------------------------------------------------------------------------------------------------------------------
+ * @fn msg_set_ts()
+ *
+ * @brief Fill a given timestamp field in the response message with the given
+ * value. In the timestamp fields of the response message, the least significant
+ * byte is at the lower address.
+ *
+ * @param  ts_field  pointer on the first byte of the timestamp field to fill
+ *         ts  timestamp value
+ *
+ * @return none
+ */
+static void msg_set_ts(uint8 *ts_field, const uint64 ts) {
+    int i;
+    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
+        ts_field[i] = (ts >> (i * 8)) & 0xFF;
+    }
+}
 
 #endif // BELUGA_INIT_RESP_COMMON_H

@@ -21,7 +21,6 @@
 #include "port_platform.h"
 #include "random.h"
 #include <init_resp_common.h>
-#include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -60,12 +59,6 @@ static uint8 rx_buffer[RX_BUF_LEN];
 /* Hold copies of computed time of flight and distance here for reference so
  * that it can be examined at a debug breakpoint. */
 static double tof;
-
-/* Declaration of static functions. */
-static void resp_msg_get_ts(uint8 *ts_field, uint32 *ts);
-static void resp_msg_set_ts(uint8 *ts_field, const uint64 ts);
-static uint64 get_tx_timestamp_u64(void);
-static uint64 get_rx_timestamp_u64(void);
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 // #define POLL_TX_TO_RESP_RX_DLY_UUS 100
@@ -158,9 +151,9 @@ static int send_final(uint8 id) {
     /* ------ Send Final (third) message ------ */
 
     /* Write all timestamps in the final message */
-    resp_msg_set_ts(&tx_final_msg[RESP_MSG_POLL_RX_TS_IDX], poll_tx_ts);
-    resp_msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);
-    resp_msg_set_ts(&tx_final_msg[FINAL_MSG_FINAL_TX_TS_IDX], ts_replyA_end);
+    msg_set_ts(&tx_final_msg[RESP_MSG_POLL_RX_TS_IDX], poll_tx_ts);
+    msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);
+    msg_set_ts(&tx_final_msg[FINAL_MSG_FINAL_TX_TS_IDX], ts_replyA_end);
 
     /* Write and send the response message. */
     tx_final_msg[SEQ_CNT_OFFSET] = id;
@@ -219,7 +212,7 @@ static int rx_report(uint8 id, double *distance) {
 
     uint32 msg_tof_dtu;
     /* Get timestamps embedded in response message. */
-    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
+    msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
     /* Compute time of flight and distance, using clock offset
      * ratio to correct for differing local and remote clock
      * rates */
@@ -312,8 +305,8 @@ static int ss_rx_response(uint8 id, double *distance) {
         (FREQ_OFFSET_MULTIPLIER * HERTZ_TO_PPM_MULTIPLIER_CHAN_5 / 1.0e6);
 
     /* Get timestamps embedded in response message. */
-    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
-    resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
+    msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
+    msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
 
     /* Compute time of flight and distance, using clock offset ratio to
      * correct for differing local and remote clock rates */
@@ -349,95 +342,6 @@ int ss_init_run(uint8 id, double *distance) {
     }
 
     return 0;
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn resp_msg_get_ts()
- *
- * @brief Read a given timestamp value from the response message. In the
- * timestamp fields of the response message, the least significant byte is at
- * the lower address.
- *
- * @param  ts_field  pointer on the first byte of the timestamp field to get
- *         ts  timestamp value
- *
- * @return none
- */
-static void resp_msg_get_ts(uint8 *ts_field, uint32 *ts) {
-    int i;
-    *ts = 0;
-    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
-        *ts += ts_field[i] << (i * 8);
-    }
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn final_msg_set_ts()
- *
- * @brief Fill a given timestamp field in the response message with the given
- * value. In the timestamp fields of the response message, the least significant
- * byte is at the lower address.
- *
- * @param  ts_field  pointer on the first byte of the timestamp field to fill
- *         ts  timestamp value
- *
- * @return none
- */
-static void resp_msg_set_ts(uint8 *ts_field, const uint64 ts) {
-    int i;
-    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
-        ts_field[i] = (ts >> (i * 8)) & 0xFF;
-    }
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn get_tx_timestamp_u64()
- *
- * @brief Get the TX time-stamp in a 64-bit variable.
- *        /!\ This function assumes that length of time-stamps is 40 bits, for
- * both TX and RX!
- *
- * @param  none
- *
- * @return  64-bit value of the read time-stamp.
- */
-static uint64 get_tx_timestamp_u64(void) {
-    uint8 ts_tab[5];
-    uint64 ts = 0;
-    int i;
-    dwt_readtxtimestamp(ts_tab);
-    for (i = 4; i >= 0; i--) {
-        ts <<= 8;
-        ts |= ts_tab[i];
-    }
-    return ts;
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn get_rx_timestamp_u64()
- *
- * @brief Get the RX time-stamp in a 64-bit variable.
- *        /!\ This function assumes that length of time-stamps is 40 bits, for
- * both TX and RX!
- *
- * @param  none
- *
- * @return  64-bit value of the read time-stamp.
- */
-static uint64 get_rx_timestamp_u64(void) {
-    uint8 ts_tab[5];
-    uint64 ts = 0;
-    int i;
-    dwt_readrxtimestamp(ts_tab);
-    for (i = 4; i >= 0; i--) {
-        ts <<= 8;
-        ts |= ts_tab[i];
-    }
-    return ts;
 }
 
 /*****************************************************************************************************************************************************

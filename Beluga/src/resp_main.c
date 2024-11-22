@@ -17,12 +17,10 @@
 
 #include "deca_device_api.h"
 #include "deca_regs.h"
-#include "init_main.h"
 #include "port_platform.h"
 #include "random.h"
 #include <ble_app.h>
 #include <init_resp_common.h>
-#include <stdio.h>
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -67,14 +65,6 @@ typedef int64_t int64;
 typedef uint64_t uint64;
 
 static uint64 poll_rx_ts;
-
-/* Declaration of static functions. */
-// static uint64 get_tx_timestamp_u64(void);
-static uint64 get_rx_timestamp_u64(void);
-static uint64 get_tx_timestamp_u64(void);
-static void resp_msg_set_ts(uint8 *ts_field, const uint64 ts);
-static void resp_msg_get_ts(uint8 *ts_field, uint32 *ts);
-// static void final_msg_get_ts(const uint8 *ts_field, uint32 *ts);
 
 /* Timestamps of frames transmission/reception.
  * As they are 40-bit wide, we need to define a 64-bit int type to handle them.
@@ -238,9 +228,9 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu) {
     resp_tx_ts = get_tx_timestamp_u64();
 
     /* Get timestamps embedded in response message. */
-    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_tx_ts);
-    resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_rx_ts);
-    resp_msg_get_ts(&rx_buffer[FINAL_MSG_FINAL_TX_TS_IDX], &final_tx_ts);
+    msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_tx_ts);
+    msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_rx_ts);
+    msg_get_ts(&rx_buffer[FINAL_MSG_FINAL_TX_TS_IDX], &final_tx_ts);
 
     // TOF parameters
     poll_rx_ts_32 = (uint32)poll_rx_ts;
@@ -268,7 +258,7 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu) {
 
 static int send_report(uint16 NODE_UUID, uint64 tof_dtu) {
     /* Write all timestamps in the report message. */
-    resp_msg_set_ts(&tx_report_msg[RESP_MSG_POLL_RX_TS_IDX], tof_dtu);
+    msg_set_ts(&tx_report_msg[RESP_MSG_POLL_RX_TS_IDX], tof_dtu);
 
     /* Write and send the report message. */
     tx_report_msg[SEQ_CNT_OFFSET] = NODE_UUID;
@@ -348,8 +338,8 @@ static int ss_respond(uint16 NODE_UUID) {
     resp_tx_ts = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
 
     /* Write all timestamps in the final message. See NOTE 8 below. */
-    resp_msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
-    resp_msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
+    msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
+    msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
 
     /* Write and send the response message. See NOTE 9 below. */
     tx_resp_msg[SEQ_CNT_OFFSET] = NODE_UUID;
@@ -408,95 +398,6 @@ int ss_resp_run(void) {
     }
 
     return 0;
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn get_tx_timestamp_u64()
- *
- * @brief Get the TX time-stamp in a 64-bit variable.
- *        /!\ This function assumes that length of time-stamps is 40 bits, for
- * both TX and RX!
- *
- * @param  none
- *
- * @return  64-bit value of the read time-stamp.
- */
-static uint64 get_tx_timestamp_u64(void) {
-    uint8 ts_tab[5];
-    uint64 ts = 0;
-    int i;
-    dwt_readtxtimestamp(ts_tab);
-    for (i = 4; i >= 0; i--) {
-        ts <<= 8;
-        ts |= ts_tab[i];
-    }
-    return ts;
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn get_rx_timestamp_u64()
- *
- * @brief Get the RX time-stamp in a 64-bit variable.
- *        /!\ This function assumes that length of time-stamps is 40 bits, for
- * both TX and RX!
- *
- * @param  none
- *
- * @return  64-bit value of the read time-stamp.
- */
-static uint64 get_rx_timestamp_u64(void) {
-    uint8 ts_tab[5];
-    uint64 ts = 0;
-    int i;
-    dwt_readrxtimestamp(ts_tab);
-    for (i = 4; i >= 0; i--) {
-        ts <<= 8;
-        ts |= ts_tab[i];
-    }
-    return ts;
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn final_msg_set_ts()
- *
- * @brief Fill a given timestamp field in the response message with the given
- * value. In the timestamp fields of the response message, the least significant
- * byte is at the lower address.
- *
- * @param  ts_field  pointer on the first byte of the timestamp field to fill
- *         ts  timestamp value
- *
- * @return none
- */
-static void resp_msg_set_ts(uint8 *ts_field, const uint64 ts) {
-    int i;
-    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
-        ts_field[i] = (ts >> (i * 8)) & 0xFF;
-    }
-}
-
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn resp_msg_get_ts()
- *
- * @brief Read a given timestamp value from the response message. In the
- * timestamp fields of the response message, the least significant byte is at
- * the lower address.
- *
- * @param  ts_field  pointer on the first byte of the timestamp field to get
- *         ts  timestamp value
- *
- * @return none
- */
-static void resp_msg_get_ts(uint8 *ts_field, uint32 *ts) {
-    int i;
-    *ts = 0;
-    for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
-        *ts += ts_field[i] << (i * 8);
-    }
 }
 
 /*****************************************************************************************************************************************************
