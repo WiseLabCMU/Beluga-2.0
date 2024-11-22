@@ -68,6 +68,7 @@ static int send_poll(uint8 id) {
 
 static int ds_rx_response(uint8 id) {
     uint32 status_reg, frame_len;
+    uint8 got;
 
     UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
@@ -87,7 +88,7 @@ static int ds_rx_response(uint8 id) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    int got = rx_buffer[SEQ_CNT_OFFSET];
+    got = rx_buffer[SEQ_CNT_OFFSET];
 
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
@@ -101,11 +102,12 @@ static int ds_rx_response(uint8 id) {
 static int send_final(uint8 id) {
     uint64 poll_tx_ts, resp_rx_ts;
     uint64 ts_replyA_end;
+    uint32 resp_tx_time;
+    int ret;
 
     poll_tx_ts = get_tx_timestamp_u64();
     resp_rx_ts = get_rx_timestamp_u64();
 
-    uint32 resp_tx_time;
     resp_tx_time =
         (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
@@ -120,7 +122,7 @@ static int send_final(uint8 id) {
     dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0);
     dwt_writetxfctrl(sizeof(tx_final_msg), 0, 1);
 
-    int ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
+    ret = dwt_starttx(DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
 
     if (ret != DWT_SUCCESS) {
         dwt_rxreset();
@@ -135,6 +137,9 @@ static int send_final(uint8 id) {
 
 static int rx_report(uint8 id, double *distance) {
     uint32 status_reg, frame_len;
+    uint32_t msg_tof_dtu;
+    double tof;
+    uint8 got;
 
     UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
@@ -153,16 +158,15 @@ static int rx_report(uint8 id, double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    int got = rx_buffer[SEQ_CNT_OFFSET];
+    got = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
     if (!((got == id) && memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
     }
 
-    uint32_t msg_tof_dtu;
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
-    double tof = msg_tof_dtu * DWT_TIME_UNITS;
+    tof = msg_tof_dtu * DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
     return 0;
 }
@@ -200,7 +204,12 @@ int ds_init_run(uint8 id, double *distance) {
 }
 
 static int ss_rx_response(uint8 id, double *distance) {
-    uint32 status_reg;
+    uint32_t status_reg, frame_len, poll_tx_ts, resp_rx_ts, poll_rx_ts,
+        resp_tx_ts;
+    uint8 got;
+    int32_t rtd_init, rtd_resp;
+    float clockOffsetRatio;
+    double tof;
 
     UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
@@ -212,7 +221,6 @@ static int ss_rx_response(uint8 id, double *distance) {
         return -EBADMSG;
     }
 
-    uint32 frame_len;
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
 
     frame_len = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFLEN_MASK;
@@ -220,17 +228,13 @@ static int ss_rx_response(uint8 id, double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    int got = rx_buffer[SEQ_CNT_OFFSET];
+    got = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
     if (!((got == id) && memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
         dwt_rxreset();
         return -EBADMSG;
     }
-
-    uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-    int32_t rtd_init, rtd_resp;
-    float clockOffsetRatio;
 
     poll_tx_ts = dwt_readtxtimestamplo32();
     resp_rx_ts = dwt_readrxtimestamplo32();
@@ -245,10 +249,9 @@ static int ss_rx_response(uint8 id, double *distance) {
     rtd_init = (int32_t)(resp_rx_ts - poll_tx_ts);
     rtd_resp = (int32_t)(resp_tx_ts - poll_rx_ts);
 
-    double tof =
-        (((float)rtd_init - (float)rtd_resp * (1.0f - clockOffsetRatio)) /
-         2.0f) *
-        DWT_TIME_UNITS;
+    tof = (((float)rtd_init - (float)rtd_resp * (1.0f - clockOffsetRatio)) /
+           2.0f) *
+          DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
     return 0;
 }

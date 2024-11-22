@@ -50,15 +50,15 @@ static uint8 rx_buffer[RX_BUF_LEN];
 
 static int wait_poll_message(uint16_t NODE_UUID) {
     uint32 status_reg, frame_len;
+    uint16 id;
 
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
 
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
         (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)) {
-        unsigned int suspend = k_sem_count_get(&k_sus_resp);
 
-        if (suspend == 0) {
+        if (k_sem_count_get(&k_sus_resp) == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             dwt_rxreset();
             LOG_INF("Responder suspended");
@@ -80,7 +80,7 @@ static int wait_poll_message(uint16_t NODE_UUID) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    int id = rx_buffer[SEQ_CNT_OFFSET];
+    id = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
     if (!(memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) == 0 &&
           id == NODE_UUID)) {
@@ -119,13 +119,16 @@ static int ds_respond(uint16 NODE_UUID, uint64_t *poll_rx_ts) {
 
 static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu,
                       const uint64_t *poll_rx_ts) {
-    uint32 status_reg, frame_len;
+    uint32 status_reg, frame_len, poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
+    uint32_t resp_rx_ts, poll_tx_ts, final_tx_ts;
+    uint64_t final_rx_ts, resp_tx_ts;
+    uint16 id;
+    double roundA, replyA, roundB, replyB;
 
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
         (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)) {
-        unsigned int suspend = k_sem_count_get(&k_sus_resp);
-        if (suspend == 0) {
+        if (k_sem_count_get(&k_sus_resp) == 0) {
             dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
             dwt_rxreset();
             LOG_INF("Responder got suspended");
@@ -147,7 +150,7 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu,
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    int id = rx_buffer[SEQ_CNT_OFFSET];
+    id = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
     if (!(memcmp(rx_buffer, rx_final_msg, DW_BASE_LEN) == 0 &&
@@ -155,12 +158,8 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu,
         return -EBADMSG;
     }
 
-    uint32_t resp_rx_ts, poll_tx_ts, final_tx_ts;
-    uint32 poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
-    double roundA, replyA, roundB, replyB;
-
-    uint64_t final_rx_ts = get_rx_timestamp_u64();
-    uint64_t resp_tx_ts = get_tx_timestamp_u64();
+    final_rx_ts = get_rx_timestamp_u64();
+    resp_tx_ts = get_tx_timestamp_u64();
 
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_tx_ts);
     msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_rx_ts);
@@ -221,8 +220,7 @@ int ds_resp_run(void) {
     uint64 tof_dtu;
     uint64_t poll_rx_ts;
 
-    unsigned int suspend_start = k_sem_count_get(&k_sus_resp);
-    if (suspend_start == 0) {
+    if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
     }
 
@@ -248,7 +246,7 @@ int ds_resp_run(void) {
 static int ss_respond(uint16 NODE_UUID) {
     uint32 resp_tx_time;
     int ret;
-    uint64_t poll_rx_ts;
+    uint64_t poll_rx_ts, resp_tx_ts;
 
     poll_rx_ts = get_rx_timestamp_u64();
 
@@ -256,8 +254,7 @@ static int ss_respond(uint16 NODE_UUID) {
         (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
-    uint64_t resp_tx_ts =
-        (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+    resp_tx_ts = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
 
     msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
     msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
@@ -274,8 +271,7 @@ static int ss_respond(uint16 NODE_UUID) {
     }
 
     UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS) {
-        unsigned int suspend = k_sem_count_get(&k_sus_resp);
-        if (suspend == 0) {
+        if (0 == k_sem_count_get(&k_sus_resp)) {
             dwt_forcetrxoff();
             return -EBUSY;
         }
@@ -299,8 +295,7 @@ static int ss_respond(uint16 NODE_UUID) {
 int ss_resp_run(void) {
     int err;
     uint16_t NODE_UUID = get_NODE_UUID();
-    unsigned int suspend_start = k_sem_count_get(&k_sus_resp);
-    if (suspend_start == 0) {
+    if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
     }
 
