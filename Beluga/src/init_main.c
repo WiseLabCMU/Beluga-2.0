@@ -78,17 +78,7 @@ static uint64 get_rx_timestamp_u64(void);
 #define RESP_TX_TO_FINAL_RX_DLY_UUS 500
 #define FINAL_RX_TIMEOUT_UUS        4500
 
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn ds_init_run()
- *
- * @brief Initiate UWB double-sided two way ranging
- *
- * @param  node ID
- *
- * @return distance between sending nodes and id node
- */
-int ds_init_run(uint8 id, double *distance) {
+static int send_poll(uint8 id) {
     /* Write frame data to DW1000 and prepare transmission. See NOTE 3 below. */
     tx_poll_msg[SEQ_CNT_OFFSET] = id;
     dwt_write32bitreg(SYS_STATUS_ID,
@@ -100,19 +90,33 @@ int ds_init_run(uint8 id, double *distance) {
 
     /* ----- Send Poll message ----- */
     int check_poll_msg =
-        dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
+            dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 
-    if (check_poll_msg == DWT_SUCCESS) {
+    if (check_poll_msg != DWT_SUCCESS) {
+        return -EBADMSG;
+    }
 
-        /* Poll DW1000 until TX frame sent event set. See NOTE 5 below. */
-        while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS)) {
-        };
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
-        /* Clear TXFRS event. */
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-    } else {
-        LOG_INF("Failed to send poll message");
-        return -1;
+    return 0;
+}
+
+/*!
+ * ------------------------------------------------------------------------------------------------------------------
+ * @fn ds_init_run()
+ *
+ * @brief Initiate UWB double-sided two way ranging
+ *
+ * @param  node ID
+ *
+ * @return distance between sending nodes and id node
+ */
+int ds_init_run(uint8 id, double *distance) {
+    int err;
+
+    if ((err = send_poll(id)) < 0) {
+        return err;
     }
 
     /*  Poll for reception of 1. a frame 2. error 3. timeout. See NOTE 4 below.
