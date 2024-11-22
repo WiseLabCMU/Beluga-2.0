@@ -272,18 +272,11 @@ int ds_init_run(uint8 id, double *distance) {
  */
 int ss_init_run(uint8 id, double *distance) {
     uint32 status_reg;
-    /* Write frame data to DW1000 and prepare transmission. See NOTE 3 below. */
-    tx_poll_msg[SEQ_CNT_OFFSET] = id;
-    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-    dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg,
-                    0); /* Zero offset in TX buffer. */
-    dwt_writetxfctrl(sizeof(tx_poll_msg), 0,
-                     1); /* Zero offset in TX buffer, ranging. */
+    int err;
 
-    /* Start transmission, indicating that a response is expected so that
-     * reception is enabled automatically after the frame is sent and the delay
-     * set by dwt_setrxaftertxdelay() has elapsed. */
-    dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
+    if ((err = send_poll(id)) < 0) {
+        return err;
+    }
 
     while (
         !((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
