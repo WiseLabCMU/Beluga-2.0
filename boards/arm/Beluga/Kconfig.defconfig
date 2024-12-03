@@ -1,0 +1,9 @@
+if BOARD_BELUGA
+
+config BOARD
+	default "Beluga"
+
+config BT_CTLR
+	default BT
+
+endif # BOARD_BELUGA
