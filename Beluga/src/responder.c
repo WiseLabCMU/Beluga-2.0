@@ -60,9 +60,8 @@ int set_responder_id(uint16_t id) {
     return 0;
 }
 
-static int wait_poll_message(uint16_t NODE_UUID, uint16_t *src_id) {
+static int wait_poll_message(uint16_t *src_id) {
     uint32 status_reg, frame_len;
-    uint16 id;
 
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
 
@@ -92,20 +91,18 @@ static int wait_poll_message(uint16_t NODE_UUID, uint16_t *src_id) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    id = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
     *src_id = get_src_id(rx_buffer);
     rx_buffer[SRC_OFFSET] = 0;
     rx_buffer[SRC_OFFSET+1] = 0;
-    if (!(memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) == 0 &&
-          id == NODE_UUID)) {
+    if (!(memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
     }
 
     return 0;
 }
 
-static int ds_respond(uint16 NODE_UUID, uint64_t *poll_rx_ts) {
+static int ds_respond(uint64_t *poll_rx_ts) {
     uint32 resp_tx_time;
     int ret;
 
@@ -115,7 +112,6 @@ static int ds_respond(uint16 NODE_UUID, uint64_t *poll_rx_ts) {
         (*poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
-    tx_resp_msg[SEQ_CNT_OFFSET] = NODE_UUID;
     dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg, 0);
     dwt_writetxfctrl(sizeof(tx_resp_msg), 0, 1);
 
@@ -132,12 +128,11 @@ static int ds_respond(uint16 NODE_UUID, uint64_t *poll_rx_ts) {
     return 0;
 }
 
-static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu,
+static int wait_final(uint64 *tof_dtu,
                       const uint64_t *poll_rx_ts) {
     uint32 status_reg, frame_len, poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
     uint32_t resp_rx_ts, poll_tx_ts, final_tx_ts;
     uint64_t final_rx_ts, resp_tx_ts;
-    uint16 id;
     double roundA, replyA, roundB, replyB;
 
     UWB_WAIT(
@@ -165,11 +160,9 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu,
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    id = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
-    if (!(memcmp(rx_buffer, rx_final_msg, DW_BASE_LEN) == 0 &&
-          id == NODE_UUID)) {
+    if (!(memcmp(rx_buffer, rx_final_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
     }
 
@@ -199,10 +192,9 @@ static int wait_final(uint16 NODE_UUID, uint64 *tof_dtu,
     return 0;
 }
 
-static int send_report(uint16 NODE_UUID, uint64 tof_dtu) {
+static int send_report(uint64 tof_dtu) {
     msg_set_ts(&tx_report_msg[RESP_MSG_POLL_RX_TS_IDX], tof_dtu);
 
-    tx_report_msg[SEQ_CNT_OFFSET] = NODE_UUID;
     dwt_writetxdata(sizeof(tx_report_msg), tx_report_msg, 0);
     dwt_writetxfctrl(sizeof(tx_report_msg), 0, 1);
     int ret = dwt_starttx(DWT_START_TX_IMMEDIATE);
@@ -231,7 +223,7 @@ static int send_report(uint16 NODE_UUID, uint64 tof_dtu) {
  */
 int ds_resp_run(void) {
     int err;
-    uint16_t NODE_UUID = get_NODE_UUID(), src_id;
+    uint16_t src_id;
     uint64 tof_dtu;
     uint64_t poll_rx_ts;
 
@@ -239,32 +231,32 @@ int ds_resp_run(void) {
         return -EBUSY;
     }
 
-    if ((err = wait_poll_message(NODE_UUID, &src_id)) < 0) {
+    if ((err = wait_poll_message(&src_id)) < 0) {
         return err;
     }
 
     set_dest_id(src_id, tx_resp_msg);
 
-    if ((err = ds_respond(NODE_UUID, &poll_rx_ts)) < 0) {
+    if ((err = ds_respond(&poll_rx_ts)) < 0) {
         return err;
     }
 
     set_src_id(src_id, rx_final_msg);
 
-    if ((err = wait_final(NODE_UUID, &tof_dtu, &poll_rx_ts)) < 0) {
+    if ((err = wait_final(&tof_dtu, &poll_rx_ts)) < 0) {
         return err;
     }
 
     set_dest_id(src_id, tx_report_msg);
 
-    if ((err = send_report(NODE_UUID, tof_dtu)) < 0) {
+    if ((err = send_report(tof_dtu)) < 0) {
         return err;
     }
 
     return 0;
 }
 
-static int ss_respond(uint16 NODE_UUID) {
+static int ss_respond(void) {
     uint32 resp_tx_time;
     int ret;
     uint64_t poll_rx_ts, resp_tx_ts;
@@ -280,7 +272,6 @@ static int ss_respond(uint16 NODE_UUID) {
     msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
     msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
 
-    tx_resp_msg[SEQ_CNT_OFFSET] = NODE_UUID;
     dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg, 0);
     dwt_writetxfctrl(sizeof(tx_resp_msg), 0, 1);
 
@@ -315,19 +306,19 @@ static int ss_respond(uint16 NODE_UUID) {
  */
 int ss_resp_run(void) {
     int err;
-    uint16_t NODE_UUID = get_NODE_UUID(), src_id;
+    uint16_t src_id;
     if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
     }
 
-    if ((err = wait_poll_message(NODE_UUID, &src_id)) < 0) {
+    if ((err = wait_poll_message(&src_id)) < 0) {
         dwt_rxreset();
         return err;
     }
 
     set_dest_id(src_id, tx_resp_msg);
 
-    if ((err = ss_respond(NODE_UUID)) < 0) {
+    if ((err = ss_respond()) < 0) {
         return err;
     }
 

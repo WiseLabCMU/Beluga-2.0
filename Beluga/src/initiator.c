@@ -66,8 +66,7 @@ static void set_destination(uint16_t id) {
     set_src_id(id, rx_report_msg);
 }
 
-static int send_poll(uint8 id) {
-    tx_poll_msg[SEQ_CNT_OFFSET] = id;
+static int send_poll(void) {
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
     dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg, 0);
     dwt_writetxfctrl(sizeof(tx_poll_msg), 0, 1);
@@ -85,9 +84,8 @@ static int send_poll(uint8 id) {
     return 0;
 }
 
-static int ds_rx_response(uint8 id) {
+static int ds_rx_response(void) {
     uint32 status_reg, frame_len;
-    uint8 got;
 
     UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
@@ -107,18 +105,16 @@ static int ds_rx_response(uint8 id) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    got = rx_buffer[SEQ_CNT_OFFSET];
-
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
-    if (!((got == id) && memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
+    if (!(memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
     }
 
     return 0;
 }
 
-static int send_final(uint8 id) {
+static int send_final(void) {
     uint64 poll_tx_ts, resp_rx_ts;
     uint64 ts_replyA_end;
     uint32 resp_tx_time;
@@ -137,7 +133,6 @@ static int send_final(uint8 id) {
     msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);
     msg_set_ts(&tx_final_msg[FINAL_MSG_FINAL_TX_TS_IDX], ts_replyA_end);
 
-    tx_final_msg[SEQ_CNT_OFFSET] = id;
     dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0);
     dwt_writetxfctrl(sizeof(tx_final_msg), 0, 1);
 
@@ -154,11 +149,10 @@ static int send_final(uint8 id) {
     return 0;
 }
 
-static int rx_report(uint8 id, double *distance) {
+static int rx_report(double *distance) {
     uint32 status_reg, frame_len;
     uint32_t msg_tof_dtu;
     double tof;
-    uint8 got;
 
     UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
              (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
@@ -177,10 +171,9 @@ static int rx_report(uint8 id, double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    got = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
-    if (!((got == id) && memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0)) {
+    if (!(memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
     }
 
@@ -205,29 +198,28 @@ int ds_init_run(uint16_t id, double *distance) {
 
     set_destination(id);
 
-    if ((err = send_poll(id)) < 0) {
+    if ((err = send_poll()) < 0) {
         return err;
     }
 
-    if ((err = ds_rx_response(id)) < 0) {
+    if ((err = ds_rx_response()) < 0) {
         return err;
     }
 
-    if ((err = send_final(id)) < 0) {
+    if ((err = send_final()) < 0) {
         return err;
     }
 
-    if ((err = rx_report(id, distance)) < 0) {
+    if ((err = rx_report(distance)) < 0) {
         return err;
     }
 
     return 0;
 }
 
-static int ss_rx_response(uint8 id, double *distance) {
+static int ss_rx_response(double *distance) {
     uint32_t status_reg, frame_len, poll_tx_ts, resp_rx_ts, poll_rx_ts,
         resp_tx_ts;
-    uint8 got;
     int32_t rtd_init, rtd_resp;
     float clockOffsetRatio;
     double tof;
@@ -249,10 +241,9 @@ static int ss_rx_response(uint8 id, double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    got = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
 
-    if (!((got == id) && memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
+    if (!(memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
         dwt_rxreset();
         return -EBADMSG;
     }
@@ -290,11 +281,13 @@ static int ss_rx_response(uint8 id, double *distance) {
 int ss_init_run(uint16_t id, double *distance) {
     int err;
 
-    if ((err = send_poll(id)) < 0) {
+    set_destination(id);
+
+    if ((err = send_poll()) < 0) {
         return err;
     }
 
-    if ((err = ss_rx_response(id, distance)) < 0) {
+    if ((err = ss_rx_response(distance)) < 0) {
         return err;
     }
 
