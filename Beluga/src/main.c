@@ -172,6 +172,8 @@ static void load_id(void) {
 
     if (nodeID != DEFAULT_ID_SETTING) {
         update_node_id((uint16_t)nodeID);
+        set_initiator_id((uint16_t)nodeID);
+        set_responder_id((uint16_t)nodeID);
         printf("  Node ID: %d \r\n", nodeID);
     } else {
         printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\r\n");

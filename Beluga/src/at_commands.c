@@ -209,6 +209,12 @@ AT_CMD_DEFINE(ID) {
         return;
     }
 
+    if (set_initiator_id((uint16_t)newID) != 0) {
+        printf("Unable to set ID: UWB currently active\r\n");
+    }
+
+    // We know that UWB is inactive at this point
+    set_responder_id((uint16_t)newID);
     update_node_id((uint16_t)newID);
     updateSetting(BELUGA_ID, newID);
     OK;

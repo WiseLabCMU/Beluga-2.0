@@ -67,6 +67,20 @@
  * factor. 1 uus = 512 / 499.2 ?s and 1 ?s = 499.2 * 128 dtu. */
 #define UUS_TO_DWT_TIME 65536
 
+static inline void set_src_id(uint16_t id, uint8 *buf) {
+    buf[SRC_OFFSET] = (uint8)id;
+    buf[SRC_OFFSET + 1] = (uint8)(id >> 8);
+}
+
+static inline void set_dest_id(uint16_t id, uint8 *buf) {
+    buf[DEST_OFFSET] = (uint8)id;
+    buf[DEST_OFFSET + 1] = (uint8)(id >> 8);
+}
+
+static inline uint16_t get_src_id(const uint8 *buf) {
+    return ((uint16_t)buf[SRC_OFFSET + 1] << 8) | (uint16_t)buf[SRC_OFFSET];
+}
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn get_rx_timestamp_u64()
@@ -128,7 +142,7 @@ static inline uint64_t get_tx_timestamp_u64(void) {
  *
  * @return none
  */
-static void msg_get_ts(const uint8_t *ts_field, uint32_t *ts) {
+static inline void msg_get_ts(const uint8_t *ts_field, uint32_t *ts) {
     int i;
     *ts = 0;
     for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
@@ -149,7 +163,7 @@ static void msg_get_ts(const uint8_t *ts_field, uint32_t *ts) {
  *
  * @return none
  */
-static void msg_set_ts(uint8 *ts_field, const uint64_t ts) {
+static inline void msg_set_ts(uint8 *ts_field, const uint64_t ts) {
     int i;
     for (i = 0; i < TIMESTAMP_OVERHEAD; i++) {
         ts_field[i] = (ts >> (i * 8)) & 0xFF;

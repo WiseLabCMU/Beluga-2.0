@@ -12,8 +12,9 @@
 
 extern int debug_print;
 
-int ds_init_run(uint8 id, double *distance);
-int ss_init_run(uint8 id, double *distance);
+int set_initiator_id(uint16_t id);
+int ds_init_run(uint16_t id, double *distance);
+int ss_init_run(uint16_t id, double *distance);
 
 extern struct k_sem k_sus_init;
 

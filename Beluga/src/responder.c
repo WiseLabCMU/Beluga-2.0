@@ -23,6 +23,7 @@
 #include <responder.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <app_leds.h>
 
 LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_INF);
 
@@ -30,7 +31,7 @@ K_SEM_DEFINE(k_sus_resp, 0, 1);
 
 /* Frames used in the ranging process. See NOTE 2,3 below. */
 static uint8 rx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
-                              'A',  'V',  'E', 0x61, 0,    0};
+                              'A',  0,   0, 0x61, 0,    0};
 static uint8 tx_resp_msg[] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
                               'W',  'A',  0x50, 0,    0,    0,   0,
                               0,    0,    0,    0,    0,    0};
@@ -48,7 +49,18 @@ static uint8 rx_buffer[RX_BUF_LEN];
 // See note 6 at the end of this file
 #define POLL_RX_TO_RESP_TX_DLY_UUS 1500
 
-static int wait_poll_message(uint16_t NODE_UUID) {
+int set_responder_id(uint16_t id) {
+    CHECK_UWB_ACTIVE();
+
+    set_dest_id(id, rx_poll_msg);
+    set_src_id(id, tx_resp_msg);
+    set_dest_id(id, rx_final_msg);
+    set_src_id(id, tx_report_msg);
+
+    return 0;
+}
+
+static int wait_poll_message(uint16_t NODE_UUID, uint16_t *src_id) {
     uint32 status_reg, frame_len;
     uint16 id;
 
@@ -82,6 +94,9 @@ static int wait_poll_message(uint16_t NODE_UUID) {
 
     id = rx_buffer[SEQ_CNT_OFFSET];
     rx_buffer[SEQ_CNT_OFFSET] = 0;
+    *src_id = get_src_id(rx_buffer);
+    rx_buffer[SRC_OFFSET] = 0;
+    rx_buffer[SRC_OFFSET+1] = 0;
     if (!(memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) == 0 &&
           id == NODE_UUID)) {
         return -EBADMSG;
@@ -216,7 +231,7 @@ static int send_report(uint16 NODE_UUID, uint64 tof_dtu) {
  */
 int ds_resp_run(void) {
     int err;
-    uint16_t NODE_UUID = get_NODE_UUID();
+    uint16_t NODE_UUID = get_NODE_UUID(), src_id;
     uint64 tof_dtu;
     uint64_t poll_rx_ts;
 
@@ -224,17 +239,23 @@ int ds_resp_run(void) {
         return -EBUSY;
     }
 
-    if ((err = wait_poll_message(NODE_UUID)) < 0) {
+    if ((err = wait_poll_message(NODE_UUID, &src_id)) < 0) {
         return err;
     }
+
+    set_dest_id(src_id, tx_resp_msg);
 
     if ((err = ds_respond(NODE_UUID, &poll_rx_ts)) < 0) {
         return err;
     }
 
+    set_src_id(src_id, rx_final_msg);
+
     if ((err = wait_final(NODE_UUID, &tof_dtu, &poll_rx_ts)) < 0) {
         return err;
     }
+
+    set_dest_id(src_id, tx_report_msg);
 
     if ((err = send_report(NODE_UUID, tof_dtu)) < 0) {
         return err;
@@ -294,15 +315,17 @@ static int ss_respond(uint16 NODE_UUID) {
  */
 int ss_resp_run(void) {
     int err;
-    uint16_t NODE_UUID = get_NODE_UUID();
+    uint16_t NODE_UUID = get_NODE_UUID(), src_id;
     if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
     }
 
-    if ((err = wait_poll_message(NODE_UUID)) < 0) {
+    if ((err = wait_poll_message(NODE_UUID, &src_id)) < 0) {
         dwt_rxreset();
         return err;
     }
+
+    set_dest_id(src_id, tx_resp_msg);
 
     if ((err = ss_respond(NODE_UUID)) < 0) {
         return err;

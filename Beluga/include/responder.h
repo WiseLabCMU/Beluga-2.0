@@ -7,6 +7,7 @@
 
 #include <zephyr/kernel.h>
 
+int set_responder_id(uint16_t id);
 int ds_resp_run(void);
 int ss_resp_run(void);
 

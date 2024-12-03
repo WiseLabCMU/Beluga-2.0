@@ -22,6 +22,7 @@
 #include <port_platform.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <app_leds.h>
 
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
@@ -46,6 +47,24 @@ static uint8 rx_buffer[RX_BUF_LEN];
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 300
+
+int set_initiator_id(uint16_t id) {
+    CHECK_UWB_ACTIVE();
+
+    set_src_id(id, tx_poll_msg);
+    set_dest_id(id, rx_resp_msg);
+    set_src_id(id, tx_final_msg);
+    set_dest_id(id, rx_report_msg);
+
+    return 0;
+}
+
+static void set_destination(uint16_t id) {
+    set_dest_id(id, tx_poll_msg);
+    set_src_id(id, rx_resp_msg);
+    set_dest_id(id, tx_final_msg);
+    set_src_id(id, rx_report_msg);
+}
 
 static int send_poll(uint8 id) {
     tx_poll_msg[SEQ_CNT_OFFSET] = id;
@@ -181,8 +200,10 @@ static int rx_report(uint8 id, double *distance) {
  *
  * @return distance between sending nodes and id node
  */
-int ds_init_run(uint8 id, double *distance) {
+int ds_init_run(uint16_t id, double *distance) {
     int err;
+
+    set_destination(id);
 
     if ((err = send_poll(id)) < 0) {
         return err;
@@ -266,7 +287,7 @@ static int ss_rx_response(uint8 id, double *distance) {
  *
  * @return distance between sending nodes and id node
  */
-int ss_init_run(uint8 id, double *distance) {
+int ss_init_run(uint16_t id, double *distance) {
     int err;
 
     if ((err = send_poll(id)) < 0) {
