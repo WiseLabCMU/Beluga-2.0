@@ -10,3 +10,7 @@
 //		wake-source-gpios = <&gpio0 15 0>;
 //	};
  };
+
+&qspi {
+	status = "disabled";
+};
