@@ -7,9 +7,15 @@
 	compatible = "WiseLab,Beluga";
 
 	chosen {
+		zephyr,console = &cdc_acm_uart0;
+		zephyr,shell-uart = &cdc_acm_uart0;
+		zephyr,uart-mcumgr = &cdc_acm_uart0;
+		zephyr,bt-mon-uart = &cdc_acm_uart0;
+		zephyr,bt-c2h-uart = &cdc_acm_uart0;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
+		zephyr,ieee802154 = &ieee802154;
 	};
 
 	leds {
@@ -29,6 +35,18 @@
 		led3: led_3 {
 			gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
 			label = "BLE Indicator";
+		};
+	};
+
+	serial_leds {
+		compatible = "gpio-leds";
+		tx_led: tx_led0 {
+			gpios = <&gpio1 8 GPIO_ACTIVE_LOW>;
+			label = "TX LED";
+		};
+		rx_led: rx_led0 {
+			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
+			label = "RX LED";
 		};
 	};
 
@@ -95,6 +113,14 @@
 	pinctrl-0 = <&i2c0_default>;
 	pinctrl-1 = <&i2c0_sleep>;
 	pinctrl-names = "default", "sleep";
+
+	clock-frequency = <I2C_BITRATE_FAST>;
+	lis2dh12: lis2dh12@19 {
+		compatible = "st,lis2dh12", "st,lis2dh";
+		reg = <0x19>;
+		irq-gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>,
+					<&gpio0 19 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 &spi1 {
@@ -103,6 +129,14 @@
 	pinctrl-0 = <&spi1_default>;
 	pinctrl-1 = <&spi1_sleep>;
 	pinctrl-names = "default", "sleep";
+	ieee802154: dw1000@0 {
+		compatible = "decawave,dw1000";
+		spi-max-frequency = <FREQ_MHZ(8)>;
+		int-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
+		status = "okay";
+		reg = <0>;
+	};
 };
 
 &qspi {
@@ -130,10 +164,6 @@
 		t-enter-dpd = <10000>;
 		t-exit-dpd = <35000>;
 	};
-};
-
-&ieee802154 {
-	status = "okay";
 };
 
 &flash0 {
@@ -176,4 +206,8 @@
 zephyr_udc0: &usbd {
 	compatible = "nordic,nrf-usbd";
 	status = "okay";
+
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
 };
