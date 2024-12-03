@@ -60,6 +60,7 @@
 #include <stdio.h>
 
 #include <zephyr/logging/log.h>
+#include <range_extension.h>
 
 LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
@@ -500,7 +501,11 @@ int32_t enable_bluetooth(void) {
     int32_t retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
     if (!bluetooth_on) {
-        retVal = _enable_bluetooth();
+        if (!update_fem_shutdown_state(false)) {
+            retVal = -EFAULT;
+        } else {
+            retVal = _enable_bluetooth();
+        }
     }
     k_sem_give(&ble_state);
     return retVal;
@@ -528,6 +533,9 @@ int32_t disable_bluetooth(void) {
     k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
         retVal = _disable_bluetooth();
+        if (!retVal && !update_fem_shutdown_state(true)) {
+            retVal = -EFAULT;
+        }
     }
     k_sem_give(&ble_state);
     return retVal;

@@ -71,4 +71,23 @@
 	aliases {
 		wake-source = &button0;
 	};
+
+	nrf_radio_fem: sky66112-11 {
+		compatible = "skyworks,sky66112-11", "generic-fem-two-ctrl-pins";
+		ctx-gpios = <&gpio0 11 GPIO_ACTIVE_HIGH>;
+		crx-gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
+		tx-gain-db = <22>;
+	};
+
+	sky_fem_gpios: amp_control {
+		compatible = "amp-control";
+		ant-sel-gpios = <&gpio0 31 0>;
+		csd-gpios = <&gpio0 30 GPIO_ACTIVE_LOW>;
+		cps-gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
+		chl-gpios = <&gpio0 10 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&radio {
+	fem = <&nrf_radio_fem>;
 };

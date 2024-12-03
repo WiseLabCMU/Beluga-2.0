@@ -1,0 +1,28 @@
+description: GPIO pin configurations to control the SKY6112-11 FEM
+
+compatible: "amp-control"
+
+properties:
+  ant-sel-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      The GPIO controlling the antenna select
+
+  csd-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      Shuts down the FEM when low
+
+  cps-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      Bypass the amplifier and the LNA
+
+  chl-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      Transmit high power

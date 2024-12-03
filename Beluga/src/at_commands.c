@@ -149,9 +149,9 @@ AT_CMD_DEFINE(STARTUWB) {
         return;
     }
     if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
-        enable_range_extension(false);
+        update_power_mode(POWER_MODE_HIGH);
     } else {
-        disable_range_extension(false);
+        update_power_mode(POWER_MODE_BYPASS);
     }
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
@@ -390,9 +390,9 @@ AT_CMD_DEFINE(PWRAMP) {
     }
 
     if (pwramp == 0) {
-        success = disable_range_extension(true);
+        success = update_power_mode(POWER_MODE_BYPASS);
     } else {
-        success = enable_range_extension(true);
+        success = update_power_mode(POWER_MODE_HIGH);
     }
 
     if (success) {
