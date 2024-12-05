@@ -125,6 +125,7 @@
 &spi1 {
 	compatible = "nordic,nrf-spi";
 	status = "okay";
+	cs-gpios = <&gpio1 14 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
 	pinctrl-0 = <&spi1_default>;
 	pinctrl-1 = <&spi1_sleep>;
 	pinctrl-names = "default", "sleep";
@@ -134,7 +135,7 @@
 		int-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
 		status = "okay";
-		reg = <0>;
+		reg = <0x0>;
 	};
 };
 
@@ -163,6 +164,15 @@
 		t-enter-dpd = <10000>;
 		t-exit-dpd = <35000>;
 	};
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uarte";
+	status = "disabled";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-1 = <&uart0_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 &flash0 {
