@@ -3,7 +3,8 @@
 / {
 	 vr_adjust: vr_adjust {
 		 compatible = "vr-adjust";
-		 gpios = <&gpio0 6 0>;
+		 status = "disabled";
+		 gpios = <&gpio1 0 0>;
 	 };
 
 //	zephyr,user {
@@ -13,4 +14,8 @@
 
 &qspi {
 	status = "disabled";
+};
+
+&uart0 {
+	status = "okay";
 };

@@ -181,7 +181,11 @@ AT_CMD_DEFINE(STARTBLE) {
         return;
     }
     k_sem_give(&print_list_sem);
-    enable_bluetooth();
+    int err = enable_bluetooth();
+    if (err) {
+        printf("Failed to start BLE (%d)", err);
+        return;
+    }
     update_led_state(LED_BLE_ON);
     OK;
 }
