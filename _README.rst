@@ -49,16 +49,7 @@ decawave_dwm1000_dev
 
 Beluga
 ^^^^^^
-
-.. dropdown:: Adding board roots
-    :animate: fade-in
-    :color: primary
-
-    In order for Zephyr to find Beluga, you need to specify a Board Root. In VS Code, this is
-    done by navigating to File->Preferences->Settings or by just pressing :kbd:`CTRL+,`.
-    Then under **Extensions**, find **nRF Connect** navigate to **Board Roots**. Add the absolute
-    path to the **Beluga-2.0** repository to the board roots.
-    If you are using the command line, run `make beluga`
+See :ref:`Adding Board Roots` for finding custom boards.
 
 * **Board Target:** Beluga
 * **Base configuration file:** prj.conf
@@ -66,3 +57,16 @@ Beluga
 * **Base Device tree overlay:** overlay/beluga.overlay
 * **Optimization level:** Anything works
 * **Sysbuild:** No sysbuild
+
+
+
+
+Appendix
+========
+Adding Board Roots
+------------------
+In order for Zephyr to find Beluga, you need to specify a Board Root. In VS Code, this is
+done by navigating to File->Preferences->Settings or by just pressing :kbd:`CTRL+,`.
+Then under **Extensions**, find **nRF Connect** navigate to **Board Roots**. Add the absolute
+path to the **Beluga-2.0** repository to the board roots.
+If you are using the command line, run `make beluga`
