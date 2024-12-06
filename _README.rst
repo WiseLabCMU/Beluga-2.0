@@ -117,6 +117,51 @@ Building and Flashing
 
 AT Commands
 ===========
+The following AT commands can help users to access and modify DWM1001-DEV firmware to meet specific need.
+There are a total of 26 commands, and certain configurations will be saved in flash memory to restore user
+settings after the system reboots.
+
+Commands:
+
+1. `ID <#id>`_
+2. STARTBLE
+3. STOPBLE
+4. STARTUWB
+5. STOPUWB
+6. BOOTMODE
+7. RATE
+8. CHANNEL
+9. RESET
+10. TIMEOUT
+11. TXPOWER
+12. STREAMMODE
+13. TWRMODE
+14. LEDMODE
+15. REBOOT
+16. PWRAMP
+17. ANTENNA
+18. TIME
+19. FORMAT
+20. DEEPSLEEP
+21. PHR
+22. DATARATE
+23. PULSERATE
+24. PREAMBLE
+25. PAC
+26. SFD
+
+ID
+--
+.. code-block:: none
+
+    AT+ID <number>
+    AT+ID
+
+Determines the ID number of the number. No argument will return the current setting.
+
+.. note::
+
+    <number> should be a positive, non-zero integer, and each node should have a unique ID
 
 Appendix
 ========
