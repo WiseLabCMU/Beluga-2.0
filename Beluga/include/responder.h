@@ -8,8 +8,8 @@
 #include <zephyr/kernel.h>
 
 int set_responder_id(uint16_t id);
-int ds_resp_run(void);
-int ss_resp_run(void);
+int ds_resp_run(uint16_t *id, uint32_t *logic_clk);
+int ss_resp_run(uint16_t *id, uint32_t *logic_clk);
 
 extern struct k_sem k_sus_resp;
 

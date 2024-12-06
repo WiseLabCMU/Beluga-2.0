@@ -30,15 +30,15 @@ LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_INF);
 K_SEM_DEFINE(k_sus_resp, 0, 1);
 
 /* Frames used in the ranging process. See NOTE 2,3 below. */
-static uint8 rx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
+static uint8 rx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
                               'A',  0,   0, 0x61, 0,    0};
-static uint8 tx_resp_msg[] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
+static uint8 tx_resp_msg[RESP_MSG_LEN] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
                               'W',  'A',  0x50, 0,    0,    0,   0,
                               0,    0,    0,    0,    0,    0};
-static uint8 rx_final_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
+static uint8 rx_final_msg[FINAL_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
                                'E',  0x69, 0, 0,    0,    0,   0,   0,
                                0,    0,    0, 0,    0,    0,   0,   0};
-static uint8 tx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
+static uint8 tx_report_msg[REPORT_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
                                 'A',  0xE3, 0, 0,    0,    0,   0,   0};
 
 #define RX_BUF_LEN MAX(POLL_MSG_LEN, FINAL_MSG_LEN)
@@ -60,7 +60,7 @@ int set_responder_id(uint16_t id) {
     return 0;
 }
 
-static int wait_poll_message(uint16_t *src_id) {
+static int wait_poll_message(uint16_t *src_id, uint32_t *logic_clk) {
     uint32 status_reg, frame_len;
 
     dwt_rxenable(DWT_START_RX_IMMEDIATE);
@@ -221,17 +221,18 @@ static int send_report(uint64 tof_dtu) {
  *
  * @return int represent task complete or abort
  */
-int ds_resp_run(void) {
+int ds_resp_run(uint16_t *id, uint32_t *logic_clk) {
     int err;
     uint16_t src_id;
     uint64 tof_dtu;
     uint64_t poll_rx_ts;
+    uint32_t _logic_clk;
 
     if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
     }
 
-    if ((err = wait_poll_message(&src_id)) < 0) {
+    if ((err = wait_poll_message(&src_id, &_logic_clk)) < 0) {
         return err;
     }
 
@@ -304,14 +305,16 @@ static int ss_respond(void) {
  *
  * @return int represent task complete or abort
  */
-int ss_resp_run(void) {
+int ss_resp_run(uint16_t *id, uint32_t *logic_clk) {
     int err;
     uint16_t src_id;
+    uint32_t _logic_clk;
+
     if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
     }
 
-    if ((err = wait_poll_message(&src_id)) < 0) {
+    if ((err = wait_poll_message(&src_id, &_logic_clk)) < 0) {
         dwt_rxreset();
         return err;
     }

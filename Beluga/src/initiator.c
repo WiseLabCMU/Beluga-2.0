@@ -29,15 +29,15 @@ LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 K_SEM_DEFINE(k_sus_init, 0, 1);
 
 /* Frames used in the ranging process. See NOTE 1,2 below. */
-static uint8 tx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
+static uint8 tx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
                               'A',  'V',  'E', 0x61, 0,    0};
-static uint8 rx_resp_msg[] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
+static uint8 rx_resp_msg[RESP_MSG_LEN] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
                               'W',  'A',  0x50, 0,    0,    0,   0,
                               0,    0,    0,    0,    0,    0};
-static uint8 tx_final_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
+static uint8 tx_final_msg[FINAL_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
                                'E',  0x69, 0, 0,    0,    0,   0,   0,
                                0,    0,    0, 0,    0,    0,   0,   0};
-static uint8 rx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
+static uint8 rx_report_msg[REPORT_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
                                 'A',  0xE3, 0, 0,    0,    0,   0,   0};
 
 #define RX_BUF_LEN MAX(RESP_MSG_LEN, REPORT_MSG_LEN)
@@ -65,6 +65,22 @@ static void set_destination(uint16_t id) {
     set_dest_id(id, tx_final_msg);
     set_src_id(id, rx_report_msg);
 }
+
+#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+static uint32_t exchange_id = UINT32_C(0);
+
+static void set_exchange_id(void) {
+    SET_EXCHANGE_ID(tx_poll_msg + LOGIC_CLK_OFFSET, exchange_id);
+    SET_EXCHANGE_ID(rx_resp_msg + LOGIC_CLK_OFFSET, exchange_id);
+    SET_EXCHANGE_ID(tx_final_msg + LOGIC_CLK_OFFSET, exchange_id);
+    SET_EXCHANGE_ID(rx_report_msg + LOGIC_CLK_OFFSET, exchange_id);
+}
+
+#define update_exchange(x) x = exchange_id++
+#else
+#define set_exchange_id() (void)0
+#define update_exchange(x) ARG_UNUSED(x)
+#endif
 
 static int send_poll(void) {
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
@@ -193,10 +209,11 @@ static int rx_report(double *distance) {
  *
  * @return distance between sending nodes and id node
  */
-int ds_init_run(uint16_t id, double *distance) {
+int ds_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
     int err;
 
     set_destination(id);
+    set_exchange_id();
 
     if ((err = send_poll()) < 0) {
         return err;
@@ -213,6 +230,8 @@ int ds_init_run(uint16_t id, double *distance) {
     if ((err = rx_report(distance)) < 0) {
         return err;
     }
+
+    update_exchange(*logic_clock);
 
     return 0;
 }
@@ -278,10 +297,11 @@ static int ss_rx_response(double *distance) {
  *
  * @return distance between sending nodes and id node
  */
-int ss_init_run(uint16_t id, double *distance) {
+int ss_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
     int err;
 
     set_destination(id);
+    set_exchange_id();
 
     if ((err = send_poll()) < 0) {
         return err;
@@ -290,6 +310,8 @@ int ss_init_run(uint16_t id, double *distance) {
     if ((err = ss_rx_response(distance)) < 0) {
         return err;
     }
+
+    update_exchange(*logic_clock);
 
     return 0;
 }

@@ -170,4 +170,12 @@ static inline void msg_set_ts(uint8 *ts_field, const uint64_t ts) {
     }
 }
 
+#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+#define SET_EXCHANGE_ID(ts_field, ts) msg_set_ts(ts_field, ts)
+#define GET_EXCHANGE_ID(ts_field, ts) msg_get_ts(ts_field, &ts)
+#else
+#define SET_EXCHANGE_ID(ts_field, id) (void)0
+#define GET_EXCHANGE_ID(ts_field, ts) (void)0
+#endif // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+
 #endif // BELUGA_INIT_RESP_COMMON_H
