@@ -385,6 +385,247 @@ RESET
 
 Clear flash memory configuration. This command will reset all user configuration.
 
+REBOOT
+------
+.. code-block::
+
+    AT+REBOOT
+
+Reboots Beluga. All internal states will be reset.
+
+PWRAMP
+------
+.. code-block::
+
+    AT+PWRAMP <mode>
+    AT+PWRMAP
+
+Determines if the BLE and UWB signals are amplified.
+No argument will return the current amplifier setting.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| mode        | Description                 |
++=============+=============================+
+| 0 (Default) | External amplifiers are     |
+|             | inactive                    |
++-------------+-----------------------------+
+| 1           | External amplifiers are     |
+|             | active                      |
++-------------+-----------------------------+
+
+.. note::
+    This command is not supported on the decawave_dwm1001m_dev board
+
+ANTENNA
+-------
+.. code-block::
+
+    AT+ANTENNA <antenna>
+    AT+ANTENNA
+
+Determines which antenna is used for neighbor discovery.
+No argument will return the current antenna setting
+
++-----------+---------------+---------+
+| Parameter | Valid Options | Default |
++-----------+---------------+---------+
+| antenna   | 1, 2          | 1       |
++-----------+---------------+---------+
+
+.. note::
+    This command is not supported on the decawave_dwm1001m_dev board
+
+.. warning::
+    This setting is not saved in flash
+
+TIME
+----
+.. code-block::
+
+    AT+TIME
+
+Retrieves the current Beluga timestamp (ms since boot).
+
+FORMAT
+------
+.. code-block::
+
+    AT+FORMAT <mode>
+    AT+FORMAT
+
+Determines the formatting of the neighborhood list.
+No argument will return the current format setting.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| mode        | Description                 |
++=============+=============================+
+| 0 (Default) | CSV Format                  |
++-------------+-----------------------------+
+| 1           | JSON Format                 |
+|             | Removed neighbors are       |
+|             | indicated by ``rm "ID"``    |
++-------------+-----------------------------+
+
+DEEPSLEEP
+---------
+.. code-block::
+
+    AT+DEEPSLEEP
+
+Places Beluga into deep sleep, only allowing for a movement to wake Beluga.
+
+PHR
+---
+.. code-block::
+
+    AT+PHR <mode>
+    AT+PHR
+
+Determines the PHR mode used for UWB.
+No argument will return the current PHR mode.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| mode        | Description                 |
++=============+=============================+
+| 0 (Default) | Standard PHR Mode           |
++-------------+-----------------------------+
+| 1           | DW proprietary extended     |
+|             | frames PHR mode             |
++-------------+-----------------------------+
+
+.. note::
+    Refer to the DW1000 documents on how to best use this parameter
+
+DATARATE
+--------
+.. code-block::
+
+    AT+DATARATE <data rate>
+    AT+DATARATE
+
+Determines the data rate of the DW1000.
+No argument will return the current data rate.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| data rate   | Description                 |
++=============+=============================+
+| 0 (Default) | 6.8 MHz                     |
++-------------+-----------------------------+
+| 1           | 850 kHz                     |
++-------------+-----------------------------+
+| 2           | 110 kHz                     |
++-------------+-----------------------------+
+
+.. note::
+    Faster data rates mean faster transmission, but lower range. Refer to the DW1000 for appropriate use.
+
+PULSERATE
+---------
+.. code-block::
+
+    AT+PULSERATE <rate>
+    AT+PULSERATE
+
+Determines the pulse rate of the DW1000.
+No arguments will return the current pulse rate.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| rate        | Description                 |
++=============+=============================+
+| 0           | 64 Mhz                      |
++-------------+-----------------------------+
+| 1 (Default) | 16 MHz                      |
++-------------+-----------------------------+
+
+.. note::
+    Refer to the DW1000 docs for appropriate use of this parameter.
+
+PREAMBLE
+--------
+.. code-block::
+
+    AT+PREAMBLE <preamble>
+    AT+PREAMBLE
+
+Determines the preamble length of the DW1000.
+No arguments will return the current preamble length.
+This setting is saved in flash.
+
++-----------+---------------+---------+
+| Parameter | Valid Options | Default |
++-----------+---------------+---------+
+| preamble  | 64, 128, 256, | 128     |
+|           | 512, 1024,    |         |
+|           | 1536, 2048,   |         |
+|           | 4096          |         |
++-----------+---------------+---------+
+
+.. note::
+    A longer preamble length will increase range. Refer to the DW1000 docs for appropriate use.
+
+PAC
+---
+.. code-block::
+
+    AT+PAC <pac>
+    AT+PAC
+
+Determines the PAC size of the DW1000.
+No arguments will return the current Preamble Acquisition Chunk (PAC) size.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| pac         | Description                 |
++=============+=============================+
+| 0 (Default) | 8 bytes (recommended for RX |
+|             | of preamble length 128 and  |
+|             | below)                      |
++-------------+-----------------------------+
+| 1           | 16 bytes (recommended for   |
+|             | RX of preamble length 256)  |
++-------------+-----------------------------+
+| 2           | 32 bytes (recommended for   |
+|             | RX of preamble length 512)  |
++-------------+-----------------------------+
+| 3           | 64 bytes (recommended for   |
+|             | RX of preamble length 1024  |
+|             | and up)                     |
++-------------+-----------------------------+
+
+.. note::
+    Refer to the DW1000 docs for more information
+
+SFD
+---
+.. code-block::
+
+    AT+SFD <mode>
+    AT+SFD
+
+Determines what SFD length to use for the DW1000.
+No arguments will return the current SFD setting.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| mode        | Description                 |
++=============+=============================+
+| 0 (Default) | Standard SFD length as      |
+|             | defined in the IEEE802.15.4 |
+|             | standard                    |
++-------------+-----------------------------+
+| 1           | DW proprietary SFD (varies  |
+|             | the length based on the     |
+|             | data rate)                  |
++-------------+-----------------------------+
+
+.. note::
+    Refer to the DW1000 docs for more information
+
 Appendix
 ========
 Adding Board Roots
