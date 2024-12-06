@@ -99,7 +99,7 @@ decawave_dwm1000_dev
 
 Beluga
 ^^^^^^
-See :ref:`board-roots` for finding custom boards.
+See `Adding Board Roots <#adding-board-roots>`_ for finding custom boards.
 
 * **Board Target:** Beluga
 * **Base configuration file:** prj.conf
@@ -120,7 +120,6 @@ AT Commands
 
 Appendix
 ========
-.. _board-roots:
 Adding Board Roots
 ------------------
 In order for Zephyr to find Beluga, you need to specify a Board Root. In VS Code, this is
