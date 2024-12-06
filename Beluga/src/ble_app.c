@@ -515,13 +515,13 @@ static int32_t _disable_bluetooth(void) {
     int err;
     if ((err = bt_le_adv_stop()) != 0) {
         LOG_ERR("Unable to stop advertising (err: %d)", err);
-        return 1;
+        return err;
     }
     currentAdvMode = ADVERTISING_OFF;
 
     if ((err = bt_le_scan_stop()) != 0) {
         LOG_ERR("Unable to stop scanning (err: %d)", err);
-        return 1;
+        return err;
     }
     bluetooth_on = false;
 

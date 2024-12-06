@@ -196,7 +196,10 @@ AT_CMD_DEFINE(STOPBLE) {
         printf("BLE is already off\r\n");
         return;
     }
-    disable_bluetooth();
+    int err = disable_bluetooth();
+    if (err) {
+        printf("Failed to stop BLE (%d)", err);
+    }
     k_sem_take(&print_list_sem, K_FOREVER);
     update_led_state(LED_BLE_OFF);
     OK;
