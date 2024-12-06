@@ -157,7 +157,9 @@ ID
     AT+ID <number>
     AT+ID
 
-Determines the ID number of the number. No argument will return the current setting. This setting is saved in flash.
+Determines the ID number of the number.
+No argument will return the current setting.
+This setting is saved in flash.
 
 .. note::
 
@@ -202,7 +204,9 @@ BOOTMODE
     AT+BOOTMODE <mode>
     AT+BOOTMODE
 
-Determines how the node should behave when reset/powered on. No argument will return the current boot mode.
+Determines how the node should behave when reset/powered on.
+No argument will return the current boot mode.
+This setting is saved in flash.
 
 +-------------+------------------------+
 | mode        | Description            |
@@ -221,6 +225,165 @@ Determines how the node should behave when reset/powered on. No argument will re
 
 .. note::
     For BOOTMODEs 1 and 2, the AT+ID command must have been previously ran, the last set ID will be used on startup.
+
+RATE
+----
+.. code-block:: none
+
+    AT+RATE <period>
+    AT+RATE
+
+Determines the frequency that the node send poll messages.
+No argument will return the current polling period.
+This setting is saved in flash.
+
++-----------+-------+-------+---------+
+| Parameter | Input | Units | Default |
++-----------+-------+-------+---------+
+| period    | 0-500 | ms    | 250     |
++-----------+-------+-------+---------+
+
+.. note::
+    When the frequency is 0, the node is in listening mode (It only responds to ranging requests)
+
+CHANNEL
+-------
+.. code-block:: none
+
+    AT+CHANNEL <channel>
+    AT+CHANNEL
+
+Determines the UWB signal's channel.
+No argument will return the current UWB channel.
+This setting is saved in flash.
+
++-----------+---------------+---------+
+| Parameter | Valid Options | Default |
++-----------+---------------+---------+
+| channel   | 1, 2, 3, 4,   | 5       |
+|           | 5, 7          |         |
++-----------+---------------+---------+
+
+.. note::
+    The corresponding centre frequency and bandwidth of each channel please reference DW1000 User Manual (Section 10.5)
+
+TXPOWER
+-------
+.. code-block:: none
+
+    AT+TXPOWER <mode>
+    AT+TXPOWER
+
+Determines the UWB transmitter power setting.
+No argument will return the current UWB transmitter power setting.
+This setting is saved in flash.
+
++-------------+------------------------+
+| mode        | Description            |
++=============+========================+
+| 0 (Default) | Default power supply   |
++-------------+------------------------+
+| 1           | Maximum power supply   |
++-------------+------------------------+
+
+.. note::
+    Increasing transmitter power supply can help UWB to maximum range, but the maximum power supply exceeds
+    restricted transmit power level regulation.
+
+TIMEOUT
+-------
+.. code-block:: none
+
+    AT+TIMEOUT <elapsed time>
+    AT+TIMEOUT
+
+Determines the timeout parameter to evict nearby nodes.
+No argument will return the current timeout setting.
+This setting is saved in flash.
+
++-----------+--------+-------+---------+
+| Parameter | Input  | Units | Default |
++-----------+--------+-------+---------+
+| period    | 0-9000 | ms    | 9000    |
++-----------+--------+-------+---------+
+
+STREAMMODE
+----------
+.. code-block:: none
+
+    AT+STREAMMODE <mode>
+    AT+STREAMMODE
+
+Determines the neighbors list display mode.
+No argument will return the current stream mode.
+This setting is saved in flash.
+
++-------------+------------------------+
+| mode        | Description            |
++=============+========================+
+| 0 (Default) | Displays all           |
+|             | neighbors, even those  |
+|             | who have not been      |
+|             | updated                |
++-------------+------------------------+
+| 1           | Only display neighbors |
+|             | that have been updated |
++-------------+------------------------+
+
+TWRMODE
+-------
+.. code-block:: none
+
+    AT+TWRMODE <mode>
+    AT+TWRMODE
+
+Determines the UWB ranging scheme.
+No argument will return the current ranging scheme.
+This setting is saved in flash.
+
++-------------+------------------------+
+| mode        | Description            |
++=============+========================+
+| 0           | Single-sided ranging   |
+|             | (SS-TWR)               |
++-------------+------------------------+
+| 1 (Default) | Double-sided ranging   |
+|             | (DS-TWR)               |
++-------------+------------------------+
+
+.. note::
+    DS-TWR is more accurate and can reduce clock drift effect.
+    SS-TWR can be used for a network that needs faster transmission.
+
+LEDMODE
+-------
+.. code-block::
+    AT+LEDMODE <mode>
+    AT+LEDMODE
+
+Determines the LED display mode.
+No argument will return the current LED mode.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| mode        | Description                 |
++=============+=============================+
+| 0 (Default) | LED support mode (All LEDs) |
++-------------+-----------------------------+
+| 1           | No LEDSs support mode (turn |
+|             | off all LEDs)               |
++-------------+-----------------------------+
+
+.. note::
+    LEDs support mode can be used for debugging, and another mode can be used for saving power.
+
+RESET
+-----
+.. code-block::
+
+    AT+RESET
+
+Clear flash memory configuration. This command will reset all user configuration.
 
 Appendix
 ========
