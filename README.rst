@@ -87,7 +87,7 @@ Run the following command:
 Build Configurations
 --------------------
 Before building your application, you need to set up your build configurations. There are two important build
-configurations: Beluga and decawave_dwm1001_dev. The build configurations are listed below.
+configurations: Beluga and `decawave_dwm1001_dev`_. The build configurations are listed below.
 
 decawave_dwm1000_dev
 ^^^^^^^^^^^^^^^^^^^^
@@ -415,7 +415,7 @@ This setting is saved in flash.
 +-------------+-----------------------------+
 
 .. note::
-    This command is not supported on the decawave_dwm1001m_dev board
+    This command is not supported on the `decawave_dwm1001_dev`_ board
 
 ANTENNA
 -------
@@ -434,7 +434,7 @@ No argument will return the current antenna setting
 +-----------+---------------+---------+
 
 .. note::
-    This command is not supported on the decawave_dwm1001m_dev board
+    This command is not supported on the `decawave_dwm1001_dev`_ board
 
 .. warning::
     This setting is not saved in flash
@@ -634,4 +634,6 @@ In order for Zephyr to find Beluga, you need to specify a Board Root. In VS Code
 done by navigating to File->Preferences->Settings or by just pressing :kbd:`CTRL+,`.
 Then under **Extensions**, find **nRF Connect** navigate to **Board Roots**. Add the absolute
 path to the **Beluga-2.0** repository to the board roots.
-If you are using the command line, run `make beluga`
+If you are using the command line, run ``make beluga``
+
+.. _decawave_dwm1001_dev: https://docs.zephyrproject.org/latest/boards/qorvo/decawave_dwm1001_dev/doc/index.html
