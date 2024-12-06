@@ -124,31 +124,31 @@ settings after the system reboots.
 Commands:
 
 1. `ID <#id>`_
-2. STARTBLE
-3. STOPBLE
-4. STARTUWB
-5. STOPUWB
-6. BOOTMODE
-7. RATE
-8. CHANNEL
-9. RESET
-10. TIMEOUT
-11. TXPOWER
-12. STREAMMODE
-13. TWRMODE
-14. LEDMODE
-15. REBOOT
-16. PWRAMP
-17. ANTENNA
-18. TIME
-19. FORMAT
-20. DEEPSLEEP
-21. PHR
-22. DATARATE
-23. PULSERATE
-24. PREAMBLE
-25. PAC
-26. SFD
+2. `STARTBLE <#startble>`_
+3. `STOPBLE <#stopble>`_
+4. `STARTUWB <#startuwb>`_
+5. `STOPUWB <#stopuwb>`_
+6. `BOOTMODE <#bootmode>`_
+7. `RATE <#rate>`_
+8. `CHANNEL <#channel>`_
+9. `RESET <#reset>`_
+10. `TIMEOUT <#timeout>`_
+11. `TXPOWER <#txpower>`_
+12. `STREAMMODE <#streammode>`_
+13. `TWRMODE <#twrmode>`_
+14. `LEDMODE <#ledmode>`_
+15. `REBOOT <#reboot>`_
+16. `PWRAMP <#pwramp>`_
+17. `ANTENNA <#antenna>`_
+18. `TIME <#time>`_
+19. `FORMAT <#format>`_
+20. `DEEPSLEEP <#deepsleep>`_
+21. `PHR <#phr>`_
+22. `DATARATE <#datarate>`_
+23. `PULSERATE <#pulserate>`_
+24. `PREAMBLE <#preamble>`_
+25. `PAC <#pac>`_
+26. `SFD <#sfd>`_
 
 ID
 --
@@ -157,11 +157,70 @@ ID
     AT+ID <number>
     AT+ID
 
-Determines the ID number of the number. No argument will return the current setting.
+Determines the ID number of the number. No argument will return the current setting. This setting is saved in flash.
 
 .. note::
 
-    <number> should be a positive, non-zero integer, and each node should have a unique ID
+    <number> should be a positive, non-zero integer, and each node should have a unique ID.
+
+STARTBLE
+--------
+.. code-block:: none
+
+    AT+STARTBLE
+
+Starts BLE broadcating/retrieving.
+
+STOPBLE
+-------
+.. code-block:: none
+
+    AT+STOPBLE
+
+Stops BLE broadcating/retrieving.
+
+STARTUWB
+--------
+.. code-block:: none
+
+    AT+STARTUWB
+
+Starts UWB initiator/responder.
+
+STOPUWB
+-------
+.. code-block:: none
+
+    AT+STOPUWB
+
+Stops UWB initiator/responder.
+
+BOOTMODE
+--------
+.. code-block:: none
+
+    AT+BOOTMODE <mode>
+    AT+BOOTMODE
+
+Determines how the node should behave when reset/powered on. No argument will return the current boot mode.
+
++-------------+------------------------+
+| mode        | Description            |
++=============+========================+
+| 0 (Default) | Do nothing on startup  |
+|             | (BLE and UWB off)      |
++-------------+------------------------+
+| 1           | Start BLE              |
+|             | broadcasting/receiving |
+|             | on startup             |
++-------------+------------------------+
+| 2           | Start BLE and UWB on   |
+|             | startup, full          |
+|             | functionality.         |
++-------------+------------------------+
+
+.. note::
+    For BOOTMODEs 1 and 2, the AT+ID command must have been previously ran, the last set ID will be used on startup.
 
 Appendix
 ========
