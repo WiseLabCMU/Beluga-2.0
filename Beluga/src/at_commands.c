@@ -607,6 +607,29 @@ AT_CMD_DEFINE(SFD) {
     OK;
 }
 
+AT_CMD_DEFINE(PANID) {
+    LOG_INF("Running PANID command");
+    READ_SETTING(argc, 2, BELUGA_PAN_ID, "PAN ID");
+    int32_t pan_id;
+    int retVal;
+    bool success = strtoint32(argv[1], &pan_id);
+
+    if (!success || pan_id < INT32_C(0) || pan_id > (uint32_t)UINT16_MAX) {
+        printf("Invalid PAN ID\r\n");
+        return;
+    }
+
+    retVal = set_initiator_pan_id((uint16_t)pan_id);
+
+    if (retVal != 0) {
+        printf("Cannot set PAN ID: UWB Active\r\n");
+        return;
+    }
+    set_responder_pan_id((uint16_t)pan_id);
+    updateSetting(BELUGA_PAN_ID, pan_id);
+    OK;
+}
+
 static struct cmd_info commands[] = {
     AT_CMD_DATA(STARTUWB), AT_CMD_DATA(STOPUWB),   AT_CMD_DATA(STARTBLE),
     AT_CMD_DATA(STOPBLE),  AT_CMD_DATA(ID),        AT_CMD_DATA(BOOTMODE),
@@ -616,7 +639,8 @@ static struct cmd_info commands[] = {
     AT_CMD_DATA(PWRAMP),   AT_CMD_DATA(ANTENNA),   AT_CMD_DATA(TIME),
     AT_CMD_DATA(FORMAT),   AT_CMD_DATA(DEEPSLEEP), AT_CMD_DATA(PHR),
     AT_CMD_DATA(DATARATE), AT_CMD_DATA(PULSERATE), AT_CMD_DATA(PREAMBLE),
-    AT_CMD_DATA(PAC),      AT_CMD_DATA(SFD),       AT_CMD_DATA_TERMINATOR};
+    AT_CMD_DATA(PAC),      AT_CMD_DATA(SFD), AT_CMD_DATA(PANID),
+    AT_CMD_DATA_TERMINATOR};
 
 STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
