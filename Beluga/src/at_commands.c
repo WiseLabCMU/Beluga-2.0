@@ -183,7 +183,8 @@ AT_CMD_DEFINE(STARTBLE) {
     k_sem_give(&print_list_sem);
     int err = enable_bluetooth();
     if (err) {
-        printf("Failed to start BLE (%d)", err);
+        printf("Failed to start BLE (%d)\r\n", err);
+        k_sem_take(&print_list_sem, K_FOREVER);
         return;
     }
     update_led_state(LED_BLE_ON);
@@ -198,7 +199,8 @@ AT_CMD_DEFINE(STOPBLE) {
     }
     int err = disable_bluetooth();
     if (err) {
-        printf("Failed to stop BLE (%d)", err);
+        printf("Failed to stop BLE (%d)\r\n", err);
+        return;
     }
     k_sem_take(&print_list_sem, K_FOREVER);
     update_led_state(LED_BLE_OFF);
