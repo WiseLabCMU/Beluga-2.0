@@ -81,6 +81,11 @@ static inline uint16_t get_src_id(const uint8 *buf) {
     return ((uint16_t)buf[SRC_OFFSET + 1] << 8) | (uint16_t)buf[SRC_OFFSET];
 }
 
+static inline void set_pan_id(uint16_t id, uint8 *buf) {
+    buf[PAN_ID_OFFSET] = (uint8)id;
+    buf[PAN_ID_OFFSET + 1] = (uint8)(id >> 8);
+}
+
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * @fn get_rx_timestamp_u64()

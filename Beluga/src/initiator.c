@@ -59,6 +59,17 @@ int set_initiator_id(uint16_t id) {
     return 0;
 }
 
+int set_initiator_pan_id(uint16_t id) {
+    CHECK_UWB_ACTIVE();
+
+    set_pan_id(id, tx_poll_msg);
+    set_pan_id(id, rx_resp_msg);
+    set_pan_id(id, tx_final_msg);
+    set_pan_id(id, rx_report_msg);
+
+    return 0;
+}
+
 static void set_destination(uint16_t id) {
     set_dest_id(id, tx_poll_msg);
     set_src_id(id, rx_resp_msg);
