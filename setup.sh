@@ -76,8 +76,6 @@ if [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
   source .venv/bin/activate
   pip install west
 
-  mkdir -p ncs && cd ncs
-
   west init -m https://github.com/nrfconnect/sdk-nrf --mr v2.6.1
   west update
   west zephyr-export
@@ -85,7 +83,6 @@ if [[ "$(expr substr $(uname -s) 1 5)" == "Linux" ]]; then
   pip install -r zephyr/scripts/requirements.txt
   pip install -r nrf/scripts/requirements.txt
   pip install -r bootloader/mcuboot/scripts/requirements.txt
-  cd ..
 
   wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.1/zephyr-sdk-0.16.1_linux-x86_64.tar.xz
   wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.1/sha256.sum | shasum --check --ignore-missing
