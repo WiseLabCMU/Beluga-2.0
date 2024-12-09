@@ -60,6 +60,17 @@ int set_responder_id(uint16_t id) {
     return 0;
 }
 
+int set_responder_pan_id(uint16_t id) {
+    CHECK_UWB_ACTIVE();
+
+    set_pan_id(id, rx_poll_msg);
+    set_pan_id(id, tx_resp_msg);
+    set_pan_id(id, rx_final_msg);
+    set_pan_id(id, tx_report_msg);
+
+    return 0;
+}
+
 static int wait_poll_message(uint16_t *src_id) {
     uint32 status_reg, frame_len;
 

@@ -335,6 +335,13 @@ static void load_sfd_mode(void) {
     set_sfd_mode((enum uwb_sfd)mode);
 }
 
+static void load_pan_id(void) {
+    int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
+    printf("  UWB PAN ID: %" PRId32 " \r\n", pan_id);
+    set_initiator_pan_id((uint16_t)pan_id);
+    set_responder_pan_id((uint16_t)pan_id);
+}
+
 UNUSED static void load_power_amplifiers(void) {
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
@@ -366,6 +373,7 @@ static void load_settings(void) {
     load_preamble_length();
     load_pac_size();
     load_sfd_mode();
+    load_pan_id();
 
     // Restore UWB state in the LEDs
     update_led_state(uwb_state);

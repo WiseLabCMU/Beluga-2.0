@@ -25,6 +25,7 @@ enum beluga_setting {
     BELUGA_UWB_PREAMBLE,
     BELUGA_UWB_PAC,
     BELUGA_UWB_NSSFD,
+    BELUGA_PAN_ID,
     BELUGA_RESERVED
 };
 

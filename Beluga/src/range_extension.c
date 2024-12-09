@@ -66,13 +66,13 @@ static struct fem_gpios {
 #define INIT_FEM_PIN(container, attr, config)                                  \
     do {                                                                       \
         int err;                                                               \
-        if (!device_is_ready(container.attr.port)) {                           \
-            printk(#attr " was not ready\n");                                  \
+        if (!device_is_ready((container).attr.port)) {                           \
+            LOG_ERR(#attr " was not ready\n");                                  \
             return false;                                                      \
         }                                                                      \
-        err = gpio_pin_configure_dt(&container.attr, config);                  \
+        err = gpio_pin_configure_dt(&(container).attr, config);                  \
         if (err) {                                                             \
-            printk(#attr " configure (%d)\n", err);                            \
+            LOG_ERR(#attr " configure (%d)\n", err);                            \
             return false;                                                      \
         }                                                                      \
     } while (0)
@@ -233,9 +233,10 @@ bool init_range_extension(void) {
 }
 
 bool update_power_mode(enum ble_power_mode mode) {
-    if (true) {
-        printf("Not implemented\r\n");
+    if (mode == POWER_MODE_BYPASS) {
+        return true;
     }
+    printf("Not implemented\r\n");
     return false;
 }
 
@@ -245,6 +246,6 @@ bool select_antenna(int32_t ant) {
 }
 
 bool update_fem_shutdown_state(bool shutdown) {
-    return false;
+    return true;
 }
 #endif
