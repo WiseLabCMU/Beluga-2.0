@@ -375,6 +375,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     bool drop_flag = false;
     bool break_flag = false;
     static int curr_index = 0;
+    uint32_t logic_clk;
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
         LOG_ERR("Unable to spawn ranging watchdog");
@@ -420,10 +421,10 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             if (!break_flag) {
                 int err = 0;
                 if (twr_mode) {
-                    err = ds_init_run(seen_list[curr_index].UUID, &range);
+                    err = ds_init_run(seen_list[curr_index].UUID, &range, &logic_clk);
                     LOG_INF("Double sided ranging returned %d", err);
                 } else {
-                    err = ss_init_run(seen_list[curr_index].UUID, &range);
+                    err = ss_init_run(seen_list[curr_index].UUID, &range, &logic_clk);
                     LOG_INF("Single sided ranging returned %d", err);
                 }
 
@@ -508,9 +509,9 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
 
         if (suspend_start != 0) {
             if (twr_mode) {
-                ds_resp_run();
+                ds_resp_run(NULL, NULL);
             } else {
-                ss_resp_run();
+                ss_resp_run(NULL, NULL);
             }
         }
     }

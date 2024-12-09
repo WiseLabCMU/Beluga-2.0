@@ -95,6 +95,8 @@ static int wait_poll_message(uint16_t *src_id, uint32_t *logic_clk) {
     *src_id = get_src_id(rx_buffer);
     rx_buffer[SRC_OFFSET] = 0;
     rx_buffer[SRC_OFFSET+1] = 0;
+    GET_EXCHANGE_ID(rx_buffer + LOGIC_CLK_OFFSET, *logic_clk);
+    SET_EXCHANGE_ID(rx_buffer + LOGIC_CLK_OFFSET, 0);
     if (!(memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
     }
@@ -226,7 +228,7 @@ int ds_resp_run(uint16_t *id, uint32_t *logic_clk) {
     uint16_t src_id;
     uint64 tof_dtu;
     uint64_t poll_rx_ts;
-    uint32_t _logic_clk;
+    uint32_t _logic_clk = 0;
 
     if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
@@ -237,21 +239,32 @@ int ds_resp_run(uint16_t *id, uint32_t *logic_clk) {
     }
 
     set_dest_id(src_id, tx_resp_msg);
+    SET_EXCHANGE_ID(tx_resp_msg + LOGIC_CLK_OFFSET, _logic_clk);
 
     if ((err = ds_respond(&poll_rx_ts)) < 0) {
         return err;
     }
 
     set_src_id(src_id, rx_final_msg);
+    SET_EXCHANGE_ID(rx_final_msg + LOGIC_CLK_OFFSET, _logic_clk);
 
     if ((err = wait_final(&tof_dtu, &poll_rx_ts)) < 0) {
         return err;
     }
 
     set_dest_id(src_id, tx_report_msg);
+    SET_EXCHANGE_ID(tx_report_msg + LOGIC_CLK_OFFSET, _logic_clk);
 
     if ((err = send_report(tof_dtu)) < 0) {
         return err;
+    }
+
+    if (logic_clk != NULL) {
+        *logic_clk = _logic_clk;
+    }
+
+    if (id != NULL) {
+        *id = src_id;
     }
 
     return 0;
@@ -308,7 +321,7 @@ static int ss_respond(void) {
 int ss_resp_run(uint16_t *id, uint32_t *logic_clk) {
     int err;
     uint16_t src_id;
-    uint32_t _logic_clk;
+    uint32_t _logic_clk = 0;
 
     if (k_sem_count_get(&k_sus_resp) == 0) {
         return -EBUSY;
@@ -320,9 +333,18 @@ int ss_resp_run(uint16_t *id, uint32_t *logic_clk) {
     }
 
     set_dest_id(src_id, tx_resp_msg);
+    SET_EXCHANGE_ID(tx_resp_msg + LOGIC_CLK_OFFSET, _logic_clk);
 
     if ((err = ss_respond()) < 0) {
         return err;
+    }
+
+    if (id != NULL) {
+        *id = src_id;
+    }
+
+    if (logic_clk != NULL) {
+        *logic_clk = _logic_clk;
     }
 
     return 0;

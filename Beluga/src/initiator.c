@@ -76,10 +76,10 @@ static void set_exchange_id(void) {
     SET_EXCHANGE_ID(rx_report_msg + LOGIC_CLK_OFFSET, exchange_id);
 }
 
-#define update_exchange(x) x = exchange_id++
+#define update_exchange(x) do {if ((x) != NULL) {*(x) = exchange_id++; }} while(0)
 #else
 #define set_exchange_id() (void)0
-#define update_exchange(x) ARG_UNUSED(x)
+#define update_exchange(x) (void)0
 #endif
 
 static int send_poll(void) {
@@ -231,7 +231,7 @@ int ds_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
         return err;
     }
 
-    update_exchange(*logic_clock);
+    update_exchange(logic_clock);
 
     return 0;
 }
@@ -311,7 +311,7 @@ int ss_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
         return err;
     }
 
-    update_exchange(*logic_clock);
+    update_exchange(logic_clock);
 
     return 0;
 }
