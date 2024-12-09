@@ -16,11 +16,23 @@ LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
 #define csv_mode  false
 #define json_mode true
 
-#define format_str(mode)                                                       \
-    ((mode) == json_mode) ? "{\"ID\": %" PRIu16                                \
-                            ", \"RANGE\": %f, \"RSSI\": %" PRId32              \
-                            ", \"TIMESTAMP\": %" PRId64 "} \r\n"               \
-                          : "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n"
+#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+#define JSON_FORMAT "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32 ", \"TIMESTAMP\": %" PRId64 ", \"EXCHANGE\": %" PRId32 "} \r\n"
+#define CSV_FORMAT "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 ", %" PRId32 " \r\n"
+#define CSV_HEADER "# ID, RANGE, RSSI, TIMESTAMP, EXCHANGE\r\n"
+#else
+#define JSON_FORMAT "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32 ", \"TIMESTAMP\": %" PRId64 "} \r\n"
+#define CSV_FORMAT "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n"
+#define CSV_HEADER "# ID, RANGE, RSSI, TIMESTAMP\r\n"
+#endif
+
+#define format_str(mode) ((mode) == json_mode) ? JSON_FORMAT : CSV_FORMAT
+
+#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+#define PRINT_ENTRY(entry) printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, (entry).time_stamp, (entry).exchange_id)
+#else
+#define PRINT_ENTRY(entry) printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, (entry).time_stamp)
+#endif
 
 K_SEM_DEFINE(print_list_sem, 0, 1);
 K_MUTEX_DEFINE(format_mutex);
@@ -42,14 +54,17 @@ bool get_format_mode(void) { return format_mode; }
 
 #define PRINT_CONDITION(...)                                                   \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (true), (GET_ARG_N(1, __VA_ARGS__)))
+
 #define UPDATE_AFTER_PRINT(...)                                                \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (seen_list[j].update_flag = 0;))
+
 #define HEADER_VAR(...)                                                        \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (int header_flag = 0;))
+
 #define PRINT_HEADER(...)                                                      \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (),                                     \
                 (if (header_flag == 0 && format_mode == csv_mode) {            \
-                    printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");                \
+                    printf(CSV_HEADER);                \
                     header_flag = 1;                                           \
                 }))
 
@@ -59,9 +74,7 @@ bool get_format_mode(void) { return format_mode; }
         for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {                           \
             if (seen_list[j].UUID != 0 && PRINT_CONDITION(__VA_ARGS__)) {      \
                 PRINT_HEADER(__VA_ARGS__)                                      \
-                printf(format_str(format_mode), seen_list[j].UUID,             \
-                       seen_list[j].range, seen_list[j].RSSI,                  \
-                       seen_list[j].time_stamp);                               \
+                PRINT_ENTRY(seen_list[j]);                            \
                 UPDATE_AFTER_PRINT(__VA_ARGS__)                                \
             }                                                                  \
         }                                                                      \
@@ -71,7 +84,7 @@ static void normal_print(void) {
     LOG_INF("Dumping all neighbors");
     if (format_mode == csv_mode) {
         LOG_INF("Logging in CSV mode");
-        printf("# ID, RANGE, RSSI, TIMESTAMP\r\n");
+        printf(CSV_HEADER);
     }
 
     PRINT_LIST();

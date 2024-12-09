@@ -13,6 +13,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <zephyr/kernel.h>
 
 #include "deca_device_api.h"
 
@@ -30,6 +31,10 @@ typedef struct node {
                          node will init uwb signal*/
     int64_t
         ble_time_stamp; /* Last timestamp get the BLE package from this node */
+
+#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+    uint32_t exchange_id; /* Ranging exchange ID (Logic clock) */
+#endif
 } node;
 
 #define MAX_ANCHOR_COUNT CONFIG_BELUGA_NETWORK_SIZE

@@ -436,6 +436,9 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
                     seen_list[curr_index].update_flag = 1;
                     seen_list[curr_index].range = (float)range;
                     seen_list[curr_index].time_stamp = k_uptime_get();
+#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+                    seen_list[curr_index].exchange_id = logic_clk;
+#endif // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
 
                     // TODO: Update BLE value transfer to phone
                 }
