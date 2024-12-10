@@ -54,19 +54,19 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
     int ret;
 
     if (!IS_ENABLED(CONFIG_TASK_WDT)) {
-        printk("WDT disabled\n");
+        LOG_WRN("WDT disabled");
         return 0;
     }
 
     if (attr == NULL) {
-        printk("No attributes detected\n");
+        LOG_WRN("No attributes detected");
         return -1;
     }
 
     ret =
         task_wdt_add(attr->period, task_wdt_callback, (void *)k_current_get());
     if (ret < 0) {
-        printk("Unable to spawn puppy (%d)\n", ret);
+        LOG_WRN("Unable to spawn puppy (%d)", ret);
         return -1;
     }
 
@@ -77,12 +77,12 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
 
 void let_the_dog_starve(struct task_wdt_attr *attr) {
     if (!IS_ENABLED(CONFIG_TASK_WDT)) {
-        printk("WDT disabled\n");
+        LOG_WRN("WDT disabled");
         return;
     }
 
     if (attr == NULL) {
-        printk("No attributes detected\r\n");
+        LOG_WRN("No attributes detected");
         return;
     }
     attr->starving = true;
@@ -90,12 +90,12 @@ void let_the_dog_starve(struct task_wdt_attr *attr) {
 
 void watchdog_red_rocket(struct task_wdt_attr *attr) {
     if (!IS_ENABLED(CONFIG_TASK_WDT)) {
-        printk("WDT disabled\n");
+        LOG_WRN("WDT disabled");
         return;
     }
 
     if (attr == NULL) {
-        printk("A non-existent dog cannot get a red rocket\n");
+        LOG_WRN("A non-existent dog cannot get a red rocket");
         return;
     }
     if (!attr->starving) {
@@ -105,12 +105,12 @@ void watchdog_red_rocket(struct task_wdt_attr *attr) {
 
 int kill_task_watchdog(struct task_wdt_attr *attr) {
     if (!IS_ENABLED(CONFIG_TASK_WDT)) {
-        printk("WDT disabled\n");
+        LOG_WRN("WDT disabled");
         return 0;
     }
 
     if (attr == NULL) {
-        printk("A non-existent dog cannot be euthanized\n");
+        LOG_WRN("A non-existent dog cannot be euthanized");
         return 1;
     }
 
