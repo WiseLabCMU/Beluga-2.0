@@ -15,6 +15,7 @@
  * @author Decawave
  */
 
+#include <app_leds.h>
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <deca_regs.h>
@@ -23,23 +24,22 @@
 #include <responder.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <app_leds.h>
 
 LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_INF);
 
 K_SEM_DEFINE(k_sus_resp, 0, 1);
 
 /* Frames used in the ranging process. See NOTE 2,3 below. */
-static uint8 rx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
-                              'A',  0,   0, 0x61, 0,    0};
-static uint8 tx_resp_msg[RESP_MSG_LEN] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
-                              'W',  'A',  0x50, 0,    0,    0,   0,
-                              0,    0,    0,    0,    0,    0};
-static uint8 rx_final_msg[FINAL_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
-                               'E',  0x69, 0, 0,    0,    0,   0,   0,
-                               0,    0,    0, 0,    0,    0,   0,   0};
-static uint8 tx_report_msg[REPORT_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
-                                'A',  0xE3, 0, 0,    0,    0,   0,   0};
+static uint8 rx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W',
+                                          'A',  0,    0, 0x61, 0,    0};
+static uint8 tx_resp_msg[RESP_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0x50,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0};
+static uint8 rx_final_msg[FINAL_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V', 'E', 0x69, 0, 0,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0,    0, 0};
+static uint8 tx_report_msg[REPORT_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0xE3, 0, 0, 0, 0, 0, 0};
 
 #define RX_BUF_LEN MAX(POLL_MSG_LEN, FINAL_MSG_LEN)
 static uint8 rx_buffer[RX_BUF_LEN];
@@ -94,7 +94,7 @@ static int wait_poll_message(uint16_t *src_id, uint32_t *logic_clk) {
     rx_buffer[SEQ_CNT_OFFSET] = 0;
     *src_id = get_src_id(rx_buffer);
     rx_buffer[SRC_OFFSET] = 0;
-    rx_buffer[SRC_OFFSET+1] = 0;
+    rx_buffer[SRC_OFFSET + 1] = 0;
     GET_EXCHANGE_ID(rx_buffer + LOGIC_CLK_OFFSET, *logic_clk);
     SET_EXCHANGE_ID(rx_buffer + LOGIC_CLK_OFFSET, 0);
     if (!(memcmp(rx_buffer, rx_poll_msg, DW_BASE_LEN) == 0)) {
@@ -130,8 +130,7 @@ static int ds_respond(uint64_t *poll_rx_ts) {
     return 0;
 }
 
-static int wait_final(uint64 *tof_dtu,
-                      const uint64_t *poll_rx_ts) {
+static int wait_final(uint64 *tof_dtu, const uint64_t *poll_rx_ts) {
     uint32 status_reg, frame_len, poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
     uint32_t resp_rx_ts, poll_tx_ts, final_tx_ts;
     uint64_t final_rx_ts, resp_tx_ts;

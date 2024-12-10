@@ -66,13 +66,13 @@ static struct fem_gpios {
 #define INIT_FEM_PIN(container, attr, config)                                  \
     do {                                                                       \
         int err;                                                               \
-        if (!device_is_ready((container).attr.port)) {                           \
-            LOG_ERR(#attr " was not ready\n");                                  \
+        if (!device_is_ready((container).attr.port)) {                         \
+            LOG_ERR(#attr " was not ready\n");                                 \
             return false;                                                      \
         }                                                                      \
-        err = gpio_pin_configure_dt(&(container).attr, config);                  \
+        err = gpio_pin_configure_dt(&(container).attr, config);                \
         if (err) {                                                             \
-            LOG_ERR(#attr " configure (%d)\n", err);                            \
+            LOG_ERR(#attr " configure (%d)\n", err);                           \
             return false;                                                      \
         }                                                                      \
     } while (0)
@@ -245,7 +245,5 @@ bool select_antenna(int32_t ant) {
     return false;
 }
 
-bool update_fem_shutdown_state(bool shutdown) {
-    return true;
-}
+bool update_fem_shutdown_state(bool shutdown) { return true; }
 #endif

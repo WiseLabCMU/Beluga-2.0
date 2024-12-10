@@ -15,6 +15,7 @@
  * @author Decawave
  */
 
+#include <app_leds.h>
 #include <deca_device_api.h>
 #include <deca_regs.h>
 #include <init_resp_common.h>
@@ -22,7 +23,6 @@
 #include <port_platform.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <app_leds.h>
 
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
@@ -30,15 +30,15 @@ K_SEM_DEFINE(k_sus_init, 0, 1);
 
 /* Frames used in the ranging process. See NOTE 1,2 below. */
 static uint8 tx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
-                              'A',  'V',  'E', 0x61, 0,    0};
-static uint8 rx_resp_msg[RESP_MSG_LEN] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
-                              'W',  'A',  0x50, 0,    0,    0,   0,
-                              0,    0,    0,    0,    0,    0};
-static uint8 tx_final_msg[FINAL_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
-                               'E',  0x69, 0, 0,    0,    0,   0,   0,
-                               0,    0,    0, 0,    0,    0,   0,   0};
-static uint8 rx_report_msg[REPORT_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
-                                'A',  0xE3, 0, 0,    0,    0,   0,   0};
+                                          'A',  'V',  'E', 0x61, 0,    0};
+static uint8 rx_resp_msg[RESP_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0x50,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0};
+static uint8 tx_final_msg[FINAL_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V', 'E', 0x69, 0, 0,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0,    0, 0};
+static uint8 rx_report_msg[REPORT_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0xE3, 0, 0, 0, 0, 0, 0};
 
 #define RX_BUF_LEN MAX(RESP_MSG_LEN, REPORT_MSG_LEN)
 static uint8 rx_buffer[RX_BUF_LEN];
@@ -76,9 +76,14 @@ static void set_exchange_id(void) {
     SET_EXCHANGE_ID(rx_report_msg + LOGIC_CLK_OFFSET, exchange_id);
 }
 
-#define update_exchange(x) do {if ((x) != NULL) {*(x) = exchange_id++; }} while(0)
+#define update_exchange(x)                                                     \
+    do {                                                                       \
+        if ((x) != NULL) {                                                     \
+            *(x) = exchange_id++;                                              \
+        }                                                                      \
+    } while (0)
 #else
-#define set_exchange_id() (void)0
+#define set_exchange_id()  (void)0
 #define update_exchange(x) (void)0
 #endif
 

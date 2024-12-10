@@ -17,11 +17,15 @@ LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
 #define json_mode true
 
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
-#define JSON_FORMAT "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32 ", \"TIMESTAMP\": %" PRId64 ", \"EXCHANGE\": %" PRId32 "} \r\n"
+#define JSON_FORMAT                                                            \
+    "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32                  \
+    ", \"TIMESTAMP\": %" PRId64 ", \"EXCHANGE\": %" PRId32 "} \r\n"
 #define CSV_FORMAT "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 ", %" PRId32 " \r\n"
 #define CSV_HEADER "# ID, RANGE, RSSI, TIMESTAMP, EXCHANGE\r\n"
 #else
-#define JSON_FORMAT "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32 ", \"TIMESTAMP\": %" PRId64 "} \r\n"
+#define JSON_FORMAT                                                            \
+    "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32                  \
+    ", \"TIMESTAMP\": %" PRId64 "} \r\n"
 #define CSV_FORMAT "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n"
 #define CSV_HEADER "# ID, RANGE, RSSI, TIMESTAMP\r\n"
 #endif
@@ -29,9 +33,13 @@ LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
 #define format_str(mode) ((mode) == json_mode) ? JSON_FORMAT : CSV_FORMAT
 
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
-#define PRINT_ENTRY(entry) printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, (entry).time_stamp, (entry).exchange_id)
+#define PRINT_ENTRY(entry)                                                     \
+    printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, \
+           (entry).time_stamp, (entry).exchange_id)
 #else
-#define PRINT_ENTRY(entry) printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, (entry).time_stamp)
+#define PRINT_ENTRY(entry)                                                     \
+    printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, \
+           (entry).time_stamp)
 #endif
 
 K_SEM_DEFINE(print_list_sem, 0, 1);
@@ -64,7 +72,7 @@ bool get_format_mode(void) { return format_mode; }
 #define PRINT_HEADER(...)                                                      \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (),                                     \
                 (if (header_flag == 0 && format_mode == csv_mode) {            \
-                    printf(CSV_HEADER);                \
+                    printf(CSV_HEADER);                                        \
                     header_flag = 1;                                           \
                 }))
 
@@ -74,7 +82,7 @@ bool get_format_mode(void) { return format_mode; }
         for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {                           \
             if (seen_list[j].UUID != 0 && PRINT_CONDITION(__VA_ARGS__)) {      \
                 PRINT_HEADER(__VA_ARGS__)                                      \
-                PRINT_ENTRY(seen_list[j]);                            \
+                PRINT_ENTRY(seen_list[j]);                                     \
                 UPDATE_AFTER_PRINT(__VA_ARGS__)                                \
             }                                                                  \
         }                                                                      \

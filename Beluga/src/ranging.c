@@ -421,10 +421,12 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
             if (!break_flag) {
                 int err = 0;
                 if (twr_mode) {
-                    err = ds_init_run(seen_list[curr_index].UUID, &range, &logic_clk);
+                    err = ds_init_run(seen_list[curr_index].UUID, &range,
+                                      &logic_clk);
                     LOG_INF("Double sided ranging returned %d", err);
                 } else {
-                    err = ss_init_run(seen_list[curr_index].UUID, &range, &logic_clk);
+                    err = ss_init_run(seen_list[curr_index].UUID, &range,
+                                      &logic_clk);
                     LOG_INF("Single sided ranging returned %d", err);
                 }
 
