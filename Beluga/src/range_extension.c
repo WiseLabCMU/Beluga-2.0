@@ -2,6 +2,8 @@
 // Created by tom on 8/5/24.
 //
 
+#include <uart.h>
+
 #include <app_leds.h>
 #include <range_extension.h>
 #include <stdio.h>

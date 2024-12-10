@@ -9,6 +9,10 @@
 
 int uart_init(void);
 
+int __printf_like(1, 2) beluga_printf(const char *ZRESTRICT format, ...);
+
 extern struct k_fifo uart_rx_queue;
+
+#define printf beluga_printf
 
 #endif // BELUGA_UART_H

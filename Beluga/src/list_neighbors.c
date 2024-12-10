@@ -2,6 +2,8 @@
 // Created by tom on 7/9/24.
 //
 
+#include <uart.h>
+
 #include <ble_app.h>
 #include <inttypes.h>
 #include <list_neighbors.h>

@@ -5,6 +5,7 @@
 #include <app_leds.h>
 #include <deca_device_api.h>
 #include <led_config.h>
+#include <serial_led.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/logging/log.h>
@@ -77,6 +78,7 @@ void all_leds_off(void) {
     APP_LED_OFF(PWRAMP_LED);
     APP_LED_OFF(POWER_LED);
     dwt_setleds(DWT_LEDS_DISABLE);
+    set_serial_led_master_state(false);
 }
 
 void restore_led_states(void) {
@@ -99,6 +101,7 @@ void restore_led_states(void) {
     }
     led_mode = led_mode_on;
     dwt_setleds(DWT_LEDS_ENABLE);
+    set_serial_led_master_state(true);
 }
 
 enum led_state get_ble_led_state(void) {

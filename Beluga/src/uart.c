@@ -3,15 +3,15 @@
 //
 
 #include <at_commands.h>
+#include <serial_led.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <uart.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/usb/usbd.h>
-#include <serial_led.h>
-#include <stdio.h>
 
 LOG_MODULE_REGISTER(serial_log, CONFIG_SERIAL_MODULE_LOG_LEVEL);
 
@@ -32,7 +32,7 @@ static const struct device *serial = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 
 static struct uart_data rx_buf;
 
-int printf(const char *ZRESTRICT format, ...) {
+int beluga_printf(const char *ZRESTRICT format, ...) {
     va_list vargs;
     int r;
 
