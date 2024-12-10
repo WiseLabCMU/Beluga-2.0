@@ -10,6 +10,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/usb/usbd.h>
+#include <serial_led.h>
+#include <stdio.h>
 
 LOG_MODULE_REGISTER(serial_log, CONFIG_SERIAL_MODULE_LOG_LEVEL);
 
@@ -30,6 +32,19 @@ static const struct device *serial = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 
 static struct uart_data rx_buf;
 
+int printf(const char *ZRESTRICT format, ...) {
+    va_list vargs;
+    int r;
+
+    serial_leds_update_state(LED_START_TX);
+
+    va_start(vargs, format);
+    r = cbvprintf(fputc, (void *)stdout, format, vargs);
+    va_end(vargs);
+
+    return r;
+}
+
 static void serial_callback(const struct device *dev, void *user_data) {
     uint8_t c;
 
@@ -43,38 +58,41 @@ static void serial_callback(const struct device *dev, void *user_data) {
         return;
     }
 
-    if (!uart_irq_rx_ready(dev)) {
-        LOG_ERR("RX irq is not ready in serial");
-        return;
+    if (uart_irq_rx_ready(dev)) {
+        serial_leds_update_state(LED_START_RX);
+        while (uart_fifo_read(dev, &c, 1) == 1) {
+            LOG_DBG("Received %c", c);
+            if ((c == '\n' || c == '\r' || c == '\0') && rx_buf.len > 0) {
+                struct buffer *_buf;
+                rx_buf.data[rx_buf.len] = '\0';
+                LOG_INF("Command reception complete: %s", rx_buf.data);
+
+                _buf = k_malloc(sizeof(*_buf));
+                if (_buf == NULL) {
+                    LOG_ERR("Unable to allocate fifo item");
+                    break;
+                }
+                _buf->len = rx_buf.len + 1;
+                _buf->buf = k_malloc(_buf->len);
+                if (_buf->buf == NULL) {
+                    LOG_ERR("Unable to allocate buffer for fifo item");
+                    k_free(_buf);
+                    return;
+                }
+                memcpy(_buf->buf, rx_buf.data, rx_buf.len + 1);
+                k_fifo_put(&uart_rx_queue, _buf);
+                rx_buf.len = 0;
+                LOG_INF("Placed item into fifo");
+            } else if ((c != '\n' && c != '\r') &&
+                       (rx_buf.len < (RX_BUFFER_SIZE - 1))) {
+                rx_buf.data[rx_buf.len++] = c;
+            }
+        }
+        serial_leds_update_state(LED_STOP_RX);
     }
 
-    while (uart_fifo_read(dev, &c, 1) == 1) {
-        LOG_DBG("Received %c", c);
-        if ((c == '\n' || c == '\r' || c == '\0') && rx_buf.len > 0) {
-            struct buffer *_buf;
-            rx_buf.data[rx_buf.len] = '\0';
-            LOG_INF("Command reception complete: %s", rx_buf.data);
-
-            _buf = k_malloc(sizeof(*_buf));
-            if (_buf == NULL) {
-                LOG_ERR("Unable to allocate fifo item");
-                break;
-            }
-            _buf->len = rx_buf.len + 1;
-            _buf->buf = k_malloc(_buf->len);
-            if (_buf->buf == NULL) {
-                LOG_ERR("Unable to allocate buffer for fifo item");
-                k_free(_buf);
-                return;
-            }
-            memcpy(_buf->buf, rx_buf.data, rx_buf.len + 1);
-            k_fifo_put(&uart_rx_queue, _buf);
-            rx_buf.len = 0;
-            LOG_INF("Placed item into fifo");
-        } else if ((c != '\n' && c != '\r') &&
-                   (rx_buf.len < (RX_BUFFER_SIZE - 1))) {
-            rx_buf.data[rx_buf.len++] = c;
-        }
+    if (uart_irq_tx_complete(dev)) {
+        serial_leds_update_state(LED_STOP_TX);
     }
 }
 
@@ -103,6 +121,11 @@ int uart_init(void) {
         return -1;
     }
 
+    if (serial_leds_init() != 0) {
+        LOG_ERR("Cannot initialize serial LEDs");
+        return -1;
+    }
+
     err = uart_irq_callback_user_data_set(serial, serial_callback, NULL);
 
     if (err < 0) {
@@ -112,7 +135,8 @@ int uart_init(void) {
     LOG_DBG("UART IRQ set");
 
     uart_irq_rx_enable(serial);
-    LOG_DBG("UART RX IRQ enabled");
+    uart_irq_tx_enable(serial);
+    LOG_DBG("UART TRX IRQ enabled");
 
     WAIT_DTR;
 
