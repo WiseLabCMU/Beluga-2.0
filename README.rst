@@ -626,6 +626,23 @@ This setting is saved in flash.
 .. note::
     Refer to the DW1000 docs for more information
 
+PANID
+-----
+.. code-block::
+
+    AT+PANID <id>
+    AT+PANID
+
+Determines the Personal Area Network (PAN) ID for the DW1000.
+No argument will return the current PAN ID setting.
+This setting is saved in flash.
+
++-----------+---------+---------+
+| Parameter | Input   | Default |
++-----------+---------+---------+
+| id        | 0-65535 | 57034   |
++-----------+---------+---------+
+
 Appendix
 ========
 Adding Board Roots
