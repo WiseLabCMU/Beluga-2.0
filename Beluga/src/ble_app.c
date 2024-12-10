@@ -59,8 +59,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <zephyr/logging/log.h>
 #include <range_extension.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 

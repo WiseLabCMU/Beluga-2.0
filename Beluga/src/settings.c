@@ -52,7 +52,7 @@ static const int32_t default_settings[] = {
     DEFAULT_STREAMMODE, DEFAULT_TWR,           DEFAULT_LEDMODE,
     DEFAULT_OUT_FORMAT, DEFAULT_AMPLIFICATION, DEFAULT_PHR,
     DEFAULT_DATARATE,   DEFAULT_PULSERATE,     DEFAULT_PREAMBLE,
-    DEFAULT_PAC,        DEFAULT_NSSFD, DEFAULT_PAN_ID};
+    DEFAULT_PAC,        DEFAULT_NSSFD,         DEFAULT_PAN_ID};
 
 static struct beluga_settings_dict settingValues[] = {
     {"id", DEFAULT_ID_SETTING},

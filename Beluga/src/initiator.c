@@ -15,6 +15,7 @@
  * @author Decawave
  */
 
+#include <app_leds.h>
 #include <deca_device_api.h>
 #include <deca_regs.h>
 #include <init_resp_common.h>
@@ -22,7 +23,6 @@
 #include <port_platform.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <app_leds.h>
 
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
