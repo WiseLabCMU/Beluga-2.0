@@ -5,6 +5,8 @@
 #ifndef BELUGA_SERIAL_LED_H
 #define BELUGA_SERIAL_LED_H
 
+#include <stdbool.h>
+
 enum serial_led_state { LED_START_TX, LED_STOP_TX, LED_START_RX, LED_STOP_RX };
 
 int serial_leds_init(void);
