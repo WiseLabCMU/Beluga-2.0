@@ -80,6 +80,12 @@ module-str = serial module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
+menu "Serial LEDs"
+module = SERIAL_LED
+module-str = serial LEDs
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 menu "Voltage Regulator"
 module = VOLTAGE_REG_MODULE
 module-str = Voltage regulator module

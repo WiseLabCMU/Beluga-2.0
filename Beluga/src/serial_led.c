@@ -8,9 +8,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(serial_led, CONFIG_SERIAL_LED_LOG_LEVEL);
+#define SERIAL_LEDS_NODE DT_PATH(serial_leds)
 
-#define SERIAL_LEDS_NODE         DT_PATH(serial_leds)
+#if IS_ENABLED(CONFIG_SERIAL_LEDS) && DT_NODE_EXISTS(SERIAL_LEDS_NODE)
+
+LOG_MODULE_REGISTER(serial_led, CONFIG_SERIAL_LED_LOG_LEVEL);
 
 #define GPIO0_DEV                DEVICE_DT_GET(DT_NODELABEL(gpio0))
 #define GPIO1_DEV                DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpio1))
@@ -132,3 +134,17 @@ int set_serial_led_master_state(bool enable) {
 
     return ret;
 }
+
+#else
+int serial_leds_init(void) { return 0; }
+
+int serial_leds_update_state(enum serial_led_state state) {
+    ARG_UNUSED(state);
+    return 0;
+}
+
+int set_serial_led_master_state(bool enable) {
+    ARG_UNUSED(enable);
+    return 0;
+}
+#endif // IS_ENABLED(CONFIG_SERIAL_LEDS) &&  DT_NODE_EXISTS(SERIAL_LEDS_NODE)

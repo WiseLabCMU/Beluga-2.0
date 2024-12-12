@@ -32,19 +32,6 @@ static const struct device *serial = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 
 static struct uart_data rx_buf;
 
-int beluga_printf(const char *ZRESTRICT format, ...) {
-    va_list vargs;
-    int r;
-
-    serial_leds_update_state(LED_START_TX);
-
-    va_start(vargs, format);
-    r = cbvprintf(fputc, (void *)stdout, format, vargs);
-    va_end(vargs);
-
-    return r;
-}
-
 static void serial_callback(const struct device *dev, void *user_data) {
     uint8_t c;
 
@@ -59,7 +46,9 @@ static void serial_callback(const struct device *dev, void *user_data) {
     }
 
     if (uart_irq_rx_ready(dev)) {
+#if IS_ENABLED(CONFIG_SERIAL_LEDS)
         serial_leds_update_state(LED_START_RX);
+#endif
         while (uart_fifo_read(dev, &c, 1) == 1) {
             LOG_DBG("Received %c", c);
             if ((c == '\n' || c == '\r' || c == '\0') && rx_buf.len > 0) {
@@ -88,12 +77,15 @@ static void serial_callback(const struct device *dev, void *user_data) {
                 rx_buf.data[rx_buf.len++] = c;
             }
         }
+#if IS_ENABLED(CONFIG_SERIAL_LEDS)
         serial_leds_update_state(LED_STOP_RX);
+#endif
     }
-
+#if IS_ENABLED(CONFIG_SERIAL_LEDS)
     if (uart_irq_tx_complete(dev)) {
         serial_leds_update_state(LED_STOP_TX);
     }
+#endif // IS_ENABLED(CONFIG_SERIAL_LEDS)
 }
 
 #if defined(USB_CONSOLE)
@@ -112,6 +104,68 @@ static void serial_callback(const struct device *dev, void *user_data) {
 #define device_init() !device_is_ready(serial)
 #define WAIT_DTR      LOG_INF("UART ready")
 #endif
+
+#if IS_ENABLED(CONFIG_SERIAL_LEDS)
+#include <zephyr/pm/device_runtime.h>
+
+static int console_out(int c) {
+    // Taken from Zephyr's uart console driver
+#ifdef CONFIG_UART_CONSOLE_DEBUG_SERVER_HOOKS
+
+    int handled_by_debug_server = HANDLE_DEBUG_HOOK_OUT(c);
+
+    if (handled_by_debug_server) {
+        return c;
+    }
+
+#endif /* CONFIG_UART_CONSOLE_DEBUG_SERVER_HOOKS */
+
+    if (pm_device_runtime_is_enabled(serial)) {
+        if (pm_device_runtime_get(serial) < 0) {
+            /* Enabling the UART instance has failed but this
+             * function MUST return the byte output.
+             */
+            return c;
+        }
+    }
+
+    serial_leds_update_state(LED_START_TX);
+
+    if ('\n' == c) {
+        uart_poll_out(serial, '\r');
+    }
+    uart_poll_out(serial, c);
+
+    if (pm_device_runtime_is_enabled(serial)) {
+        /* As errors cannot be returned, ignore the return value */
+        (void)pm_device_runtime_put(serial);
+    }
+
+    return c;
+}
+
+#if defined(CONFIG_STDOUT_CONSOLE)
+extern void __stdout_hook_install(int (*hook)(int c));
+#endif
+
+#if defined(CONFIG_PRINTK)
+extern void __printk_hook_install(int (*fn)(int c));
+#endif
+
+static void install_uart_hooks(void) {
+#if defined(CONFIG_STDOUT_CONSOLE)
+    __stdout_hook_install(console_out);
+#endif
+#if defined(CONFIG_PRINTK)
+    __printk_hook_install(console_out);
+#endif
+}
+
+#define enable_uart_tx_irq(x) uart_irq_tx_enable(x)
+#else
+#define install_uart_hooks()  (void)0
+#define enable_uart_tx_irq(x) (void)0
+#endif // IS_ENABLED(CONFIG_SERIAL_LEDS)
 
 int uart_init(void) {
     int err;
@@ -134,8 +188,11 @@ int uart_init(void) {
     }
     LOG_DBG("UART IRQ set");
 
+    install_uart_hooks();
+
     uart_irq_rx_enable(serial);
-    uart_irq_tx_enable(serial);
+    enable_uart_tx_irq(serial);
+
     LOG_DBG("UART TRX IRQ enabled");
 
     WAIT_DTR;
