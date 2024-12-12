@@ -1,0 +1,89 @@
+menu "Thread Configurations"
+menuconfig ENABLE_BELUGA_THREADS
+    bool "Enable threads for Beluga"
+    default y
+
+if ENABLE_BELUGA_THREADS
+
+menuconfig ENABLE_COMMANDS
+    bool "Enable commands for Beluga"
+    default n
+
+if ENABLE_COMMANDS
+
+config BELUGA_COMMANDS_PRIO
+    int "Priority for commands thread"
+    depends on ENABLE_COMMANDS
+    default 8
+
+config COMMANDS_STACK_SIZE
+    int "Stack size (bytes) for commands thread"
+    depends on ENABLE_COMMANDS
+    default 1024
+endif
+
+menuconfig ENABLE_LIST
+    bool "Enable the list thread for Beluga"
+    default n
+
+if ENABLE_LIST
+config BELUGA_LIST_PRIO
+    int "Priority for list thread"
+    depends on ENABLE_LIST
+    default 8
+
+config LIST_STACK_SIZE
+    int "Stack size (bytes) for list thread"
+    depends on ENABLE_LIST
+    default 1024
+endif
+
+menuconfig ENABLE_RANGING
+    bool "Enable the ranging thread for Beluga"
+    default n
+
+if ENABLE_RANGING
+config BELUGA_RANGING_PRIO
+    int "Priority for ranging thread"
+    depends on ENABLE_RANGING
+    default 8
+
+config RANGING_STACK_SIZE
+    int "Stack size (bytes) for ranging thread"
+    depends on ENABLE_RANGING
+    default 1024
+endif
+
+menuconfig ENABLE_MONITOR
+    bool "Enable the monitor thread in Beluga"
+    default n
+
+if ENABLE_MONITOR
+config BELUGA_MONITOR_PRIO
+    int "Priority for monitor thread"
+    depends on ENABLE_MONITOR
+    default 8
+
+config MONITOR_STACK_SIZE
+    int "Stack size (bytes) for monitor task"
+    depends on ENABLE_MONITOR
+    default 1024
+endif
+
+menuconfig ENABLE_RESPONDER
+    bool "Enable the responder thread in Beluga"
+    default n
+
+if ENABLE_RESPONDER
+config BELUGA_RESPONDER_PRIO
+    int "Priority for responder thread"
+    depends on ENABLE_RESPONDER
+    default 7
+
+config RESPONDER_STACK_SIZE
+    int "Stack size (bytes) for responder task"
+    depends on ENABLE_RESPONDER
+    default 1024
+endif
+endif
+endmenu
