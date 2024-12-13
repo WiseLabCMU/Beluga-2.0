@@ -48,4 +48,10 @@ bool check_ble_enabled(void);
 bool save_and_disable_bluetooth(void);
 void restore_bluetooth(bool state);
 
+#if IS_ENABLED(CONFIG_BELUGA_GATT)
+void update_ble_service(uint16_t uuid, float range)
+#else
+#define update_ble_service(x, y) (void)0
+#endif // IS_ENABLED(CONFIG_BELUGA_GATT)
+
 #endif

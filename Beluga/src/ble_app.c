@@ -612,22 +612,35 @@ void advertising_reconfig(int32_t change) {
 
 bool check_ble_enabled(void) { return bluetooth_on; }
 
-// void update_ble_service(float range) {
-//     union {
-//         uint16_t uuid;
-//         uint8_t uuid_split[sizeof(uint16_t)];
-//     } uuid = {
-//             .uuid = NODE_UUID
-//     };
-//     union {
-//         uint8_t bytes[sizeof(uint32_t)];
-//         int32_t range;
-//     } uRange;
-//
-//     uRange.range = (int32_t)(range * 1000);
-//
-//     //bt_gatt_notify(NULL,
-// }
+#if IS_ENABLED(CONFIG_BELUGA_GATT)
+#warning "Beluga's GATT service is experimental and may not work"
+#define BELUGA_GATT_VAL_LEN 14
+void update_ble_service(uint16_t uuid, float range) {
+    static uint8_t gatt_value[BELUGA_GATT_VAL_LEN];
+
+    union {
+        int32_t i32;
+        uint8_t bytes[sizeof(int32_t)];
+    } range_int;
+
+    struct bt_gatt_attr attr;
+    int err;
+
+    range_int.i32 = (int32_t)range * INT32_C(1000);
+
+    memset(gatt_value, 1, 2);
+    memcpy(gatt_value + 2, &uuid, sizeof(uuid));
+    memcpy(gatt_value + 4, range_int.bytes, sizeof(range_int));
+    gatt_value[8] = 10;
+    memset(gatt_value + 9, 0, 5);
+
+    // TODO: Fix parameters 1 and 2
+    err = bt_gatt_notify(NULL, NULL, gatt_value, BELUGA_GATT_VAL_LEN);
+    if (err != 0) {
+        LOG_ERR("Cannot perform gatt notify (%d)", err);
+    }
+}
+#endif
 
 bool save_and_disable_bluetooth(void) {
     bool retVal;

@@ -436,7 +436,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
                     seen_list[curr_index].range = (float)range;
                     seen_list[curr_index].time_stamp = k_uptime_get();
 
-                    // TODO: Update BLE value transfer to phone
+                    update_ble_service(seen_list[curr_index].UUID, range);
                 }
 
                 curr_index += 1;
