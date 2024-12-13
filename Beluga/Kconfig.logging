@@ -38,12 +38,6 @@ module-str = Beluga main
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
-menu "nRF21540 module"
-module = NRF21540_MODULE
-module-str = nRF21540 module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
 menu "Power Manager"
 module = POWER_MANAGER
 module-str = Power manager
