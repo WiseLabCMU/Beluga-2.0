@@ -33,6 +33,10 @@ config BELUGA_USE_ACCEL
     select SENSOR
     default n
 
+config BELUGA_GATT
+    bool "Beluga GATT service [EXPERIMENTAL]"
+    default n
+
 rsource "./Kconfig.beluga_debug"
 
 config WDT_MAX_WINDOW
