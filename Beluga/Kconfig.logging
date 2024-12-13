@@ -1,5 +1,7 @@
 menu "Logger configurations"
 
+comment "All of these configurations depend on LOG"
+
 menu "App LEDs"
 module = APP_LEDS
 module-str = App LEDs

@@ -1,0 +1,22 @@
+menu "Beluga Debugging"
+
+comment "You can turn on the Kernel Logging Subsystem from \"Subsystems and OS Services->Logging->Logging\""
+
+rsource "./Kconfig.logging"
+
+config DEBUG_BELUGA_CLOCK
+    bool "Debug oscillating crystals"
+    depends on BELUGA_MAIN_LOG_LEVEL_INF
+    default n
+
+config BELUGA_RESET_REASON
+    bool "Print the reset reason"
+    depends on BELUGA_MAIN_LOG_LEVEL_INF
+    select HWINFO
+    default n
+
+config BELUGA_EVAL_BLE_STRENGTH
+    bool "Evaluate the signal strength of BLE regardless if UWB is on or not"
+    default n
+
+endmenu

@@ -1,24 +1,24 @@
 mainmenu "Beluga application"
 
-rsource "./Kconfig.logging"
-
 menu "Beluga Configurations"
 
 rsource "./Kconfig.beluga_threads"
 
+choice "BELUGA_LED_INDICATOR_CHOICE"
+    prompt "LEDs are used to indicate states for"
+    default BELUGA_LEDS
+
+config BELUGA_BLE_LEDS
+    bool "BLE states"
+
+config BELUGA_LEDS
+    bool "Beluga states"
+
+endchoice
+
 config ENABLE_BELUGA_UWB
     bool "Enables DecaDriver library for UWB"
     default y
-
-menu "Beluga LEDs"
-config BELUGA_LEDS
-    bool "Enable the LED driver"
-    default n
-
-config BELUGA_BLE_LEDS
-    bool "Use the LEDs to indicate BLE states"
-    default n
-endmenu
 
 config BELUGA_RANGE_EXTENSION
     bool "Enable range extension for Beluga"
@@ -33,25 +33,7 @@ config BELUGA_USE_ACCEL
     select SENSOR
     default n
 
-menu "Beluga Debugging"
-config DEBUG_BELUGA_CLOCK
-    bool "Debug oscillating crystals"
-    default n
-
-config BELUGA_RESET_REASON
-    bool "Print the reset reason"
-    select PRINTK
-    select HWINFO
-    default n
-
-config BELUGA_DUMP_CORE
-    bool "Dump the core on crashes"
-    select DEBUG_COREDUMP
-
-config BELUGA_EVAL_BLE_STRENGTH
-    bool "Evaluate the signal strength of BLE regardless if UWB is on or not"
-    default n
-endmenu
+rsource "./Kconfig.beluga_debug"
 
 config WDT_MAX_WINDOW
     int "Maximum window of the watchdog timer"
