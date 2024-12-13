@@ -2,9 +2,13 @@
  *
  *  @brief  Beluga AT commands
  *
- *  @date   2024/06
+ * This defines all the AT commands available on Beluga. It not only defines
+ * the AT commands, but also parses the arguments, provides argument checking
+ * helpers, and runs the commands thread.
  *
- *  @author WiseLab-CMU
+ *  @date   6/1/2024
+ *
+ *  @author Tom Schmitz
  */
 
 #include <zephyr/kernel.h>
@@ -35,11 +39,29 @@
 #include <watchdog.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(at_commands, LOG_LEVEL_DBG);
+/**
+ * Logger for the AT commands
+ */
+LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
 
-#define OK         printf("OK\r\n")
+/**
+ * Prints "OK" and moves the cursor down to the next line
+ */
+#define OK printf("OK\r\n")
+
+/**
+ * Determines the maximum amount of tokens a string can get parsed into
+ */
 #define MAX_TOKENS 20
 
+/**
+ * @brief Checks if the minimum amount of arguments have been passed in. If not,
+ * prints an error message and directs the caller to return early.
+ *
+ * @param[in] argc The amount of tokens that were parsed
+ * @param[in] required The required amount of tokens needed for the function to
+ * work properly
+ */
 #define CHECK_ARGC(argc, required)                                             \
     do {                                                                       \
         if ((uint16)(argc) < (uint16_t)(required)) {                           \
@@ -48,6 +70,16 @@ LOG_MODULE_REGISTER(at_commands, LOG_LEVEL_DBG);
         }                                                                      \
     } while (0)
 
+/**
+ * @brief Prints out the saved setting if the minimum amount of tokens have not
+ * been passed in
+ *
+ * @param[in] argc The amount of tokens parsed
+ * @param[in] required The amount of tokens required to do something other than
+ * "read the setting"
+ * @param[in] setting The enum that defines the setting
+ * @param[in] settingstr The string representation of the setting
+ */
 #define READ_SETTING(argc, required, setting, settingstr)                      \
     do {                                                                       \
         if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
@@ -58,28 +90,67 @@ LOG_MODULE_REGISTER(at_commands, LOG_LEVEL_DBG);
         }                                                                      \
     } while (0)
 
+/**
+ * @brief Defines an AT command's information such as the command name, the
+ * command name length, and the callback function for the command.
+ */
 struct cmd_info {
-    const char *command;
-    size_t cmd_length;
-    void (*cmd_func)(uint16_t argc, char const *const *argv);
+    const char *command; ///< The command name (The part of the command that
+                         ///< comes immediately after the AT+)
+    size_t cmd_length;   ///< The length of the command name
+    void (*cmd_func)(
+        uint16_t argc,
+        char const *const *argv); ///< The callback function of the command
 };
 
+/**
+ * @def AT_CMD_DEFINE
+ * Defines the callback function for an AT command
+ *
+ * @note This works in conjunction with \ref AT_CMD_DATA
+ */
 #define AT_CMD_DEFINE(_command)                                                \
     static void at_##_command(uint16_t argc, char const *const *argv)
 
+/**
+ * Initializes a cmd_info struct
+ *
+ * @param _callback The callback function for the command
+ * @param _command The command string
+ * @param _command_len The length of the command string
+ */
 #define CMD_DATA(_callback, _command, _command_len)                            \
     {                                                                          \
         .command = (const char *)(_command), .cmd_length = (_command_len),     \
         .cmd_func = (_callback),                                               \
     }
 
+/**
+ * @def AT_CMD_DATA
+ * Constructs the command entry for the command table based on the command
+ * passed in.
+ *
+ * @note This works in conjuction with \ref AT_CMD_DEFINE
+ */
 #define AT_CMD_DATA(_command...)                                               \
     CMD_DATA((at_##_command), ((uint8_t[]){#_command}),                        \
              (sizeof((uint8_t[]){#_command}) - 1))
 
+/**
+ * The last entry in the command table
+ */
 #define AT_CMD_DATA_TERMINATOR                                                 \
     { NULL, 0, NULL }
 
+/**
+ * Converts an integer into a boolean given that the integer is a valid value.
+ *
+ * @param[out] boolarg The boolean representation of the integer
+ * @param[in] intarg The integer to convert into a boolean
+ *
+ * @return true if the conversion was successful
+ * @return false if the conversion was not successful
+ */
 STATIC_INLINE bool int2bool(bool *boolarg, int32_t intarg) {
     if (intarg == 0) {
         *boolarg = false;
@@ -91,6 +162,16 @@ STATIC_INLINE bool int2bool(bool *boolarg, int32_t intarg) {
     return true;
 }
 
+/**
+ * @brief Tokenizes the input string
+ *
+ * @param[in] s The string to split into tokens
+ * @param[out] argv The tokens found from the string
+ *
+ * @return The number of tokens found
+ *
+ * @note This function does not handle quoted arguments
+ */
 static uint16_t argparse(char *s, char **argv) {
     char *temp;
     uint16_t argc;
@@ -120,6 +201,17 @@ static uint16_t argparse(char *s, char **argv) {
     return argc;
 }
 
+/**
+ * @brief Converts a string to a signed 32-bit integer assuming the string
+ * representation is base 10.
+ *
+ * @param[in] str The string to convert into an integer
+ * @param[out] result The resulting integer parsed from the string
+ *
+ * @return true if the integer was parsed successfully without any discrepancies
+ * @return false if the integer is out of range or the entire string is not an
+ * integer
+ */
 static bool strtoint32(const char *str, int32_t *result) {
     char *endptr;
     unsigned long ret;
@@ -128,7 +220,7 @@ static bool strtoint32(const char *str, int32_t *result) {
     ret = strtol(str, &endptr, 10);
 
     if (errno == ERANGE || (int64_t)ret > (int64_t)INT32_MAX ||
-        isgraph((int)*endptr)) {
+        (int64_t)ret < (int64_t)INT32_MIN || isgraph((int)*endptr)) {
         *result = 0;
         return false;
     }
@@ -137,6 +229,14 @@ static bool strtoint32(const char *str, int32_t *result) {
     return true;
 }
 
+/**
+ * The STARTUWB AT command
+ *
+ * This will start UWB ranging
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(STARTUWB) {
     LOG_INF("Running STARTUWB command");
     if (get_ble_led_state() == LED_BLE_OFF) {
@@ -159,6 +259,14 @@ AT_CMD_DEFINE(STARTUWB) {
     OK;
 }
 
+/**
+ * The STOPUWB AT command
+ *
+ * This will stop UWB ranging
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(STOPUWB) {
     LOG_INF("Running STOPUWB command");
     if (get_uwb_led_state() == LED_UWB_OFF) {
@@ -171,6 +279,14 @@ AT_CMD_DEFINE(STOPUWB) {
     OK;
 }
 
+/**
+ * The STARTBLE AT command
+ *
+ * This will start BLE discovery
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(STARTBLE) {
     LOG_INF("Running STARTBLE) command");
     if (get_NODE_UUID() == 0) {
@@ -191,6 +307,14 @@ AT_CMD_DEFINE(STARTBLE) {
     OK;
 }
 
+/**
+ * The STOPBLE AT command
+ *
+ * This will stop BLE discovery
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(STOPBLE) {
     LOG_INF("Running STOPBLE command");
     if (get_ble_led_state() == LED_UWB_OFF) {
@@ -207,6 +331,15 @@ AT_CMD_DEFINE(STOPBLE) {
     OK;
 }
 
+/**
+ * The ID AT command
+ *
+ * This will set the ID of the Beluga node, or will print the current ID if the
+ * ID argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(ID) {
     LOG_INF("Running ID command");
     READ_SETTING(argc, 2, BELUGA_ID, "ID");
@@ -229,6 +362,15 @@ AT_CMD_DEFINE(ID) {
     OK;
 }
 
+/**
+ * The BOOTMODE AT command
+ *
+ * This will set the bootmode (determines if BLE and UWB is on at boot), or it
+ * will print the current bootmode setting if the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(BOOTMODE) {
     LOG_INF("Running BOOTMODE command");
     READ_SETTING(argc, 2, BELUGA_BOOTMODE, "Bootmode");
@@ -245,6 +387,15 @@ AT_CMD_DEFINE(BOOTMODE) {
     OK;
 }
 
+/**
+ * The RATE AT command
+ *
+ * This will set the polling rate of the UWB ranging, or it will get the current
+ * polling rate of the ranging if the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(RATE) {
     LOG_INF("Running RATE command");
     READ_SETTING(argc, 2, BELUGA_POLL_RATE, "Rate");
@@ -265,6 +416,15 @@ AT_CMD_DEFINE(RATE) {
     OK;
 }
 
+/**
+ * The CHANNEL AT command
+ *
+ * This will set the UWB channel, or it will get the current UWB channel if the
+ * argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(CHANNEL) {
     LOG_INF("Running CHANNEL command");
     READ_SETTING(argc, 2, BELUGA_UWB_CHANNEL, "Channel");
@@ -290,6 +450,15 @@ AT_CMD_DEFINE(CHANNEL) {
     OK;
 }
 
+/**
+ * The RESET AT command
+ *
+ * This will reset all the saved settings back to their defaults. For the reset
+ * to take affect, the node must be rebooted.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(RESET) {
     LOG_INF("Running RESET command");
     resetBelugaSettings();
@@ -297,6 +466,16 @@ AT_CMD_DEFINE(RESET) {
     OK;
 }
 
+/**
+ * The TIMEOUT AT command
+ *
+ * Sets the amount of time that a node can stay within the neighbor list without
+ * any updates, or it will get the current timeout if the argument is not
+ * present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(TIMEOUT) {
     LOG_INF("Running TIMEOUT command");
     READ_SETTING(argc, 2, BELUGA_BLE_TIMEOUT, "Timeout");
@@ -313,6 +492,15 @@ AT_CMD_DEFINE(TIMEOUT) {
     OK;
 }
 
+/**
+ * The TXPOWER AT command
+ *
+ * Sets the TX power of the UWB to either the default or max setting, or it will
+ * get the current TX power if the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
     READ_SETTING(argc, 2, BELUGA_TX_POWER, "TX Power");
@@ -328,6 +516,15 @@ AT_CMD_DEFINE(TXPOWER) {
     }
 }
 
+/**
+ * The STREAMMODE AT command
+ *
+ * Sets the stream mode (print everything every 50 ms or only print updates), or
+ * it will get the current stream mode if the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(STREAMMODE) {
     LOG_INF("Running STREAMMODE command");
     READ_SETTING(argc, 2, BELUGA_STREAMMODE, "Stream Mode");
@@ -343,6 +540,15 @@ AT_CMD_DEFINE(STREAMMODE) {
     }
 }
 
+/**
+ * The TWRMODE AT command
+ *
+ * Sets the ranging mode of the UWB, or it will get the current ranging mode if
+ * the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(TWRMODE) {
     LOG_INF("Running TWRMODE command");
     READ_SETTING(argc, 2, BELUGA_TWR, "TWR");
@@ -358,6 +564,15 @@ AT_CMD_DEFINE(TWRMODE) {
     }
 }
 
+/**
+ * The LEDMODE AT command
+ *
+ * Sets the LED mode, or it will get the current LED mode if the argument is not
+ * present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(LEDMODE) {
     LOG_INF("Running LEDMODE command");
     READ_SETTING(argc, 2, BELUGA_LEDMODE, "LED Mode");
@@ -379,6 +594,14 @@ AT_CMD_DEFINE(LEDMODE) {
     OK;
 }
 
+/**
+ * The REBOOT AT command
+ *
+ * Reboots the node.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(REBOOT) {
     LOG_INF("Running REBOOT command");
     OK;
@@ -387,6 +610,15 @@ AT_CMD_DEFINE(REBOOT) {
     sys_reboot(SYS_REBOOT_COLD);
 }
 
+/**
+ * The PWRAMP AT command
+ *
+ * Enables/disables the external power amplifiers, or gets the current power
+ * amplification setting if the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(PWRAMP) {
     LOG_INF("Running PWRAMP command");
     READ_SETTING(argc, 2, BELUGA_RANGE_EXTEND, "Range Extension");
@@ -405,11 +637,25 @@ AT_CMD_DEFINE(PWRAMP) {
     }
 
     if (success) {
+        if (pwramp == 0) {
+            update_led_state(LED_PWRAMP_OFF);
+        } else {
+            update_led_state(LED_PWRAMP_ON);
+        }
+
         updateSetting(BELUGA_RANGE_EXTEND, pwramp);
         OK;
     }
 }
 
+/**
+ * The ANTENNA AT command
+ *
+ * Sets the active BLE antenna.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(ANTENNA) {
     LOG_INF("Running ANTENNA command");
     CHECK_ARGC(argc, 2);
@@ -428,12 +674,29 @@ AT_CMD_DEFINE(ANTENNA) {
     }
 }
 
+/**
+ * The TIME AT command
+ *
+ * Retrieves the current kernel timestamp.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(TIME) {
     LOG_INF("Running TIME command");
     printf("Time: %" PRId64 " ", k_uptime_get());
     OK;
 }
 
+/**
+ * The FORMAT AT command
+ *
+ * Sets the output format mode (0 for CSV mode, 1 for JSON mode), or gets the
+ * current format mode if the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(FORMAT) {
     LOG_INF("Running FORMAT command");
     READ_SETTING(argc, 2, BELUGA_OUT_FORMAT, "Format Mode");
@@ -450,6 +713,14 @@ AT_CMD_DEFINE(FORMAT) {
     OK;
 }
 
+/**
+ * The DEEPSLEEP AT command
+ *
+ * Places the UWB and the BLE chips into deep sleep.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(DEEPSLEEP) {
     LOG_INF("Running DEEPSLEEP command");
     OK;
@@ -457,6 +728,15 @@ AT_CMD_DEFINE(DEEPSLEEP) {
     enter_deep_sleep();
 }
 
+/**
+ * The PHR AT command
+ *
+ * Sets the UWB PHR mode, or it will retrieve the current PHR mode if the
+ * argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(PHR) {
     LOG_INF("Running PHR command");
     READ_SETTING(argc, 2, BELUGA_UWB_PHR, "UWB PHR mode");
@@ -482,6 +762,15 @@ AT_CMD_DEFINE(PHR) {
     OK;
 }
 
+/**
+ * The DATARATE AT command
+ *
+ * Sets the UWB data rate, or gets the current data rate if the argument is not
+ * present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(DATARATE) {
     LOG_INF("Running DATARATE command");
     READ_SETTING(argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
@@ -507,6 +796,15 @@ AT_CMD_DEFINE(DATARATE) {
     OK;
 }
 
+/**
+ * The PULSERATE AT command
+ *
+ * Sets the UWB pulse rate, or gets the current pulse rate if the argument is
+ * not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(PULSERATE) {
     LOG_INF("Running PULSERATE command");
     READ_SETTING(argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
@@ -532,6 +830,15 @@ AT_CMD_DEFINE(PULSERATE) {
     OK;
 }
 
+/**
+ * The PREAMBLE AT command
+ *
+ * Sets the UWB Preamble length, or gets the current preamble length if the
+ * argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(PREAMBLE) {
     LOG_INF("Running PREAMBLE command");
     READ_SETTING(argc, 2, BELUGA_UWB_PREAMBLE, "Preamble length");
@@ -557,6 +864,15 @@ AT_CMD_DEFINE(PREAMBLE) {
     OK;
 }
 
+/**
+ * The PAC AT command
+ *
+ * Sets the UWB PAC size, it it gets the current PAC size if the argument is not
+ * present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(PAC) {
     LOG_INF("Running PAC command");
     READ_SETTING(argc, 2, BELUGA_UWB_PAC, "PAC Size");
@@ -582,6 +898,15 @@ AT_CMD_DEFINE(PAC) {
     OK;
 }
 
+/**
+ * The SFD AT command
+ *
+ * Sets the SFD to be used (0 for standard, 1 for non-standard), or gets the
+ * current SFD setting if the argument is not present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(SFD) {
     LOG_INF("Running SFD command");
     READ_SETTING(argc, 2, BELUGA_UWB_NSSFD, "Nonstandard SFD");
@@ -607,6 +932,15 @@ AT_CMD_DEFINE(SFD) {
     OK;
 }
 
+/**
+ * The PANID AT command
+ *
+ * Sets the UWB PAN ID, or gets the current PAN ID if the argument is not
+ * present.
+ *
+ * @param[in] argc The argument count
+ * @param[in] argv The parsed arguments
+ */
 AT_CMD_DEFINE(PANID) {
     LOG_INF("Running PANID command");
     READ_SETTING(argc, 2, BELUGA_PAN_ID, "PAN ID");
@@ -630,6 +964,13 @@ AT_CMD_DEFINE(PANID) {
     OK;
 }
 
+/**
+ * AT command table
+ *
+ * @attention When defining a new AT command, it is recommended to use the \ref
+ * AT_CMD_DEFINE macro for defining the callback function and the AT_CMD_DATA to
+ * define the command information in this table.
+ */
 static struct cmd_info commands[] = {
     AT_CMD_DATA(STARTUWB), AT_CMD_DATA(STOPUWB),   AT_CMD_DATA(STARTBLE),
     AT_CMD_DATA(STOPBLE),  AT_CMD_DATA(ID),        AT_CMD_DATA(BOOTMODE),
@@ -642,6 +983,12 @@ static struct cmd_info commands[] = {
     AT_CMD_DATA(PAC),      AT_CMD_DATA(SFD),       AT_CMD_DATA(PANID),
     AT_CMD_DATA_TERMINATOR};
 
+/**
+ * Frees the memory allocated to the command buffer. It will then set the input
+ * to NULL to avoid use-after-free bugs.
+ *
+ * @param[in,out] buf The buffer to free
+ */
 STATIC_INLINE void freeCommand(struct buffer **buf) {
     k_free((*buf)->buf);
     k_free(*buf);
@@ -649,7 +996,10 @@ STATIC_INLINE void freeCommand(struct buffer **buf) {
 }
 
 /**
- * @brief Task to receive UART message from zephyr UART queue and parse
+ * @brief The serial commands task.
+ *
+ * This task receives data from the UART through the uart_rx_queue fifo, parses
+ * them, and runs the commands associated with the input, if found.
  */
 NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
@@ -722,10 +1072,24 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
 }
 
 #if ENABLE_THREADS && ENABLE_COMMANDS
+/**
+ * The thread stack of the commands
+ */
 K_THREAD_STACK_DEFINE(command_stack, CONFIG_COMMANDS_STACK_SIZE);
+
+/**
+ * The thread data
+ */
 static struct k_thread command_thread_data;
+
+/**
+ * The ID of the commands thread
+ */
 static k_tid_t command_task_id;
 
+/**
+ * Initializes and launches the commands task and gives the thread a name.
+ */
 void init_commands_thread(void) {
     command_task_id = k_thread_create(
         &command_thread_data, command_stack,
@@ -735,5 +1099,8 @@ void init_commands_thread(void) {
     LOG_INF("Started AT commands");
 }
 #else
-void init_commands_thread(void) { LOG_INF("Started AT commands"); }
+/**
+ * Initializes and launches the commands task and gives the thread a name.
+ */
+void init_commands_thread(void) { LOG_INF("AT commands task disabled"); }
 #endif

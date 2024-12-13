@@ -2,9 +2,13 @@
  *
  *  @brief  Beluga AT commands
  *
- *  @date   2024/06
+ * This defines all the AT commands available on Beluga. It not only defines
+ * the AT commands, but also parses the arguments, provides argument checking
+ * helpers, and runs the commands thread.
  *
- *  @author WiseLab-CMU
+ *  @date   6/1/2024
+ *
+ *  @author Tom Schmitz
  */
 
 #ifndef AT_COMMANDS_H
@@ -15,12 +19,19 @@
 #include <stdint.h>
 #include <unistd.h>
 
+/**
+ * Buffer structure for passing serial messages from the UART to the commands
+ * task through a FIFO
+ */
 struct buffer {
-    void *fifo_reserved;
-    uint8_t *buf;
-    size_t len;
+    void *fifo_reserved; ///< Reserved for Zephyr FIFO use
+    uint8_t *buf;        ///< The data received from the UART
+    size_t len;          ///< The length of the data
 };
 
+/**
+ * Initializes and launches the commands task and gives the thread a name.
+ */
 void init_commands_thread(void);
 
 #endif
