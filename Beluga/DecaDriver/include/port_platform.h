@@ -20,16 +20,8 @@ extern "C" {
 
 #include <stdint.h>
 #include <string.h>
-
-// #include "app_error.h"
-// #include "app_util_platform.h"
-// #include "boards.h"
 #include "deca_device_api.h"
 #include "deca_types.h"
-// #include "nrf_delay.h"
-// #include "nrf_drv_spi.h"
-// #include "nrf_gpio.h"
-// #include "nrf_log.h"
 
 /*
 
@@ -44,10 +36,8 @@ performing range measurements.
 */
 
 /* Default antenna delay values for 64 MHz PRF.*/
-// #define TX_ANT_DLY 16456
-// #define RX_ANT_DLY 16456
-#define TX_ANT_DLY 16436
-#define RX_ANT_DLY 16436
+#define TX_ANT_DLY CONFIG_TX_ANT_DLY
+#define RX_ANT_DLY CONFIG_RX_ANT_DLY
 
 int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
                 uint32 readlength, uint8 *readBuffer);
@@ -56,55 +46,10 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer,
 decaIrqStatus_t decamutexon(void);
 void decamutexoff(decaIrqStatus_t s);
 
-#define SPI_CS_PIN   17 /**< SPI CS Pin.*/
-
-#define SPI_INSTANCE 1 /**< SPI instance index. */
-// static const nrf_drv_spi_t spi =
-//     NRF_DRV_SPI_INSTANCE(SPI_INSTANCE); /**< SPI instance. */
-// static volatile bool spi_xfer_done; /**< Flag used to indicate that SPI
-// instance
-//                                        completed the transfer. */
-
 /**
- * @brief SPI user event handler.
- * @param event
+ * Types definitions
  */
-// void spi_event_handler(nrf_drv_spi_evt_t const *p_event, void *p_context);
 
-#if 0
-
-/* DW1000 IRQ (EXTI9_5_IRQ) handler type. */
-typedef void (*port_deca_isr_t)(void);
-
-/* DW1000 IRQ handler declaration. */
-port_deca_isr_t port_deca_isr;
-
-/*! ------------------------------------------------------------------------------------------------------------------
- * @fn port_set_deca_isr()
- *
- * @brief This function is used to install the handling function for DW1000 IRQ.
- *
- * NOTE:
- *   - As EXTI9_5_IRQHandler does not check that port_deca_isr is not null, the user application must ensure that a
- *     proper handler is set by calling this function before any DW1000 IRQ occurs!
- *   - This function makes sure the DW1000 IRQ line is deactivated while the handler is installed.
- *
- * @param deca_isr function pointer to DW1000 interrupt handler to install
- *
- * @return none
- */
-void port_set_deca_isr(port_deca_isr_t deca_isr);
-
-#endif
-
-/*****************************************************************************************************************/ /*
-                                                                                                                     **/
-
-/****************************************************************************/ /**
-                                                                                *
-                                                                                *                                 Types definitions
-                                                                                *
-                                                                                *******************************************************************************/
 typedef uint64_t uint64;
 
 typedef int64_t int64;
@@ -117,17 +62,13 @@ typedef int64_t int64;
 #define TRUE 1
 #endif
 
-/****************************************************************************/ /**
-                                                                                *
-                                                                                *                              MACRO function
-                                                                                *
-                                                                                *******************************************************************************/
+/**
+ * MACRO functions
+ */
 
-/****************************************************************************/ /**
-                                                                                *
-                                                                                *                              port function prototypes
-                                                                                *
-                                                                                *******************************************************************************/
+/**
+ * port function prototypes
+ */
 
 void Sleep(uint32_t Delay);
 unsigned long portGetTickCnt(void);
@@ -144,17 +85,6 @@ void process_deca_irq(void);
 void setup_DW1000RSTnIRQ(int enable);
 
 void reset_DW1000(void);
-
-#if 0
-ITStatus EXTI_GetITEnStatus(uint32_t x);
-
-uint32_t port_GetEXT_IRQStatus(void);
-uint32_t port_CheckEXT_IRQ(void);
-void port_DisableEXT_IRQ(void);
-void port_EnableEXT_IRQ(void);
-extern uint32_t     HAL_GetTick(void);
-
-#endif
 
 #ifdef __cplusplus
 }

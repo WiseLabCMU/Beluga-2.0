@@ -4,6 +4,8 @@ menu "Beluga Configurations"
 
 rsource "./Kconfig.beluga_threads"
 
+rsource "./Kconfig.uwb"
+
 choice "BELUGA_LED_INDICATOR_CHOICE"
     prompt "LEDs are used to indicate states for"
     default BELUGA_LEDS
@@ -15,10 +17,6 @@ config BELUGA_LEDS
     bool "Beluga states"
 
 endchoice
-
-config ENABLE_BELUGA_UWB
-    bool "Enables DecaDriver library for UWB"
-    default y
 
 config BELUGA_RANGE_EXTENSION
     bool "Enable range extension for Beluga"
