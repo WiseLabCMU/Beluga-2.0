@@ -24,4 +24,11 @@ config RX_ANT_DLY
         This configuration is deprecated as it should be something that
         is calibrated and saved in flash for each device.
 
+config UWB_BOOT_BANNER
+    bool "UWB Boot Banner"
+    default n
+    select PRINTK
+    select EARLY_CONSOLE
+    depends on ENABLE_BELUGA_UWB
+
 endmenu

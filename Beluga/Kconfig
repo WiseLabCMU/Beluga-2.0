@@ -34,6 +34,7 @@ config BELUGA_USE_ACCEL
 config BELUGA_GATT
     bool "Beluga GATT service [EXPERIMENTAL]"
     default n
+    select EXPERIMENTAL
 
 rsource "./Kconfig.beluga_debug"
 
