@@ -80,15 +80,53 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * @param[in] setting The enum that defines the setting
  * @param[in] settingstr The string representation of the setting
  */
-#define READ_SETTING(argc, required, setting, settingstr)                      \
+#define READ_SETTING_DEFAULT(argc, required, setting, settingstr)              \
     do {                                                                       \
         if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
             int32_t _setting = retrieveSetting(setting);                       \
-            printf(settingstr ": %d ", _setting);                              \
+            printf(settingstr ": %" PRIu32 " ", (uint32_t)_setting);           \
             OK;                                                                \
             return;                                                            \
         }                                                                      \
     } while (0)
+
+/**
+ * @brief Prints out the saved setting if the minimum amount of tokens have not
+ * been passed in
+ *
+ * @param[in] argc The amount of tokens parsed
+ * @param[in] required The amount of tokens required to do something other than
+ * "read the setting"
+ * @param[in] setting The enum that defines the setting
+ * @param[in] settingstr The string representation of the setting
+ * @param[in] callback The custom print function for the setting
+ */
+#define READ_SETTING_CALLBACK(argc, required, setting, settingstr, callback)   \
+    do {                                                                       \
+        if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
+            int32_t _setting = retrieveSetting(setting);                       \
+            callback(_setting);                                                \
+            OK;                                                                \
+            return;                                                            \
+        }                                                                      \
+    } while (0)
+
+/**
+ * @brief Prints out the saved setting if the minimum amount of tokens have not
+ * been passed in
+ *
+ * @param[in] argc The amount of tokens parsed
+ * @param[in] required The amount of tokens required to do something other than
+ * "read the setting"
+ * @param[in] setting The enum that defines the setting
+ * @param[in] settingstr The string representation of the setting
+ * @param[in] callback An optional custom print function for the setting
+ */
+#define READ_SETTING(argc, required, setting, settingstr, callback...)        \
+    COND_CODE_1(IS_EMPTY(callback),                                            \
+                (READ_SETTING_DEFAULT(argc, required, setting, settingstr)),   \
+                (READ_SETTING_CALLBACK(argc, required, setting, settingstr,    \
+                                       GET_ARG_N(1, callback))))
 
 /**
  * @brief Defines an AT command's information such as the command name, the
