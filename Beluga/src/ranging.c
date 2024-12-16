@@ -41,9 +41,6 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #define UWB_RESP_RX_TIMEOUT CONFIG_UWB_RESP_RX_TIMEOUT
 #endif
 
-/* Maximum transmission power register value */
-#define TX_POWER_MAX 0x1F1F1F1F
-
 #define SUSPEND_RESPONDER_TASK                                                 \
     do {                                                                       \
         k_sem_take(&k_sus_resp, K_NO_WAIT);                                    \
@@ -317,12 +314,8 @@ int set_uwb_channel(uint32_t channel) {
     return 0;
 }
 
-void set_tx_power(bool power_max) {
-    if (power_max) {
-        config_tx.power = TX_POWER_MAX;
-    } else {
-        config_tx.power = TX_POWER_MAN_DEFAULT;
-    }
+void set_tx_power(uint32_t tx_power) {
+    config_tx.power = tx_power;
     dwt_configuretxrf(&config_tx);
 }
 

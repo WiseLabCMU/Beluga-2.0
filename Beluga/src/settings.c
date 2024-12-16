@@ -13,6 +13,8 @@
 
 #include <zephyr/logging/log.h>
 
+#include <deca_regs.h>
+
 LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
 
 #define DEFAULT_RATE          250
@@ -21,7 +23,7 @@ LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
 #define DEFAULT_LEDMODE       0
 #define DEFAULT_BOOTMODE      0
 #define DEFAULT_CHANNEL       5
-#define DEFAULT_TXPOWER       0
+#define DEFAULT_TXPOWER       TX_POWER_MAN_DEFAULT
 #define DEFAULT_TWR           1
 #define DEFAULT_OUT_FORMAT    0
 #define DEFAULT_AMPLIFICATION 0

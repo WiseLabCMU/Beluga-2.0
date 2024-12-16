@@ -228,13 +228,8 @@ static void load_timeout(void) {
 
 static void load_tx_power(void) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
-
-    if (tx_power == 1) {
-        set_tx_power(true);
-        printf("  TX Power: Max \r\n");
-    } else {
-        printf("  TX Power: Default \r\n");
-    }
+    set_tx_power((uint32_t)tx_power);
+    printf("  TX Power: 0x%08" PRIX32 " \r\n", tx_power);
 }
 
 static void load_stream_mode(void) {
@@ -337,7 +332,7 @@ static void load_sfd_mode(void) {
 
 static void load_pan_id(void) {
     int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
-    printf("  UWB PAN ID: %" PRId32 " \r\n", pan_id);
+    printf("  UWB PAN ID: 0x%04" PRIX16 " \r\n", (uint16_t)pan_id);
     set_initiator_pan_id((uint16_t)pan_id);
     set_responder_pan_id((uint16_t)pan_id);
 }

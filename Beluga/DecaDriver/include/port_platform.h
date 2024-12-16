@@ -18,10 +18,10 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <string.h>
 #include "deca_device_api.h"
 #include "deca_types.h"
+#include <stdint.h>
+#include <string.h>
 
 /*
 

@@ -504,16 +504,54 @@ AT_CMD_DEFINE(TIMEOUT) {
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
     READ_SETTING(argc, 2, BELUGA_TX_POWER, "TX Power");
-    int32_t power;
-    bool value, success = strtoint32(argv[1], &power);
+    int32_t arg1, coarse_control, fine_control;
+    bool value, success = strtoint32(argv[1], &arg1);
+    uint32_t power, mask = UINT8_MAX, new_setting;
 
-    if (success && int2bool(&value, power)) {
-        updateSetting(BELUGA_TX_POWER, value);
-        set_tx_power(value);
-        OK;
-    } else {
-        printf("Tx power parameter input error\r\n");
+    switch (argc) {
+    case 2: {
+        if (success && int2bool(&value, arg1)) {
+            power = value ? TX_POWER_MAX : TX_POWER_MAN_DEFAULT;
+            set_tx_power(power);
+        } else {
+            printf("Tx power parameter input error\r\n");
+            return;
+        }
+        break;
     }
+    case 3: {
+        printf("Invalid number of parameters\r\n");
+        return;
+    }
+    case 4:
+    default: {
+        if (!success || arg1 < 0 || arg1 > 3) {
+            printf("Invalid TX amplification stage\r\n");
+            return;
+        }
+        success = strtoint32(argv[2], &coarse_control);
+        if (!success || coarse_control < 0 || coarse_control > 7) {
+            printf("Invalid TX coarse gain\r\n");
+            return;
+        }
+        success = strtoint32(argv[3], &fine_control);
+        if (!success || fine_control < 0 || fine_control > 31) {
+            printf("Invalid TX fine gain\r\n");
+            return;
+        }
+        power = (uint32_t)retrieveSetting(BELUGA_TX_POWER);
+        coarse_control = (~coarse_control) & 0x7;
+        new_setting = (coarse_control << 5) | fine_control;
+        mask <<= 8 * arg1;
+        power &= ~mask;
+        power |= new_setting << 8 * arg1;
+        set_tx_power(power);
+        break;
+    }
+    }
+
+    updateSetting(BELUGA_TX_POWER, (int32_t)power);
+    OK;
 }
 
 /**

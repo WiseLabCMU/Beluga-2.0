@@ -9,8 +9,8 @@
  */
 
 #include <deca_version.h>
-#include <zephyr/kernel.h>
 #include <zephyr/init.h>
+#include <zephyr/kernel.h>
 
 int dw1000_boot_banner(void) {
 #if IS_ENABLED(CONFIG_UWB_BOOT_BANNER)
