@@ -23,6 +23,24 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
 
+#if !defined(CONFIG_UWB_INIT_RX_TIMEOUT)
+#define UWB_INIT_TIMEOUT 2000
+#else
+#define UWB_INIT_TIMEOUT CONFIG_UWB_INIT_RX_TIMEOUT
+#endif
+
+#if !defined(CONFIG_UWB_RESP_RX_DELAY)
+#define UWB_RESP_RX_DELAY 0
+#else
+#define UWB_RESP_RX_DELAY CONFIG_UWB_RESP_RX_DELAY
+#endif
+
+#if !defined(CONFIG_UWB_RESP_RX_TIMEOUT)
+#define UWB_RESP_RX_TIMEOUT 0
+#else
+#define UWB_RESP_RX_TIMEOUT CONFIG_UWB_RESP_RX_TIMEOUT
+#endif
+
 /* Maximum transmission power register value */
 #define TX_POWER_MAX 0x1F1F1F1F
 
@@ -357,15 +375,15 @@ void init_uwb(void) {
  */
 static void init_reconfig() {
     dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
-    dwt_setrxtimeout(2000);
+    dwt_setrxtimeout(UWB_INIT_TIMEOUT);
 }
 
 /**
  * @brief Reconfig UWB transmitter as a responder
  */
 static void resp_reconfig() {
-    dwt_setrxaftertxdelay(0);
-    dwt_setrxtimeout(0);
+    dwt_setrxaftertxdelay(UWB_RESP_RX_DELAY);
+    dwt_setrxtimeout(UWB_RESP_RX_TIMEOUT);
 }
 
 NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {

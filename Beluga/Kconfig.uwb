@@ -31,4 +31,19 @@ config UWB_BOOT_BANNER
     select EARLY_CONSOLE
     depends on ENABLE_BELUGA_UWB
 
+config UWB_INIT_RX_TIMEOUT
+    int "Initiator receive timeout (ms)"
+    default 2700
+    depends on ENABLE_BELUGA_UWB
+
+config UWB_RESP_RX_DELAY
+    int "Responder receive delay (ms)"
+    default 0
+    depends on ENABLE_BELUGA_UWB
+
+config UWB_RESP_RX_TIMEOUT
+    int "Responder receive timeout (ms)"
+    default 0
+    depends on ENABLE_BELUGA_UWB
+
 endmenu
