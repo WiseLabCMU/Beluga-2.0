@@ -32,7 +32,7 @@ class BelugaPublisherService(Node):
         "format": 1,
         "range extend": 0,
         "uwb data rate": 0,
-        "uwb preamble": 1,
+        "uwb preamble": 128,
         "pulse rate": 1
     }
 
@@ -238,13 +238,14 @@ class BelugaPublisherService(Node):
                 neighbor.id = x
                 neighbor.distance = neighbors_list[x]['RANGE']
                 neighbor.rssi = neighbors_list[x]['RSSI']
+                neighbor.exchange = neighbors_list[x]['EXCHANGE']
                 timestamp = self._beluga_to_ros_time(neighbors_list[x]['TIMESTAMP'])
                 neighbor.timestamp = timestamp.to_msg()
                 pub_list.append(neighbor)
             msg = BelugaNeighbors()
             msg.neighbors = pub_list
             self.publisher_.publish(msg)
-            self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in pub_list))
+            self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}, "EXCHANGE": {x.exchange}}}' for x in pub_list))
 
     def publish_ranges(self):
         range_updates = self.serial.get_ranges()
@@ -254,13 +255,14 @@ class BelugaPublisherService(Node):
                 range_ = BelugaRange()
                 range_.id = x
                 range_.range = range_updates[x]['RANGE']
+                range_.exchange = range_updates[x]['EXCHANGE']
                 timestamp = self._beluga_to_ros_time(range_updates[x]['TIMESTAMP'])
                 range_.timestamp = timestamp.to_msg()
                 updates.append(range_)
             msg = BelugaRanges()
             msg.ranges = updates
             self.range_publish_.publish(msg)
-            self.get_logger().info("Publishing Ranges:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.range}, "TIMESTAMP": {x.timestamp}}}' for x in updates))
+            self.get_logger().info("Publishing Ranges:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.range}, "TIMESTAMP": {x.timestamp}, "EXCHANGE": {x.exchange}}}' for x in updates))
 
     def at_command(self, request, response):
         if not self.dummy_data:

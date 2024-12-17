@@ -31,6 +31,7 @@ class BelugaNeighborListEntry:
         self._range = 0
         self._rssi = 0
         self._time = 0
+        self._exchange_id = 0
         self._updated = False
 
         ret = self.update_entry(line)
@@ -55,6 +56,10 @@ class BelugaNeighborListEntry:
         return self._time
 
     @property
+    def exchange(self) -> int:
+        return self._exchange_id
+
+    @property
     def updated(self) -> bool:
         return self._updated
 
@@ -69,6 +74,8 @@ class BelugaNeighborListEntry:
         try:
             entry = {'ID': int(entries[0]), 'RANGE': float(entries[1]), 'RSSI': int(entries[2]),
                      'TIMESTAMP': int(entries[3])}
+            if len(entries) > 4:
+                entry['EXCHANGE'] = int(entry[4])
         except Exception as e:
             raise BelugaEntryError(f'Incomplete entry: {e}')
         return entry
@@ -84,6 +91,7 @@ class BelugaNeighborListEntry:
         self._range = entry['RANGE']
         self._rssi = entry['RSSI']
         self._time = entry['TIMESTAMP']
+        self._exchange_id = entry['EXCHANGE']
         self._updated = True
         return True
 
@@ -125,7 +133,7 @@ class BelugaNeighborsList:
         ret = {}
         for x in self._list.values():
             if x.updated:
-                ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time}
+                ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time, "EXCHANGE": x.exchange}
                 x.updated = False
         self._range_update = False
         return ret
@@ -133,7 +141,7 @@ class BelugaNeighborsList:
     def get_list(self) -> Dict[int, Dict[str, Union[int, float]]]:
         ret = {}
         for x in self._list.values():
-            ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time}
+            ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time, "EXCHANGE": x.exchange}
         self._neighbors_update = False
         return ret
 
@@ -282,7 +290,7 @@ class BelugaSerial:
                             self._reboot_done.set()
                     i += 1
                     continue
-                if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i] == '# ID, RANGE, RSSI, TIMESTAMP':
+                if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i].startswith('# ID, RANGE, RSSI, TIMESTAMP'):
                     processed = self._write_ranging_batch(lines[i:])
                     i += processed
                     if processed == 0:
