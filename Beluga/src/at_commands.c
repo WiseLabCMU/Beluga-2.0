@@ -241,7 +241,7 @@ static uint16_t argparse(char *s, char **argv) {
 
 /**
  * @brief Converts a string to a signed 32-bit integer assuming the string
- * representation is base 10.
+ * representation is base 10 or base 16
  *
  * @param[in] str The string to convert into an integer
  * @param[out] result The resulting integer parsed from the string
@@ -253,9 +253,16 @@ static uint16_t argparse(char *s, char **argv) {
 static bool strtoint32(const char *str, int32_t *result) {
     char *endptr;
     unsigned long ret;
+    int base = 10;
+    char *start = (char *)str;
+
+    if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X')) {
+        base = 16;
+        start += 2;
+    }
 
     errno = 0;
-    ret = strtol(str, &endptr, 10);
+    ret = strtol(start, &endptr, base);
 
     if (errno == ERANGE || (int64_t)ret > (int64_t)INT32_MAX ||
         (int64_t)ret < (int64_t)INT32_MIN || isgraph((int)*endptr)) {
