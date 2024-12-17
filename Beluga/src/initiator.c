@@ -1,18 +1,25 @@
-/*! ----------------------------------------------------------------------------
- *  @file    init_main.c
- *  @brief   Double-sided and Single-sided two-way ranging (DS/SS TWR) initiator
- * code
+/**
+ * @file initiator.c
  *
+ * @brief This module implements the functionality for the initiator role in a
+ * UWB-based ranging system.
  *
- *           Notes at the end of this file, expand on the inline comments.
+ * The primary objective of this module is to perform the communication sequence
+ * required to initiate a ranging process and compute the distance between the
+ * initiator and a responder in a UWB-based system.
  *
- * @attention
+ * The module handles:
+ * - Sending a poll message to the responder.
+ * - Receiving a response from the responder.
+ * - Sending a final message containing timestamp data (two-way/double-sided
+ * ranging only).
+ * - Receiving a report message containing the time-of-flight (ToF) data, which
+ * is used to calculate the distance (two-way/double-sided ranging only).
  *
- * Copyright 2015 (c) Decawave Ltd, Dublin, Ireland.
- *
- * All rights reserved.
+ * @date 6/1/2024
  *
  * @author Decawave
+ * @author Tome Schmitz
  */
 
 #include <app_leds.h>
@@ -24,11 +31,36 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+/**
+ * Logger for the initiator module
+ */
 LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
 
+/**
+ * Semaphore for suspending the initiator task
+ */
 K_SEM_DEFINE(k_sus_init, 0, 1);
 
-/* Frames used in the ranging process. See NOTE 1,2 below. */
+/**
+ * @brief Frames used in the ranging process
+ *
+ * The frames used here are Decawave specific ranging frames complying with the
+ * IEEE 802.15.4 standard data frame encoding. The frames are the following:
+ * - a poll message sent by the initiator to trigger the ranging exchange.
+ * - a response message sent by the responder allowing the initiator to go on
+ * with the process or to complete the exchange and provide all information
+ * needed by the initiator to compute the time-of-flight (distance) estimate.
+ * - a final message sent by the initiator to complete the exchange and provide
+ * all information needed by the responder to compute the time-of-flight
+ * estimate.
+ * - a report message sent by the responder telling the initiator what the
+ * time-of-flight estimate is.
+ * .
+ *
+ * All messages end with a 2-byte checksum automatically set by DW1000.
+ *
+ * @{
+ */
 static uint8 tx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
                               'A',  'V',  'E', 0x61, 0,    0};
 static uint8 rx_resp_msg[] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
@@ -40,14 +72,42 @@ static uint8 tx_final_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
 static uint8 rx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
                                 'A',  0xE3, 0, 0,    0,    0,   0,   0};
 
+/**
+ * @}
+ */
+
+/**
+ * The maximum length of the receive buffer
+ */
 #define RX_BUF_LEN MAX(RESP_MSG_LEN, REPORT_MSG_LEN)
+
+/**
+ * The buffer where received data is stored
+ */
 static uint8 rx_buffer[RX_BUF_LEN];
 
+/**
+ * This is the delay from Frame RX timestamp to TX reply timestamp used for
+ * calculating/setting the DW1000's delayed TX function.
+ */
 #define POLL_RX_TO_RESP_TX_DLY_UUS 2000
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
+/**
+ * This is the delay from the end of the frame transmission to the enable of the
+ * receiver, as programmed for the DW1000's wait for response feature.
+ */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 300
 
+/**
+ * @brief Sets the source IDs for the messages that the initiator sends and the
+ * destination ID for the messages the initiator receives
+ *
+ * @param[in] id The ID of the node
+ *
+ * @return 0 upon success
+ * @return -EBUSY if UWB is active
+ */
 int set_initiator_id(uint16_t id) {
     CHECK_UWB_ACTIVE();
 
@@ -59,6 +119,12 @@ int set_initiator_id(uint16_t id) {
     return 0;
 }
 
+/**
+ * @brief Sets the personal area network (PAN) ID for the initiator messages
+ *
+ * @param[in] id
+ * @return
+ */
 int set_initiator_pan_id(uint16_t id) {
     CHECK_UWB_ACTIVE();
 
@@ -194,16 +260,6 @@ static int rx_report(double *distance) {
     return 0;
 }
 
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn ds_init_run()
- *
- * @brief Initiate UWB double-sided two way ranging
- *
- * @param  node ID
- *
- * @return distance between sending nodes and id node
- */
 int ds_init_run(uint16_t id, double *distance) {
     int err;
 
@@ -279,16 +335,6 @@ static int ss_rx_response(double *distance) {
     return 0;
 }
 
-/*!
- * ------------------------------------------------------------------------------------------------------------------
- * @fn ss_init_run()
- *
- * @brief Initiate UWB single-sided two way ranging
- *
- * @param  node ID
- *
- * @return distance between sending nodes and id node
- */
 int ss_init_run(uint16_t id, double *distance) {
     int err;
 
@@ -304,55 +350,3 @@ int ss_init_run(uint16_t id, double *distance) {
 
     return 0;
 }
-
-/*****************************************************************************************************************************************************
- * NOTES:
- *
- * 1. The frames used here are Decawave specific ranging frames, complying with
- *the IEEE 802.15.4 standard data frame encoding. The frames are the following:
- *     - a poll message sent by the initiator to trigger the ranging exchange.
- *     - a response message sent by the responder to complete the exchange and
- *provide all information needed by the initiator to compute the time-of-flight
- *(distance) estimate. The first 10 bytes of those frame are common and are
- *composed of the following fields:
- *     - byte 0/1: frame control (0x8841 to indicate a data frame using 16-bit
- *addressing).
- *     - byte 2: sequence number, incremented for each new frame.
- *     - byte 3/4: PAN ID (0xDECA).
- *     - byte 5/6: destination address, see NOTE 2 below.
- *     - byte 7/8: source address, see NOTE 2 below.
- *     - byte 9: function code (specific values to indicate which message it is
- *in the ranging process). The remaining bytes are specific to each message as
- *follows: Poll message:
- *     - no more data
- *    Response message:
- *     - byte 10 -> 13: poll message reception timestamp.
- *     - byte 14 -> 17: response message transmission timestamp.
- *    All messages end with a 2-byte checksum automatically set by DW1000.
- * 2. Source and destination addresses are hard coded constants in this example
- *to keep it simple but for a real product every device should have a unique ID.
- *Here, 16-bit addressing is used to keep the messages as short as possible but,
- *in an actual application, this should be done only after an exchange of
- *specific messages used to define those short addresses for each device
- *participating to the ranging exchange.
- * 3. dwt_writetxdata() takes the full size of the message as a parameter but
- *only copies (size - 2) bytes as the check-sum at the end of the frame is
- *    automatically appended by the DW1000. This means that our variable could
- *be two bytes shorter without losing any data (but the sizeof would not work
- *anymore then as we would still have to indicate the full length of the frame
- *to dwt_writetxdata()).
- * 4. The high order byte of each 40-bit time-stamps is discarded here. This is
- *acceptable as, on each device, those time-stamps are not separated by more
- *than 2**32 device time units (which is around 67 ms) which means that the
- *calculation of the round-trip delays can be handled by a 32-bit subtraction.
- * 5. The user is referred to DecaRanging ARM application (distributed with
- *EVK1000 product) for additional practical example of usage, and to the DW1000
- *API Guide for more details on the DW1000 driver functions.
- * 6. The use of the carrier integrator value to correct the TOF calculation,
- *was added Feb 2017 for v1.3 of this example.  This significantly improves the
- *result of the SS-TWR where the remote responder unit's clock is a number of
- *PPM offset from the local inmitiator unit's clock. As stated in NOTE 2 a fixed
- *offset in range will be seen unless the antenna delsy is calibratred and set
- *correctly.
- *
- ****************************************************************************************************************************************************/

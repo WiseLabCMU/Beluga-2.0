@@ -59,24 +59,26 @@ Setup and Building
 ==================
 It is recommended to use the nRF Connect extension in Visual Studio Code to build.
 
-Setup (VS code)
+Option 1: Setup (VS code, All platforms)
 ---------------
 1. Download and install `nRF Connect for Desktop`_
 2. Download and install `VS Code`_
-3. Open nRF Connect
-4. Install the toolchain manager
-5. Open the toolchain manager
-6. Install nRF Connect SDK v2.7.0
-7. Open VS code and install the nRF Connect extension pack
-8. Open Beluga-2.0/Beluga in VS Code
+3. Download and install `nRF Command Line Tools`_
+4. Open nRF Connect
+5. Install the toolchain manager
+6. Open the toolchain manager
+7. Install nRF Connect SDK v2.7.0
+8. Open VS code and install the nRF Connect extension pack
+9. Open Beluga-2.0/Beluga in VS Code
 
 For additional help, refer to `Nordic's nRF Connect installation guide`_
 
 .. _nRF Connect for Desktop: https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-Desktop
-.. _VS Code: https://code.visualstudio.com/download'
+.. _VS Code: https://code.visualstudio.com/download
+.. _nRF Command Line Tools: https://www.nordicsemi.com/Products/Development-tools/nRF-Command-Line-Tools/Download?lang=en#infotabs
 .. _Nordic's nRF Connect installation guide: https://docs.nordicsemi.com/bundle/nrf-connect-desktop/page/index.html
 
-Setup (Command line, Linux Only)
+Option 2: Setup (Command line, Linux Only, Not recommended)
 --------------------
 Run the following command:
 
@@ -87,7 +89,8 @@ Run the following command:
 Build Configurations
 --------------------
 Before building your application, you need to set up your build configurations. There are two important build
-configurations: Beluga and `decawave_dwm1001_dev`_. The build configurations are listed below.
+configurations: Beluga and `decawave_dwm1001_dev`_. The build configurations are listed below. To create these build
+configurations, open the nRF Connect Extension in VS code by pressing the icon or using the shortcut :kbd:`CTRL+ALT+N`
 
 decawave_dwm1000_dev
 ^^^^^^^^^^^^^^^^^^^^
@@ -692,3 +695,22 @@ path to the **Beluga-2.0** repository to the board roots.
 If you are using the command line, run ``make beluga``
 
 .. _decawave_dwm1001_dev: https://docs.zephyrproject.org/latest/boards/qorvo/decawave_dwm1001_dev/doc/index.html
+
+Setup/Building/Flashing Troubleshooting
+---------------------------------------
+
+Unable to flash DW1001
+^^^^^^^^^^^^^^^^^^^^^^
+If you are seeing the following error "FATAL ERROR: one or more Python dependencies were missing; see the getting started guide for details on how to fix,"
+it means that a python dependency is missing from the environment. This will require an update to the environment. Run the following steps to fix the
+environment:
+
+1. Open the toolchain manager, click on the dropdown arrow, and select "Generate environment script." Save the script to a location of your choice.
+2. Open a terminal and source the environment script that you just generated (i.e source env.sh)
+3. Find where the nordic toolchain is installed and navigate to it in the terminal (example path: ~/ncs/toolchains/2be090971e)
+4. Run "./usr/local/bin/pip install pylink"
+5. Open environment.json inside the toolchain directory, under the "LD_LIBRARY_PATH" key, add the following value to the list: "opt/nanopb/generator-bin/"
+
+See `VS Code Extension - west flash fails from missing python dependencies`_ for more details.
+
+.. _VS Code Extension - west flash fails from missing python dependencies: https://devzone.nordicsemi.com/f/nordic-q-a/100164/vs-code-extension---west-flash-fails-from-missing-python-dependencies/496078

@@ -1,6 +1,7 @@
-/** @file   at_commands.c
+/**
+ * @file   at_commands.c
  *
- *  @brief  Beluga AT commands
+ * @brief  Beluga AT commands
  *
  * This defines all the AT commands available on Beluga. It not only defines
  * the AT commands, but also parses the arguments, provides argument checking
