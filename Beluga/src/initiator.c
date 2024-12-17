@@ -61,16 +61,16 @@ K_SEM_DEFINE(k_sus_init, 0, 1);
  *
  * @{
  */
-static uint8 tx_poll_msg[] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
-                              'A',  'V',  'E', 0x61, 0,    0};
-static uint8 rx_resp_msg[] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
-                              'W',  'A',  0x50, 0,    0,    0,   0,
-                              0,    0,    0,    0,    0,    0};
-static uint8 tx_final_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
-                               'E',  0x69, 0, 0,    0,    0,   0,   0,
-                               0,    0,    0, 0,    0,    0,   0,   0};
-static uint8 rx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
-                                'A',  0xE3, 0, 0,    0,    0,   0,   0};
+static uint8 tx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0,   0xCA, 0xDE, 'W',
+                                          'A',  'V',  'E', 0x61, 0,    0};
+static uint8 rx_resp_msg[RESP_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0x50,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0};
+static uint8 tx_final_msg[FINAL_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V', 'E', 0x69, 0, 0,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0,    0, 0};
+static uint8 rx_report_msg[REPORT_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0xE3, 0, 0, 0, 0, 0, 0};
 
 /**
  * @}

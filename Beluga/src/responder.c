@@ -30,16 +30,16 @@ LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_INF);
 K_SEM_DEFINE(k_sus_resp, 0, 1);
 
 /* Frames used in the ranging process. See NOTE 2,3 below. */
-static uint8 rx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W',
-                              'A',  0,    0, 0x61, 0,    0};
-static uint8 tx_resp_msg[] = {0x41, 0x88, 0,    0xCA, 0xDE, 'V', 'E',
-                              'W',  'A',  0x50, 0,    0,    0,   0,
-                              0,    0,    0,    0,    0,    0};
-static uint8 rx_final_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V',
-                               'E',  0x69, 0, 0,    0,    0,   0,   0,
-                               0,    0,    0, 0,    0,    0,   0,   0};
-static uint8 tx_report_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W',
-                                'A',  0xE3, 0, 0,    0,    0,   0,   0};
+static uint8 rx_poll_msg[POLL_MSG_LEN] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W',
+                                          'A',  0,    0, 0x61, 0,    0};
+static uint8 tx_resp_msg[RESP_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0x50,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0};
+static uint8 rx_final_msg[FINAL_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V', 'E', 0x69, 0, 0,
+    0,    0,    0, 0,    0,    0,   0,   0,   0,   0,    0, 0};
+static uint8 tx_report_msg[REPORT_MSG_LEN] = {
+    0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0xE3, 0, 0, 0, 0, 0, 0};
 
 #define RX_BUF_LEN MAX(POLL_MSG_LEN, FINAL_MSG_LEN)
 static uint8 rx_buffer[RX_BUF_LEN];
