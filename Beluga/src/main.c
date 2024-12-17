@@ -229,7 +229,9 @@ static void load_timeout(void) {
 static void load_tx_power(void) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
     set_tx_power((uint32_t)tx_power);
-    printf("  TX Power: 0x%08" PRIX32 " \r\n", tx_power);
+    printf("  ");
+    print_tx_power((uint32_t)tx_power);
+    printf("\r\n");
 }
 
 static void load_stream_mode(void) {
@@ -247,7 +249,9 @@ static void load_twr_mode(void) {
 static void load_out_format(void) {
     int32_t format = retrieveSetting(BELUGA_OUT_FORMAT);
     set_format_mode(format == 1);
-    printf("  Output Format: %s \r\n", (format == 1) ? "JSON" : "CSV");
+    printf("  ");
+    print_output_format(format);
+    printf("\r\n");
 }
 
 static void load_phr_mode(void) {
@@ -259,37 +263,18 @@ static void load_phr_mode(void) {
 static void load_data_rate(void) {
     enum uwb_datarate rate =
         (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
-    switch (rate) {
-    case UWB_DR_850K:
-        printf("  UWB Data Rate: 850 kHz \r\n");
-        break;
-    case UWB_DR_110K:
-        printf("  UWB Data Rate: 110 kHz \r\n");
-        break;
-    case UWB_DR_6M8:
-    default:
-        printf("  UWB Data Rate: 6.8MHz \r\n");
-        rate = UWB_DR_6M8;
-        break;
-    }
-
+    printf("  ");
+    rate = print_uwb_datarate(rate);
+    printf("\r\n");
     uwb_set_datarate(rate);
 }
 
 static void load_pulse_rate(void) {
     enum uwb_pulse_rate rate =
         (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
-    switch (rate) {
-    case UWB_PR_16M:
-        printf("  UWB Pulse Rate: 16MHz \r\n");
-        break;
-    case UWB_PR_64M:
-    default:
-        printf("  UWB Pulse Rate: 64MHz \r\n");
-        rate = UWB_PR_64M;
-        break;
-    }
-
+    printf("  ");
+    rate = print_pulse_rate(rate);
+    printf("\r\n");
     uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
 }
 
@@ -301,26 +286,9 @@ static void load_preamble_length(void) {
 
 static void load_pac_size(void) {
     int32_t pac = retrieveSetting(BELUGA_UWB_PAC);
-
-    switch ((enum uwb_pac)pac) {
-    case UWB_PAC8:
-        printf("  UWB PAC Size: 8 \r\n");
-        break;
-    case UWB_PAC16:
-        printf("  UWB PAC Size: 16 \r\n");
-        break;
-    case UWB_PAC32:
-        printf("  UWB PAC Size: 32 \r\n");
-        break;
-    case UWB_PAC64:
-        printf("  UWB PAC Size: 16 \r\n");
-        break;
-    default:
-        printf("  UWB PAC Size: 8 \r\n");
-        pac = (int32_t)UWB_PAC8;
-        break;
-    }
-
+    printf("  ");
+    pac = print_pac_size(pac);
+    printf("\r\n");
     set_pac_size((enum uwb_pac)pac);
 }
 
@@ -332,7 +300,9 @@ static void load_sfd_mode(void) {
 
 static void load_pan_id(void) {
     int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
-    printf("  UWB PAN ID: 0x%04" PRIX16 " \r\n", (uint16_t)pan_id);
+    printf("  ");
+    print_pan_id(pan_id);
+    printf("\r\n");
     set_initiator_pan_id((uint16_t)pan_id);
     set_responder_pan_id((uint16_t)pan_id);
 }

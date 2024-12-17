@@ -69,6 +69,10 @@ bool get_format_mode(void) { return format_mode; }
         }                                                                      \
     } while (0)
 
+void print_output_format(int32_t format) {
+    printf("Output Format: %s ", (format == 1) ? "JSON" : "CSV");
+}
+
 static void normal_print(void) {
     LOG_INF("Dumping all neighbors");
     if (format_mode == csv_mode) {

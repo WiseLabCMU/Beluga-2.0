@@ -7,6 +7,7 @@
 
 #include <zephyr/kernel.h>
 
+void print_output_format(int32_t format);
 void set_stream_mode(bool value);
 bool get_stream_mode(void);
 void set_format_mode(bool json);

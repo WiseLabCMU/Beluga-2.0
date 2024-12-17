@@ -122,7 +122,7 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * @param[in] settingstr The string representation of the setting
  * @param[in] callback An optional custom print function for the setting
  */
-#define READ_SETTING(argc, required, setting, settingstr, callback...)        \
+#define READ_SETTING(argc, required, setting, settingstr, callback...)         \
     COND_CODE_1(IS_EMPTY(callback),                                            \
                 (READ_SETTING_DEFAULT(argc, required, setting, settingstr)),   \
                 (READ_SETTING_CALLBACK(argc, required, setting, settingstr,    \
@@ -548,7 +548,7 @@ AT_CMD_DEFINE(TIMEOUT) {
  */
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
-    READ_SETTING(argc, 2, BELUGA_TX_POWER, "TX Power");
+    READ_SETTING(argc, 2, BELUGA_TX_POWER, "TX Power", print_tx_power);
     int32_t arg1, coarse_control, fine_control;
     bool value, success = strtoint32(argv[1], &arg1);
     uint32_t power, mask = UINT8_MAX, new_setting;
@@ -782,7 +782,8 @@ AT_CMD_DEFINE(TIME) {
  */
 AT_CMD_DEFINE(FORMAT) {
     LOG_INF("Running FORMAT command");
-    READ_SETTING(argc, 2, BELUGA_OUT_FORMAT, "Format Mode");
+    READ_SETTING(argc, 2, BELUGA_OUT_FORMAT, "Format Mode",
+                 print_output_format);
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
 
@@ -856,7 +857,8 @@ AT_CMD_DEFINE(PHR) {
  */
 AT_CMD_DEFINE(DATARATE) {
     LOG_INF("Running DATARATE command");
-    READ_SETTING(argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
+    READ_SETTING(argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate",
+                 print_uwb_datarate);
     int32_t rate;
     int retVal;
     bool success = strtoint32(argv[1], &rate);
@@ -890,7 +892,8 @@ AT_CMD_DEFINE(DATARATE) {
  */
 AT_CMD_DEFINE(PULSERATE) {
     LOG_INF("Running PULSERATE command");
-    READ_SETTING(argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
+    READ_SETTING(argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate",
+                 print_pulse_rate);
     int32_t rate;
     int retVal;
     bool success = strtoint32(argv[1], &rate);
@@ -958,7 +961,7 @@ AT_CMD_DEFINE(PREAMBLE) {
  */
 AT_CMD_DEFINE(PAC) {
     LOG_INF("Running PAC command");
-    READ_SETTING(argc, 2, BELUGA_UWB_PAC, "PAC Size");
+    READ_SETTING(argc, 2, BELUGA_UWB_PAC, "PAC Size", print_pac_size);
     int32_t pac_size;
     int retVal;
     bool success = strtoint32(argv[1], &pac_size);
@@ -1026,7 +1029,7 @@ AT_CMD_DEFINE(SFD) {
  */
 AT_CMD_DEFINE(PANID) {
     LOG_INF("Running PANID command");
-    READ_SETTING(argc, 2, BELUGA_PAN_ID, "PAN ID");
+    READ_SETTING(argc, 2, BELUGA_PAN_ID, "PAN ID", print_pan_id);
     int32_t pan_id;
     int retVal;
     bool success = strtoint32(argv[1], &pan_id);

@@ -43,6 +43,12 @@ enum uwb_pac { UWB_PAC8, UWB_PAC16, UWB_PAC32, UWB_PAC64 };
 
 enum uwb_sfd { UWB_STD_SFD, UWB_NSTD_SFD };
 
+void print_tx_power(uint32_t tx_power);
+enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate);
+enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate);
+int32_t print_pac_size(int32_t pac);
+void print_pan_id(uint32_t pan_id);
+
 int uwb_set_phr_mode(enum uwb_phr_mode mode);
 int uwb_set_datarate(enum uwb_datarate rate);
 int uwb_set_pulse_rate(enum uwb_pulse_rate rate);

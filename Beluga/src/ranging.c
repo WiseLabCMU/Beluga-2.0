@@ -12,6 +12,7 @@
 #include <responder.h>
 #include <spi.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
@@ -84,6 +85,67 @@ static struct task_wdt_attr watchdogAttr = {.period = 2000};
     if (get_uwb_led_state() == LED_UWB_ON) {                                   \
         return -EBUSY;                                                         \
     }
+
+void print_tx_power(uint32_t tx_power) {
+    printf("TX Power: 0x%08" PRIX32 " ", tx_power);
+}
+
+enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate) {
+    switch (rate) {
+    case UWB_DR_850K:
+        printf("Data Rate: 850 kHz ");
+        break;
+    case UWB_DR_110K:
+        printf("Data Rate: 110 kHz ");
+        break;
+    case UWB_DR_6M8:
+    default:
+        printf("Data Rate: 6.8MHz ");
+        rate = UWB_DR_6M8;
+        break;
+    }
+    return rate;
+}
+
+enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate) {
+    switch (rate) {
+    case UWB_PR_16M:
+        printf("Pulse Rate: 16MHz ");
+        break;
+    case UWB_PR_64M:
+    default:
+        printf("Pulse Rate: 64MHz ");
+        rate = UWB_PR_64M;
+        break;
+    }
+    return rate;
+}
+
+int32_t print_pac_size(int32_t pac) {
+    switch ((enum uwb_pac)pac) {
+    case UWB_PAC8:
+        printf("PAC Size: 8 ");
+        break;
+    case UWB_PAC16:
+        printf("PAC Size: 16 ");
+        break;
+    case UWB_PAC32:
+        printf("PAC Size: 32 ");
+        break;
+    case UWB_PAC64:
+        printf("PAC Size: 16 ");
+        break;
+    default:
+        printf("PAC Size: 8 ");
+        pac = (int32_t)UWB_PAC8;
+        break;
+    }
+    return pac;
+}
+
+void print_pan_id(uint32_t pan_id) {
+    printf("UWB PAN ID: 0x%04" PRIX16 " ", (uint16_t)pan_id);
+}
 
 int uwb_set_phr_mode(enum uwb_phr_mode mode) {
     CHECK_UWB_STATE();
