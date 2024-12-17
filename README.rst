@@ -272,11 +272,14 @@ TXPOWER
 .. code-block:: none
 
     AT+TXPOWER <mode>
+    AT+TXPOWER <stage> <coarse gain> <fine gain>
     AT+TXPOWER
 
 Determines the UWB transmitter power setting.
 No argument will return the current UWB transmitter power setting.
 This setting is saved in flash.
+
+One argument will set the power level to either the default power level or maximum power level.
 
 +-------------+------------------------+
 | mode        | Description            |
@@ -285,6 +288,41 @@ This setting is saved in flash.
 +-------------+------------------------+
 | 1           | Maximum power supply   |
 +-------------+------------------------+
+
+Three arguments allow for total control over the power setting. For example, if coarse gain is 2 and fine gain is 2, then the TX power will be 2.5 dB + 1.0 dB = 3.5 dB.
+
++-------------+-------+-------------------+
+| Parameter   | Value | Description       |
++=============+=======+===================+
+|             | 0     | BOOSTNORM         |
+|             +-------+-------------------+
+|             | 1     | BOOSTP500         |
+|    stage    +-------+-------------------+
+|             | 2     | BOOSTP250         |
+|             +-------+-------------------+
+|             | 3     | BOOSTP125         |
++-------------+-------+-------------------+
+|             | 0     | Off (No output)   |
+|             +-------+-------------------+
+|             | 1     | 0 dB Gain         |
+|             +-------+-------------------+
+| coarse gain | 2     | 2.5 dB Gain       |
+|             +-------+-------------------+
+|             | ⋮     | 2.5 dB Gain Steps |
+|             +-------+-------------------+
+|             | 7     | 15 dB Gain        |
++-------------+-------+-------------------+
+|             | 0     | 0.0 dB Gain       |
+|             +-------+-------------------+
+|             | 1     | 0.5 dB Gain       |
+|             +-------+-------------------+
+|  fine gain  | 2     | 1.0 dB Gain       |
+|             +-------+-------------------+
+|             | ⋮     | 0.5 dB Gain Steps |
+|             +-------+-------------------+
+|             | 31    | 15.5 dB gain      |
++-------------+-------+-------------------+
+
 
 .. note::
     Increasing transmitter power supply can help UWB to maximum range, but the maximum power supply exceeds
