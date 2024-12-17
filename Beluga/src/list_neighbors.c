@@ -2,6 +2,8 @@
 // Created by tom on 7/9/24.
 //
 
+#include <uart.h>
+
 #include <ble_app.h>
 #include <inttypes.h>
 #include <list_neighbors.h>
@@ -87,6 +89,10 @@ bool get_format_mode(void) { return format_mode; }
             }                                                                  \
         }                                                                      \
     } while (0)
+
+void print_output_format(int32_t format) {
+    printf("Output Format: %s ", (format == 1) ? "JSON" : "CSV");
+}
 
 static void normal_print(void) {
     LOG_INF("Dumping all neighbors");

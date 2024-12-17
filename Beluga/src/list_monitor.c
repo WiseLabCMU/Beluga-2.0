@@ -2,6 +2,8 @@
 // Created by tom on 7/9/24.
 //
 
+#include <uart.h>
+
 #include <ble_app.h>
 #include <initiator.h>
 #include <list_monitor.h>

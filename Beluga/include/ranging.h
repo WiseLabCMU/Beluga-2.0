@@ -9,6 +9,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* Maximum transmission power register value */
+#define TX_POWER_MAX 0x1F1F1F1F
+
 enum pgdelay_ch {
     ch1 = TC_PGDELAY_CH1,
     ch2 = TC_PGDELAY_CH2,
@@ -40,6 +43,12 @@ enum uwb_pac { UWB_PAC8, UWB_PAC16, UWB_PAC32, UWB_PAC64 };
 
 enum uwb_sfd { UWB_STD_SFD, UWB_NSTD_SFD };
 
+void print_tx_power(uint32_t tx_power);
+enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate);
+enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate);
+int32_t print_pac_size(int32_t pac);
+void print_pan_id(uint32_t pan_id);
+
 int uwb_set_phr_mode(enum uwb_phr_mode mode);
 int uwb_set_datarate(enum uwb_datarate rate);
 int uwb_set_pulse_rate(enum uwb_pulse_rate rate);
@@ -52,7 +61,7 @@ void set_twr_mode(bool value);
 bool get_twr_mode(void);
 void set_rate(uint32_t rate);
 uint32_t get_rate(void);
-void set_tx_power(bool power_max);
+void set_tx_power(uint32_t tx_power);
 
 void init_uwb(void);
 

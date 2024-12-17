@@ -1,201 +1,22 @@
 mainmenu "Beluga application"
 
-menu "Logger configurations"
-
-menu "App LEDs"
-module = APP_LEDS
-module-str = App LEDs
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "AT Commands"
-module = AT_COMMANDS
-module-str = AT commands
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "BLE Application"
-module = BLE_APP
-module-str = BLE application
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "List Monitor"
-module = LIST_MONITOR
-module-str = List monitor
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Neighbor Listing"
-module = NEIGHBOR_LISTING
-module-str = Neighbor listing module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Main Application"
-module = BELUGA_MAIN
-module-str = Beluga main
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "nRF21540 module"
-module = NRF21540_MODULE
-module-str = nRF21540 module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Power Manager"
-module = POWER_MANAGER
-module-str = Power manager
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Range Extension"
-module = RANGE_EXTENSION
-module-str = Range extension
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Ranging"
-module = RANGING_MODULE
-module-str = ranging module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Settings"
-module = SETTINGS_MODULE
-module-str = settings
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "SPI module"
-module = SPI_MODULE
-module-str = SPI module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Serial"
-module = SERIAL_MODULE
-module-str = serial module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Voltage Regulator"
-module = VOLTAGE_REG_MODULE
-module-str = Voltage regulator module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Watchdog"
-module = WATCHDOG_MODULE
-module-str = watchdog module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-endmenu
-
 menu "Beluga Configurations"
-menuconfig ENABLE_BELUGA_THREADS
-    bool "Enable threads for Beluga"
-    default y
 
-if ENABLE_BELUGA_THREADS
+rsource "./Kconfig.beluga_threads"
 
-menuconfig ENABLE_COMMANDS
-    bool "Enable commands for Beluga"
-    default n
+rsource "./Kconfig.uwb"
 
-if ENABLE_COMMANDS
-
-config BELUGA_COMMANDS_PRIO
-    int "Priority for commands thread"
-    depends on ENABLE_COMMANDS
-    default 8
-
-config COMMANDS_STACK_SIZE
-    int "Stack size (bytes) for commands thread"
-    depends on ENABLE_COMMANDS
-    default 1024
-endif
-
-menuconfig ENABLE_LIST
-    bool "Enable the list thread for Beluga"
-    default n
-
-if ENABLE_LIST
-config BELUGA_LIST_PRIO
-    int "Priority for list thread"
-    depends on ENABLE_LIST
-    default 8
-
-config LIST_STACK_SIZE
-    int "Stack size (bytes) for list thread"
-    depends on ENABLE_LIST
-    default 1024
-endif
-
-menuconfig ENABLE_RANGING
-    bool "Enable the ranging thread for Beluga"
-    default n
-
-if ENABLE_RANGING
-config BELUGA_RANGING_PRIO
-    int "Priority for ranging thread"
-    depends on ENABLE_RANGING
-    default 8
-
-config RANGING_STACK_SIZE
-    int "Stack size (bytes) for ranging thread"
-    depends on ENABLE_RANGING
-    default 1024
-endif
-
-menuconfig ENABLE_MONITOR
-    bool "Enable the monitor thread in Beluga"
-    default n
-
-if ENABLE_MONITOR
-config BELUGA_MONITOR_PRIO
-    int "Priority for monitor thread"
-    depends on ENABLE_MONITOR
-    default 8
-
-config MONITOR_STACK_SIZE
-    int "Stack size (bytes) for monitor task"
-    depends on ENABLE_MONITOR
-    default 1024
-endif
-
-menuconfig ENABLE_RESPONDER
-    bool "Enable the responder thread in Beluga"
-    default n
-
-if ENABLE_RESPONDER
-config BELUGA_RESPONDER_PRIO
-    int "Priority for responder thread"
-    depends on ENABLE_RESPONDER
-    default 7
-
-config RESPONDER_STACK_SIZE
-    int "Stack size (bytes) for responder task"
-    depends on ENABLE_RESPONDER
-    default 1024
-endif
-endif
-
-config ENABLE_BELUGA_UWB
-    bool "Enables DecaDriver library for UWB"
-    default y
-
-menu "Beluga LEDs"
-config BELUGA_LEDS
-    bool "Enable the LED driver"
-    default n
+choice "BELUGA_LED_INDICATOR_CHOICE"
+    prompt "LEDs are used to indicate states for"
+    default BELUGA_LEDS
 
 config BELUGA_BLE_LEDS
-    bool "Use the LEDs to indicate BLE states"
-    default n
-endmenu
+    bool "BLE states"
+
+config BELUGA_LEDS
+    bool "Beluga states"
+
+endchoice
 
 config BELUGA_RANGE_EXTENSION
     bool "Enable range extension for Beluga"
@@ -214,25 +35,12 @@ config UWB_LOGIC_CLK
     bool "UWB ranging exchange IDs"
     default n
 
-menu "Beluga Debugging"
-config DEBUG_BELUGA_CLOCK
-    bool "Debug oscillating crystals"
+config BELUGA_GATT
+    bool "Beluga GATT service [EXPERIMENTAL]"
     default n
+    select EXPERIMENTAL
 
-config BELUGA_RESET_REASON
-    bool "Print the reset reason"
-    select PRINTK
-    select HWINFO
-    default n
-
-config BELUGA_DUMP_CORE
-    bool "Dump the core on crashes"
-    select DEBUG_COREDUMP
-
-config BELUGA_EVAL_BLE_STRENGTH
-    bool "Evaluate the signal strength of BLE regardless if UWB is on or not"
-    default n
-endmenu
+rsource "./Kconfig.beluga_debug"
 
 config WDT_MAX_WINDOW
     int "Maximum window of the watchdog timer"

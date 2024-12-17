@@ -13,6 +13,8 @@
 
 #include <zephyr/logging/log.h>
 
+#include <deca_regs.h>
+
 LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
 
 #define DEFAULT_RATE          250
@@ -21,7 +23,7 @@ LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
 #define DEFAULT_LEDMODE       0
 #define DEFAULT_BOOTMODE      0
 #define DEFAULT_CHANNEL       5
-#define DEFAULT_TXPOWER       0
+#define DEFAULT_TXPOWER       TX_POWER_MAN_DEFAULT
 #define DEFAULT_TWR           1
 #define DEFAULT_OUT_FORMAT    0
 #define DEFAULT_AMPLIFICATION 0
@@ -31,6 +33,7 @@ LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
 #define DEFAULT_PREAMBLE      128
 #define DEFAULT_PAC           0 // 8
 #define DEFAULT_NSSFD         0 // Standard SFD
+#define DEFAULT_PAN_ID        0xDECA
 
 #if defined(CONFIG_SETTINGS_FILE)
 #include <zephyr/fs/fs.h>
@@ -51,7 +54,7 @@ static const int32_t default_settings[] = {
     DEFAULT_STREAMMODE, DEFAULT_TWR,           DEFAULT_LEDMODE,
     DEFAULT_OUT_FORMAT, DEFAULT_AMPLIFICATION, DEFAULT_PHR,
     DEFAULT_DATARATE,   DEFAULT_PULSERATE,     DEFAULT_PREAMBLE,
-    DEFAULT_PAC,        DEFAULT_NSSFD};
+    DEFAULT_PAC,        DEFAULT_NSSFD,         DEFAULT_PAN_ID};
 
 static struct beluga_settings_dict settingValues[] = {
     {"id", DEFAULT_ID_SETTING},
@@ -71,6 +74,7 @@ static struct beluga_settings_dict settingValues[] = {
     {"preamble", DEFAULT_PREAMBLE},
     {"pac", DEFAULT_PAC},
     {"nssfd", DEFAULT_NSSFD},
+    {"pan_id", DEFAULT_PAN_ID},
 };
 
 #define LONGEST_SETTING_NAME_LEN SETTINGS_MAX_NAME_LEN

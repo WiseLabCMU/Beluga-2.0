@@ -12,6 +12,7 @@
 #include <responder.h>
 #include <spi.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
@@ -23,8 +24,23 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
 
-/* Maximum transmission power register value */
-#define TX_POWER_MAX 0x1F1F1F1F
+#if !defined(CONFIG_UWB_INIT_RX_TIMEOUT)
+#define UWB_INIT_TIMEOUT 2000
+#else
+#define UWB_INIT_TIMEOUT CONFIG_UWB_INIT_RX_TIMEOUT
+#endif
+
+#if !defined(CONFIG_UWB_RESP_RX_DELAY)
+#define UWB_RESP_RX_DELAY 0
+#else
+#define UWB_RESP_RX_DELAY CONFIG_UWB_RESP_RX_DELAY
+#endif
+
+#if !defined(CONFIG_UWB_RESP_RX_TIMEOUT)
+#define UWB_RESP_RX_TIMEOUT 0
+#else
+#define UWB_RESP_RX_TIMEOUT CONFIG_UWB_RESP_RX_TIMEOUT
+#endif
 
 #define SUSPEND_RESPONDER_TASK                                                 \
     do {                                                                       \
@@ -69,6 +85,67 @@ static struct task_wdt_attr watchdogAttr = {.period = 2000};
     if (get_uwb_led_state() == LED_UWB_ON) {                                   \
         return -EBUSY;                                                         \
     }
+
+void print_tx_power(uint32_t tx_power) {
+    printf("TX Power: 0x%08" PRIX32 " ", tx_power);
+}
+
+enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate) {
+    switch (rate) {
+    case UWB_DR_850K:
+        printf("Data Rate: 850 kHz ");
+        break;
+    case UWB_DR_110K:
+        printf("Data Rate: 110 kHz ");
+        break;
+    case UWB_DR_6M8:
+    default:
+        printf("Data Rate: 6.8MHz ");
+        rate = UWB_DR_6M8;
+        break;
+    }
+    return rate;
+}
+
+enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate) {
+    switch (rate) {
+    case UWB_PR_16M:
+        printf("Pulse Rate: 16MHz ");
+        break;
+    case UWB_PR_64M:
+    default:
+        printf("Pulse Rate: 64MHz ");
+        rate = UWB_PR_64M;
+        break;
+    }
+    return rate;
+}
+
+int32_t print_pac_size(int32_t pac) {
+    switch ((enum uwb_pac)pac) {
+    case UWB_PAC8:
+        printf("PAC Size: 8 ");
+        break;
+    case UWB_PAC16:
+        printf("PAC Size: 16 ");
+        break;
+    case UWB_PAC32:
+        printf("PAC Size: 32 ");
+        break;
+    case UWB_PAC64:
+        printf("PAC Size: 16 ");
+        break;
+    default:
+        printf("PAC Size: 8 ");
+        pac = (int32_t)UWB_PAC8;
+        break;
+    }
+    return pac;
+}
+
+void print_pan_id(uint32_t pan_id) {
+    printf("UWB PAN ID: 0x%04" PRIX16 " ", (uint16_t)pan_id);
+}
 
 int uwb_set_phr_mode(enum uwb_phr_mode mode) {
     CHECK_UWB_STATE();
@@ -299,12 +376,8 @@ int set_uwb_channel(uint32_t channel) {
     return 0;
 }
 
-void set_tx_power(bool power_max) {
-    if (power_max) {
-        config_tx.power = TX_POWER_MAX;
-    } else {
-        config_tx.power = TX_POWER_MAN_DEFAULT;
-    }
+void set_tx_power(uint32_t tx_power) {
+    config_tx.power = tx_power;
     dwt_configuretxrf(&config_tx);
 }
 
@@ -357,15 +430,15 @@ void init_uwb(void) {
  */
 static void init_reconfig() {
     dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
-    dwt_setrxtimeout(2000);
+    dwt_setrxtimeout(UWB_INIT_TIMEOUT);
 }
 
 /**
  * @brief Reconfig UWB transmitter as a responder
  */
 static void resp_reconfig() {
-    dwt_setrxaftertxdelay(0);
-    dwt_setrxtimeout(0);
+    dwt_setrxaftertxdelay(UWB_RESP_RX_DELAY);
+    dwt_setrxtimeout(UWB_RESP_RX_TIMEOUT);
 }
 
 NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
@@ -442,7 +515,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
                     seen_list[curr_index].exchange_id = logic_clk;
 #endif // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
 
-                    // TODO: Update BLE value transfer to phone
+                    update_ble_service(seen_list[curr_index].UUID, range);
                 }
 
                 curr_index += 1;
