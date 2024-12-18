@@ -304,7 +304,7 @@ class BelugaSerial:
                     self._command_sent.clear()
                     self._response_q.put(lines[i])
                     i += 1
-                elif lines[i].startswith('Node On: Firmware version'):
+                elif lines[i].startswith('Node On: '):
                     # Node just rebooted
                     # Clear ranges and neighbors since the timestamps are wrong now
                     self._ranges_queue.clear()
