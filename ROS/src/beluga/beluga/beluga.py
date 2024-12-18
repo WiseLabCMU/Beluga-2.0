@@ -21,6 +21,7 @@ MS_CONVERSION_FACTOR = 1000000
 
 class BelugaPublisherService(Node):
     DEFAULT_CONFIGS = {
+        "format": 1,
         "boot mode": 2,
         "poll rate": 100,
         "channel": 5,
@@ -29,7 +30,6 @@ class BelugaPublisherService(Node):
         "stream mode": 1,
         "twr mode": 1,
         "led mode": 0,
-        "format": 1,
         "range extend": 0,
         "uwb data rate": 0,
         "uwb preamble": 128,
