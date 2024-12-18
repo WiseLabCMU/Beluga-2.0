@@ -104,7 +104,9 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  */
 #define READ_SETTING_CALLBACK(argc, required, setting, settingstr, callback)   \
     do {                                                                       \
-        if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
+        if (get_format_mode()) {                                               \
+            READ_SETTING_DEFAULT(argc, required, setting, settingstr);         \
+        } else if ((uint16_t)(argc) < (uint16_t)(required)) {                  \
             int32_t _setting = retrieveSetting(setting);                       \
             callback(_setting);                                                \
             OK;                                                                \
