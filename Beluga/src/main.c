@@ -389,7 +389,7 @@ int main(void) {
         return 1;
     }
 
-    LED_INIT;
+    LED_INIT();
 
     if (configure_watchdog_timer() < 0) {
         printk("Failed to configure watchdog timer\n");
