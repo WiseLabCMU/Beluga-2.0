@@ -136,6 +136,14 @@ int set_initiator_pan_id(uint16_t id) {
     return 0;
 }
 
+/**
+ * @brief Sets the destination address (The node being ranged to) in the
+ * initiator messages.
+ *
+ * @param[in] id The destination address
+ *
+ * @note This sets the source address for the messages being received.
+ */
 static void set_destination(uint16_t id) {
     set_dest_id(id, tx_poll_msg);
     set_src_id(id, rx_resp_msg);
@@ -156,8 +164,9 @@ static void set_exchange_id(void) {
 #define update_exchange(x)                                                     \
     do {                                                                       \
         if ((x) != NULL) {                                                     \
-            *(x) = exchange_id++;                                              \
+            *(x) = exchange_id;                                                \
         }                                                                      \
+        exchange_id++;                                                         \
     } while (0)
 #else
 #define set_exchange_id()  (void)0
