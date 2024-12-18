@@ -1,8 +1,17 @@
-//
-// Created by tom on 7/9/24.
-//
-
-#include <uart.h>
+/**
+ * @file list_monitor.c
+ *
+ * @brief List monitor module for neighbor node management.
+ *
+ * This module is responsible for monitoring and managing a list of neighboring
+ * devices. It handles evicting timed out neighbors, sorting the list by RSSI,
+ * and ensuring the list is up-to-date by periodically checking the nodes.
+ *
+ * @date 7/9/2024
+ *
+ * @author WiSeLab CMU
+ * @author Tom Schmitz
+ */
 
 #include <ble_app.h>
 #include <initiator.h>
@@ -16,73 +25,145 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+/**
+ * Logger for the list monitor
+ */
 LOG_MODULE_REGISTER(list_monitor, CONFIG_LIST_MONITOR_LOG_LEVEL);
 
-#define LIST_SORT_PERIOD_S     5
+/**
+ * The number of cycles that are needed before the list gets sorted if there
+ * have been no neighbor evictions or additions
+ */
+#define LIST_SORT_PERIOD_S 5
+
+/**
+ * The period of the list monitor task
+ */
 #define LIST_MONITOR_PERIOD_MS 1000
 
-#define ENABLE_NODE_ADD_SEM    0
+/**
+ * Routine to suspend neighbor scanning
+ */
+#define SUSPEND_NEIGHBOR_SCANNING() disable_bluetooth()
 
-K_MUTEX_DEFINE(timeout_mutex);
+/**
+ * Routine to resume neighbor scanning
+ */
+#define RESUME_NEIGHBOR_SCANNING() enable_bluetooth()
 
-#if ENABLE_NODE_ADD_SEM
-K_SEM_DEFINE(node_add_sem, 0, 1);
-#define SEM_NODE_TAKE k_sem_take(&node_add_sem, K_FOREVER)
-#define SEM_NODE_GIVE k_sem_give(&node_add_sem)
-#else
-#define SEM_NODE_TAKE (void)0
-#define SEM_NODE_GIVE (void)0
-#endif
-
+/**
+ * Number of milliseconds allowed to elapse before evicting a neighbor
+ */
 static uint64_t timeout = UINT64_C(9000);
+
+/**
+ * Flag indicating if there was a neighbor addition
+ */
 static bool _node_added = false;
 
-void set_node_timeout(uint32_t value) {
-    k_mutex_lock(&timeout_mutex, K_FOREVER);
-    timeout = value;
-    k_mutex_unlock(&timeout_mutex);
-}
+/**
+ * @brief Set the timeout value for node eviction.
+ *
+ * @param value The new timeout value in milliseconds.
+ */
+void set_node_timeout(uint32_t value) { timeout = value; }
 
+/**
+ * @brief Get the current timeout value for node eviction.
+ *
+ * @return The current timeout value in milliseconds.
+ */
 uint64_t get_node_timeout(void) {
     uint64_t retVal;
-    k_mutex_lock(&timeout_mutex, K_FOREVER);
     retVal = timeout;
-    k_mutex_unlock(&timeout_mutex);
-    return retVal;
-}
-
-void node_added(void) {
-    SEM_NODE_TAKE;
-    _node_added = true;
-    SEM_NODE_GIVE;
-}
-
-static void reset_node_added(void) {
-    SEM_NODE_TAKE;
-    _node_added = false;
-    SEM_NODE_GIVE;
-}
-
-bool check_node_added(void) {
-    bool retVal;
-    SEM_NODE_TAKE;
-    retVal = _node_added;
-    SEM_NODE_GIVE;
     return retVal;
 }
 
 /**
- * @brief Task to check nodes eviction and re-sorting
+ * @brief Mark that a new node has been added.
+ */
+void node_added(void) { _node_added = true; }
+
+/**
+ * @brief Resets the flag indicating that a new node has been added
+ */
+static void reset_node_added(void) { _node_added = false; }
+
+bool check_node_added(void) {
+    bool retVal;
+    retVal = _node_added;
+    return retVal;
+}
+
+/**
+ * @brief Evict expired neighbor nodes from the list.
  *
- * @param[in] pvParameter   Pointer that will be used as the parameter for the
- * task.
+ * Checks each neighbor in the list and removes any neighbors that have not been
+ * scanned by BLE recently.
+ *
+ * @return `true` if any nodes were removed
+ * @return `false` otherwise
+ */
+static bool evict_nodes(void) {
+    bool removed = false;
+
+    for (size_t x = 0; x < MAX_ANCHOR_COUNT; x++) {
+        if (seen_list[x].UUID != 0) {
+            if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
+                LOG_INF("Removing node %" PRId16, seen_list[x].UUID);
+                if (get_format_mode()) {
+                    printf("rm %" PRId16 "\r\n", seen_list[x].UUID);
+                }
+                removed = true;
+                memset(&seen_list[x], 0, sizeof(seen_list[0]));
+            }
+        }
+    }
+
+    return removed;
+}
+
+/**
+ * @brief Sorts the neighbors list by RSSI value in descending order.
+ */
+static void sort_nodes(void) {
+    SUSPEND_NEIGHBOR_SCANNING();
+
+    for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
+        for (int k = j + 1; k < MAX_ANCHOR_COUNT; k++) {
+            if (seen_list[j].RSSI < seen_list[k].RSSI) {
+                node A = seen_list[j];
+                seen_list[j] = seen_list[k];
+                seen_list[k] = A;
+            }
+        }
+    }
+
+    reset_node_added();
+    RESUME_NEIGHBOR_SCANNING();
+}
+
+/**
+ * @brief Task that maintains the neighbor list.
+ *
+ * Task that checks for neighbors that have timed out and re-sorts the neighbors
+ * list.
+ *
+ * This is the main function for the monitor task that runs periodically to
+ * check for expired neighbors, re-sort the list, and ensure the system is
+ * running smoothly. It uses a watchdog to ensure the task operates correctly
+ * and is executed periodically.
+ *
+ * @param p1 Unused parameter.
+ * @param p2 Unused parameter.
+ * @param p3 Unused parameter.
  */
 NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
     uint32_t count = 0;
-    bool removed = false;
+    bool removed;
     struct task_wdt_attr watchdogAttr = {.period = 3000};
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
@@ -99,45 +180,13 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
         if (k_sem_take(&k_sus_init, K_NO_WAIT) < 0) {
             continue;
         }
-        removed = false;
-        count += 1;
+        BOUND_INCREMENT(count, LIST_SORT_PERIOD_S);
 
-        // Check for timeout eviction
-        for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
-            if (seen_list[x].UUID != 0) {
-                if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
-                    LOG_INF("Removing node %" PRId16, seen_list[x].UUID);
-                    if (get_format_mode()) {
-                        printf("rm %" PRId16 "\r\n", seen_list[x].UUID);
-                    }
-                    removed = true;
-                    memset(&seen_list[x], 0, sizeof(seen_list[0]));
-                }
-            }
-        }
+        removed = evict_nodes();
 
-        // Re-sort seen list by RSSI value when a node is removed, added, or a
-        // period of time
-        if (removed || check_node_added() ||
-            ((count % LIST_SORT_PERIOD_S) == 0)) {
+        if (removed || check_node_added() || count == 0) {
             LOG_INF("Sorting list");
-            disable_bluetooth();
-
-            for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
-                for (int k = j + 1; k < MAX_ANCHOR_COUNT; k++) {
-                    if (seen_list[j].RSSI < seen_list[k].RSSI) {
-                        node A = seen_list[j];
-                        seen_list[j] = seen_list[k];
-                        seen_list[k] = A;
-                    }
-                }
-            }
-
-            // Resume scanning/building up neighbor list
-            reset_node_added();
-            removed = false;
-            count = 0;
-            enable_bluetooth();
+            sort_nodes();
         }
 
         k_sem_give(&k_sus_init);
@@ -145,10 +194,24 @@ NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
 }
 
 #if ENABLE_THREADS && ENABLE_MONITOR
+/**
+ * List monitor stack allocation
+ */
 K_THREAD_STACK_DEFINE(monitor_stack, CONFIG_MONITOR_STACK_SIZE);
+
+/**
+ * Thread data for the list monitor
+ */
 static struct k_thread monitor_data;
+
+/**
+ * List monitor thread ID
+ */
 static k_tid_t monitor_task_id;
 
+/**
+ * @brief Initializes and starts the list monitor thread
+ */
 void init_monitor_thread(void) {
     monitor_task_id = k_thread_create(&monitor_data, monitor_stack,
                                       K_THREAD_STACK_SIZEOF(monitor_stack),
@@ -158,5 +221,9 @@ void init_monitor_thread(void) {
     LOG_INF("Started monitor");
 }
 #else
+/**
+ * @brief Placeholder for the initialization function for when the list monitor
+ * is disabled.
+ */
 void init_monitor_thread(void) { LOG_INF("Monitor disabled"); }
 #endif
