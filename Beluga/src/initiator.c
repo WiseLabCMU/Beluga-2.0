@@ -92,7 +92,6 @@ static uint8 rx_buffer[RX_BUF_LEN];
  */
 #define POLL_RX_TO_RESP_TX_DLY_UUS 2000
 
-/* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 /**
  * This is the delay from the end of the frame transmission to the enable of the
  * receiver, as programmed for the DW1000's wait for response feature.
@@ -123,7 +122,8 @@ int set_initiator_id(uint16_t id) {
  * @brief Sets the personal area network (PAN) ID for the initiator messages
  *
  * @param[in] id
- * @return
+ * @return 0 upon success
+ * @return -EBUSY if UWB is active
  */
 int set_initiator_pan_id(uint16_t id) {
     CHECK_UWB_ACTIVE();
@@ -152,8 +152,14 @@ static void set_destination(uint16_t id) {
 }
 
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+/**
+ * The ID associated with a ranging exchange.
+ */
 static uint32_t exchange_id = UINT32_C(0);
 
+/**
+ * @brief Updates each of the messages with the appropriate exchange ID.
+ */
 static void set_exchange_id(void) {
     SET_EXCHANGE_ID(tx_poll_msg + LOGIC_CLK_OFFSET, exchange_id);
     SET_EXCHANGE_ID(rx_resp_msg + LOGIC_CLK_OFFSET, exchange_id);
@@ -161,6 +167,11 @@ static void set_exchange_id(void) {
     SET_EXCHANGE_ID(rx_report_msg + LOGIC_CLK_OFFSET, exchange_id);
 }
 
+/**
+ * Saves the exchange ID in a pointer and updates the ID for the next run.
+ *
+ * @param[out] x The pointer to save the exchange ID in
+ */
 #define update_exchange(x)                                                     \
     do {                                                                       \
         if ((x) != NULL) {                                                     \
@@ -169,10 +180,23 @@ static void set_exchange_id(void) {
         exchange_id++;                                                         \
     } while (0)
 #else
+/**
+ * Placeholder for when the logic clock is disabled.
+ */
 #define set_exchange_id()  (void)0
+
+/**
+ * Placeholder for when the logic clock is disabled.
+ */
 #define update_exchange(x) (void)0
 #endif
 
+/**
+ * @brief Sends a poll message to the node being ranged to.
+ *
+ * @return 0 upon success
+ * @return -EBADMSG if transmission failed
+ */
 static int send_poll(void) {
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
     dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg, 0);
@@ -191,6 +215,14 @@ static int send_poll(void) {
     return 0;
 }
 
+/**
+ * @brief Waits for a response from the node being ranged to assuming the
+ * two-way/double-sided ranging scheme is being used.
+ *
+ * @return 0 upon success
+ * @return -EBADMSG if there was an rx error, rx timeout, or the message
+ * received did not match the expected message
+ */
 static int ds_rx_response(void) {
     uint32 status_reg, frame_len;
 
@@ -221,6 +253,12 @@ static int ds_rx_response(void) {
     return 0;
 }
 
+/**
+ * @brief Sends the final message to the node being ranged to.
+ *
+ * @return 0 upon success
+ * @return -ETIMEDOUT if transmission failed
+ */
 static int send_final(void) {
     uint64 poll_tx_ts, resp_rx_ts;
     uint64 ts_replyA_end;
@@ -256,6 +294,17 @@ static int send_final(void) {
     return 0;
 }
 
+/**
+ * @brief Waits for and receives the report message from the node being ranged
+ * to. Additionally calculates the distance between the two nodes from the
+ * payload in the report.
+ *
+ * @param[out] distance The estimated distance between the two nodes
+ *
+ * @return 0 upon success
+ * @return -EBADMSG if there was an rx error, rx timeout, or the message
+ * received did not match the expected message
+ */
 static int rx_report(double *distance) {
     uint32 status_reg, frame_len;
     uint32_t msg_tof_dtu;
@@ -290,8 +339,30 @@ static int rx_report(double *distance) {
     return 0;
 }
 
+/**
+ * @brief Initiates a two-way/double-sided ranging measurement to a certain
+ * node.
+ *
+ * @param[in] id The node to range to
+ * @param[out] distance The estimated distance between the nodes
+ * @param[out] logic_clock The ID associated with the successful exchange.
+ *
+ * @return 0 upon a successful ranging run
+ * @return -EINVAL if distance parameter is NULL
+ * @return negative error code otherwise
+ *
+ * @note logic_clock will be updated after a successful two-way/double-sided
+ * ranging exchange. If an error occurred, then logic_clock will not be updated
+ * and thus will retain its original value. Also, if logic_clock is NULL, it is
+ * assumed that the logic_clock output is not desired and the run will still be
+ * initiated.
+ */
 int ds_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
     int err;
+
+    if (distance == NULL) {
+        return -EINVAL;
+    }
 
     set_destination(id);
     set_exchange_id();
@@ -317,6 +388,17 @@ int ds_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
     return 0;
 }
 
+/**
+ * @brief Waits for a response from the node being ranged to assuming the
+ * single-sided ranging scheme is being used. Additionally calculates the
+ * estimated distance between the nodes.
+ *
+ * @param[out] distance The estimated distance between the nodes
+ *
+ * @return 0 upon success
+ * @return -EBADMSG if there was an rx error, rx timeout, or the message
+ * received did not match the expected message
+ */
 static int ss_rx_response(double *distance) {
     uint32_t status_reg, frame_len, poll_tx_ts, resp_rx_ts, poll_rx_ts,
         resp_tx_ts;
@@ -368,8 +450,29 @@ static int ss_rx_response(double *distance) {
     return 0;
 }
 
+/**
+ * @brief Initiates a single-sided ranging measurement to a certain node.
+ *
+ * @param[in] id The node to range to
+ * @param[out] distance The estimated distance between the nodes
+ * @param[out] logic_clock The ID associated with the successful exchange.
+ *
+ * @return 0 upon a successful ranging run
+ * @return -EINVAL if distance parameter is NULL
+ * @return negative error code otherwise
+ *
+ * @note logic_clock will be updated after a successful two-way/double-sided
+ * ranging exchange. If an error occurred, then logic_clock will not be updated
+ * and thus will retain its original value. Also, if logic_clock is NULL, it is
+ * assumed that the logic_clock output is not desired and the run will still be
+ * initiated.
+ */
 int ss_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
     int err;
+
+    if (distance == NULL) {
+        return -EINVAL;
+    }
 
     set_destination(id);
     set_exchange_id();
