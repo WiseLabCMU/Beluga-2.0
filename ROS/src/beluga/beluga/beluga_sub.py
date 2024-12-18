@@ -16,10 +16,9 @@ class BelugaSubscriber(Node):
             sub_topic,
             self.listener_callback,
             history_depth)
-        self.subscription
 
     def listener_callback(self, msg):
-        self.get_logger().info('I heard:\n' + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}}}' for x in msg.neighbors))
+        self.get_logger().info('I heard:\n' + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}, "EXCHANGE": {x.exchange}}}' for x in msg.neighbors))
 
 
 def main(args=None):
