@@ -89,6 +89,11 @@ void node_added(void) { _node_added = true; }
  */
 static void reset_node_added(void) { _node_added = false; }
 
+/**
+ * @brief Checks if a node has been added to the list
+ * @return `true` if a node has been added
+ * @return `false` if no nodes have been added
+ */
 bool check_node_added(void) {
     bool retVal;
     retVal = _node_added;
@@ -158,7 +163,7 @@ static void sort_nodes(void) {
  * @param p2 Unused parameter.
  * @param p3 Unused parameter.
  */
-NO_RETURN void monitor_task_function(void *p1, void *p2, void *p3) {
+NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
