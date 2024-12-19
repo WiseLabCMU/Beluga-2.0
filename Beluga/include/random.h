@@ -1,20 +1,27 @@
-/*! ----------------------------------------------------------------------------
- *  @file   flash.h
+/**
+ * @file random.h
  *
- *  @brief  Helper functions to generate random delay number for ALOHA MAC
- * protocol --Header file
+ * @brief Helper functions to generate random delay number for ALOHA MAC
+ * protocol
  *
- *  @date   2020/06
+ * @data 2020/06
  *
- *  @author WiseLab-CMU
+ * @author WiSeLab CMU
  */
 
-#ifndef _RANDOM_H_
-#define _RANDOM_H_
+#ifndef ALOHA_MAC_RANDOM_H_
+#define ALOHA_MAC_RANDOM_H_
 
 #include <stdint.h>
-#define MIN_DELAY 10
 
+/**
+ * @brief Get an exponential distribution random number determined by the
+ * polling frequency
+ *
+ * @param[in] freq The polling frequency
+ *
+ * @return An exponential distribution random number
+ */
 uint16_t get_rand_num_exp_collision(uint32_t freq);
 
-#endif
+#endif // ALOHA_MAC_RANDOM_H_
