@@ -2,8 +2,6 @@
 // Created by tom on 8/5/24.
 //
 
-#include <uart.h>
-
 #include <app_leds.h>
 #include <range_extension.h>
 #include <stdio.h>
@@ -21,8 +19,6 @@ LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
 
 #if DT_NODE_HAS_PROP(SKY_GPIOS, ant_sel_gpios)
 #define ANTENNA_SELECT 1
-#else
-#define ANTENNA_SELECT 0
 #endif
 
 #if !DT_NODE_HAS_PROP(SKY_GPIOS, csd_gpios)
@@ -31,163 +27,124 @@ LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
 
 #if DT_NODE_HAS_PROP(SKY_GPIOS, cps_gpios)
 #define RF_BYPASS 1
-#else
-#define RF_BYPASS 0
 #endif
 
 #if DT_NODE_HAS_PROP(SKY_GPIOS, chl_gpios)
 #define HIGHLOW_POWER 1
-#else
-#define HIGHLOW_POWER 0
 #endif
+
+#define _GEN_STRUCT_MEMBER(member) const struct gpio_dt_spec member
+
+#define GEN_STRUCT_MEMBER(enabled, member)                                     \
+    COND_CODE_1(IS_ENABLED(enabled), (_GEN_STRUCT_MEMBER(member)), ())
+
+#define _INIT_STRUCT_MEMBER(member, nodelabel, prop)                           \
+    .member = GPIO_DT_SPEC_GET(nodelabel, prop)
+
+#define INIT_STRUCT_MEMBER(enabled, member, nodelabel, prop)                   \
+    COND_CODE_1(IS_ENABLED(enabled),                                           \
+                (_INIT_STRUCT_MEMBER(member, nodelabel, prop)), ())
 
 static struct fem_gpios {
-#if ANTENNA_SELECT
-    const struct gpio_dt_spec ant_sel;
-#endif
-    const struct gpio_dt_spec shutdown;
-#if RF_BYPASS
-    const struct gpio_dt_spec bypass;
-#endif
-#if HIGHLOW_POWER
-    const struct gpio_dt_spec power;
-#endif
+    GEN_STRUCT_MEMBER(ANTENNA_SELECT, ant_sel);
+    GEN_STRUCT_MEMBER(1, shutdown);
+    GEN_STRUCT_MEMBER(RF_BYPASS, bypass);
+    GEN_STRUCT_MEMBER(HIGHLOW_POWER, power);
 } _fem_gpios = {
-#if ANTENNA_SELECT
-    .ant_sel = GPIO_DT_SPEC_GET(SKY_GPIOS, ant_sel_gpios),
-#endif
-    .shutdown = GPIO_DT_SPEC_GET(SKY_GPIOS, csd_gpios),
-#if RF_BYPASS
-    .bypass = GPIO_DT_SPEC_GET(SKY_GPIOS, cps_gpios),
-#endif
-#if HIGHLOW_POWER
-    .power = GPIO_DT_SPEC_GET(SKY_GPIOS, chl_gpios),
-#endif
+    INIT_STRUCT_MEMBER(ANTENNA_SELECT, ant_sel, SKY_GPIOS, ant_sel_gpios),
+    INIT_STRUCT_MEMBER(1, shutdown, SKY_GPIOS, csd_gpios),
+    INIT_STRUCT_MEMBER(RF_BYPASS, bypass, SKY_GPIOS, cps_gpios),
+    INIT_STRUCT_MEMBER(HIGHLOW_POWER, power, SKY_GPIOS, chl_gpios),
 };
 
-#define INIT_FEM_PIN(container, attr, config)                                  \
+#define _INIT_FEM_PIN(container, attr, config)                                 \
     do {                                                                       \
         int err;                                                               \
         if (!device_is_ready((container).attr.port)) {                         \
             LOG_ERR(#attr " was not ready\n");                                 \
-            return false;                                                      \
+            return -ENODEV;                                                    \
         }                                                                      \
         err = gpio_pin_configure_dt(&(container).attr, config);                \
         if (err) {                                                             \
             LOG_ERR(#attr " configure (%d)\n", err);                           \
-            return false;                                                      \
+            return err;                                                        \
         }                                                                      \
     } while (0)
 
-bool init_range_extension(void) {
-#if ANTENNA_SELECT
-    INIT_FEM_PIN(_fem_gpios, ant_sel, GPIO_OUTPUT_INACTIVE);
-#endif
+#define INIT_FEM_PIN(enabled, container, attr, config)                         \
+    COND_CODE_1(IS_ENABLED(enabled), (_INIT_FEM_PIN(container, attr, config)), \
+                ())
 
-    INIT_FEM_PIN(_fem_gpios, shutdown, GPIO_OUTPUT_LOW);
-
-#if RF_BYPASS
-    INIT_FEM_PIN(_fem_gpios, bypass, GPIO_OUTPUT_HIGH);
-#endif
-
-#if HIGHLOW_POWER
-    INIT_FEM_PIN(_fem_gpios, power, GPIO_OUTPUT_LOW);
-#endif
-
-    return true;
+int init_range_extension(void) {
+    INIT_FEM_PIN(ANTENNA_SELECT, _fem_gpios, ant_sel, GPIO_OUTPUT_INACTIVE);
+    INIT_FEM_PIN(1, _fem_gpios, shutdown, GPIO_OUTPUT_LOW);
+    INIT_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, GPIO_OUTPUT_HIGH);
+    INIT_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, GPIO_OUTPUT_LOW);
+    return 0;
 }
 
-bool update_power_mode(enum ble_power_mode mode) {
-    bool retVal = true;
-    int err;
+#define GEN_EXTRA_ACTION(...)                                                  \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (GET_ARG_N(1, __VA_ARGS__)))
+
+#define _UPDATE_FEM_PIN(container, attr, value, ret, ...)                      \
+    do {                                                                       \
+        int err = gpio_pin_set_dt(&(container).attr, (value));                 \
+        if (err != 0) {                                                        \
+            LOG_ERR("Failed to update " #attr " to " #value " (err %d)", err); \
+            (ret) = err;                                                       \
+        }                                                                      \
+        GEN_EXTRA_ACTION(__VA_ARGS__);                                         \
+    } while (0)
+
+#define FEM_PIN_NOTSUP(ret)                                                    \
+    do {                                                                       \
+        printf("Not supported\r\n");                                           \
+        (ret) = -ENOTSUP;                                                      \
+    } while (0)
+
+#define UPDATE_FEM_PIN(enabled, container, attr, value, ret, ...)              \
+    COND_CODE_1(IS_ENABLED(enabled),                                           \
+                (_UPDATE_FEM_PIN(container, attr, value, ret, __VA_ARGS__)),   \
+                (FEM_PIN_NOTSUP(ret)))
+
+int update_power_mode(enum ble_power_mode mode) {
+    int ret = 0;
     int uwb_pa = 0;
     bool ble_state = save_and_disable_bluetooth();
 
     switch (mode) {
     case POWER_MODE_BYPASS: {
-#if RF_BYPASS
-        err = gpio_pin_set_dt(&_fem_gpios.bypass, 1);
-
-        if (err) {
-            printk("Failed to set bypass mode\r\n");
-            retVal = false;
-        }
-
-        uwb_pa = 0;
-#else
-        printf("Not supported\r\n");
-        retVal = false;
-#endif
+        UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 1, ret, uwb_pa = 0);
         break;
     }
     case POWER_MODE_LOW: {
-#if RF_BYPASS
-        err = gpio_pin_set_dt(&_fem_gpios.bypass, 0);
-
-        if (err) {
-            printk("Failed to set bypass mode\r\n");
-            retVal = false;
-        }
-#endif
-#if HIGHLOW_POWER
-        err = gpio_pin_set_dt(&_fem_gpios.power, 0);
-
-        if (err) {
-            printk("Failed to set bypass mode\r\n");
-            retVal = false;
-        }
-
-        uwb_pa = 1;
-#else
-        printf("Not implemented\r\n");
-        retVal = false;
-#endif
+        UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
+        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, 0, ret, uwb_pa = 1);
         break;
     }
     case POWER_MODE_HIGH: {
-#if RF_BYPASS
-        err = gpio_pin_set_dt(&_fem_gpios.bypass, 0);
-
-        if (err) {
-            printk("Failed to set bypass mode\r\n");
-            retVal = false;
-            break;
-        }
-#endif
-#if HIGHLOW_POWER
-        err = gpio_pin_set_dt(&_fem_gpios.power, 1);
-
-        if (err) {
-            printk("Failed to set bypass mode\r\n");
-            retVal = false;
-            break;
-        }
-
-        uwb_pa = 1;
-#else
-        printf("Not implemented\r\n");
-        retVal = false;
-#endif
+        UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
+        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, 1, ret, uwb_pa = 1);
         break;
     }
     default:
         printf("Power mode not recognized\r\n");
-        return false;
+        ret = -EINVAL;
+        break;
     }
 
     restore_bluetooth(ble_state);
 
-    if (retVal) {
+    if (ret == 0) {
         dwt_setlnapamode(0, uwb_pa);
     }
 
-    return true;
+    return ret;
 }
 
-bool select_antenna(int32_t ant) {
-#if ANTENNA_SELECT
+int select_antenna(int32_t ant) {
+#if defined(ANTENNA_SELECT)
     bool ble_state = save_and_disable_bluetooth();
-    bool retVal = true;
     int err = 0;
 
     switch (ant) {
@@ -199,53 +156,54 @@ bool select_antenna(int32_t ant) {
         break;
     default:
         printf("Invalid antenna selection\r\n");
-        retVal = false;
+        err = -EINVAL;
+        break;
     }
 
     restore_bluetooth(ble_state);
 
-    if (err) {
-        printk("Could not change antenna (%d)\n", err);
-        return false;
+    if (err == 0) {
+        LOG_ERR("Could not change antenna (%d)", err);
     }
-    return retVal;
+    return err;
 #else
     printf("Not implemented\r\n");
-    return false;
+    return -ENOTSUP;
 #endif
 }
 
-bool update_fem_shutdown_state(bool shutdown) {
-    int err;
+int update_fem_shutdown_state(bool shutdown) {
+    int err = gpio_pin_set_dt(&_fem_gpios.shutdown, shutdown);
 
-    err = gpio_pin_set_dt(&_fem_gpios.shutdown, shutdown);
-
-    if (err) {
-        printk("Could not shut down FEM (%d)", err);
-        return false;
+    if (err != 0) {
+        LOG_ERR("Could not shut down FEM (%d)", err);
     }
 
-    return true;
+    return err;
 }
 
 #else
-bool init_range_extension(void) {
+int init_range_extension(void) {
     LOG_INF("Range extension disabled");
-    return true;
+    return 0;
 }
 
-bool update_power_mode(enum ble_power_mode mode) {
+int update_power_mode(enum ble_power_mode mode) {
     if (mode == POWER_MODE_BYPASS) {
-        return true;
+        return 0;
     }
     printf("Not implemented\r\n");
-    return false;
+    return -ENOTSUP;
 }
 
-bool select_antenna(int32_t ant) {
+int select_antenna(int32_t ant) {
+    ARG_UNUSED(ant);
     printf("Not implemented\r\n");
-    return false;
+    return -ENOTSUP;
 }
 
-bool update_fem_shutdown_state(bool shutdown) { return true; }
+int update_fem_shutdown_state(bool shutdown) {
+    ARG_UNUSED(shutdown);
+    return 0;
+}
 #endif

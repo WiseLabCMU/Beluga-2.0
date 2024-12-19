@@ -14,9 +14,9 @@ enum ble_power_mode {
     POWER_MODE_HIGH    ///< Tell FCC to fuck off
 };
 
-bool init_range_extension(void);
-bool update_power_mode(enum ble_power_mode mode);
-bool select_antenna(int32_t ant);
-bool update_fem_shutdown_state(bool shutdown);
+int init_range_extension(void);
+int update_power_mode(enum ble_power_mode mode);
+int select_antenna(int32_t ant);
+int update_fem_shutdown_state(bool shutdown);
 
 #endif // BELUGA_RANGE_EXTENSION_H
