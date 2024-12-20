@@ -5,7 +5,9 @@
 #include <app_leds.h>
 #include <ble_app.h>
 #include <deca_device_api.h>
+#include <init_resp_common.h>
 #include <initiator.h>
+#include <math.h>
 #include <port_platform.h>
 #include <random.h>
 #include <ranging.h>
@@ -42,14 +44,14 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #define UWB_RESP_RX_TIMEOUT CONFIG_UWB_RESP_RX_TIMEOUT
 #endif
 
-#define SUSPEND_RESPONDER_TASK                                                 \
+#define SUSPEND_RESPONDER_TASK()                                               \
     do {                                                                       \
         k_sem_take(&k_sus_resp, K_NO_WAIT);                                    \
         k_sem_take(&k_sus_init, K_FOREVER);                                    \
         k_sleep(K_MSEC(2));                                                    \
     } while (0)
 
-#define RESUME_RESPONDER_TASK                                                  \
+#define RESUME_RESPONDER_TASK()                                                \
     do {                                                                       \
         k_sem_give(&k_sus_init);                                               \
         k_sem_give(&k_sus_resp);                                               \
@@ -80,11 +82,6 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 
 static volatile bool rangingStarted = false;
 static struct task_wdt_attr watchdogAttr = {.period = 2000};
-
-#define CHECK_UWB_STATE()                                                      \
-    if (get_uwb_led_state() == LED_UWB_ON) {                                   \
-        return -EBUSY;                                                         \
-    }
 
 void print_tx_power(uint32_t tx_power) {
     printf("TX Power: 0x%08" PRIX32 " ", tx_power);
@@ -148,7 +145,7 @@ void print_pan_id(uint32_t pan_id) {
 }
 
 int uwb_set_phr_mode(enum uwb_phr_mode mode) {
-    CHECK_UWB_STATE();
+    CHECK_UWB_ACTIVE();
 
     switch (mode) {
     case UWB_PHR_MODE_STD:
@@ -214,7 +211,7 @@ static uint16_t get_sfd_length(void) {
 }
 
 int uwb_set_datarate(enum uwb_datarate rate) {
-    CHECK_UWB_STATE();
+    CHECK_UWB_ACTIVE();
 
     switch (rate) {
     case UWB_DR_6M8:
@@ -239,7 +236,7 @@ int uwb_set_datarate(enum uwb_datarate rate) {
 }
 
 int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
-    CHECK_UWB_STATE();
+    CHECK_UWB_ACTIVE();
 
     switch (rate) {
     case UWB_PR_16M:
@@ -257,7 +254,7 @@ int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
 }
 
 int uwb_set_preamble(enum uwb_preamble_length length) {
-    CHECK_UWB_STATE();
+    CHECK_UWB_ACTIVE();
 
     switch (length) {
     case UWB_PRL_64:
@@ -295,7 +292,7 @@ int uwb_set_preamble(enum uwb_preamble_length length) {
 }
 
 int set_pac_size(enum uwb_pac pac) {
-    CHECK_UWB_STATE();
+    CHECK_UWB_ACTIVE();
 
     switch (pac) {
     case UWB_PAC8:
@@ -322,7 +319,7 @@ int set_pac_size(enum uwb_pac pac) {
 }
 
 int set_sfd_mode(enum uwb_sfd mode) {
-    CHECK_UWB_STATE();
+    CHECK_UWB_ACTIVE();
 
     switch (mode) {
     case UWB_STD_SFD:
@@ -344,7 +341,7 @@ int set_sfd_mode(enum uwb_sfd mode) {
 
 int set_uwb_channel(uint32_t channel) {
     enum pgdelay_ch delay;
-    CHECK_UWB_STATE();
+    CHECK_UWB_ACTIVE();
 
     switch (channel) {
     case 1:
@@ -441,14 +438,104 @@ static void resp_reconfig() {
     dwt_setrxtimeout(UWB_RESP_RX_TIMEOUT);
 }
 
+static void initiate_ranging(void) {
+    static bool drop = false;
+    bool search_broken = false;
+    static size_t current_neighbor = 0;
+    double range;
+    uint32_t exchange;
+
+    k_msleep(initiator_freq);
+
+    if (drop) {
+        uint16_t delay = get_rand_num_exp_collision(initiator_freq);
+        k_msleep(delay);
+        drop = false;
+    }
+
+    SUSPEND_RESPONDER_TASK();
+
+    dwt_forcetrxoff();
+    init_reconfig();
+
+    for (size_t search_count = 0; seen_list[current_neighbor].UUID == 0;
+         search_count++) {
+        BOUND_INCREMENT(current_neighbor, MAX_ANCHOR_COUNT);
+
+        if (search_count >= (MAX_ANCHOR_COUNT - 1)) {
+            search_broken = true;
+            break;
+        }
+    }
+
+    if (!search_broken) {
+        int err;
+
+        if (twr_mode) {
+            err = ds_init_run(seen_list[current_neighbor].UUID, &range,
+                              &exchange);
+            LOG_INF("Double sided ranging returned %d", err);
+        } else {
+            err = ss_init_run(seen_list[current_neighbor].UUID, &range,
+                              &exchange);
+            LOG_INF("Single sided ranging returned %d", err);
+        }
+
+        if (err != 0) {
+            drop = true;
+        }
+
+        if (!drop && isgreaterequal(range, -5.0) && islessequal(range, 100.0)) {
+            seen_list[current_neighbor].update_flag = 1;
+            seen_list[current_neighbor].range = (float)range;
+            seen_list[current_neighbor].time_stamp = k_uptime_get();
+#if defined(CONFIG_UWB_LOGIC_CLK)
+            seen_list[current_neighbor].exchange_id = exchange;
+#endif // defined(CONFIG_UWB_LOGIC_CLK)
+
+            update_ble_service(seen_list[current_neighbor].UUID, range);
+        }
+
+        BOUND_INCREMENT(current_neighbor, MAX_ANCHOR_COUNT);
+    }
+
+    resp_reconfig();
+    dwt_forcetrxoff();
+
+    RESUME_RESPONDER_TASK();
+}
+
+void update_poll_count(void) {
+    bool neighbors_polling = false;
+
+    for (size_t x = 0; x < MAX_ANCHOR_COUNT; x++) {
+        if (seen_list[x].UUID != 0 && seen_list[x].polling_flag != 0) {
+            neighbors_polling = true;
+            break;
+        }
+    }
+
+    if (!neighbors_polling) {
+        SUSPEND_RESPONDER_TASK();
+        dwt_forcetrxoff();
+        resp_reconfig();
+        dwt_forcetrxoff();
+        RESUME_RESPONDER_TASK();
+        k_sem_take(&k_sus_resp, K_NO_WAIT);
+    } else {
+        SUSPEND_RESPONDER_TASK();
+        dwt_forcetrxoff();
+        resp_reconfig();
+        dwt_forcetrxoff();
+        RESUME_RESPONDER_TASK();
+        k_sem_give(&k_sus_resp);
+    }
+}
+
 NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
-    bool drop_flag = false;
-    bool break_flag = false;
-    static int curr_index = 0;
-    uint32_t logic_clk;
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
         LOG_ERR("Unable to spawn ranging watchdog");
@@ -461,101 +548,12 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
         watchdog_red_rocket(&watchdogAttr);
 
         if (initiator_freq != 0) {
-            k_msleep(initiator_freq);
-
-            if (drop_flag) {
-                uint16_t rand_small =
-                    get_rand_num_exp_collision(initiator_freq);
-                k_msleep(rand_small);
-                drop_flag = false;
-            }
-
-            SUSPEND_RESPONDER_TASK;
-
-            dwt_forcetrxoff();
-            init_reconfig();
-
-            int search_count = 0;
-            double range;
-
-            while (seen_list[curr_index].UUID == 0) {
-                curr_index++;
-
-                if (curr_index >= MAX_ANCHOR_COUNT) {
-                    curr_index = 0;
-                }
-                if (search_count >= (MAX_ANCHOR_COUNT - 1)) {
-                    break_flag = true;
-                    break;
-                }
-                search_count += 1;
-            }
-
-            if (!break_flag) {
-                int err = 0;
-                if (twr_mode) {
-                    err = ds_init_run(seen_list[curr_index].UUID, &range,
-                                      &logic_clk);
-                    LOG_INF("Double sided ranging returned %d", err);
-                } else {
-                    err = ss_init_run(seen_list[curr_index].UUID, &range,
-                                      &logic_clk);
-                    LOG_INF("Single sided ranging returned %d", err);
-                }
-
-                if (err != 0) {
-                    drop_flag = true;
-                }
-
-                if (!drop_flag && (range >= -5) && (range <= 100)) {
-                    seen_list[curr_index].update_flag = 1;
-                    seen_list[curr_index].range = (float)range;
-                    seen_list[curr_index].time_stamp = k_uptime_get();
-#if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
-                    seen_list[curr_index].exchange_id = logic_clk;
-#endif // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
-
-                    update_ble_service(seen_list[curr_index].UUID, range);
-                }
-
-                curr_index += 1;
-
-                if (curr_index >= MAX_ANCHOR_COUNT) {
-                    curr_index = 0;
-                }
-            }
-
-            break_flag = false;
-            resp_reconfig();
-            dwt_forcetrxoff();
-
-            RESUME_RESPONDER_TASK;
+            initiate_ranging();
         } else {
             k_msleep(1000);
         }
 
-        int polling_count = 0;
-        for (int x = 0; x < MAX_ANCHOR_COUNT; x++) {
-            if (seen_list[x].UUID != 0 && seen_list[x].polling_flag != 0) {
-                polling_count += 1;
-            }
-        }
-
-        if (polling_count == 0) {
-            SUSPEND_RESPONDER_TASK;
-            dwt_forcetrxoff();
-            resp_reconfig();
-            dwt_forcetrxoff();
-            RESUME_RESPONDER_TASK;
-            k_sem_take(&k_sus_resp, K_NO_WAIT);
-        } else {
-            SUSPEND_RESPONDER_TASK;
-            dwt_forcetrxoff();
-            resp_reconfig();
-            dwt_forcetrxoff();
-            RESUME_RESPONDER_TASK;
-            k_sem_give(&k_sus_resp);
-        }
+        update_poll_count();
     }
 }
 
