@@ -710,6 +710,7 @@ AT_CMD_DEFINE(PWRAMP) {
     READ_SETTING(argc, 2, BELUGA_RANGE_EXTEND, "Range Extension");
     int32_t pwramp;
     bool success = strtoint32(argv[1], &pwramp);
+    int err;
 
     if (!success || pwramp < 0 || pwramp > 1) {
         printf("Power amp parameter input error \r\n");
@@ -717,12 +718,12 @@ AT_CMD_DEFINE(PWRAMP) {
     }
 
     if (pwramp == 0) {
-        success = update_power_mode(POWER_MODE_BYPASS);
+        err = update_power_mode(POWER_MODE_BYPASS);
     } else {
-        success = update_power_mode(POWER_MODE_HIGH);
+        err = update_power_mode(POWER_MODE_HIGH);
     }
 
-    if (success) {
+    if (err != 0) {
         if (pwramp == 0) {
             update_led_state(LED_PWRAMP_OFF);
         } else {
@@ -747,15 +748,16 @@ AT_CMD_DEFINE(ANTENNA) {
     CHECK_ARGC(argc, 2);
     int32_t antenna;
     bool success = strtoint32(argv[1], &antenna);
+    int err;
 
     if (!success || antenna < 1 || antenna > 2) {
         printf("Antenna parameter input error \r\n");
         return;
     }
 
-    success = select_antenna(antenna);
+    err = select_antenna(antenna);
 
-    if (success) {
+    if (err == 0) {
         OK;
     }
 }

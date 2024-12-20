@@ -501,7 +501,7 @@ int32_t enable_bluetooth(void) {
     int32_t retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
     if (!bluetooth_on) {
-        if (!update_fem_shutdown_state(false)) {
+        if (update_fem_shutdown_state(false) != 0) {
             retVal = -EFAULT;
         } else {
             retVal = _enable_bluetooth();
@@ -533,7 +533,7 @@ int32_t disable_bluetooth(void) {
     k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
         retVal = _disable_bluetooth();
-        if (!retVal && !update_fem_shutdown_state(true)) {
+        if (!retVal && update_fem_shutdown_state(true) != 0) {
             retVal = -EFAULT;
         }
     }

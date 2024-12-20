@@ -384,7 +384,7 @@ int main(void) {
         return 1;
     }
 
-    if (!init_range_extension()) {
+    if (init_range_extension() != 0) {
         printk("Failed to initialize range extension\n");
         return 1;
     }
