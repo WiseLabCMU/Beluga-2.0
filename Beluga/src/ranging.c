@@ -1,6 +1,21 @@
-//
-// Created by tom on 7/9/24.
-//
+/**
+ * @file ranging.c
+ * @brief Ranging Module for UWB-based Distance Measurement System
+ *
+ * Implements the logic for the ranging, which supports both
+ * single-sided and two-way ranging between nodes in a UWB (Ultra-Wideband)
+ * network using the DW1000 chip. The module handles configuration,
+ * initialization, and communication between nodes. It includes various
+ * functions to configure and control the DW1000's parameters, such as data
+ * rate, pulse rate, preamble length, and PAC size.
+ *
+ * Supports both the initiator and responder tasks, where the initiator
+ * sends polling messages and the responder listens for them.
+ *
+ * @author WiSeLab CMU
+ * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
+ * @date 7/9/24
+ */
 
 #include <app_leds.h>
 #include <ble_app.h>
@@ -32,43 +47,93 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
 
 #if !defined(CONFIG_UWB_INIT_RX_TIMEOUT)
+/**
+ * The RX timeout when in initiator mode. This timeout is for complete reception
+ * of a frame, i.e. timeout duration must take into account the length of the
+ * expected frame.
+ */
 #define UWB_INIT_TIMEOUT 2000
 #else
+/**
+ * The RX timeout when in initiator mode. This timeout is for complete reception
+ * of a frame, i.e. timeout duration must take into account the length of the
+ * expected frame.
+ */
 #define UWB_INIT_TIMEOUT CONFIG_UWB_INIT_RX_TIMEOUT
 #endif
 
 #if !defined(CONFIG_UWB_RESP_RX_DELAY)
+/**
+ * The delay from the end of the frame transmission to the enable of the
+ * receiver, as programmed for the DW1000's wait for response feature.
+ */
 #define UWB_RESP_RX_DELAY 0
 #else
+/**
+ * The delay from the end of the frame transmission to the enable of the
+ * receiver, as programmed for the DW1000's wait for response feature.
+ */
 #define UWB_RESP_RX_DELAY CONFIG_UWB_RESP_RX_DELAY
 #endif
 
 #if !defined(CONFIG_UWB_RESP_RX_TIMEOUT)
+/**
+ * The RX timeout when in responder mode.
+ */
 #define UWB_RESP_RX_TIMEOUT 0
 #else
+/**
+ * The RX timeout when in responder mode.
+ */
 #define UWB_RESP_RX_TIMEOUT CONFIG_UWB_RESP_RX_TIMEOUT
 #endif
 
 #if defined(CONFIG_UWB_FILTER_RANGES)
 #include <math.h>
+
+/**
+ * The lower bound for filtering out nodes based on range
+ */
 #define LOWER_RANGE (double)CONFIG_UWB_RANGE_FILTER_LOWER_BOUND
 
 #if CONFIG_UWB_RANGE_FILTER_UPPER_BOUND <= 0
+/**
+ * The upper bound condition for filtering
+ */
 #define UPPER_CONDITION(x) true
 #else
-#define UPPER_RANGE (double)CONFIG_UWB_RANGE_FILTER_UPPER_BOUND
+/**
+ * The upper bound for filtering out nodes based on range
+ */
+#define UPPER_RANGE        (double)CONFIG_UWB_RANGE_FILTER_UPPER_BOUND
+
+/**
+ * The upper bound condition for filtering
+ */
 #define UPPER_CONDITION(x) islessequal((x), UPPER_RANGE)
 #endif
 
+/**
+ * The lower bound condition for filtering
+ */
 #define LOWER_CONDITION(x) isgreaterequal((x), LOWER_RANGE)
+
+/**
+ * The condition for filtering ranges
+ */
 #define RANGE_CONDITION(x) (LOWER_CONDITION(x) && UPPER_CONDITION(x))
 
 #else
 
+/**
+ * The condition for filtering ranges
+ */
 #define RANGE_CONDITION(x) (true)
-
 #endif
 
+/**
+ * Suspends the responder task when performing ranging to other nodes
+ */
 #define SUSPEND_RESPONDER_TASK()                                               \
     do {                                                                       \
         k_sem_take(&k_sus_resp, K_NO_WAIT);                                    \
@@ -76,20 +141,38 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
         k_sleep(K_MSEC(2));                                                    \
     } while (0)
 
+/**
+ * Resumes the responder task
+ */
 #define RESUME_RESPONDER_TASK()                                                \
     do {                                                                       \
         k_sem_give(&k_sus_init);                                               \
         k_sem_give(&k_sus_resp);                                               \
     } while (0)
 
+/**
+ * The number of milliseconds between initiator runs
+ */
 static int32_t initiator_freq = 100;
+
+/**
+ * Flag indicating whether to use two-way ranging or single-sided ranging
+ */
 static bool twr_mode = true;
 
-// SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only.
+/**
+ * Calculates the SFD timeout (preamble length + 1 + SFD length - PAC size)
+ *
+ * @param[in] PREAMBLE The preamble length
+ * @param[in] SFD_LENGTH The length of the SFD
+ * @param[in] PAC_SIZE The PAC size
+ */
 #define SFD_TO(PREAMBLE, SFD_LENGTH, PAC_SIZE)                                 \
     ((PREAMBLE) + 1 + (SFD_LENGTH) - (PAC_SIZE))
 
-/* DW1000 config struct */
+/**
+ * The DW1000 configurations
+ */
 static dwt_config_t config = {
     5,               /* Channel number. */
     DWT_PRF_64M,     /* Pulse repetition frequency. */
@@ -102,16 +185,29 @@ static dwt_config_t config = {
     DWT_PHRMODE_STD, /* PHY header mode. */
     SFD_TO(128, 8, 8)};
 
-/* DW1000 TX config struct */
+/**
+ * The DW1000 TX configurations
+ */
 static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 
-static volatile bool rangingStarted = false;
+/**
+ * The watchdog timer instance for the ranging.
+ */
 static struct task_wdt_attr watchdogAttr = {.period = 2000};
 
+/**
+ * @brief Prints the TX power in a non-standard (human readable) format
+ * @param[in] tx_power The current TX power
+ */
 void print_tx_power(uint32_t tx_power) {
     printf("TX Power: 0x%08" PRIX32 " ", tx_power);
 }
 
+/**
+ * @brief Prints the UWB data rate in a non-standard (human readable) format
+ * @param[in] rate The current data rate
+ * @return The data rate that was just printed
+ */
 enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate) {
     switch (rate) {
     case UWB_DR_850K:
@@ -129,6 +225,11 @@ enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate) {
     return rate;
 }
 
+/**
+ * @brief Prints the pulse rate in a non-standard (human readable) format
+ * @param[in] rate The current pulse rate
+ * @return The pulse rate
+ */
 enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate) {
     switch (rate) {
     case UWB_PR_16M:
@@ -143,6 +244,11 @@ enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate) {
     return rate;
 }
 
+/**
+ * @brief Prints the PAC size in a non-standard (human readable) format
+ * @param[in] pac The PAC size
+ * @return The PAC size
+ */
 int32_t print_pac_size(int32_t pac) {
     switch ((enum uwb_pac)pac) {
     case UWB_PAC8:
@@ -165,10 +271,20 @@ int32_t print_pac_size(int32_t pac) {
     return pac;
 }
 
+/**
+ * @brief Prints the current PAN ID in a non-standard (human readable) format
+ * @param[in] pan_id The PAN ID to print
+ */
 void print_pan_id(uint32_t pan_id) {
     printf("UWB PAN ID: 0x%04" PRIX16 " ", (uint16_t)pan_id);
 }
 
+/**
+ * @brief Sets the PHR mode for the DW1000
+ * @param[in] mode The PHR mode to update
+ * @return 0 upon success
+ * @return -EINVAL if PHR mode is not valid
+ */
 int uwb_set_phr_mode(enum uwb_phr_mode mode) {
     CHECK_UWB_ACTIVE();
 
@@ -187,6 +303,10 @@ int uwb_set_phr_mode(enum uwb_phr_mode mode) {
     return 0;
 }
 
+/**
+ * @brief Retrieves the current preamble length being used by the DW1000
+ * @return an integer representation of the preamble length
+ */
 static uint16_t get_preamble_length(void) {
     switch (config.txPreambLength) {
     case DWT_PLEN_64:
@@ -209,6 +329,10 @@ static uint16_t get_preamble_length(void) {
     }
 }
 
+/**
+ * @brief Retrieves the current PAC size being used by the DW1000
+ * @return an integer representing the PAC size
+ */
 static uint16_t get_pac_size(void) {
     switch (config.rxPAC) {
     case DWT_PAC8:
@@ -223,6 +347,10 @@ static uint16_t get_pac_size(void) {
     }
 }
 
+/**
+ * @brief Retrieves the SFD length based on the DW1000 data rate
+ * @return The SFD length
+ */
 static uint16_t get_sfd_length(void) {
     switch (config.dataRate) {
     case DWT_BR_6M8:
@@ -235,6 +363,13 @@ static uint16_t get_sfd_length(void) {
     }
 }
 
+/**
+ * @brief Sets the data rate of the DW1000
+ * @param[in] rate The new data rate of the DW1000
+ * @return 0 upon success
+ * @return -EINVAL if data rate is an invalid value
+ * @return -EBUSY if UWB is active
+ */
 int uwb_set_datarate(enum uwb_datarate rate) {
     CHECK_UWB_ACTIVE();
 
@@ -260,6 +395,13 @@ int uwb_set_datarate(enum uwb_datarate rate) {
     return 0;
 }
 
+/**
+ * @brief Sets the DW1000 pulse rate
+ * @param[in] rate The pulse rate to of the DW1000
+ * @return 0 upon success
+ * @return -EINVAL if rate is invalid
+ * @return -EBUSY if UWB is active
+ */
 int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
     CHECK_UWB_ACTIVE();
 
@@ -278,6 +420,13 @@ int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
     return 0;
 }
 
+/**
+ * @brief Sets the preamble length of the DW1000
+ * @param[in] length The new preamble length of the DW1000
+ * @return 0 upon success
+ * @return -EINVAL if length is invalid
+ * @return -EBUSY if UWB is active
+ */
 int uwb_set_preamble(enum uwb_preamble_length length) {
     CHECK_UWB_ACTIVE();
 
@@ -316,6 +465,13 @@ int uwb_set_preamble(enum uwb_preamble_length length) {
     return 0;
 }
 
+/**
+ * @brief Sets the PAC size of the DW1000
+ * @param[in] pac The new PAC size of the DW1000
+ * @return 0 upon success
+ * @return -EINVAL if PAC size is invalid
+ * @return -EBUSY if UWB is active
+ */
 int set_pac_size(enum uwb_pac pac) {
     CHECK_UWB_ACTIVE();
 
@@ -343,6 +499,13 @@ int set_pac_size(enum uwb_pac pac) {
     return 0;
 }
 
+/**
+ * @brief Sets the SFD mode of the DW1000
+ * @param[in] mode The new SFD mode
+ * @return 0 upon success
+ * @return -EINVAL upon failure
+ * @return -EBUSY if UWB is active
+ */
 int set_sfd_mode(enum uwb_sfd mode) {
     CHECK_UWB_ACTIVE();
 
@@ -364,6 +527,13 @@ int set_sfd_mode(enum uwb_sfd mode) {
     return 0;
 }
 
+/**
+ * @brief Sets the UWB channel to use for the DW1000
+ * @param[in] channel The new UWB channel
+ * @return 0 upon success
+ * @return -EINVAL if invalid channel'
+ * @return -EBUSY if UWB is active
+ */
 int set_uwb_channel(uint32_t channel) {
     enum pgdelay_ch delay;
     CHECK_UWB_ACTIVE();
@@ -398,26 +568,46 @@ int set_uwb_channel(uint32_t channel) {
     return 0;
 }
 
+/**
+ * @brief Sets the transmit power of the DW1000
+ * @param[in] tx_power The new transmit power of the DW1000
+ */
 void set_tx_power(uint32_t tx_power) {
     config_tx.power = tx_power;
     dwt_configuretxrf(&config_tx);
 }
 
+/**
+ * Sets the ranging mode used by the initiator and responder
+ * @param[in] value The ranging mode. If `true`, use two-way ranging, if
+ * `false`, use single-sided ranging
+ */
 void set_twr_mode(bool value) { twr_mode = value; }
 
-bool get_twr_mode(void) { return twr_mode; }
-
-void set_rate(uint32_t rate) {
-    if (rate > (uint32_t)INT32_MAX) {
-        return;
+/**
+ * @brief Set the rate the initiator sends polling messages
+ * @param[in] rate The new rate the initiator sends polling messages. If 0, then
+ * do not send polling messages.
+ * @return 0 upon success
+ * @return -EINVAL if rate is an invalid value
+ */
+int set_rate(uint32_t rate) {
+    if (IN_RANGE(rate, INT32_C(0), (int32_t)INT32_MAX)) {
+        return -EINVAL;
     }
     initiator_freq = (int32_t)rate;
+    return 0;
 }
 
-uint32_t get_rate(void) { return initiator_freq; }
-
+/**
+ * @brief Initialize the DW1000 for ranging.
+ *
+ * Wakes the DW1000 (if coming out of deep sleep), resets the DW1000, and
+ * initializes the DW1000 with default values
+ */
 void init_uwb(void) {
     if (!IS_ENABLED(CONFIG_ENABLE_BELUGA_UWB)) {
+        LOG_INF("UWB disabled");
         return;
     }
     setup_DW1000RSTnIRQ(0);
@@ -463,10 +653,16 @@ static void resp_reconfig() {
     dwt_setrxtimeout(UWB_RESP_RX_TIMEOUT);
 }
 
+/**
+ * @brief Find a node in the neighbors list and range to that node
+ */
 static void initiate_ranging(void) {
+    // Flag to see if last ranging measurement was dropped
     static bool drop = false;
-    bool search_broken = false;
+    // The neighbor currently being ranged to
     static size_t current_neighbor = 0;
+
+    bool search_broken = false;
     double range;
     uint32_t exchange;
 
@@ -530,6 +726,10 @@ static void initiate_ranging(void) {
     RESUME_RESPONDER_TASK();
 }
 
+/**
+ * @brief Checks how many neighboring nodes are polling. If none of them are
+ * polling, then this will suspend responder.
+ */
 void update_poll_count(void) {
     bool neighbors_polling = false;
 
@@ -557,6 +757,16 @@ void update_poll_count(void) {
     }
 }
 
+/**
+ * @brief Task that initiates ranging
+ *
+ * This task initiates ranging between nodes and updates the neighbor list with
+ * new ranges
+ *
+ * @param p1 Additional context (unused)
+ * @param p2 Additional context (unused)
+ * @param p3 Additional context (unused)
+ */
 NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
@@ -567,7 +777,6 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
         while (1)
             ;
     }
-    rangingStarted = true;
 
     while (true) {
         watchdog_red_rocket(&watchdogAttr);
@@ -583,10 +792,13 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
 }
 
 /**
- * @brief SS TWR Initiator task entry function.
+ * @brief Responds to UWB polling requests
  *
- * @param[in] pvParameter   Pointer that will be used as the parameter for the
- * task.
+ * This task will check for polling messages and respond to any ranging requests
+ *
+ * @param p1 Additional context (unused)
+ * @param p2 Additional context (unused)
+ * @param p3 Additional context (unused)
  */
 NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
@@ -598,9 +810,6 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     } else {
         dwt_setleds(DWT_LEDS_DISABLE);
     }
-
-    while (!rangingStarted)
-        ;
 
     while (true) {
         watchdog_red_rocket(&watchdogAttr);
@@ -619,10 +828,24 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
 }
 
 #if ENABLE_THREADS && ENABLE_RANGING
+/**
+ * Ranging task's stack allocation
+ */
 K_THREAD_STACK_DEFINE(ranging_stack, CONFIG_RANGING_STACK_SIZE);
+
+/**
+ * Ranging task's thread data
+ */
 static struct k_thread ranging_task_data;
+
+/**
+ * Thread ID of the ranging task
+ */
 static k_tid_t ranging_task_id;
 
+/**
+ * @brief Creates the ranging thread and initiates its data
+ */
 void init_ranging_thread(void) {
     ranging_task_id =
         k_thread_create(&ranging_task_data, ranging_stack,
@@ -632,14 +855,31 @@ void init_ranging_thread(void) {
     LOG_INF("Started ranging");
 }
 #else
+/**
+ * @brief Creates the ranging thread and initiates its data
+ */
 void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
 #endif
 
 #if ENABLE_THREADS && ENABLE_RESPONDER
+/**
+ * Responder task's stack allocation
+ */
 K_THREAD_STACK_DEFINE(responder_stack, CONFIG_RESPONDER_STACK_SIZE);
+
+/**
+ * Responder task's thread data
+ */
 static struct k_thread responder_data;
+
+/**
+ * Thread ID of the responder task
+ */
 static k_tid_t responder_task_id;
 
+/**
+ * @brief Creates the responder thread and initiates its data
+ */
 void init_responder_thread(void) {
     responder_task_id = k_thread_create(
         &responder_data, responder_stack,
@@ -649,5 +889,8 @@ void init_responder_thread(void) {
     LOG_INF("Started responder");
 }
 #else
+/**
+ * @brief Creates the responder thread and initiates its data
+ */
 void init_responder_thread(void) { LOG_INF("Responder disabled"); }
 #endif
