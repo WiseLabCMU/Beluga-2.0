@@ -7,7 +7,6 @@
 #include <deca_device_api.h>
 #include <init_resp_common.h>
 #include <initiator.h>
-#include <math.h>
 #include <port_platform.h>
 #include <random.h>
 #include <ranging.h>
@@ -21,9 +20,15 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+/**
+ * Logging module for the ranging module
+ */
 LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 
-/* Delay between frames, in UWB microseconds. See NOTE 1 below. */
+/**
+ * The delay from the end of the frame transmission to the enable of the
+ * receiver, as programmed for the DW1000's wait for response feature.
+ */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 100
 
 #if !defined(CONFIG_UWB_INIT_RX_TIMEOUT)
@@ -42,6 +47,26 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #define UWB_RESP_RX_TIMEOUT 0
 #else
 #define UWB_RESP_RX_TIMEOUT CONFIG_UWB_RESP_RX_TIMEOUT
+#endif
+
+#if defined(CONFIG_UWB_FILTER_RANGES)
+#include <math.h>
+#define LOWER_RANGE (double)CONFIG_UWB_RANGE_FILTER_LOWER_BOUND
+
+#if CONFIG_UWB_RANGE_FILTER_UPPER_BOUND <= 0
+#define UPPER_CONDITION(x) true
+#else
+#define UPPER_RANGE (double)CONFIG_UWB_RANGE_FILTER_UPPER_BOUND
+#define UPPER_CONDITION(x) islessequal((x), UPPER_RANGE)
+#endif
+
+#define LOWER_CONDITION(x) isgreaterequal((x), LOWER_RANGE)
+#define RANGE_CONDITION(x) (LOWER_CONDITION(x) && UPPER_CONDITION(x))
+
+#else
+
+#define RANGE_CONDITION(x) (true)
+
 #endif
 
 #define SUSPEND_RESPONDER_TASK()                                               \
@@ -485,7 +510,7 @@ static void initiate_ranging(void) {
             drop = true;
         }
 
-        if (!drop && isgreaterequal(range, -5.0) && islessequal(range, 100.0)) {
+        if (!drop && RANGE_CONDITION(range)) {
             seen_list[current_neighbor].update_flag = 1;
             seen_list[current_neighbor].range = (float)range;
             seen_list[current_neighbor].time_stamp = k_uptime_get();

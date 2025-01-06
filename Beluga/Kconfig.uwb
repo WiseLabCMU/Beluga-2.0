@@ -46,4 +46,26 @@ config UWB_RESP_RX_TIMEOUT
     default 0
     depends on ENABLE_BELUGA_UWB
 
+menuconfig UWB_FILTER_RANGES
+    bool "Filter UWB neighbors by range"
+    default n
+    help
+        Exclude neighbors that are within a certain distance and beyond a certain distance
+
+if UWB_FILTER_RANGES
+config UWB_RANGE_FILTER_LOWER_BOUND
+    int "Lower bound of the range filtering"
+    default -5
+    help
+        This is the lower bound of the range filtering. If a lower bound is not desired,
+        then set it to a negative value.
+
+config UWB_RANGE_FILTER_UPPER_BOUND
+    int "Upper bound of the range filtering"
+    default -5
+    help
+        This is the upper bound of the range filtering. If an upper bound is not desired,
+        then set it to a negative value.
+endif
+
 endmenu
