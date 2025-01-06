@@ -356,7 +356,7 @@ static void load_settings(void) {
 int main(void) {
     RESET_CAUSE();
 
-    memset(seen_list, 0, ARRAY_SIZE(seen_list));
+    memset(seen_list, 0, sizeof(seen_list));
 
     INIT_CLOCKS();
 

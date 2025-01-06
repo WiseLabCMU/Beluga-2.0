@@ -67,7 +67,7 @@ Option 1: Setup (VS code, All platforms)
 4. Open nRF Connect
 5. Install the toolchain manager
 6. Open the toolchain manager
-7. Install nRF Connect SDK v2.7.0
+7. Install nRF Connect SDK v2.9.0
 8. Open VS code and install the nRF Connect extension pack
 9. Open Beluga-2.0/Beluga in VS Code
 

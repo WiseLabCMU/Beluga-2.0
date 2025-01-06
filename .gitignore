@@ -1,14 +1,10 @@
 .idea
 .vscode
-cmake-build-decawave/
-cmake-build-pca10040/
 .venv/
 gn/
 ncs/
 nrfcmdtools/
 zephyr-sdk-0.16.*/
-cmake-build-beluga/
-cmake-build-nrf21540dk_nrf52840/
 .west/
 bootloader/
 modules/
@@ -21,3 +17,4 @@ Beluga/pca10040
 Beluga/dwm1001_dev_clion/
 Beluga/build*
 asm-dumps/
+cmake-build-*

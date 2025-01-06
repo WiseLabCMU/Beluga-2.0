@@ -443,7 +443,7 @@ static int ss_rx_response(double *distance) {
     rtd_init = (int32_t)(resp_rx_ts - poll_tx_ts);
     rtd_resp = (int32_t)(resp_tx_ts - poll_rx_ts);
 
-    tof = (((float)rtd_init - (float)rtd_resp * (1.0f - clockOffsetRatio)) /
+    tof = (double)(((float)rtd_init - (float)rtd_resp * (1.0f - clockOffsetRatio)) /
            2.0f) *
           DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;

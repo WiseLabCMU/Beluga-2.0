@@ -59,7 +59,7 @@ LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
  * Prints entry in the neighbor list to the console
  */
 #define PRINT_ENTRY(entry)                                                     \
-    printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, \
+    printf(format_str(format_mode), (entry).UUID, (double)(entry).range, (entry).RSSI, \
            (entry).time_stamp, (entry).exchange_id)
 #else
 
