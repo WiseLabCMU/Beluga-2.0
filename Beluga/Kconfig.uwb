@@ -68,4 +68,16 @@ config UWB_RANGE_FILTER_UPPER_BOUND
         then set it to a negative value.
 endif
 
+config POLL_RX_TO_RESP_TX_DLY
+    int "Poll RX to Response Delay in microseconds"
+    default 1500
+    help
+        Critical value for porting to different processors. For slower platforms where
+        the SPI is at a slower speed or the processor is operating at a lower frequency
+        (Comparing to STM32F, SPI of 18MHz and Processor internal 72MHz)this value needs
+        to be increased. Knowing the exact time when the responder is going to send its
+        response is vital for time of flight calculation. The specification of the time
+        of respnse must allow the processor enough time to do its calculations and put
+        the packet in the Tx buffer. So more time required for a slower system (processor).
+
 endmenu

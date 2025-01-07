@@ -1,5 +1,5 @@
 /**
- * @file initiator.c
+ * @file initiator.h
  *
  * @brief This module implements the functionality for the initiator role in a
  * UWB-based ranging system.
