@@ -1,6 +1,25 @@
-//
-// Created by tom on 6/26/24.
-//
+/**
+ * @file spi.c
+ * @brief SPI communication.
+ *
+ * This file provides an implementation for SPI communication with the DW1000
+ * module It includes functionality for initializing the SPI interface,
+ * configuring different SPI settings, and performing read/write operations. The
+ * SPI communication is locked to ensure safe access to shared resources, and
+ * chip select toggling is also supported.
+ *
+ * @note The SPI configuration includes both fast and slow speeds to accommodate
+ * different use cases. The module also includes error handling for invalid
+ * buffer sizes or SPI device readiness.
+ *
+ * SPI is used to interface with the DW1000 Ultra-Wideband (UWB) module, with
+ * specific settings for:
+ * - Slow SPI frequency (2 MHz)
+ * - Fast SPI frequency (8 MHz)
+ *
+ * @author Tom Schmitz
+ * @date 6/26/24
+ */
 
 #include <spi.h>
 #include <zephyr/device.h>
@@ -11,105 +30,120 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device.h>
 
+/**
+ * Logger for the SPI module
+ */
 LOG_MODULE_REGISTER(spi_logger, CONFIG_SPI_MODULE_LOG_LEVEL);
 
-#if defined(CONFIG_BELUGA_USE_SPI2)
-#define NUM_SPI_CONFIGS 4
-#else
+/**
+ * The number of SPI configurations for the DW1000 (fast and slow)
+ */
 #define NUM_SPI_CONFIGS 2
-#endif
 
-#define SPI_BUF_SIZE       255
+/**
+ * The maximum buffer size for SPI transactions
+ */
+#define SPI_BUF_SIZE 255
 
+/**
+ * Index for the slow SPI configuration
+ */
 #define DW1000_CONFIG_SLOW 0
+
+/**
+ * Index for the fast SPI configuration
+ */
 #define DW1000_CONFIG_FAST 1
-#if defined(CONFIG_BELUGA_USE_SPI2)
-#define NRF21540_CONFIG_SLOW 2
-#define NRF21540_CONFIG_FAST 3
-#endif
 
-#define DW1000_SLOW_FREQUENCY 2000000
-#define DW1000_FAST_FREQUENCY 8000000
+/**
+ * Slow SPI frequency
+ */
+#define DW1000_SLOW_FREQUENCY MHZ(2)
 
-#if defined(CONFIG_BELUGA_USE_SPI2)
-#define NRF21540_SLOW_FREQUENCY 1000000
-#define NRF21540_FAST_FREQUENCY 8000000
-#endif
+/**
+ * Fast SPI frequency
+ */
+#define DW1000_FAST_FREQUENCY MHZ(8)
 
+/**
+ * Index for the receive buffer
+ */
 #define RX_BUF_IDX 1
+
+/**
+ * Index for the transmit buffer
+ */
 #define TX_BUF_IDX 0
 
-#define SPI1       0
-#define SPI2       1
+/**
+ * The SPI device from the device tree
+ */
+#define SPI1_NAME DEVICE_DT_GET(DT_NODELABEL(spi1))
 
-#define SPI1_NAME  DEVICE_DT_GET(DT_NODELABEL(spi1))
-#if defined(CONFIG_BELUGA_USE_SPI2)
-#define SPI2_NAME DEVICE_DT_GET(DT_NODELABEL(spi2))
-#endif
+/**
+ * The SPI device
+ */
+static const struct device *spi_device = SPI1_NAME;
 
-#if defined(CONFIG_BELUGA_USE_SPI2)
-static const struct device *spi_device[2];
-#else
-static const struct device *spi_device[1];
-#endif
+/**
+ * The current SPI configuration for the DW1000
+ */
 static struct spi_config *dw1000SpiConfig = NULL;
-#if defined(CONFIG_BELUGA_USE_SPI2)
-static struct spi_config *nrfSpiConfig = NULL;
-#endif
+
+/**
+ * The different SPI configurations for the DW1000
+ */
 static struct spi_config spiConfigs[NUM_SPI_CONFIGS];
 
+/**
+ * The DW1000 transmit buffer
+ */
 static uint8_t dw1000_txBuf[SPI_BUF_SIZE];
+
+/**
+ * The DW1000 receive buffer
+ */
 static uint8_t dw1000_rxBuf[SPI_BUF_SIZE];
-#if defined(CONFIG_BELUGA_USE_SPI2)
-static uint8_t nrf21_txBuf[SPI_BUF_SIZE];
-static uint8_t nrf21_rxBuf[SPI_BUF_SIZE];
-#endif
 
+/**
+ * The SPI buffers
+ */
 static struct spi_buf dw1000_spiBufs[2];
-#if defined(CONFIG_BELUGA_USE_SPI2)
-static struct spi_buf nrf21_spiBufs[2];
-#endif
 
+/**
+ * SPI buffer set for transmission
+ */
 static struct spi_buf_set dw1000_tx;
-static struct spi_buf_set dw1000_rx;
-#if defined(CONFIG_BELUGA_USE_SPI2)
-static struct spi_buf_set nrf21_tx;
-static struct spi_buf_set nrf21_rx;
-#endif
 
-#if defined(CONFIG_BELUGA_USE_SPI2)
-static const struct spi_cs_control nrf_fem_cs =
-    SPI_CS_CONTROL_INIT(DT_NODELABEL(nrf_radio_fem_spi), 0);
-#endif
+/**
+ * SPI buffer set for reception
+ */
+static struct spi_buf_set dw1000_rx;
+
+/**
+ * Chip select for the DW1000
+ */
 static const struct spi_cs_control dw1000_cs =
     SPI_CS_CONTROL_INIT(DT_NODELABEL(dw1000_spi), 0);
 
+/**
+ * Lock for SPI 1
+ */
 K_MUTEX_DEFINE(spi1_lock);
-#if defined(CONFIG_BELUGA_USE_SPI2)
-K_MUTEX_DEFINE(spi2_lock);
-#endif
 
+/**
+ * @brief Initializes SPI 1 for communication with the DW1000
+ * @return 0 upon success
+ * @return -ENODEV if SPI device is not ready
+ */
 int init_spi1(void) {
-    spi_device[SPI1] = SPI1_NAME;
-    if (!device_is_ready(spi_device[SPI1])) {
+    if (!device_is_ready(spi_device)) {
         LOG_ERR("Failed to bind SPI1");
-        return -1;
+        return -ENODEV;
     }
-
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    spi_device[SPI2] = SPI2_NAME;
-    if (!device_is_ready(spi_device[SPI2])) {
-        LOG_ERR("Failed to bind SPI2");
-        return -1;
-    }
-#endif
 
     spiConfigs[DW1000_CONFIG_SLOW].cs = dw1000_cs;
     spiConfigs[DW1000_CONFIG_FAST].cs = dw1000_cs;
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    spiConfigs[NRF21540_CONFIG_SLOW].cs = nrf_fem_cs;
-    spiConfigs[NRF21540_CONFIG_FAST].cs = nrf_fem_cs;
-#endif
 
     for (int i = 0; i < NUM_SPI_CONFIGS; i++) {
         spiConfigs[i].operation = SPI_WORD_SET(8);
@@ -117,237 +151,125 @@ int init_spi1(void) {
 
     spiConfigs[DW1000_CONFIG_SLOW].frequency = DW1000_SLOW_FREQUENCY;
     spiConfigs[DW1000_CONFIG_FAST].frequency = DW1000_FAST_FREQUENCY;
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    spiConfigs[NRF21540_CONFIG_SLOW].frequency = NRF21540_SLOW_FREQUENCY;
-    spiConfigs[NRF21540_CONFIG_FAST].frequency = NRF21540_FAST_FREQUENCY;
-#endif
 
     memset(dw1000_txBuf, 0, SPI_BUF_SIZE);
     memset(dw1000_rxBuf, 0, SPI_BUF_SIZE);
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    memset(nrf21_rxBuf, 0, SPI_BUF_SIZE);
-    memset(nrf21_txBuf, 0, SPI_BUF_SIZE);
-#endif
 
     dw1000_spiBufs[TX_BUF_IDX].buf = dw1000_txBuf;
     dw1000_spiBufs[TX_BUF_IDX].len = SPI_BUF_SIZE;
     dw1000_spiBufs[RX_BUF_IDX].buf = dw1000_rxBuf;
     dw1000_spiBufs[RX_BUF_IDX].len = SPI_BUF_SIZE;
 
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    nrf21_spiBufs[TX_BUF_IDX].buf = nrf21_txBuf;
-    nrf21_spiBufs[TX_BUF_IDX].len = SPI_BUF_SIZE;
-    nrf21_spiBufs[RX_BUF_IDX].buf = nrf21_rxBuf;
-    nrf21_spiBufs[RX_BUF_IDX].len = SPI_BUF_SIZE;
-#endif
-
     dw1000_tx.buffers = &dw1000_spiBufs[TX_BUF_IDX];
     dw1000_tx.count = 1;
     dw1000_rx.buffers = &dw1000_spiBufs[RX_BUF_IDX];
     dw1000_rx.count = 1;
 
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    nrf21_tx.buffers = &nrf21_spiBufs[TX_BUF_IDX];
-    nrf21_tx.count = 1;
-    nrf21_rx.buffers = &nrf21_spiBufs[RX_BUF_IDX];
-    nrf21_rx.count = 1;
-#endif
-
     dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
-
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_SLOW];
-#endif
 
     LOG_INF("SPI 1 and SPI 2 initialized");
 
     return 0;
 }
 
-void set_spi_slow(beluga_spi_channel_t channel) {
-    switch (channel) {
-    case DW1000_SPI_CHANNEL: {
-        dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
-        memset(dw1000_rxBuf, 0, SPI_BUF_SIZE);
-        memset(dw1000_txBuf, 0, SPI_BUF_SIZE);
-        break;
-    }
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    case NRF21_SPI_CHANNEL: {
-        nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_SLOW];
-        memset(nrf21_txBuf, 0, SPI_BUF_SIZE);
-        memset(nrf21_rxBuf, 0, SPI_BUF_SIZE);
-        break;
-    }
-#endif
-    default: {
-        assert_print("Invalid SPI channel!");
-        break;
-    }
-    }
+/**
+ * @brief Selects the low speed configuration for the SPI
+ */
+void set_spi_slow(void) {
+    dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_SLOW];
+    memset(dw1000_rxBuf, 0, SPI_BUF_SIZE);
+    memset(dw1000_txBuf, 0, SPI_BUF_SIZE);
 }
 
-void set_spi_fast(beluga_spi_channel_t channel) {
-    switch (channel) {
-    case DW1000_SPI_CHANNEL: {
-        dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_FAST];
-        memset(dw1000_rxBuf, 0, SPI_BUF_SIZE);
-        memset(dw1000_txBuf, 0, SPI_BUF_SIZE);
-        break;
-    }
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    case NRF21_SPI_CHANNEL: {
-        nrfSpiConfig = &spiConfigs[NRF21540_CONFIG_FAST];
-        memset(nrf21_txBuf, 0, SPI_BUF_SIZE);
-        memset(nrf21_rxBuf, 0, SPI_BUF_SIZE);
-        break;
-    }
-#endif
-    default: {
-        assert_print("Invalid SPI channel!");
-        break;
-    }
-    }
+/**
+ * @brief Selects the high speed configuration for the SPI
+ */
+void set_spi_fast(void) {
+    dw1000SpiConfig = &spiConfigs[DW1000_CONFIG_FAST];
+    memset(dw1000_rxBuf, 0, SPI_BUF_SIZE);
+    memset(dw1000_txBuf, 0, SPI_BUF_SIZE);
 }
 
-int write_spi(beluga_spi_channel_t channel, const uint8_t *buffer,
-              size_t bufLength) {
-    struct spi_config *_spiConfig;
-    struct spi_buf *spiBuf;
-    struct spi_buf_set *tx, *rx;
-    uint8_t *txBuf, spi;
+/**
+ * @brief Writes the bytes stored in buffer over SPI
+ * @param[in] buffer The bytes to write over SPI
+ * @param[in] bufLength The number of bytes to write
+ * @return 0 upon success
+ * @return -EINVAL if buffer is NULL
+ * @return negative error code otherwise
+ */
+int write_spi(const uint8_t *buffer, size_t bufLength) {
     int err;
-    struct k_mutex *lock;
 
-    switch (channel) {
-    case DW1000_SPI_CHANNEL: {
-        _spiConfig = dw1000SpiConfig;
-        txBuf = dw1000_txBuf;
-        spiBuf = dw1000_spiBufs;
-        tx = &dw1000_tx;
-        rx = &dw1000_rx;
-        spi = SPI1;
-        lock = &spi1_lock;
-        break;
-    }
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    case NRF21_SPI_CHANNEL: {
-        _spiConfig = nrfSpiConfig;
-        txBuf = nrf21_txBuf;
-        spiBuf = nrf21_spiBufs;
-        tx = &nrf21_tx;
-        rx = &nrf21_rx;
-        spi = SPI2;
-        lock = &spi2_lock;
-        break;
-    }
-#endif
-    default: {
-        LOG_ERR("Invalid SPI channel!");
-        return -1;
-    }
+    if (buffer == NULL) {
+        return -EINVAL;
     }
 
     // Lock here because we are using the shared resources now...
-    k_mutex_lock(lock, K_FOREVER);
-    memcpy(txBuf, buffer, bufLength);
-    spiBuf[TX_BUF_IDX].len = bufLength;
-    spiBuf[RX_BUF_IDX].len = bufLength;
+    k_mutex_lock(&spi1_lock, K_FOREVER);
+    memcpy(dw1000_txBuf, buffer, bufLength);
+    dw1000_spiBufs[TX_BUF_IDX].len = bufLength;
+    dw1000_spiBufs[RX_BUF_IDX].len = bufLength;
 
-    err = spi_transceive(spi_device[spi], _spiConfig, tx, rx);
-    k_mutex_unlock(lock);
+    err = spi_transceive(spi_device, dw1000SpiConfig, &dw1000_tx, &dw1000_rx);
+    k_mutex_unlock(&spi1_lock);
 
     return err;
 }
 
-int read_spi(beluga_spi_channel_t channel, const uint8_t *writeBuffer,
-             uint8_t *readBuf, size_t bufLength) {
-    struct spi_config *_spiConfig;
-    struct spi_buf *spiBuf;
-    struct spi_buf_set *tx, *rx;
-    uint8_t *txBuf, *rxBuf, spi;
+/**
+ * @brief Reads bytes over SPI given write date
+ * @param[in] writeBuffer The data to write over SPI
+ * @param[out] readBuf The data to read from SPI
+ * @param[in] bufLength The number of bytes to read/write over SPI
+ * @return 0 upon success
+ * @return -EINVAL if invalid parameter
+ * @return negative error code otherwise
+ */
+int read_spi(const uint8_t *writeBuffer, uint8_t *readBuf, size_t bufLength) {
     int err;
-    struct k_mutex *lock;
 
-    switch (channel) {
-    case DW1000_SPI_CHANNEL: {
-        _spiConfig = dw1000SpiConfig;
-        txBuf = dw1000_txBuf;
-        rxBuf = dw1000_rxBuf;
-        spiBuf = dw1000_spiBufs;
-        tx = &dw1000_tx;
-        rx = &dw1000_rx;
-        spi = SPI1;
-        lock = &spi1_lock;
-        break;
+    if (writeBuffer == NULL) {
+        return -EINVAL;
     }
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    case NRF21_SPI_CHANNEL: {
-        _spiConfig = nrfSpiConfig;
-        txBuf = nrf21_txBuf;
-        rxBuf = nrf21_rxBuf;
-        spiBuf = nrf21_spiBufs;
-        tx = &nrf21_tx;
-        rx = &nrf21_rx;
-        spi = SPI2;
-        lock = &spi2_lock;
-        break;
-    }
-#endif
-    default: {
-        LOG_ERR("Invalid SPI channel!");
-        return -1;
-    }
+
+    if (readBuf == NULL) {
+        return -EINVAL;
     }
 
     // Lock here because we are using the shared resources now
-    k_mutex_lock(lock, K_FOREVER);
-    memcpy(txBuf, writeBuffer, bufLength);
-    spiBuf[TX_BUF_IDX].len = bufLength;
-    spiBuf[RX_BUF_IDX].len = bufLength;
+    k_mutex_lock(&spi1_lock, K_FOREVER);
+    memcpy(dw1000_txBuf, writeBuffer, bufLength);
+    dw1000_spiBufs[TX_BUF_IDX].len = bufLength;
+    dw1000_spiBufs[RX_BUF_IDX].len = bufLength;
 
-    err = spi_transceive(spi_device[spi], _spiConfig, tx, rx);
+    err = spi_transceive(spi_device, dw1000SpiConfig, &dw1000_tx, &dw1000_rx);
 
     if (err == 0) {
-        memcpy(readBuf, rxBuf, bufLength);
+        memcpy(readBuf, dw1000_rxBuf, bufLength);
     }
-    k_mutex_unlock(lock);
+    k_mutex_unlock(&spi1_lock);
 
     return err;
 }
 
+/**
+ * @brief Shuts down the SPI device
+ */
 void shutdown_spi(void) {
-    int rc = pm_device_action_run(spi_device[SPI1], PM_DEVICE_ACTION_TURN_OFF);
+    int rc = pm_device_action_run(spi_device, PM_DEVICE_ACTION_TURN_OFF);
     if (rc < 0) {
         LOG_ERR("Unable to turn off SPI 1 (%d)\n", rc);
     }
-
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    rc = pm_device_action_run(spi_device[SPI2], PM_DEVICE_ACTION_TURN_OFF);
-    if (rc < 0) {
-        LOG_ERR("Unable to turn off SPI 2 (%d)", rc);
-    }
-#endif
 }
 
-void toggle_cs_line(beluga_spi_channel_t channel, int32_t us) {
-    struct spi_config *_spiConfig;
-    switch (channel) {
-    case DW1000_SPI_CHANNEL:
-        _spiConfig = dw1000SpiConfig;
-        break;
-#if defined(CONFIG_BELUGA_USE_SPI2)
-    case NRF21_SPI_CHANNEL:
-        _spiConfig = nrfSpiConfig;
-        break;
-#endif
-    default:
-        LOG_ERR("Invalid SPI channel\n");
-        return;
-    }
-
-    gpio_pin_toggle_dt(&_spiConfig->cs.gpio);
+/**
+ * @brief Toggles the chip select line for a specified amount of time.
+ * @param[in] us The number of microseconds to toggle the chip select for
+ */
+void toggle_cs_line(int32_t us) {
+    gpio_pin_toggle_dt(&dw1000SpiConfig->cs.gpio);
     k_sleep(K_USEC(us));
-    gpio_pin_toggle_dt(&_spiConfig->cs.gpio);
+    gpio_pin_toggle_dt(&dw1000SpiConfig->cs.gpio);
     k_sleep(K_USEC(us));
 }

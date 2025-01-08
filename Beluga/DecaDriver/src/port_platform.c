@@ -114,8 +114,7 @@ int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
     memcpy(txBuf, headerBuffer, headerLength);
 
     // TODO: Disable UW IRQ
-    int err =
-        read_spi(DW1000_SPI_CHANNEL, txBuf, rxBuf, readlength + headerLength);
+    int err = read_spi(txBuf, rxBuf, readlength + headerLength);
     // TODO: Restore UW IRQ
 
     if (err != 0) {
@@ -142,7 +141,7 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer,
     memcpy(txBuf + headerLength, bodyBuffer, bodylength);
 
     // TODO: Disable UW IRQ
-    int err = write_spi(DW1000_SPI_CHANNEL, txBuf, headerLength + bodylength);
+    int err = write_spi(txBuf, headerLength + bodylength);
     // TODO: Restore UW IRQ
 
     if (err != 0) {
@@ -177,7 +176,7 @@ void reset_DW1000(void) {
  *          n
  * */
 void port_set_dw1000_slowrate(void) {
-    set_spi_slow(DW1000_SPI_CHANNEL);
+    set_spi_slow();
     k_msleep(2);
 }
 
@@ -186,7 +185,7 @@ void port_set_dw1000_slowrate(void) {
  *
  * */
 void port_set_dw1000_fastrate(void) {
-    set_spi_fast(DW1000_SPI_CHANNEL);
+    set_spi_fast();
     k_msleep(2);
 }
 
