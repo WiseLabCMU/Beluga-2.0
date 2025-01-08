@@ -1,6 +1,17 @@
-//
-// Created by tom on 7/11/24.
-//
+/**
+ * @file settings.c
+ * @brief Beluga settings management module.
+ *
+ * Contains functions and structures related to managing settings
+ * for the Beluga. It includes functionality for reading, writing,
+ * resetting settings. The settings are stored as key-value
+ * pairs and can be persisted using a storage backend. This module handles
+ * both the initialization of settings from persistent storage and the
+ * runtime handling of settings updates.
+ *
+ * @author Tom Schmitz
+ * @date 7/11/24
+ */
 
 #include <settings.h>
 
@@ -15,39 +26,127 @@
 
 #include <deca_regs.h>
 
+/**
+ * Logger for the settings
+ */
 LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
 
-#define DEFAULT_RATE          250
-#define DEFAULT_TIMEOUT       9000
-#define DEFAULT_STREAMMODE    0
-#define DEFAULT_LEDMODE       0
-#define DEFAULT_BOOTMODE      0
-#define DEFAULT_CHANNEL       5
-#define DEFAULT_TXPOWER       TX_POWER_MAN_DEFAULT
-#define DEFAULT_TWR           1
-#define DEFAULT_OUT_FORMAT    0
+/**
+ * Default value for the UWB initiator polling rate
+ */
+#define DEFAULT_RATE 250
+
+/**
+ * Default value for the node timeout
+ */
+#define DEFAULT_TIMEOUT 9000
+
+/**
+ * Default value for the stream mode
+ */
+#define DEFAULT_STREAMMODE 0
+
+/**
+ * Default value for led mode
+ */
+#define DEFAULT_LEDMODE 0
+
+/**
+ * Default value for the boot mode
+ */
+#define DEFAULT_BOOTMODE 0
+
+/**
+ * Default value for the UWB channel
+ */
+#define DEFAULT_CHANNEL 5
+
+/**
+ * Default value for the UWB TX power
+ */
+#define DEFAULT_TXPOWER TX_POWER_MAN_DEFAULT
+
+/**
+ * Default value for the two-way ranging mode
+ */
+#define DEFAULT_TWR 1
+
+/**
+ * Default value for the output format
+ */
+#define DEFAULT_OUT_FORMAT 0
+
+/**
+ * Default value for the amplifier state
+ */
 #define DEFAULT_AMPLIFICATION 0
-#define DEFAULT_PHR           0
-#define DEFAULT_DATARATE      0 // 6M8
-#define DEFAULT_PULSERATE     1 // 64M
-#define DEFAULT_PREAMBLE      128
-#define DEFAULT_PAC           0 // 8
-#define DEFAULT_NSSFD         0 // Standard SFD
-#define DEFAULT_PAN_ID        0xDECA
+
+/**
+ * Default value for the UWB PHR
+ */
+#define DEFAULT_PHR 0
+
+/**
+ * Default value for the UWB data rate
+ */
+#define DEFAULT_DATARATE 0 // 6M8
+
+/**
+ * Default value for the UWB pulse rate
+ */
+#define DEFAULT_PULSERATE 1 // 64M
+
+/**
+ * Default value for the UWB preamble length
+ */
+#define DEFAULT_PREAMBLE 128
+
+/**
+ * Default value for the UWB PAC size
+ */
+#define DEFAULT_PAC 0 // 8
+
+/**
+ * Default value for the UWB SFD
+ */
+#define DEFAULT_NSSFD 0 // Standard SFD
+
+/**
+ * Default value for the UWB PAN ID
+ */
+#define DEFAULT_PAN_ID 0xDECA
 
 #if defined(CONFIG_SETTINGS_FILE)
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
 #endif
 
-#define STORAGE_PARTITION    storage_partition
+/**
+ * The name of the storage partition
+ */
+#define STORAGE_PARTITION storage_partition
+
+/**
+ * The storage partition device
+ */
 #define STORAGE_PARTITION_ID FIXED_PARTITION_ID(STORAGE_PARTITION)
 
+/**
+ * @brief A structure to store a key-value pair for settings.
+ *
+ * This structure represents a dictionary entry where each entry consists of
+ * a key (a string) and a corresponding value (an integer).
+ */
 struct beluga_settings_dict {
-    const char *key;
-    int32_t value;
+    const char *key; ///< The key associated with the setting
+    int32_t value;   ///< The value of the setting
 };
 
+/**
+ * Default values associated with each setting
+ *
+ * @note Each value is mapped to the value of the beluga settings enumerator
+ */
 static const int32_t default_settings[] = {
     DEFAULT_ID_SETTING, DEFAULT_BOOTMODE,      DEFAULT_RATE,
     DEFAULT_CHANNEL,    DEFAULT_TIMEOUT,       DEFAULT_TXPOWER,
@@ -56,6 +155,9 @@ static const int32_t default_settings[] = {
     DEFAULT_DATARATE,   DEFAULT_PULSERATE,     DEFAULT_PREAMBLE,
     DEFAULT_PAC,        DEFAULT_NSSFD,         DEFAULT_PAN_ID};
 
+/**
+ * Runtime storage of the settings
+ */
 static struct beluga_settings_dict settingValues[] = {
     {"id", DEFAULT_ID_SETTING},
     {"boot_mode", DEFAULT_BOOTMODE},
@@ -77,12 +179,20 @@ static struct beluga_settings_dict settingValues[] = {
     {"pan_id", DEFAULT_PAN_ID},
 };
 
-#define LONGEST_SETTING_NAME_LEN SETTINGS_MAX_NAME_LEN
-#define BELUGA_LEN               6
-#define SEPARATOR_LEN            1
-#define MAX_NAME_LENGTH                                                        \
-    (LONGEST_SETTING_NAME_LEN + SEPARATOR_LEN + BELUGA_LEN + 1)
+/**
+ * Maximum length of a setting key
+ */
+#define MAX_NAME_LENGTH SETTINGS_MAX_NAME_LEN
 
+/**]
+ * @brief Settings handle to get a specific value from runtime construct
+ * @param[in] name The setting key
+ * @param[in] val The setting value
+ * @param[in] val_len_max Maximum length of the setting value in bytes (unused)
+ *
+ * @return -ENOENT if key was not found in settings dictionary
+ * @return The length of the value
+ */
 static int beluga_handle_get(const char *name, char *val, int val_len_max) {
     ARG_UNUSED(val_len_max);
     const char *next;
@@ -98,6 +208,19 @@ static int beluga_handle_get(const char *name, char *val, int val_len_max) {
     return -ENOENT;
 }
 
+/**
+ * @brief Settings handle for loading settings from persistent storage
+ *
+ * @param[in] name The key name
+ * @param[in] len Unused parameter
+ * @param[in] read_cb Callback for reading the setting from storage
+ * @param[in] cb_arg Additional context for the storage
+ *
+ * @return The number of bytes read upon success
+ * @return -ENOENT if entry was not found
+ * @return 0 if the entry was deleted
+ * @return negative error code otherwise
+ */
 static int beluga_handle_set(const char *name, size_t len,
                              settings_read_cb read_cb, void *cb_arg) {
     ARG_UNUSED(len);
@@ -122,11 +245,20 @@ static int beluga_handle_set(const char *name, size_t len,
     return rc;
 }
 
+/**
+ * @brief Handler for indicating that settings have been loaded in full
+ * @return 0
+ */
 static int beluga_handle_commit(void) {
     LOG_INF("Loading all settings under <beluga> handler is done");
     return 0;
 }
 
+/**
+ * @brief Handler to write out all the current settings
+ * @param cb The callback that saves the settings
+ * @return 0
+ */
 static int beluga_handle_export(int (*cb)(const char *name, const void *value,
                                           size_t val_len)) {
     char name[2 * MAX_NAME_LENGTH];
@@ -140,10 +272,18 @@ static int beluga_handle_export(int (*cb)(const char *name, const void *value,
     return 0;
 }
 
+/**
+ * Static settings handlers for "beluga"
+ */
 SETTINGS_STATIC_HANDLER_DEFINE(BelugaSettings, "beluga", beluga_handle_get,
                                beluga_handle_set, beluga_handle_commit,
                                beluga_handle_export);
 
+/**
+ * @brief Write a new value for a beluga setting
+ * @param[in] setting The beluga setting to update
+ * @param[in] value The new value of the setting
+ */
 void updateSetting(enum beluga_setting setting, int32_t value) {
     char name[2 * MAX_NAME_LENGTH];
     int rc;
@@ -162,6 +302,14 @@ void updateSetting(enum beluga_setting setting, int32_t value) {
     }
 }
 
+/**
+ * @brief Gets a current beluga setting
+ *
+ * @param[in] setting The beluga setting to retrieve
+ *
+ * @return The value of the setting
+ * @return -1 if setting is invalid
+ */
 int32_t retrieveSetting(enum beluga_setting setting) {
     int32_t retVal =
         (setting == BELUGA_ID) ? DEFAULT_ID_SETTING : DEFAULT_SETTING;
@@ -176,6 +324,9 @@ int32_t retrieveSetting(enum beluga_setting setting) {
     return retVal;
 }
 
+/**
+ * @brief Erases/resets all the beluga settings to their default values
+ */
 void resetBelugaSettings(void) {
     for (size_t i = 0; i < ARRAY_SIZE(settingValues); i++) {
         settingValues[i].value = default_settings[i];
@@ -185,6 +336,12 @@ void resetBelugaSettings(void) {
     settings_save();
 }
 
+/**
+ * @brief Initializes the settings subsystem and loads all the settings from
+ * persistent storage
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 int initBelugaSettings(void) {
     int rc;
 
@@ -226,7 +383,7 @@ int initBelugaSettings(void) {
         return rc;
     }
 
-    settings_load();
+    rc = settings_load();
 
     LOG_INF("settings subsys initialization: OK.\n");
 
