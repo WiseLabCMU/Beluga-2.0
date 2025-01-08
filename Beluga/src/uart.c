@@ -1,6 +1,18 @@
-//
-// Created by tom on 7/8/24.
-//
+/**
+ * @file uart.c
+ * @brief Serial communication driver for handling UART data reception and
+ * transmission.
+ *
+ * This file contains the implementation for initializing and managing UART
+ * communication. It includes:
+ * - UART interrupt handling
+ * - Buffer management for received UART data
+ * - Serial output hooks for custom console output behavior
+ * - LED control integration during UART activity
+ *
+ * @date 7/8/2024
+ * @author Tom Schmitz
+ */
 
 #include <at_commands.h>
 #include <serial_led.h>
@@ -13,26 +25,48 @@
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/usb/usbd.h>
 
+/**
+ * Logger for the serial
+ */
 LOG_MODULE_REGISTER(serial_log, CONFIG_SERIAL_MODULE_LOG_LEVEL);
 
-#if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
-#define USB_CONSOLE
-#endif
-
+/**
+ * The receiver buffer size
+ */
 #define RX_BUFFER_SIZE 256
 
+/**
+ * @brief UART received data.
+ *
+ * Holds data received over UART along with the length of the data.
+ */
 struct uart_data {
-    size_t len;
-    uint8_t data[RX_BUFFER_SIZE];
+    size_t len;                   ///< Number of bytes received
+    uint8_t data[RX_BUFFER_SIZE]; ///< Buffer to store received data
 };
 
+/**
+ * Fifo for received messages (terminated by \\r\\n)
+ */
 K_FIFO_DEFINE(uart_rx_queue);
 
+/**
+ * Serial device from the devicetree
+ */
 static const struct device *serial = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 
+/**
+ * Received data over serial
+ */
 static struct uart_data rx_buf;
 
+/**
+ * @brief Callback for servicing serial interrupts
+ * @param[in] dev The serial device that the interrupt is for
+ * @param[in] user_data Additional (unused) context
+ */
 static void serial_callback(const struct device *dev, void *user_data) {
+    ARG_UNUSED(user_data);
     uint8_t c;
 
     if (dev != serial) {
@@ -46,9 +80,9 @@ static void serial_callback(const struct device *dev, void *user_data) {
     }
 
     if (uart_irq_rx_ready(dev)) {
-#if IS_ENABLED(CONFIG_SERIAL_LEDS)
+#if defined(CONFIG_SERIAL_LEDS)
         serial_leds_update_state(LED_START_RX);
-#endif
+#endif // defined(CONFIG_SERIAL_LEDS)
         while (uart_fifo_read(dev, &c, 1) == 1) {
             LOG_DBG("Received %c", c);
             if ((c == '\n' || c == '\r' || c == '\0') && rx_buf.len > 0) {
@@ -77,21 +111,27 @@ static void serial_callback(const struct device *dev, void *user_data) {
                 rx_buf.data[rx_buf.len++] = c;
             }
         }
-#if IS_ENABLED(CONFIG_SERIAL_LEDS)
+#if defined(CONFIG_SERIAL_LEDS)
         serial_leds_update_state(LED_STOP_RX);
-#endif
+#endif // defined(CONFIG_SERIAL_LEDS)
     }
-#if IS_ENABLED(CONFIG_SERIAL_LEDS)
+#if defined(CONFIG_SERIAL_LEDS)
     if (uart_irq_tx_complete(dev)) {
         serial_leds_update_state(LED_STOP_TX);
     }
-#endif // IS_ENABLED(CONFIG_SERIAL_LEDS)
+#endif // defined(CONFIG_SERIAL_LEDS)
 }
 
-#if defined(USB_CONSOLE)
+#if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+/**
+ * Initialization routine for the serial device
+ */
 #define device_init() usb_enable(NULL)
 
-#define WAIT_DTR                                                               \
+/**
+ * Routine that waits until the DTR control line for serial is set
+ */
+#define WAIT_DTR()                                                             \
     do {                                                                       \
         uint32_t dtr = 0;                                                      \
         LOG_INF("Waiting on DTR");                                             \
@@ -101,13 +141,25 @@ static void serial_callback(const struct device *dev, void *user_data) {
         }                                                                      \
     } while (0)
 #else
+/**
+ * Initialization routine for the serial device
+ */
 #define device_init() !device_is_ready(serial)
-#define WAIT_DTR      LOG_INF("UART ready")
-#endif
 
-#if IS_ENABLED(CONFIG_SERIAL_LEDS)
+/**
+ * Routine that waits until the DTR control line for serial is set
+ */
+#define WAIT_DTR()    LOG_INF("UART ready")
+#endif // DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+
+#if defined(CONFIG_SERIAL_LEDS)
 #include <zephyr/pm/device_runtime.h>
 
+/**
+ * @brief Serial output hook for printing serial data
+ * @param[in] c The character to output
+ * @return The character printed
+ */
 static int console_out(int c) {
     // Taken from Zephyr's uart console driver
 #ifdef CONFIG_UART_CONSOLE_DEBUG_SERVER_HOOKS
@@ -146,38 +198,60 @@ static int console_out(int c) {
 
 #if defined(CONFIG_STDOUT_CONSOLE)
 extern void __stdout_hook_install(int (*hook)(int c));
-#endif
+#endif // defined(CONFIG_STDOUT_CONSOLE)
 
 #if defined(CONFIG_PRINTK)
 extern void __printk_hook_install(int (*fn)(int c));
-#endif
+#endif // defined(CONFIG_PRINTK)
 
+/**
+ * @brief Helper function to replace the original console output hooks
+ */
 static void install_uart_hooks(void) {
 #if defined(CONFIG_STDOUT_CONSOLE)
     __stdout_hook_install(console_out);
-#endif
+#endif // defined(CONFIG_STDOUT_CONSOLE)
 #if defined(CONFIG_PRINTK)
     __printk_hook_install(console_out);
-#endif
+#endif // defined(CONFIG_PRINTK)
 }
 
+/**
+ * @brief Macro to enable the tx complete irq for serial
+ */
 #define enable_uart_tx_irq(x) uart_irq_tx_enable(x)
 #else
+/**
+ * @brief Helper function to replace the original console output hooks
+ */
 #define install_uart_hooks()  (void)0
-#define enable_uart_tx_irq(x) (void)0
-#endif // IS_ENABLED(CONFIG_SERIAL_LEDS)
 
+/**
+ * @brief Macro to enable the tx complete irq for serial
+ */
+#define enable_uart_tx_irq(x) (void)0
+#endif // defined(CONFIG_SERIAL_LEDS)
+
+/**
+ * @brief Initializes the serial connection by enabling interrupts, waiting for
+ * the peer to be ready, and installing the output hooks.
+ * @return 0 upon success
+ * @return -ENODEV if serial device is not ready
+ * @return negative error code otherwise
+ */
 int uart_init(void) {
     int err;
 
     if (device_init()) {
         LOG_ERR("Device is not ready\n");
-        return -1;
+        return -ENODEV;
     }
 
-    if (serial_leds_init() != 0) {
+    err = serial_leds_init();
+
+    if (err != 0) {
         LOG_ERR("Cannot initialize serial LEDs");
-        return -1;
+        return err;
     }
 
     err = uart_irq_callback_user_data_set(serial, serial_callback, NULL);
@@ -195,7 +269,7 @@ int uart_init(void) {
 
     LOG_DBG("UART TRX IRQ enabled");
 
-    WAIT_DTR;
+    WAIT_DTR();
 
     LOG_INF("UART initialized\n");
 
