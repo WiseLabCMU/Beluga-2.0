@@ -11,10 +11,10 @@
  * The module handles:
  * - Sending a poll message to the responder.
  * - Receiving a response from the responder.
- * - Sending a final message containing timestamp data (two-way/double-sided
+ * - Sending a final message containing timestamp data (double-sided
  * ranging only).
  * - Receiving a report message containing the time-of-flight (ToF) data, which
- * is used to calculate the distance (two-way/double-sided ranging only).
+ * is used to calculate the distance (double-sided ranging only).
  *
  * @date 6/1/2024
  *
@@ -217,7 +217,7 @@ static int send_poll(void) {
 
 /**
  * @brief Waits for a response from the node being ranged to assuming the
- * two-way/double-sided ranging scheme is being used.
+ * double-sided ranging scheme is being used.
  *
  * @return 0 upon success
  * @return -EBADMSG if there was an rx error, rx timeout, or the message
@@ -340,7 +340,7 @@ static int rx_report(double *distance) {
 }
 
 /**
- * @brief Initiates a two-way/double-sided ranging measurement to a certain
+ * @brief Initiates a double-sided two-way ranging measurement to a certain
  * node.
  *
  * @param[in] id The node to range to
@@ -351,7 +351,7 @@ static int rx_report(double *distance) {
  * @return -EINVAL if distance parameter is NULL
  * @return negative error code otherwise
  *
- * @note logic_clock will be updated after a successful two-way/double-sided
+ * @note logic_clock will be updated after a successful double-sided two-way
  * ranging exchange. If an error occurred, then logic_clock will not be updated
  * and thus will retain its original value. Also, if logic_clock is NULL, it is
  * assumed that the logic_clock output is not desired and the run will still be
@@ -390,8 +390,8 @@ int ds_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
 
 /**
  * @brief Waits for a response from the node being ranged to assuming the
- * single-sided ranging scheme is being used. Additionally calculates the
- * estimated distance between the nodes.
+ * single-sided two-way ranging scheme is being used. Additionally calculates
+ * the estimated distance between the nodes.
  *
  * @param[out] distance The estimated distance between the nodes
  *
@@ -452,7 +452,8 @@ static int ss_rx_response(double *distance) {
 }
 
 /**
- * @brief Initiates a single-sided ranging measurement to a certain node.
+ * @brief Initiates a single-sided two-way ranging measurement to a certain
+ * node.
  *
  * @param[in] id The node to range to
  * @param[out] distance The estimated distance between the nodes
@@ -462,7 +463,7 @@ static int ss_rx_response(double *distance) {
  * @return -EINVAL if distance parameter is NULL
  * @return negative error code otherwise
  *
- * @note logic_clock will be updated after a successful two-way/double-sided
+ * @note logic_clock will be updated after a successful single-sided two-way
  * ranging exchange. If an error occurred, then logic_clock will not be updated
  * and thus will retain its original value. Also, if logic_clock is NULL, it is
  * assumed that the logic_clock output is not desired and the run will still be
