@@ -360,7 +360,7 @@ int main(void) {
 
     INIT_CLOCKS();
 
-    if (!init_voltage_regulator()) {
+    if (init_voltage_regulator() != 0) {
         printk("Failed to initialize voltage regulator\n");
         return 1;
     }
@@ -369,7 +369,7 @@ int main(void) {
         printk("Failed to init bluetooth stack\n");
     }
 
-    if (initBelugaSettings()) {
+    if (initBelugaSettings() != 0) {
         printk("Unable to init flash\n");
         return 1;
     }
