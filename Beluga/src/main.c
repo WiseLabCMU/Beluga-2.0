@@ -8,6 +8,7 @@
 #include <app_leds.h>
 #include <app_version.h>
 #include <at_commands.h>
+#include <debug.h>
 #include <initiator.h>
 #include <led_config.h>
 #include <list_monitor.h>
@@ -23,139 +24,10 @@
 #include <utils.h>
 #include <voltage_regulator.h>
 #include <watchdog.h>
-#include <zephyr/drivers/clock_control.h>
-#include <zephyr/drivers/hwinfo.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
-
-#ifdef CONFIG_DEBUG_BELUGA_CLOCK
-#include <zephyr/drivers/clock_control/nrf_clock_control.h>
-
-enum clk_cntrl { HIGH_FREQ, LOW_FREQ };
-
-static bool clock_init(enum clk_cntrl clk_subsys) {
-    int err;
-    int res;
-    struct onoff_manager *clk_mgr;
-    struct onoff_client clk_cli;
-
-    switch (clk_subsys) {
-    case HIGH_FREQ:
-        clk_mgr = z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_HF);
-        break;
-    case LOW_FREQ:
-        clk_mgr = z_nrf_clock_control_get_onoff(CLOCK_CONTROL_NRF_SUBSYS_LF);
-        break;
-    default:
-        return false;
-    }
-
-    if (!clk_mgr) {
-        LOG_ERR("Unable to get the Clock manager");
-        return false;
-    }
-
-    sys_notify_init_spinwait(&clk_cli.notify);
-
-    err = onoff_request(clk_mgr, &clk_cli);
-    if (err < 0) {
-        LOG_ERR("Clock request failed: %d", err);
-        return false;
-    }
-
-    int retries = 15;
-
-    do {
-        for (int i = 0; i < 10000; i++)
-            ;
-        err = sys_notify_fetch_result(&clk_cli.notify, &res);
-        if (!err && res) {
-            LOG_ERR("Clock could not be started: %d", res);
-            return false;
-        } else if (err) {
-            LOG_ERR("sys_notify_fetch_result(): %d", err);
-        }
-        retries--;
-    } while (err && retries);
-
-    if (err == 0) {
-        LOG_INF("Clock has started\n");
-    }
-    return err == 0;
-}
-
-#define INIT_CLOCKS()                                                          \
-    do {                                                                       \
-        bool retVal = clock_init(LOW_FREQ);                                    \
-        while (!retVal)                                                        \
-            ;                                                                  \
-        retVal = clock_init(HIGH_FREQ);                                        \
-        while (!retVal)                                                        \
-            ;                                                                  \
-    } while (0)
-#else
-#define INIT_CLOCKS() (void)0
-#endif
-
-#if defined(CONFIG_BELUGA_RESET_REASON)
-static void get_reset_cause(void) {
-    uint32_t reason;
-    hwinfo_get_reset_cause(&reason);
-    hwinfo_clear_reset_cause();
-
-    if (reason & RESET_PIN) {
-        LOG_INF("External pin reset");
-    }
-    if (reason & RESET_SOFTWARE) {
-        LOG_INF("Software reset\n");
-    }
-    if (reason & RESET_BROWNOUT) {
-        LOG_INF("Brownout\n");
-    }
-    if (reason & RESET_POR) {
-        LOG_INF("Power-on reset\n");
-    }
-    if (reason & RESET_WATCHDOG) {
-        LOG_INF("Watchdog timer expiration\n");
-    }
-    if (reason & RESET_DEBUG) {
-        LOG_INF("Debug event\n");
-    }
-    if (reason & RESET_SECURITY) {
-        LOG_INF("Security violation\n");
-    }
-    if (reason & RESET_LOW_POWER_WAKE) {
-        LOG_INF("Waking up from low power mode\n");
-    }
-    if (reason & RESET_CPU_LOCKUP) {
-        LOG_INF("CPU lock-up detected\n");
-    }
-    if (reason & RESET_PARITY) {
-        LOG_INF("Parity error\n");
-    }
-    if (reason & RESET_PLL) {
-        LOG_INF("PLL error\n");
-    }
-    if (reason & RESET_CLOCK) {
-        LOG_INF("Clock error\n");
-    }
-    if (reason & RESET_HARDWARE) {
-        LOG_INF("Hardware reset\n");
-    }
-    if (reason & RESET_USER) {
-        LOG_INF("User reset\n");
-    }
-    if (reason & RESET_TEMPERATURE) {
-        LOG_INF("Temperature reset\n");
-    }
-}
-
-#define RESET_CAUSE() get_reset_cause()
-#else
-#define RESET_CAUSE() (void)0
-#endif
 
 static void load_led_mode(void) {
     int32_t led_mode = retrieveSetting(BELUGA_LEDMODE);
