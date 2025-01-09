@@ -29,7 +29,6 @@
 #include <spi.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
@@ -827,7 +826,7 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     }
 }
 
-#if ENABLE_THREADS && ENABLE_RANGING
+#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_RANGING)
 /**
  * Ranging task's stack allocation
  */
@@ -859,9 +858,10 @@ void init_ranging_thread(void) {
  * @brief Creates the ranging thread and initiates its data
  */
 void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
-#endif
+#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) &&
+       // defined(CONFIG_ENABLE_RANGING)
 
-#if ENABLE_THREADS && ENABLE_RESPONDER
+#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_RESPONDER)
 /**
  * Responder task's stack allocation
  */
@@ -893,4 +893,5 @@ void init_responder_thread(void) {
  * @brief Creates the responder thread and initiates its data
  */
 void init_responder_thread(void) { LOG_INF("Responder disabled"); }
-#endif
+#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) &&
+       // defined(CONFIG_ENABLE_RESPONDER)

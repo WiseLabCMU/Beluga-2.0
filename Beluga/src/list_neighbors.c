@@ -16,7 +16,6 @@
 #include <inttypes.h>
 #include <list_neighbors.h>
 #include <stdio.h>
-#include <thread_priorities.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -274,7 +273,7 @@ NO_RETURN static void list_task_function(void *p1, void *p2, void *p3) {
     }
 }
 
-#if ENABLE_THREADS && ENABLE_LIST
+#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_LIST)
 
 /**
  * Neighbor list reporter stack allocation
@@ -308,4 +307,4 @@ void init_print_list_task(void) {
  * is disabled.
  */
 void init_print_list_task(void) { LOG_INF("Neighbors list disabled"); }
-#endif // ENABLE_THREADS && ENABLE_LIST
+#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_LIST)

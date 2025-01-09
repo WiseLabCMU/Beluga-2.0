@@ -35,7 +35,6 @@
 #include <settings.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/logging/log.h>
@@ -1162,7 +1161,7 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
     }
 }
 
-#if ENABLE_THREADS && ENABLE_COMMANDS
+#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_COMMANDS)
 /**
  * The thread stack of the commands
  */
@@ -1194,4 +1193,5 @@ void init_commands_thread(void) {
  * Initializes and launches the commands task and gives the thread a name.
  */
 void init_commands_thread(void) { LOG_INF("AT commands task disabled"); }
-#endif
+#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) &&
+       // defined(CONFIG_ENABLE_COMMANDS)

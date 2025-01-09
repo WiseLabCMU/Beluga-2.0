@@ -19,7 +19,6 @@
 #include <list_neighbors.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <thread_priorities.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
@@ -198,7 +197,7 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
     }
 }
 
-#if ENABLE_THREADS && ENABLE_MONITOR
+#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_MONITOR)
 /**
  * List monitor stack allocation
  */
@@ -231,4 +230,5 @@ void init_monitor_thread(void) {
  * is disabled.
  */
 void init_monitor_thread(void) { LOG_INF("Monitor disabled"); }
-#endif
+#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) &&
+       // defined(CONFIG_ENABLE_MONITOR)
