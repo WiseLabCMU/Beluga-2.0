@@ -611,7 +611,7 @@ void init_uwb(void) {
         return;
     }
     setup_DW1000RSTnIRQ(0);
-    toggle_cs_line(DW1000_SPI_CHANNEL, 400);
+    toggle_cs_line(400);
 
     reset_DW1000();
 
