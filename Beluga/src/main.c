@@ -1,7 +1,9 @@
-/*
- * Copyright (c) 2021 Nordic Semiconductor ASA
+/**
+ * @file main.c
+ * @brief Main application
  *
- * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ * @date 6/19/2024
+ * @author Tom Schmitz
  */
 
 #include "ble_app.h"
@@ -29,6 +31,9 @@
 
 LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 
+/**
+ * Load the LED mode from the settings and display the current state
+ */
 static void load_led_mode(void) {
     int32_t led_mode = retrieveSetting(BELUGA_LEDMODE);
 
@@ -39,6 +44,9 @@ static void load_led_mode(void) {
     printf("  LED Mode: %d \r\n", led_mode);
 }
 
+/**
+ * Load the node ID from settings and display it
+ */
 static void load_id(void) {
     int32_t nodeID = retrieveSetting(BELUGA_ID);
 
@@ -54,6 +62,10 @@ static void load_id(void) {
     }
 }
 
+/**
+ * Load the mode the node should boot in, update the states for the node, and
+ * display the boot mode
+ */
 static void load_bootmode(void) {
     int32_t bootMode = retrieveSetting(BELUGA_BOOTMODE);
 
@@ -79,6 +91,9 @@ static void load_bootmode(void) {
     printf("  Boot Mode: %d\r\n", bootMode);
 }
 
+/**
+ * Retrieve the polling rate, set it, and display what it is
+ */
 static void load_poll_rate(void) {
     int32_t rate = retrieveSetting(BELUGA_POLL_RATE);
     set_rate(rate);
@@ -86,18 +101,27 @@ static void load_poll_rate(void) {
     printf("  UWB Polling Rate: %d\r\n", rate);
 }
 
+/**
+ * Retrieve the UWB channel, set it, and display what it is
+ */
 static void load_channel(void) {
     int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
     set_uwb_channel(channel);
     printf("  UWB Channel: %d \r\n", channel);
 }
 
+/**
+ * Retrieve the node timeout, set it, and display what it is
+ */
 static void load_timeout(void) {
     int32_t timeout = retrieveSetting(BELUGA_BLE_TIMEOUT);
     set_node_timeout(timeout);
     printf("  BLE Timeout: %d \r\n", timeout);
 }
 
+/**
+ * Retrieve the UWB TX power, set it, and display what it is
+ */
 static void load_tx_power(void) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
     set_tx_power((uint32_t)tx_power);
@@ -106,18 +130,27 @@ static void load_tx_power(void) {
     printf("\r\n");
 }
 
+/**
+ * Retrieve the neighbor streaming mode, set it, and display the current mode
+ */
 static void load_stream_mode(void) {
     int32_t stream_mode = retrieveSetting(BELUGA_STREAMMODE);
     set_stream_mode(stream_mode != 0);
     printf("  Stream Mode: %d \r\n", stream_mode);
 }
 
+/**
+ * Retrieve the two-way ranging mode, set it, and display what it is
+ */
 static void load_twr_mode(void) {
     int32_t twr = retrieveSetting(BELUGA_TWR);
     set_twr_mode(twr != 0);
     printf("  Ranging Mode: %d \r\n", twr);
 }
 
+/**
+ * Retrieve the output format mode, set it, and display what it is
+ */
 static void load_out_format(void) {
     int32_t format = retrieveSetting(BELUGA_OUT_FORMAT);
     set_format_mode(format == 1);
@@ -126,12 +159,18 @@ static void load_out_format(void) {
     printf("\r\n");
 }
 
+/**
+ * Retrieve the UWB PHR mode, set it, and display what it is
+ */
 static void load_phr_mode(void) {
     int32_t mode = retrieveSetting(BELUGA_UWB_PHR);
     printf("  UWB PHR Mode: %" PRId32 " \r\n", mode);
     uwb_set_phr_mode((enum uwb_phr_mode)mode);
 }
 
+/**
+ * Retrieve the UWB data rate, set it, and display what it is
+ */
 static void load_data_rate(void) {
     enum uwb_datarate rate =
         (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
@@ -141,6 +180,9 @@ static void load_data_rate(void) {
     uwb_set_datarate(rate);
 }
 
+/**
+ * Retrieve the UWB pulse repetition rate, set it, and display what it is
+ */
 static void load_pulse_rate(void) {
     enum uwb_pulse_rate rate =
         (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
@@ -150,12 +192,18 @@ static void load_pulse_rate(void) {
     uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
 }
 
+/**
+ * Retrieve the UWB preamble length, set it, and display what it is
+ */
 static void load_preamble_length(void) {
     int32_t length = retrieveSetting(BELUGA_UWB_PREAMBLE);
     printf("  UWB Preamble Length: %" PRId32 "\r\n", length);
     uwb_set_preamble((enum uwb_preamble_length)length);
 }
 
+/**
+ * Retrieve the UWB PAC size, set it, and display what it is
+ */
 static void load_pac_size(void) {
     int32_t pac = retrieveSetting(BELUGA_UWB_PAC);
     printf("  ");
@@ -164,12 +212,18 @@ static void load_pac_size(void) {
     set_pac_size((enum uwb_pac)pac);
 }
 
+/**
+ * Retrieve the SFD mode, set it, and display what it is
+ */
 static void load_sfd_mode(void) {
     int32_t mode = retrieveSetting(BELUGA_UWB_NSSFD);
     printf("  UWB Nonstandard SFD Length: %" PRId32 " \r\n", mode);
     set_sfd_mode((enum uwb_sfd)mode);
 }
 
+/**
+ * Retrieve the UWB PAN ID, set it, and display what it is
+ */
 static void load_pan_id(void) {
     int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
     printf("  ");
@@ -179,6 +233,9 @@ static void load_pan_id(void) {
     set_responder_pan_id((uint16_t)pan_id);
 }
 
+/**
+ * Retrieve the power amplifier state, set it, and display what it is
+ */
 UNUSED static void load_power_amplifiers(void) {
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
@@ -190,6 +247,10 @@ UNUSED static void load_power_amplifiers(void) {
     printf("  Range Extension: %d \r\n", pwramp);
 }
 
+/**
+ * Load all the settings, initialize all the states, and display what the
+ * settings are
+ */
 static void load_settings(void) {
     printf("Flash Configuration: \r\n");
 
@@ -225,6 +286,10 @@ static void load_settings(void) {
     }
 }
 
+/**
+ * @brief Main entry point of the application
+ * @return 1 on error
+ */
 int main(void) {
     RESET_CAUSE();
 
@@ -272,7 +337,7 @@ int main(void) {
 
     if (spawn_task_watchdog(&task_watchdog) != 0) {
         printk("Unable to start watchdog\n");
-        return 0;
+        return 1;
     }
 
     init_uwb();
