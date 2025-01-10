@@ -18,6 +18,8 @@
 #include "deca_param_types.h"
 #include "deca_regs.h"
 
+#if defined(CONFIG_ENABLE_BELUGA_UWB)
+
 //-----------------------------------------
 // map the channel number to the index in the configuration arrays below
 // 0th element is chan 1, 1st is chan 2, 2nd is chan 3, 3rd is chan 4, 4th is
@@ -91,3 +93,5 @@ const uint16 lde_replicaCoeff[PCODES] = {0, // No preamble code 0
                                          LDE_REPC_PCODE_24};
 
 const double txpwr_compensation[NUM_CH] = {0.0, 0.035, 0.0, 0.0, 0.065, 0.0};
+
+#endif // defined(CONFIG_ENABLE_BELUGA_UWB)

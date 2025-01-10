@@ -15,6 +15,8 @@
 #include "deca_device_api.h"
 #include "deca_param_types.h"
 
+#if defined(CONFIG_ENABLE_BELUGA_UWB)
+
 #define NUM_16M_OFFSET   (37)
 #define NUM_16M_OFFSETWB (68)
 #define NUM_64M_OFFSET   (26)
@@ -165,7 +167,6 @@ const uint8 range25cm64PRFwb[2]
  * returns correction needed in meters
  */
 double dwt_getrangebias(uint8 chan, float range, uint8 prf) {
-    DWT_DISABLED_RET_DOUBLE;
     // first get the lookup index that corresponds to given range for a
     // particular channel at 16M PRF
     int i = 0;
@@ -224,3 +225,5 @@ double dwt_getrangebias(uint8 chan, float range, uint8 prf) {
 
     return (mOffset);
 }
+
+#endif // defined(CONFIG_ENABLE_BELUGA_UWB)

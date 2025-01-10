@@ -80,4 +80,8 @@ config POLL_RX_TO_RESP_TX_DLY
         of respnse must allow the processor enough time to do its calculations and put
         the packet in the Tx buffer. So more time required for a slower system (processor).
 
+config DWT_API_ERROR_CHECK
+    bool "Have DecaDriver check for errors"
+    default n
+
 endmenu

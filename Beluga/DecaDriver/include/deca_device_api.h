@@ -189,36 +189,6 @@ typedef signed long int32;
 // Call-back data RX frames flags
 #define DWT_CB_DATA_RX_FLAG_RNG 0x1 // Ranging bit
 
-#ifndef CONFIG_ENABLE_BELUGA_UWB
-#include <zephyr/sys/printk.h>
-
-#define DWT_DISABLED_RET_SUCCESS                                               \
-    do {                                                                       \
-        printk("UWB disabled\n");                                              \
-        return DWT_SUCCESS;                                                    \
-    } while (0)
-#define DWT_DISABLED_RET_DEV_CODE                                              \
-    do {                                                                       \
-        printk("UWB disabled\n");                                              \
-        return 0xDECA0130;                                                     \
-    } while (0)
-#define DWT_DISABLED_RET_VOID                                                  \
-    do {                                                                       \
-        printk("UWB disabled\n");                                              \
-        return;                                                                \
-    } while (0)
-#define DWT_DISABLED_RET_DOUBLE                                                \
-    do {                                                                       \
-        printk("UWB disabled\n");                                              \
-        return 0.0;                                                            \
-    } while (0)
-#else
-#define DWT_DISABLED_RET_SUCCESS  (void)0
-#define DWT_DISABLED_RET_DEV_CODE DWT_DISABLED_RET_SUCCESS
-#define DWT_DISABLED_RET_VOID     DWT_DISABLED_RET_SUCCESS
-#define DWT_DISABLED_RET_DOUBLE   DWT_DISABLED_RET_SUCCESS
-#endif
-
 // TX/RX call-back data
 typedef struct {
     uint32 status;     // initial value of register as ISR is entered
@@ -324,6 +294,8 @@ typedef struct {
 /********************************************************************************************************************/
 /*                                                     API LIST */
 /********************************************************************************************************************/
+
+#if defined(CONFIG_ENABLE_BELUGA_UWB)
 
 /*!
  * ------------------------------------------------------------------------------------------------------------------
@@ -2116,12 +2088,6 @@ void decamutexoff(decaIrqStatus_t s);
  */
 void deca_sleep(unsigned int time_ms);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _DECA_DEVICE_API_H_ */
-
 /*!
  * ------------------------------------------------------------------------------------------------------------------
  * Function: dwt_getrangebias()
@@ -2139,3 +2105,121 @@ void deca_sleep(unsigned int time_ms);
  * returns correction needed in meters
  */
 double dwt_getrangebias(uint8 chan, float range, uint8 prf);
+
+#else
+
+#define dwt_setlocaldataptr(...)           0
+#define dwt_getpartid()                    0
+#define dwt_getlotid()                     0
+#define dwt_readdevid()                    0xDECA0130
+#define dwt_otprevision()                  0
+#define dwt_setfinegraintxseq(...)         (void)0
+#define dwt_setlnapamode(...)              (void)0
+#define dwt_setgpiodirection(...)          (void)0
+#define dwt_setgpiovalue(...)              (void)0
+#define dwt_initialise(...)                0
+#define dwt_configure(...)                 (void)0
+#define dwt_configuretxrf(...)             (void)0
+#define dwt_setrxantennadelay(...)         (void)0
+#define dwt_settxantennadelay(...)         (void)0
+#define dwt_setsmarttxpower(...)           (void)0
+#define dwt_writetxdata(...)               0
+#define dwt_writetxfctrl(...)              (void)0
+#define dwt_starttx(...)                   0
+#define dwt_setdelayedtrxtime(...)         (void)0
+#define dwt_readtxtimestamp(...)           (void)0
+#define dwt_readtxtimestamphi32()          0
+#define dwt_readtxtimestamplo32()          0
+#define dwt_readrxtimestamp(...)           (void)0
+#define dwt_readrxtimestamphi32()          0
+#define dwt_readrxtimestamplo32()          0
+#define dwt_readsystimestamphi32()         0
+#define dwt_readsystime(...)               (void)0
+#define dwt_forcetrxoff()                  (void)0
+#define dwt_syncrxbufptrs()                (void)0
+#define dwt_rxenable(...)                  0
+#define dwt_setsniffmode(...)              (void)0
+#define dwt_setlowpowerlistening(...)      (void)0
+#define dwt_setsnoozetime(...)             (void)0
+#define dwt_setdblrxbuffmode(...)          (void)0
+#define dwt_setrxtimeout(...)              (void)0
+#define dwt_setpreambledetecttimeout(...)  (void)0
+#define dwt_calibratesleepcnt()            0
+#define dwt_configuresleepcnt(...)         (void)0
+#define dwt_configuresleep(...)            (void)0
+#define dwt_entersleep()                   (void)0
+#define dwt_entersleepaftertx(...)         (void)0
+#define dwt_spicswakeup(...)               0
+#define dwt_setcallbacks(...)              (void)0
+#define dwt_checkirq()                     0
+#define dwt_isr()                          (void)0
+#define dwt_lowpowerlistenisr()            (void)0
+#define dwt_setinterrupt(...)              (void)0
+#define dwt_setpanid(...)                  (void)0
+#define dwt_setaddress16(...)              (void)0
+#define dwt_seteui(...)                    (void)0
+#define dwt_geteui(...)                    (void)0
+#define dwt_otpread(...)                   (void)0
+#define dwt_enableframefilter(...)         (void)0
+#define dwt_enableautoack(...)             (void)0
+#define dwt_setrxaftertxdelay(...)         (void)0
+#define dwt_rxreset()                      (void)0
+#define dwt_softreset()                    (void)0
+#define dwt_readrxdata(...)                (void)0
+#define dwt_readaccdata(...)               (void)0
+#define dwt_readcarrierintegrator()        0
+#define dwt_readdiagnostics(...)           (void)0
+#define dwt_loadopsettabfromotp(...)       (void)0
+#define dwt_configeventcounters(...)       (void)0
+#define dwt_readeventcounters(...)         (void)0
+#define dwt_otpwriteandverify(...)         0
+#define dwt_setleds(...)                   (void)0
+#define dwt_setxtaltrim(...)               (void)0
+#define dwt_getinitxtaltrim()              0
+#define dwt_configcwmode(...)              (void)0
+#define dwt_configcontinuousframemode(...) (void)0
+#define dwt_readtempvbat(...)              0
+#define dwt_readwakeuptemp()               0
+#define dwt_readwakeupvbat()               0
+#define dwt_calcbandwidthtempadj(...)      0
+#define dwt_calcpowertempadj(...)          0
+#define dwt_calcpgcount(...)               0
+#define dwt_writetodevice(...)             (void)0
+#define dwt_readfromdevice(...)            (void)0
+#define dwt_read32bitoffsetreg(...)        0
+#define dwt_write32bitoffsetreg(...)       (void)0
+#define dwt_write32bitreg(x, y)            dwt_write32bitoffsetreg(x, 0, y)
+#define dwt_read32bitreg(x)                dwt_read32bitoffsetreg(x, 0)
+#define dwt_read16bitoffsetreg(...)        0
+#define dwt_write16bitoffsetreg(...)       (void)0
+#define dwt_read8bitoffsetreg(...)         0
+#define dwt_write8bitoffsetreg(...)        (void)0
+#define writetospi(...)                    0
+#define readfromspi(...)                   0
+#define decamutexon()                      0
+#define decamutexoff(...)                  (void)0
+#define deca_sleep(...)                    (void)0
+#define dwt_getrangebias(...)              0.0
+
+// Multiplication factors to convert carrier integrator value to a frequency
+// offset in Hertz
+
+#define FREQ_OFFSET_MULTIPLIER             (998.4e6 / 2.0 / 1024.0 / 131072.0)
+#define FREQ_OFFSET_MULTIPLIER_110KB       (998.4e6 / 2.0 / 8192.0 / 131072.0)
+
+// Multiplication factors to convert frequency offset in Hertz to PPM crystal
+// offset NB: also changes sign so a positive value means the local RX clock is
+// running slower than the remote TX device.
+
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_1     (-1.0e6 / 3494.4e6)
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_2     (-1.0e6 / 3993.6e6)
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_3     (-1.0e6 / 4492.8e6)
+#define HERTZ_TO_PPM_MULTIPLIER_CHAN_5     (-1.0e6 / 6489.6e6)
+
+#endif // defined(CONFIG_ENABLE_BELUGA_UWB)
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _DECA_DEVICE_API_H_ */

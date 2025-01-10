@@ -36,15 +36,17 @@ performing range measurements.
 */
 
 /* Default antenna delay values for 64 MHz PRF.*/
+#if defined(CONFIG_TX_ANT_DLY)
 #define TX_ANT_DLY CONFIG_TX_ANT_DLY
-#define RX_ANT_DLY CONFIG_RX_ANT_DLY
+#else
+#define TX_ANT_DLY 16436
+#endif // defined(CONFIG_TX_ANT_DLY)
 
-int readfromspi(uint16 headerLength, const uint8 *headerBuffer,
-                uint32 readlength, uint8 *readBuffer);
-int writetospi(uint16 headerLength, const uint8 *headerBuffer,
-               uint32 bodylength, const uint8 *bodyBuffer);
-decaIrqStatus_t decamutexon(void);
-void decamutexoff(decaIrqStatus_t s);
+#if defined(CONFIG_RX_ANT_DLY)
+#define RX_ANT_DLY CONFIG_RX_ANT_DLY
+#else
+#define RX_ANT_DLY 16436
+#endif // defined(CONFIG_RX_ANT_DLY)
 
 /**
  * Types definitions
@@ -70,6 +72,7 @@ typedef int64_t int64;
  * port function prototypes
  */
 
+#if defined(CONFIG_ENABLE_BELUGA_UWB)
 void Sleep(uint32_t Delay);
 unsigned long portGetTickCnt(void);
 
@@ -85,6 +88,18 @@ void process_deca_irq(void);
 void setup_DW1000RSTnIRQ(int enable);
 
 void reset_DW1000(void);
+#else
+#define Sleep(...)                 (void)0
+#define portGetTickCnt()           (void)0
+#define port_wakeup_dw1000()       (void)0
+#define port_wakeup_dw1000_fast()  (void)0
+#define port_set_dw1000_slowrate() (void)0
+#define port_set_dw1000_fastrate() (void)0
+#define process_dwRSTn_irq()       (void)0
+#define process_deca_irq()         (void)0
+#define setup_DW1000RSTnIRQ(...)   (void)0
+#define reset_DW1000()             (void)0
+#endif // defined(CONFIG_ENABLE_BELUGA_UWB)
 
 #ifdef __cplusplus
 }
