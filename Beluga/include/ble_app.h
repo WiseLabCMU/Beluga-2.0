@@ -20,7 +20,7 @@
 /*
  * BLE neighbor node structure
  */
-typedef struct node {
+struct node {
     uint16_t UUID;      /* node ID */
     int8_t RSSI;        /* node RSSI value */
     int64_t time_stamp; /* Last timestamp updated ranging value */
@@ -35,11 +35,11 @@ typedef struct node {
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
     uint32_t exchange_id; /* Ranging exchange ID (Logic clock) */
 #endif
-} node;
+};
 
 #define MAX_ANCHOR_COUNT CONFIG_BELUGA_NETWORK_SIZE
 
-extern node seen_list[MAX_ANCHOR_COUNT];
+extern struct node seen_list[MAX_ANCHOR_COUNT];
 
 int32_t init_bt_stack(void);
 int32_t deinit_bt_stack(void);

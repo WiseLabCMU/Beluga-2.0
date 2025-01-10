@@ -1,0 +1,46 @@
+/**
+ * @file beluga_message.h
+ *
+ * @brief
+ *
+ * @date 1/10/25
+ *
+ * @author tom
+ */
+
+#ifndef BELUGA_BELUGA_MESSAGE_H
+#define BELUGA_BELUGA_MESSAGE_H
+
+#include <ble_app.h>
+#include <stdint.h>
+
+#define BELUGA_MSG_HEADER          (uint8_t)'@'
+#define BELUGA_MSG_FOOTER          (uint8_t)'*'
+
+#define BELUGA_MSG_HEADER_OVERHEAD 1
+#define BELUGA_MSG_LEN_OVERHEAD    2
+#define BELUGA_MSG_TYPE_OVERHEAD   1
+#define BELUGA_MSG_FOOTER_OVERHEAD 1
+
+enum beluga_msg_type { COMMAND_RESPONSE, NEIGHBOR_UPDATES, RANGING_EVENT };
+
+struct ranging_event {
+    uint16_t id;
+    uint32_t exchange_id;
+};
+
+struct beluga_msg {
+    enum beluga_msg_type type;
+    union {
+        const char *response; ///< COMMAND_RESPONSE
+        struct {
+            const struct node *neighbor_list; ///< NEIGHBOR_UPDATE
+            bool stream;
+        };
+        const struct ranging_event *event; ///< RANGING_EVENT
+    } payload;
+};
+
+int construct_frame(const struct beluga_msg *msg, uint8_t *buffer, size_t len);
+
+#endif // BELUGA_BELUGA_MESSAGE_H

@@ -136,7 +136,7 @@ static void sort_nodes(void) {
     for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
         for (int k = j + 1; k < MAX_ANCHOR_COUNT; k++) {
             if (seen_list[j].RSSI < seen_list[k].RSSI) {
-                node A = seen_list[j];
+                struct node A = seen_list[j];
                 seen_list[j] = seen_list[k];
                 seen_list[k] = A;
             }
