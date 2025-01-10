@@ -87,6 +87,18 @@ static uint8 rx_report_msg[REPORT_MSG_LEN] = {
 static uint8 rx_buffer[RX_BUF_LEN];
 
 /**
+ * Multiplication factor to convert carrier integrator value to a frequency
+ * offset in Hertz.
+ */
+static double freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER;
+
+/**
+ * Multiplication factor to convert frequency offset in Hertz to PPM crystal
+ * offset.
+ */
+static double hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
+
+/**
  * This is the delay from Frame RX timestamp to TX reply timestamp used for
  * calculating/setting the DW1000's delayed TX function.
  */
@@ -134,6 +146,48 @@ int set_initiator_pan_id(uint16_t id) {
     set_pan_id(id, rx_report_msg);
 
     return 0;
+}
+
+/**
+ * @brief Sets the multiplication factor to convert carrier integrator value to
+ * a frequency offset in Hertz depending on the data rate.
+ *
+ * @param[in] datarate_110k `true` if data rate is 110K, `false` otherwise
+ */
+void set_freq_offset_multiplier(bool datarate_110k) {
+    if (datarate_110k) {
+        freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER_110KB;
+    } else {
+        freq_offset_multiplier = FREQ_OFFSET_MULTIPLIER;
+    }
+}
+
+/**
+ * @brief Sets the multiplication factor to convert frequency offset in Hertz to
+ * PPM crystal offset depending on the channel.
+ *
+ * @param[in] channel The channel being used for UWB
+ */
+void set_hertz_to_ppm_multiplier(uint8_t channel) {
+    switch (channel) {
+    case 1:
+        hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
+        break;
+    case 2:
+        hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
+        break;
+    case 3:
+        hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
+        break;
+    case 4:
+    case 5:
+    case 7:
+        hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
+        break;
+    default:
+        __ASSERT(false, "Invalid UWB channel (%u)", channel);
+        break;
+    }
 }
 
 /**
@@ -433,9 +487,9 @@ static int ss_rx_response(double *distance) {
     poll_tx_ts = dwt_readtxtimestamplo32();
     resp_rx_ts = dwt_readrxtimestamplo32();
 
-    clockOffsetRatio = (float)(dwt_readcarrierintegrator() *
-                               (FREQ_OFFSET_MULTIPLIER *
-                                HERTZ_TO_PPM_MULTIPLIER_CHAN_5 / 1.0e6));
+    clockOffsetRatio =
+        (float)(dwt_readcarrierintegrator() *
+                (freq_offset_multiplier * hertz_to_ppm_multiplier / 1.0e6));
 
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
     msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
