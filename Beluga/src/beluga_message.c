@@ -42,19 +42,25 @@ struct node_json_struct {
     int32_t EXCHANGE;
 #endif // defined(CONFIG_UWB_LOGIC_CLK)
     int64_t TIMESTAMP;
-    char range_str[32];
+    char str_RANGE[32];
     struct json_obj_token RANGE;
 };
+
+#define COPY_FLOAT(json_obj, float_container, float_prim)                      \
+    do {                                                                       \
+        (json_obj).float_container.length =                                    \
+            snprintf((json_obj).str_##float_container,                         \
+                     sizeof((json_obj).str_##float_container) - 1, "%f",       \
+                     (double)(float_prim));                                    \
+        (json_obj).float_container.start = (json_obj).str_##float_container;   \
+    } while (0)
 
 #define COPY_NODE(json_node, node)                                             \
     do {                                                                       \
         (json_node).UUID = (int32_t)(node).UUID;                               \
         (json_node).RSSI = (int32_t)(node).RSSI;                               \
         (json_node).TIMESTAMP = (node).time_stamp;                             \
-        (json_node).RANGE.length =                                             \
-            snprintf((json_node).range_str, sizeof((json_node).range_str) - 1, \
-                     "%f", (double)(node).range);                              \
-        (json_node).RANGE.start = (json_node).range_str;                       \
+        COPY_FLOAT(json_node, RANGE, (node).range);                            \
         (json_node).EXCHANGE = (int32_t)(node).exchange_id;                    \
     } while (0)
 
@@ -108,6 +114,7 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
         if (msg->payload.neighbor_list[i].UUID != 0 &&
             (!msg->payload.stream ||
              msg->payload.neighbor_list[i].update_flag)) {
+
             COPY_NODE(neighbors.neighbors[neighbors.neighbors_len],
                       msg->payload.neighbor_list[i]);
             neighbors.neighbors_len++;
