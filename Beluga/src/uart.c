@@ -15,6 +15,7 @@
  */
 
 #include <at_commands.h>
+#include <beluga_message.h>
 #include <serial_led.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,6 +25,10 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/usb/usbd.h>
+
+#if defined(CONFIG_BELUGA_FRAMES) || defined(CONFIG_SERIAL_LEDS)
+#include <zephyr/pm/device_runtime.h>
+#endif // defined(CONFIG_BELUGA_FRAMES) || defined(CONFIG_SERIAL_LEDS)
 
 /**
  * Logger for the serial
@@ -153,7 +158,6 @@ static void serial_callback(const struct device *dev, void *user_data) {
 #endif // DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
 
 #if defined(CONFIG_SERIAL_LEDS)
-#include <zephyr/pm/device_runtime.h>
 
 /**
  * @brief Serial output hook for printing serial data
@@ -275,3 +279,87 @@ int uart_init(void) {
 
     return 0;
 }
+
+#if defined(CONFIG_BELUGA_FRAMES)
+
+K_MUTEX_DEFINE(write_lock);
+
+static void write_char(char c) {
+    // Taken from Zephyr's uart console driver
+#ifdef CONFIG_UART_CONSOLE_DEBUG_SERVER_HOOKS
+
+    int handled_by_debug_server = HANDLE_DEBUG_HOOK_OUT(c);
+
+    if (handled_by_debug_server) {
+        return c;
+    }
+
+#endif /* CONFIG_UART_CONSOLE_DEBUG_SERVER_HOOKS */
+
+    if (pm_device_runtime_is_enabled(serial)) {
+        if (pm_device_runtime_get(serial) < 0) {
+            /* Enabling the UART instance has failed. */
+            return;
+        }
+    }
+
+#if defined(CONFIG_SERIAL_LEDS)
+    serial_leds_update_state(LED_START_TX);
+#endif // defined(CONFIG_SERIAL_LEDS)
+
+    uart_poll_out(serial, c);
+
+    if (pm_device_runtime_is_enabled(serial)) {
+        /* As errors cannot be returned, ignore the return value */
+        (void)pm_device_runtime_put(serial);
+    }
+}
+
+static int frame_write(uint8_t *buffer, size_t len) {
+    k_mutex_lock(&write_lock, K_FOREVER);
+
+    for (size_t i = 0; i < len; i++) {
+        write_char(buffer[i]);
+    }
+
+    k_mutex_unlock(&write_lock);
+    return 0;
+}
+
+int write_message_frame(const struct beluga_msg *msg) {
+    int ret;
+
+    if (msg == NULL) {
+        return -EINVAL;
+    }
+
+    ssize_t msg_length = frame_length(msg);
+    if (msg_length < 1) {
+        return -EINVAL;
+    }
+
+    uint8_t *buffer = k_malloc(msg_length + 1);
+    if (buffer == NULL) {
+        return -ENOMEM;
+    }
+
+    msg_length = construct_frame(msg, buffer, msg_length + 1);
+
+    if (msg_length < 0) {
+        k_free(buffer);
+        return msg_length;
+    }
+
+    ret = frame_write(buffer, msg_length);
+
+    k_free(buffer);
+
+    return ret;
+}
+
+#else
+int write_message_frame(const struct beluga_msg *msg) {
+    ARG_UNUSED(msg);
+    return -ENOTSUP;
+}
+#endif

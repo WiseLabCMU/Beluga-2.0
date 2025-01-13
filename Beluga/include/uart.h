@@ -28,6 +28,8 @@
  */
 int uart_init(void);
 
+int write_message_frame(const struct beluga_msg *msg);
+
 /**
  * Received data over serial
  */
