@@ -41,7 +41,12 @@ struct beluga_msg {
     } payload;
 };
 
+#if defined(CONFIG_BELUGA_FRAMES)
 int construct_frame(const struct beluga_msg *msg, uint8_t buffer[], size_t len);
 int frame_length(const struct beluga_msg *msg);
+#else
+#define construct_frame(...) -ENOTSUP
+#define frame_length(...)    -ENOTSUP
+#endif // defined(CONFIG_BELUGA_FRAMES)
 
 #endif // BELUGA_BELUGA_MESSAGE_H
