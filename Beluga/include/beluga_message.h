@@ -42,5 +42,6 @@ struct beluga_msg {
 };
 
 int construct_frame(const struct beluga_msg *msg, uint8_t buffer[], size_t len);
+int frame_length(const struct beluga_msg *msg);
 
 #endif // BELUGA_BELUGA_MESSAGE_H

@@ -115,7 +115,7 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
 
     numBytes = json_calc_encoded_arr_len(json_neighbor_list, &neighbors);
 
-    if (numBytes < 0) {
+    if (numBytes < 0 || buffer == NULL) {
         return numBytes;
     }
 
@@ -141,7 +141,7 @@ static ssize_t encode_ranging_event(const struct beluga_msg *msg,
     numBytes = json_calc_encoded_len(
         json_ranging_event, ARRAY_SIZE(json_ranging_event), msg->payload.event);
 
-    if (numBytes < 0) {
+    if (numBytes < 0 || buffer == NULL) {
         return numBytes;
     }
 
@@ -192,6 +192,39 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
     if (msgLen >= 0) {
         ENCODE_FRAME(buffer, msgLen, msg->type);
     } else {
+        return msgLen;
+    }
+
+    return message_size(msgLen);
+}
+
+int frame_length(const struct beluga_msg *msg) {
+    ssize_t msgLen;
+
+    if (msg == NULL) {
+        return -EINVAL;
+    }
+
+    switch (msg->type) {
+    case COMMAND_RESPONSE: {
+        if (msg->payload.response == NULL) {
+            return -EINVAL;
+        }
+        msgLen = (ssize_t)strlen(msg->payload.response) + 1;
+        break;
+    }
+    case NEIGHBOR_UPDATES:
+        msgLen = encode_neighbor_list(msg, NULL, 0);
+        break;
+    case RANGING_EVENT:
+        msgLen = encode_ranging_event(msg, NULL, 0);
+        break;
+    default:
+        __ASSERT(false, "Invalid beluga message type: (%d)",
+                 (uint32_t)msg->type);
+    }
+
+    if (msgLen < 0) {
         return msgLen;
     }
 
