@@ -9,6 +9,7 @@
  */
 
 #include <beluga_message.h>
+#include <stdio.h>
 #include <string.h>
 #include <zephyr/data/json.h>
 
@@ -21,7 +22,7 @@
     (BELUGA_MSG_HEADER_OVERHEAD + BELUGA_MSG_LEN_OVERHEAD +                    \
      BELUGA_MSG_TYPE_OVERHEAD)
 
-#define MSG_OVERHEAD (MSG_HEAD_OVERHEAD + BELUGA_MSG_FOOTER_OVERHEAD)
+#define MSG_OVERHEAD                   (MSG_HEAD_OVERHEAD + BELUGA_MSG_FOOTER_OVERHEAD)
 
 #define MSG_FOOTER_OFFSET(payload_len) (MSG_HEAD_OVERHEAD + ((payload_len)-1))
 
@@ -29,24 +30,45 @@
     do {                                                                       \
         (_buf)[MSG_HEADER_OFFSET] = BELUGA_MSG_HEADER;                         \
         (_buf)[MSG_TYPE_OFFSET] = (uint8_t)(_type);                            \
-        memcpy((_buf), &(_payload_len), sizeof(uint16_t));                     \
+        memcpy((_buf) + MSG_LEN_OFFSET, &(_payload_len), sizeof(uint16_t));    \
         (_buf)[MSG_FOOTER_OFFSET(_payload_len)] = BELUGA_MSG_FOOTER;           \
     } while (0)
 
+struct node_json_struct {
+    int32_t UUID;
+    int32_t RSSI;
+#if defined(CONFIG_UWB_LOGIC_CLK)
+    int32_t EXCHANGE;
+#endif // defined(CONFIG_UWB_LOGIC_CLK)
+    int64_t TIMESTAMP;
+    char range_str[32];
+    struct json_obj_token RANGE;
+};
+
+#define COPY_NODE(json_node, node)                                             \
+    do {                                                                       \
+        (json_node).UUID = (int32_t)(node).UUID;                               \
+        (json_node).RSSI = (int32_t)(node).RSSI;                               \
+        (json_node).TIMESTAMP = (node).time_stamp;                             \
+        (json_node).RANGE.length =                                             \
+            snprintf((json_node).range_str, sizeof((json_node).range_str) - 1, \
+                     "%f", (double)(node).range);                              \
+        (json_node).RANGE.start = (json_node).range_str;                       \
+        (json_node).EXCHANGE = (int32_t)(node).exchange_id;                    \
+    } while (0)
+
 struct neighbor_list_json_struct {
-    struct node neighbors[MAX_ANCHOR_COUNT];
+    struct node_json_struct neighbors[MAX_ANCHOR_COUNT];
     size_t neighbors_len;
 };
 
 static const struct json_obj_descr neighbor_json[] = {
-    JSON_OBJ_DESCR_PRIM(struct node, UUID, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct node, RSSI, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM_NAMED(struct node, "TIMESTAMP", time_stamp,
-                              JSON_TOK_INT64),
-    JSON_OBJ_DESCR_PRIM_NAMED(struct node, "RANGE", range, JSON_TOK_FLOAT),
+    JSON_OBJ_DESCR_PRIM(struct node_json_struct, UUID, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct node_json_struct, RSSI, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct node_json_struct, TIMESTAMP, JSON_TOK_INT64),
+    JSON_OBJ_DESCR_PRIM(struct node_json_struct, RANGE, JSON_TOK_FLOAT),
 #if defined(CONFIG_UWB_LOGIC_CLK)
-    JSON_OBJ_DESCR_PRIM_NAMED(struct node, "EXCHANGE", exchange_id,
-                              JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct node_json_struct, EXCHANGE, JSON_TOK_NUMBER),
 #endif // defined(CONFIG_UWB_LOGIC_CLK)
 };
 
@@ -85,14 +107,13 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
         if (msg->payload.neighbor_list[i].UUID != 0 &&
             (!msg->payload.stream ||
              msg->payload.neighbor_list[i].update_flag)) {
-            neighbors.neighbors[neighbors.neighbors_len] =
-                msg->payload.neighbor_list[i];
+            COPY_NODE(neighbors.neighbors[neighbors.neighbors_len],
+                      msg->payload.neighbor_list[i]);
             neighbors.neighbors_len++;
         }
     }
 
-    numBytes = json_calc_encoded_len(
-        json_neighbor_list, ARRAY_SIZE(json_neighbor_list), &neighbors);
+    numBytes = json_calc_encoded_arr_len(json_neighbor_list, &neighbors);
 
     if (numBytes < 0) {
         return numBytes;
@@ -107,24 +128,27 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
     return numBytes;
 }
 
-int construct_frame(const struct beluga_msg *msg, uint8_t *buffer, size_t len) {
+int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
+                    size_t len) {
     ssize_t msgLen;
     if (msg == NULL || buffer == NULL) {
         return -EINVAL;
     }
 
-    switch(msg->type) {
-        case COMMAND_RESPONSE:
-            msgLen = 0;
-            break;
-        case NEIGHBOR_UPDATES:
-            msgLen = encode_neighbor_list(msg, buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD);
-            break;
-        case RANGING_EVENT:
-            msgLen = 0;
-            break;
-        default:
-            __ASSERT(false, "Invalid beluga message type: (%d)", (uint32_t)msg->type);
+    switch (msg->type) {
+    case COMMAND_RESPONSE:
+        msgLen = 0;
+        break;
+    case NEIGHBOR_UPDATES:
+        msgLen = encode_neighbor_list(msg, buffer + MSG_PAYLOAD_OFFSET,
+                                      len - MSG_OVERHEAD);
+        break;
+    case RANGING_EVENT:
+        msgLen = 0;
+        break;
+    default:
+        __ASSERT(false, "Invalid beluga message type: (%d)",
+                 (uint32_t)msg->type);
     }
 
     if (msgLen >= 0) {

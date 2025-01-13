@@ -25,7 +25,7 @@
 enum beluga_msg_type { COMMAND_RESPONSE, NEIGHBOR_UPDATES, RANGING_EVENT };
 
 struct ranging_event {
-    uint16_t id;
+    uint32_t id;
     uint32_t exchange_id;
 };
 
@@ -41,6 +41,6 @@ struct beluga_msg {
     } payload;
 };
 
-int construct_frame(const struct beluga_msg *msg, uint8_t *buffer, size_t len);
+int construct_frame(const struct beluga_msg *msg, uint8_t buffer[], size_t len);
 
 #endif // BELUGA_BELUGA_MESSAGE_H
