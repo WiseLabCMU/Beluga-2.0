@@ -128,6 +128,37 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
     return numBytes;
 }
 
+#if defined(CONFIG_UWB_LOGIC_CLK)
+static ssize_t encode_ranging_event(const struct beluga_msg *msg,
+                                    uint8_t *buffer, size_t len) {
+    ssize_t numBytes = 0;
+    int err;
+
+    if (msg->payload.event == NULL) {
+        return -EINVAL;
+    }
+
+    numBytes = json_calc_encoded_len(
+        json_ranging_event, ARRAY_SIZE(json_ranging_event), msg->payload.event);
+
+    if (numBytes < 0) {
+        return numBytes;
+    }
+
+    err =
+        json_obj_encode_buf(json_ranging_event, ARRAY_SIZE(json_ranging_event),
+                            msg->payload.event, buffer, len);
+
+    if (err != 0) {
+        return (ssize_t)err;
+    }
+
+    return numBytes;
+}
+#else
+#define encode_ranging_event(...) = -ENOTSUP
+#endif // CONFIG_UWB_LOGIC_CLK
+
 int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
                     size_t len) {
     ssize_t msgLen;
@@ -150,7 +181,8 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
                                       len - MSG_OVERHEAD);
         break;
     case RANGING_EVENT:
-        msgLen = 0;
+        msgLen = encode_ranging_event(msg, buffer + MSG_PAYLOAD_OFFSET,
+                                      len - MSG_OVERHEAD);
         break;
     default:
         __ASSERT(false, "Invalid beluga message type: (%d)",
