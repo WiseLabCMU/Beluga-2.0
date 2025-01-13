@@ -136,9 +136,15 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
     }
 
     switch (msg->type) {
-    case COMMAND_RESPONSE:
-        msgLen = 0;
+    case COMMAND_RESPONSE: {
+        if (msg->payload.response == NULL) {
+            return -EINVAL;
+        }
+        msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD, "%s",
+                          msg->payload.response);
+        msgLen += 1; // Account for the NULL character
         break;
+    }
     case NEIGHBOR_UPDATES:
         msgLen = encode_neighbor_list(msg, buffer + MSG_PAYLOAD_OFFSET,
                                       len - MSG_OVERHEAD);
