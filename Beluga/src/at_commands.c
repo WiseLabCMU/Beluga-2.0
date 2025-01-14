@@ -47,9 +47,9 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
 /**
  * Prints "OK" and moves the cursor down to the next line
  */
-#if defined(CONFIG_BELUGA_FRAMES)
+#if !defined(CONFIG_BELUGA_FRAMES)
 
-#define _OK printf("OK")
+#define _OK printf("OK\n")
 #define _OK_MSG(msg, ...)                                                      \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (printf(msg " OK\n")),                  \
                 (printf(msg " OK\n", __VA_ARGS__)))
@@ -65,14 +65,57 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
 
 #else
 #include <beluga_message.h>
-#define OK(msg, ...)                                                           \
+
+#define _OK                                                                    \
     do {                                                                       \
         struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
                                  .payload.response = "OK"};                    \
         (void)write_message_frame(&msg);                                       \
     } while (0)
 
-#define ERROR(msg) printf(msg "\n")
+#define _OK_MSG(_msg)                                                          \
+    do {                                                                       \
+        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
+                                 .payload.response = _msg " OK"};              \
+        (void)write_message_frame(&msg);                                       \
+    } while (0)
+
+#define _OK_MSG_ARGS(_msg, ...)                                                \
+    do {                                                                       \
+        uint8_t format_buf[128];                                               \
+        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
+                                 .payload.response = format_buf};              \
+        snprintf(format_buf, sizeof(format_buf), _msg " OK", __VA_ARGS__);     \
+        (void)write_message_frame(&msg);                                       \
+    } while (0)
+
+#define _OK_MSG_(msg, ...)                                                     \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_OK_MSG(msg)),                         \
+                (_OK_MSG_ARGS(msg, __VA_ARGS__)))
+
+#define OK(...)                                                                \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_OK),                                  \
+                (_OK_MSG_(GET_ARG_N(1, __VA_ARGS__),                           \
+                          GET_ARGS_LESS_N(1, __VA_ARGS__))))
+
+#define _ERROR(_msg)                                                           \
+    do {                                                                       \
+        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
+                                 .payload.response = (_msg)};                  \
+        (void)write_message_frame(&msg);                                       \
+    } while (0)
+#define _ERROR_ARGS(_msg, ...)                                                 \
+    do {                                                                       \
+        uint8_t format_buf[256];                                               \
+        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
+                                 .payload.response = format_buf};              \
+        snprintf(format_buf, sizeof(format_buf), (_msg), __VA_ARGS__);         \
+        (void)write_message_frame(&msg);                                       \
+    } while (0)
+
+#define ERROR(msg, ...)                                                        \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_ERROR(msg)),                          \
+                (_ERROR_ARGS(msg, __VA_ARGS__)))
 #endif // !defined(CONFIG_BELUGA_FRAMES)
 
 /**

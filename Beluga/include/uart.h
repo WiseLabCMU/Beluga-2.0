@@ -17,6 +17,7 @@
 #ifndef BELUGA_UART_H
 #define BELUGA_UART_H
 
+#include <beluga_message.h>
 #include <zephyr/kernel.h>
 
 /**
