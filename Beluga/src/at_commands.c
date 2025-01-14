@@ -47,7 +47,33 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
 /**
  * Prints "OK" and moves the cursor down to the next line
  */
-#define OK printf("OK\r\n")
+#if defined(CONFIG_BELUGA_FRAMES)
+
+#define _OK printf("OK")
+#define _OK_MSG(msg, ...)                                                      \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (printf(msg " OK\n")),                  \
+                (printf(msg " OK\n", __VA_ARGS__)))
+
+#define OK(...)                                                                \
+    COND_CODE_1(                                                               \
+        IS_EMPTY(__VA_ARGS__), (_OK),                                          \
+        (_OK_MSG(GET_ARG_N(1, __VA_ARGS__), GET_ARGS_LESS_N(1, __VA_ARGS__))))
+
+#define ERROR(msg, ...)                                                        \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (printf(msg "\n")),                     \
+                (printf(msg "\n", __VA_ARGS__)))
+
+#else
+#include <beluga_message.h>
+#define OK(msg, ...)                                                           \
+    do {                                                                       \
+        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
+                                 .payload.response = "OK"};                    \
+        (void)write_message_frame(&msg);                                       \
+    } while (0)
+
+#define ERROR(msg) printf(msg "\n")
+#endif // !defined(CONFIG_BELUGA_FRAMES)
 
 /**
  * Determines the maximum amount of tokens a string can get parsed into
@@ -65,7 +91,7 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
 #define CHECK_ARGC(argc, required)                                             \
     do {                                                                       \
         if ((uint16)(argc) < (uint16_t)(required)) {                           \
-            printf("Missing argument(s)\r\n");                                 \
+            ERROR("Missing argument(s)");                                      \
             return;                                                            \
         }                                                                      \
     } while (0)
@@ -84,8 +110,7 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
     do {                                                                       \
         if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
             int32_t _setting = retrieveSetting(setting);                       \
-            printf(settingstr ": %" PRIu32 " ", (uint32_t)_setting);           \
-            OK;                                                                \
+            OK(settingstr ": %" PRIu32, (uint32_t)_setting);                   \
             return;                                                            \
         }                                                                      \
     } while (0)
@@ -108,7 +133,7 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
         } else if ((uint16_t)(argc) < (uint16_t)(required)) {                  \
             int32_t _setting = retrieveSetting(setting);                       \
             callback(_setting);                                                \
-            OK;                                                                \
+            OK();                                                              \
             return;                                                            \
         }                                                                      \
     } while (0)
@@ -288,11 +313,11 @@ AT_CMD_DEFINE(STARTUWB) {
     LOG_INF("Running STARTUWB command");
     if (get_ble_led_state() == LED_BLE_OFF) {
         // Avoid undefined behavior
-        printf("Cannot start UWB: BLE has not been started\r\n");
+        ERROR("Cannot start UWB: BLE has not been started");
         return;
     }
     if (get_uwb_led_state() == LED_UWB_ON) {
-        printf("UWB is already on\r\n");
+        ERROR("UWB is already on");
         return;
     }
     if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
@@ -303,7 +328,7 @@ AT_CMD_DEFINE(STARTUWB) {
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
     update_led_state(LED_UWB_ON);
-    OK;
+    OK();
 }
 
 /**
@@ -317,13 +342,13 @@ AT_CMD_DEFINE(STARTUWB) {
 AT_CMD_DEFINE(STOPUWB) {
     LOG_INF("Running STOPUWB command");
     if (get_uwb_led_state() == LED_UWB_OFF) {
-        printf("UWB is not running\r\n");
+        ERROR("UWB is not running");
         return;
     }
     k_sem_take(&k_sus_resp, K_FOREVER);
     k_sem_take(&k_sus_init, K_FOREVER);
     update_led_state(LED_UWB_OFF);
-    OK;
+    OK();
 }
 
 /**
@@ -337,21 +362,21 @@ AT_CMD_DEFINE(STOPUWB) {
 AT_CMD_DEFINE(STARTBLE) {
     LOG_INF("Running STARTBLE) command");
     if (get_NODE_UUID() == 0) {
-        printf("Cannot start BLE: Node ID is not set\r\n");
+        ERROR("Cannot start BLE: Node ID is not set");
         return;
     } else if (get_ble_led_state() == LED_UWB_ON) {
-        printf("BLE is already on\r\n");
+        ERROR("BLE is already on");
         return;
     }
     k_sem_give(&print_list_sem);
     int err = enable_bluetooth();
     if (err) {
-        printf("Failed to start BLE (%d)\r\n", err);
+        ERROR("Failed to start BLE (%d)", err);
         k_sem_take(&print_list_sem, K_FOREVER);
         return;
     }
     update_led_state(LED_BLE_ON);
-    OK;
+    OK();
 }
 
 /**
@@ -365,17 +390,17 @@ AT_CMD_DEFINE(STARTBLE) {
 AT_CMD_DEFINE(STOPBLE) {
     LOG_INF("Running STOPBLE command");
     if (get_ble_led_state() == LED_UWB_OFF) {
-        printf("BLE is already off\r\n");
+        ERROR("BLE is already off");
         return;
     }
     int err = disable_bluetooth();
     if (err) {
-        printf("Failed to stop BLE (%d)\r\n", err);
+        ERROR("Failed to stop BLE (%d)", err);
         return;
     }
     k_sem_take(&print_list_sem, K_FOREVER);
     update_led_state(LED_BLE_OFF);
-    OK;
+    OK();
 }
 
 /**
@@ -394,19 +419,19 @@ AT_CMD_DEFINE(ID) {
     bool success = strtoint32(argv[1], &newID);
 
     if (!success || newID <= 0 || newID > (int32_t)UINT16_MAX) {
-        printf("Invalid ID\r\n");
+        ERROR("Invalid ID");
         return;
     }
 
     if (set_initiator_id((uint16_t)newID) != 0) {
-        printf("Unable to set ID: UWB currently active\r\n");
+        ERROR("Unable to set ID: UWB currently active");
     }
 
     // We know that UWB is inactive at this point
     set_responder_id((uint16_t)newID);
     update_node_id((uint16_t)newID);
     updateSetting(BELUGA_ID, newID);
-    OK;
+    OK();
 }
 
 /**
@@ -425,13 +450,12 @@ AT_CMD_DEFINE(BOOTMODE) {
     bool success = strtoint32(argv[1], &mode);
 
     if (mode < 0 || mode > 2 || !success) {
-        printf("Invalid bootmode parameter \r\n");
+        ERROR("Invalid bootmode parameter");
         return;
     }
 
     updateSetting(BELUGA_BOOTMODE, mode);
-    printf("Bootmode: %d ", mode);
-    OK;
+    OK("Bootmode: %d", mode);
 }
 
 /**
@@ -450,7 +474,7 @@ AT_CMD_DEFINE(RATE) {
     bool success = strtoint32(argv[1], &rate);
 
     if (rate < 0 || rate > 500 || !success) {
-        printf("Invalid rate parameter\r\n");
+        ERROR("Invalid rate parameter");
         return;
     }
 
@@ -459,8 +483,7 @@ AT_CMD_DEFINE(RATE) {
 
     // reconfig ble data
     advertising_reconfig(rate != 0);
-    printf("Rate: %d ", rate);
-    OK;
+    OK("Rate: %d", rate);
 }
 
 /**
@@ -480,21 +503,21 @@ AT_CMD_DEFINE(CHANNEL) {
     bool success = strtoint32(argv[1], &channel);
 
     if (!success) {
-        printf("Channel parameter input error \r\n");
+        ERROR("Channel parameter input error");
         return;
     }
 
     retVal = set_uwb_channel(channel);
     if (retVal == -EBUSY) {
-        printf("Cannot set UWB parameter: UWB is active \r\n");
+        ERROR("Cannot set UWB parameter: UWB is active");
         return;
     } else if (retVal != 0) {
-        printf("Channel parameter input error \r\n");
+        ERROR("Channel parameter input error");
         return;
     }
 
     updateSetting(BELUGA_UWB_CHANNEL, channel);
-    OK;
+    OK();
 }
 
 /**
@@ -509,8 +532,7 @@ AT_CMD_DEFINE(CHANNEL) {
 AT_CMD_DEFINE(RESET) {
     LOG_INF("Running RESET command");
     resetBelugaSettings();
-    printf("Reset ");
-    OK;
+    OK("Reset");
 }
 
 /**
@@ -530,13 +552,13 @@ AT_CMD_DEFINE(TIMEOUT) {
     bool success = strtoint32(argv[1], &timeout);
 
     if (!success || timeout < 0) {
-        printf("Invalid timeout value\r\n");
+        ERROR("Invalid timeout value");
         return;
     }
 
     updateSetting(BELUGA_BLE_TIMEOUT, timeout);
     set_node_timeout(timeout);
-    OK;
+    OK();
 }
 
 /**
@@ -561,29 +583,29 @@ AT_CMD_DEFINE(TXPOWER) {
             power = value ? TX_POWER_MAX : TX_POWER_MAN_DEFAULT;
             set_tx_power(power);
         } else {
-            printf("Tx power parameter input error\r\n");
+            ERROR("Tx power parameter input error");
             return;
         }
         break;
     }
     case 3: {
-        printf("Invalid number of parameters\r\n");
+        ERROR("Invalid number of parameters");
         return;
     }
     case 4:
     default: {
         if (!success || arg1 < 0 || arg1 > 3) {
-            printf("Invalid TX amplification stage\r\n");
+            ERROR("Invalid TX amplification stage");
             return;
         }
         success = strtoint32(argv[2], &coarse_control);
         if (!success || coarse_control < 0 || coarse_control > 7) {
-            printf("Invalid TX coarse gain\r\n");
+            ERROR("Invalid TX coarse gain");
             return;
         }
         success = strtoint32(argv[3], &fine_control);
         if (!success || fine_control < 0 || fine_control > 31) {
-            printf("Invalid TX fine gain\r\n");
+            ERROR("Invalid TX fine gain");
             return;
         }
         power = (uint32_t)retrieveSetting(BELUGA_TX_POWER);
@@ -598,7 +620,7 @@ AT_CMD_DEFINE(TXPOWER) {
     }
 
     updateSetting(BELUGA_TX_POWER, (int32_t)power);
-    OK;
+    OK();
 }
 
 /**
@@ -619,9 +641,9 @@ AT_CMD_DEFINE(STREAMMODE) {
     if (success && int2bool(&value, mode)) {
         updateSetting(BELUGA_STREAMMODE, mode);
         set_stream_mode(value);
-        OK;
+        OK();
     } else {
-        printf("Stream mode parameter input error \r\n");
+        ERROR("Stream mode parameter input error");
     }
 }
 
@@ -643,9 +665,9 @@ AT_CMD_DEFINE(TWRMODE) {
     if (success && int2bool(&value, twr)) {
         updateSetting(BELUGA_TWR, twr);
         set_twr_mode(value);
-        OK;
+        OK();
     } else {
-        printf("TWR mode parameter input error \r\n");
+        ERROR("TWR mode parameter input error");
     }
 }
 
@@ -665,7 +687,7 @@ AT_CMD_DEFINE(LEDMODE) {
     bool success = strtoint32(argv[1], &mode);
 
     if (!success || mode < 0 || mode > 1) {
-        printf("LED mode parameter input error \r\n");
+        ERROR("LED mode parameter input error");
         return;
     }
 
@@ -676,7 +698,7 @@ AT_CMD_DEFINE(LEDMODE) {
         restore_led_states();
     }
 
-    OK;
+    OK();
 }
 
 /**
@@ -689,7 +711,7 @@ AT_CMD_DEFINE(LEDMODE) {
  */
 AT_CMD_DEFINE(REBOOT) {
     LOG_INF("Running REBOOT command");
-    OK;
+    OK();
     printf("\r\n");
     disable_bluetooth();
     sys_reboot(SYS_REBOOT_COLD);
@@ -712,7 +734,7 @@ AT_CMD_DEFINE(PWRAMP) {
     int err;
 
     if (!success || pwramp < 0 || pwramp > 1) {
-        printf("Power amp parameter input error \r\n");
+        ERROR("Power amp parameter input error");
         return;
     }
 
@@ -722,7 +744,7 @@ AT_CMD_DEFINE(PWRAMP) {
         err = update_power_mode(POWER_MODE_HIGH);
     }
 
-    if (err != 0) {
+    if (err == 0 || err == -ENODEV) {
         if (pwramp == 0) {
             update_led_state(LED_PWRAMP_OFF);
         } else {
@@ -730,7 +752,17 @@ AT_CMD_DEFINE(PWRAMP) {
         }
 
         updateSetting(BELUGA_RANGE_EXTEND, pwramp);
-        OK;
+        if (err == -ENODEV) {
+            OK("BLE amplifier not supported. Only using UWB amplifier");
+        } else {
+            OK();
+        }
+    } else if (err == -EINVAL) {
+        ERROR("Power mode not recognized");
+    } else if (err == -ENOTSUP) {
+        ERROR("Not implemented");
+    } else {
+        ERROR("Power amplifier error occurred: %d", err);
     }
 }
 
@@ -750,14 +782,20 @@ AT_CMD_DEFINE(ANTENNA) {
     int err;
 
     if (!success || antenna < 1 || antenna > 2) {
-        printf("Antenna parameter input error \r\n");
+        ERROR("Antenna parameter input error");
         return;
     }
 
     err = select_antenna(antenna);
 
     if (err == 0) {
-        OK;
+        OK();
+    } else if (err == -EINVAL) {
+        ERROR("Invalid antenna selection");
+    } else if (err == -ENOTSUP) {
+        ERROR("Not implemented");
+    } else {
+        ERROR("Unknown error occurred: %d", err);
     }
 }
 
@@ -771,8 +809,7 @@ AT_CMD_DEFINE(ANTENNA) {
  */
 AT_CMD_DEFINE(TIME) {
     LOG_INF("Running TIME command");
-    printf("Time: %" PRId64 " ", k_uptime_get());
-    OK;
+    OK("Time: %" PRId64, k_uptime_get());
 }
 
 /**
@@ -792,13 +829,13 @@ AT_CMD_DEFINE(FORMAT) {
     bool success = strtoint32(argv[1], &mode);
 
     if (!success || mode < 0 || mode > 1) {
-        printf("Format parameter input error \r\n");
+        ERROR("Format parameter input error");
         return;
     }
 
     updateSetting(BELUGA_OUT_FORMAT, mode);
     set_format_mode(mode == 1);
-    OK;
+    OK();
 }
 
 /**
@@ -811,7 +848,7 @@ AT_CMD_DEFINE(FORMAT) {
  */
 AT_CMD_DEFINE(DEEPSLEEP) {
     LOG_INF("Running DEEPSLEEP command");
-    OK;
+    OK();
     printf("\r\n");
     enter_deep_sleep();
 }
@@ -833,21 +870,21 @@ AT_CMD_DEFINE(PHR) {
     bool success = strtoint32(argv[1], &phr);
 
     if (!success) {
-        printf("PHR mode parameter input error \r\n");
+        ERROR("PHR mode parameter input error");
         return;
     }
 
     retVal = uwb_set_phr_mode((enum uwb_phr_mode)phr);
     if (retVal == -EBUSY) {
-        printf("Cannot set UWB parameter: UWB is active \r\n");
+        ERROR("Cannot set UWB parameter: UWB is active");
         return;
     } else if (retVal != 0) {
-        printf("PHR mode parameter input error \r\n");
+        ERROR("PHR mode parameter input error");
         return;
     }
 
     updateSetting(BELUGA_UWB_PHR, phr);
-    OK;
+    OK();
 }
 
 /**
@@ -868,21 +905,21 @@ AT_CMD_DEFINE(DATARATE) {
     bool success = strtoint32(argv[1], &rate);
 
     if (!success) {
-        printf("Data rate parameter input error \r\n");
+        ERROR("Data rate parameter input error");
         return;
     }
 
     retVal = uwb_set_datarate((enum uwb_datarate)rate);
     if (retVal == -EBUSY) {
-        printf("Cannot set UWB parameter: UWB is active \r\n");
+        ERROR("Cannot set UWB parameter: UWB is active");
         return;
     } else if (retVal != 0) {
-        printf("Data rate parameter input error \r\n");
+        ERROR("Data rate parameter input error");
         return;
     }
 
     updateSetting(BELUGA_UWB_DATA_RATE, rate);
-    OK;
+    OK();
 }
 
 /**
@@ -903,21 +940,21 @@ AT_CMD_DEFINE(PULSERATE) {
     bool success = strtoint32(argv[1], &rate);
 
     if (!success) {
-        printf("Invalid pulse rate input parameter \r\n");
+        ERROR("Invalid pulse rate input parameter");
         return;
     }
 
     retVal = uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
     if (retVal == -EBUSY) {
-        printf("Cannot set UWB parameter: UWB is active \r\n");
+        ERROR("Cannot set UWB parameter: UWB is active");
         return;
     } else if (retVal != 0) {
-        printf("Pulse rate parameter input error \r\n");
+        ERROR("Pulse rate parameter input error");
         return;
     }
 
     updateSetting(BELUGA_UWB_PULSE_RATE, rate);
-    OK;
+    OK();
 }
 
 /**
@@ -937,21 +974,21 @@ AT_CMD_DEFINE(PREAMBLE) {
     bool success = strtoint32(argv[1], &preamble);
 
     if (!success) {
-        printf("Invalid Preamble length setting \r\n");
+        ERROR("Invalid Preamble length setting");
         return;
     }
 
     retVal = uwb_set_preamble((enum uwb_preamble_length)preamble);
     if (retVal == -EBUSY) {
-        printf("Cannot set UWB parameter: UWB is active \r\n");
+        ERROR("Cannot set UWB parameter: UWB is active");
         return;
     } else if (retVal != 0) {
-        printf("Preamble parameter input error \r\n");
+        ERROR("Preamble parameter input error");
         return;
     }
 
     updateSetting(BELUGA_UWB_PREAMBLE, preamble);
-    OK;
+    OK();
 }
 
 /**
@@ -971,21 +1008,21 @@ AT_CMD_DEFINE(PAC) {
     bool success = strtoint32(argv[1], &pac_size);
 
     if (!success) {
-        printf("Invalid PAC size setting\r\n");
+        ERROR("Invalid PAC size setting");
         return;
     }
 
     retVal = set_pac_size((enum uwb_pac)pac_size);
     if (retVal == -EBUSY) {
-        printf("Cannot set UWB parameter: UWB is active \r\n");
+        ERROR("Cannot set UWB parameter: UWB is active");
         return;
     } else if (retVal != 0) {
-        printf("PAC Size parameter input error \r\n");
+        ERROR("PAC Size parameter input error");
         return;
     }
 
     updateSetting(BELUGA_UWB_PAC, pac_size);
-    OK;
+    OK();
 }
 
 /**
@@ -1005,21 +1042,21 @@ AT_CMD_DEFINE(SFD) {
     bool success = strtoint32(argv[1], &sfd);
 
     if (!success) {
-        printf("Invalid Preamble length setting \r\n");
+        ERROR("Invalid Preamble length setting");
         return;
     }
 
     retVal = set_sfd_mode((enum uwb_sfd)sfd);
     if (retVal == -EBUSY) {
-        printf("Cannot set UWB parameter: UWB is active \r\n");
+        ERROR("Cannot set UWB parameter: UWB is active");
         return;
     } else if (retVal != 0) {
-        printf("SFD parameter input error \r\n");
+        ERROR("SFD parameter input error");
         return;
     }
 
     updateSetting(BELUGA_UWB_NSSFD, sfd);
-    OK;
+    OK();
 }
 
 /**
@@ -1039,19 +1076,19 @@ AT_CMD_DEFINE(PANID) {
     bool success = strtoint32(argv[1], &pan_id);
 
     if (!success || pan_id < INT32_C(0) || pan_id > (uint32_t)UINT16_MAX) {
-        printf("Invalid PAN ID\r\n");
+        ERROR("Invalid PAN ID\r\n");
         return;
     }
 
     retVal = set_initiator_pan_id((uint16_t)pan_id);
 
     if (retVal != 0) {
-        printf("Cannot set PAN ID: UWB Active\r\n");
+        ERROR("Cannot set PAN ID: UWB Active\r\n");
         return;
     }
     set_responder_pan_id((uint16_t)pan_id);
     updateSetting(BELUGA_PAN_ID, pan_id);
-    OK;
+    OK();
 }
 
 /**
@@ -1123,16 +1160,16 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
 
         if (0 != strncmp((const char *)commandBuffer->buf, "AT+", 3)) {
             if (0 == strncmp((const char *)commandBuffer->buf, "AT", 2)) {
-                printf("Only input AT without + command \r\n");
+                ERROR("Only input AT without + command");
             } else {
-                printf("Not an AT command\r\n");
+                ERROR("Not an AT command");
             }
             freeCommand(&commandBuffer);
             continue;
         }
 
         if (commandBuffer->len == 3) {
-            printf("No command found after AT+\r\n");
+            ERROR("No command found after AT+");
             freeCommand(&commandBuffer);
             continue;
         }
@@ -1142,7 +1179,7 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
                              commands[i].command, commands[i].cmd_length)) {
                 found = true;
                 if (commands[i].cmd_func == NULL) {
-                    printf("Not implemented\r\n");
+                    ERROR("Not implemented");
                 } else {
                     LOG_DBG("Command found");
                     argc = argparse(commandBuffer->buf, argv);
@@ -1154,7 +1191,7 @@ NO_RETURN void runSerialCommand(void *p1, void *p2, void *p3) {
         }
 
         if (!found) {
-            printf("ERROR Invalid AT Command\r\n");
+            ERROR("ERROR Invalid AT Command");
         }
         found = false;
         freeCommand(&commandBuffer);
