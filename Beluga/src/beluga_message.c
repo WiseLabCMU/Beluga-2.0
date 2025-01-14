@@ -192,6 +192,12 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
         msgLen = encode_ranging_event(msg, buffer + MSG_PAYLOAD_OFFSET,
                                       len - MSG_OVERHEAD);
         break;
+    case NEIGHBOR_DROP: {
+        msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD,
+                          "%" PRIu32, msg->payload.dropped_neighbor);
+        msgLen += 1;
+        break;
+    }
     default:
         __ASSERT(false, "Invalid beluga message type: (%d)",
                  (uint32_t)msg->type);
@@ -227,6 +233,11 @@ int frame_length(const struct beluga_msg *msg) {
     case RANGING_EVENT:
         msgLen = encode_ranging_event(msg, NULL, 0);
         break;
+    case NEIGHBOR_DROP: {
+        msgLen = snprintf(NULL, 0, "%" PRIu32, msg->payload.dropped_neighbor);
+        msgLen += 1;
+        break;
+    }
     default:
         __ASSERT(false, "Invalid beluga message type: (%d)",
                  (uint32_t)msg->type);

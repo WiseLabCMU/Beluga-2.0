@@ -22,7 +22,12 @@
 #define BELUGA_MSG_TYPE_OVERHEAD   1
 #define BELUGA_MSG_FOOTER_OVERHEAD 1
 
-enum beluga_msg_type { COMMAND_RESPONSE, NEIGHBOR_UPDATES, RANGING_EVENT };
+enum beluga_msg_type {
+    COMMAND_RESPONSE,
+    NEIGHBOR_UPDATES,
+    RANGING_EVENT,
+    NEIGHBOR_DROP
+};
 
 struct ranging_event {
     uint32_t id;
@@ -38,6 +43,7 @@ struct beluga_msg {
             bool stream;
         };
         const struct ranging_event *event; ///< RANGING_EVENT
+        uint32_t dropped_neighbor;
     } payload;
 };
 
