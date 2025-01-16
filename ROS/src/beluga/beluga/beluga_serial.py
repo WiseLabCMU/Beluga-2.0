@@ -154,8 +154,16 @@ class BelugaQueue(mp_queues.Queue):
 
 class BelugaSerial:
     # TODO: Discuss how we want to handle case where USB communication fails. Do we want to log the error and try to reconnect? Do we want to terminate the node?
-    def __init__(self, baud: int = 115200, timeout: float = 2.0, serial_timeout: float = 0.1, max_lines_read: int = 16,
-                 port: Optional[str] = None, logger_func: Optional[Callable[[Any], None]] = None):
+    def __init__(self,
+                 baud: int = 115200,
+                 timeout: float = 2.0,
+                 serial_timeout: float = 0.1,
+                 max_lines_read: int = 16,
+                 port: Optional[str] = None,
+                 neighbor_update_func: Optional[Callable[[dict], None]] = None,
+                 range_update_func: Optional[Callable[[dict], None]] = None,
+                 range_event: Optional[Callable[[dict], None]] = None,
+                 logger_func: Optional[Callable[[Any], None]] = None):
 
         self._logger = logger_func
 
@@ -184,18 +192,37 @@ class BelugaSerial:
 
         self._read_max_lines: int = max_lines_read
         self._timeout: float = timeout
-        self._neighbors = BelugaNeighborsList()
+        self._neighbors = BelugaNeighborList()
 
         self._rx_task: Optional[mp.Process] = None
         self._batch_queue: BelugaQueue = BelugaQueue(5, False)
 
         self._processing_task: Optional[mp.Process] = None
         self._response_q: BelugaQueue = BelugaQueue(update_old_items=False)
-        self._ranges_queue: BelugaQueue = BelugaQueue()
-        self._neighbors_queue: BelugaQueue = BelugaQueue()
         self._command_sent: mp.Event = mp.Event()
         # Used to block the reboot command until done rebooting
         self._reboot_done: mp.Event = mp.Event()
+
+        if neighbor_update_func is None:
+            self._neighbors_queue: BelugaQueue = BelugaQueue()
+            self._neighbors_callback = None
+        else:
+            self._neighbors_callback = neighbor_update_func
+
+        if range_update_func is None:
+            self._ranges_queue: Optional[BelugaQueue] = BelugaQueue()
+            self._ranges_update_callback = None
+        else:
+            self._ranges_queue = None
+            self._ranges_update_callback = range_update_func
+
+        if range_event is None:
+            self._range_event_queue: Optional[BelugaQueue] = BelugaQueue()
+            self._range_event_callback = None
+        else:
+            self._range_event_queue = None
+            self._range_event_callback = range_event
+
 
     def _log(self, s):
         if self._logger is not None:
@@ -484,6 +511,8 @@ class BelugaSerial:
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
         # Needed to indicate if the queue is just empty or if the only neighbor got removed
+        if self._neighbors_queue is None:
+            raise ValueError("Reporting neighbor updates to a callback function")
         update = True
         ret = {}
         try:
@@ -493,9 +522,21 @@ class BelugaSerial:
         return update, ret
 
     def get_ranges(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        if self._ranges_queue is None:
+            raise ValueError("Reporting range updates to a callback function")
         ret = {}
         try:
             ret = self._ranges_queue.get_nowait()
+        except queue.Empty:
+            pass
+        return ret
+
+    def get_range_event(self) -> Dict[int, Dict[str, int]]:
+        if self._range_event_queue is None:
+            raise ValueError("Reporting range events to a callback function")
+        ret = {}
+        try:
+            ret = self._range_event_queue.get_nowait()
         except queue.Empty:
             pass
         return ret
