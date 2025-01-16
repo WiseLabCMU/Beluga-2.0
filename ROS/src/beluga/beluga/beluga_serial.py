@@ -103,6 +103,13 @@ class BelugaNeighborList:
                 x.updated = False
         return ret
 
+    def get_neighbors(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        ret = {}
+        for x in self._list.values():
+            ret[x.id] = dict(x)
+        self._neighbors_update = False
+        return ret
+
     def clear(self):
         if self._list:
             self._list.clear()
@@ -110,7 +117,7 @@ class BelugaNeighborList:
             self._range_update = False
 
     @property
-    def neighbor_updates(self) -> bool:
+    def neighbor_update(self) -> bool:
         return self._neighbors_update
 
     @property
@@ -195,7 +202,7 @@ class BelugaSerial:
         self._neighbors = BelugaNeighborList()
 
         self._rx_task: Optional[mp.Process] = None
-        self._batch_queue: BelugaQueue = BelugaQueue(5, False)
+        self._batch_queue: BelugaQueue = BelugaQueue(10, False)
 
         self._processing_task: Optional[mp.Process] = None
         self._response_q: BelugaQueue = BelugaQueue(update_old_items=False)
