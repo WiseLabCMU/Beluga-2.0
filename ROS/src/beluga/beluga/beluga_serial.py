@@ -257,7 +257,9 @@ class BelugaSerial:
             self._range_event_callback(event)
 
     def _publish_response(self, response):
-        pass
+        if self._command_sent.is_set():
+            self._command_sent.clear()
+            self._response_q.put(response)
 
     def _process_reboot(self, payload):
         pass
