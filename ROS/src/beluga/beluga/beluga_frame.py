@@ -10,7 +10,7 @@ class FrameType(IntEnum):
     UPDATES = 1,
     EVENT = 2,
     DROP = 3,
-    REBOOT = 4,
+    START = 4,
 
     def __str__(self):
         return f"{self.name} ({self.value})"
@@ -114,8 +114,8 @@ class BelugaFrame:
                 payload = json.loads(payload_.decode())
             case FrameType.DROP:
                 payload = int(payload_.decode())
-            case FrameType.REBOOT:
-                payload = None
+            case FrameType.START:
+                payload = payload_.decode()
             case _:
                 raise ValueError("Invalid type")
 
