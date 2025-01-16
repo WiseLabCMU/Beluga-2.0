@@ -57,7 +57,16 @@ class BelugaFrame:
         return str_val
 
     @classmethod
-    def frame_present(cls, data: bytearray, check_footer: bool = True) -> Tuple[int, int]:
+    def frame_present(cls, data: bytearray, error_no_footer: bool = True) -> Tuple[int, int, int]:
+        """
+        Checks if a frame is present in the data
+
+        :param data: The data to check
+        :param error_no_footer: Indicates whether to check if the footer is correct or present.
+        :return: A tuple indicating the header index, the frame size, and the number of bytes left
+        to read to create a complete frame. If the last element is zero or negative, indicates
+        that a complete frame is present.
+        """
         data_len = len(data)
 
         for i, byte in enumerate(data):
@@ -72,17 +81,18 @@ class BelugaFrame:
             payload_len_index = header_index + PAYLOAD_LEN_OFFSET
             payload_len = struct.unpack(PAYLOAD_FORMAT, data[payload_len_index:payload_len_index + PAYLOAD_LEN_BYTES])[0]
 
-            if check_footer:
-                footer_index = header_index + FRAME_HEADER_OVERHEAD + payload_len - FOOTER_BYTES
-                if footer_index >= data_len:
-                    continue
 
+            footer_index = header_index + FRAME_HEADER_OVERHEAD + payload_len - FOOTER_BYTES
+            if footer_index >= data_len and not error_no_footer:
+                continue
+
+            if error_no_footer:
                 if data[footer_index] != FOOTER_BYTE:
                     continue
 
             frame_size = FRAME_OVERHEAD + payload_len
-            return header_index, frame_size
-        return -1, -1
+            return header_index, frame_size, footer_index - len(data[header_index:])
+        return -1, -1, -1
 
 
     @classmethod
