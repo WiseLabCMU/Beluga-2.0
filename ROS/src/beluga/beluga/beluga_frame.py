@@ -10,6 +10,7 @@ class FrameType(IntEnum):
     UPDATES = 1,
     EVENT = 2,
     DROP = 3,
+    REBOOT = 4,
 
     def __str__(self):
         return f"{self.name} ({self.value})"
@@ -81,8 +82,7 @@ class BelugaFrame:
             payload_len_index = header_index + PAYLOAD_LEN_OFFSET
             payload_len = struct.unpack(PAYLOAD_FORMAT, data[payload_len_index:payload_len_index + PAYLOAD_LEN_BYTES])[0]
 
-
-            footer_index = header_index + FRAME_HEADER_OVERHEAD + payload_len - FOOTER_BYTES
+            footer_index = header_index + FRAME_HEADER_OVERHEAD + payload_len
             if footer_index >= data_len and not error_no_footer:
                 continue
 
@@ -91,7 +91,7 @@ class BelugaFrame:
                     continue
 
             frame_size = FRAME_OVERHEAD + payload_len
-            return header_index, frame_size, footer_index - len(data[header_index:])
+            return header_index, frame_size, footer_index - len(data[header_index:]) + 1
         return -1, -1, -1
 
 
@@ -114,6 +114,8 @@ class BelugaFrame:
                 payload = json.loads(payload_.decode())
             case FrameType.DROP:
                 payload = int(payload_.decode())
+            case FrameType.REBOOT:
+                payload = None
             case _:
                 raise ValueError("Invalid type")
 
