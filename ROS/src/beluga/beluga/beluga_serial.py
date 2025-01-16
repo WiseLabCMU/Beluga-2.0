@@ -236,6 +236,32 @@ class BelugaSerial:
         if self._logger is not None:
             self._logger(s)
 
+    def _publish_neighbor_update(self):
+        if self._neighbors.neighbor_update:
+            if self._neighbors_queue is not None:
+                self._neighbors_queue.put(self._neighbors.get_neighbors(), block=False)
+            else:
+                self._neighbors_callback(self._neighbors.get_neighbors())
+
+    def _publish_range_update(self):
+        if self._neighbors.range_update:
+            if self._ranges_queue is not None:
+                self._ranges_queue.put(self._neighbors.get_updates(), block=False)
+            else:
+                self._ranges_update_callback(self._neighbors.get_updates())
+
+    def _publish_range_event(self, event):
+        if self._range_event_queue is not None:
+            self._range_event_queue.put(event, block=False)
+        else:
+            self._range_event_callback(event)
+
+    def _publish_response(self, response):
+        pass
+
+    def _process_reboot(self, payload):
+        pass
+
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
         ret: Dict[str, List[str]] = {}
@@ -250,79 +276,33 @@ class BelugaSerial:
                     ret[dev_name] = [port.device]
         return ret
 
-    def _write_ranging_batch(self, lines: List[str]) -> int:
-        lines_processed = 0
-        for line in lines:
-            try:
-                self._neighbors.update(line)
-                lines_processed += 1
-            except BelugaEntryError as e:
-                if e.header:
-                    lines_processed += 1
-                else:
-                    return lines_processed
-        return lines_processed
-
-    def _process_lines(self):
-        rebooting = False
+    def _process_frames(self):
         while True:
-            lines = self._batch_queue.get()
-            i = 0
-            l = len(lines)
-            lines = [line.decode(errors='ignore').strip() for line in lines]
+            frame: BelugaFrame = self._batch_queue.get()
+            match frame.type:
+                case FrameType.UPDATES:
+                    self._neighbors.update(frame.payload)
+                case FrameType.EVENT:
+                    self._publish_range_event(frame.payload)
+                case FrameType.DROP:
+                    self._neighbors.remove_neighbor(frame.payload)
+                case FrameType.RESPONSE:
+                    self._publish_response(frame.payload)
+                case FrameType.START:
+                    self._process_reboot(frame.payload)
+                case _:
+                    self._log("Invalid frame type")
+            self._publish_neighbor_update()
+            self._publish_range_update()
 
-            while i < l:
-                if not lines[i]:
-                    if rebooting:
-                        # Reboot is done, send signal to resume parent process
-                        rebooting = False
-                        if self._reboot_done.is_set():
-                            # Reboot was due to something that happened on beluga and not an explicit reboot command
-                            os.kill(os.getppid(), signal.SIGUSR1)
-                        else:
-                            self._reboot_done.set()
-                    i += 1
-                    continue
-                if lines[i].startswith('{') or lines[i][0].isdigit() or lines[i].startswith('# ID, RANGE, RSSI, TIMESTAMP'):
-                    processed = self._write_ranging_batch(lines[i:])
-                    i += processed
-                    if processed == 0:
-                        # Incomplete line, skip it
-                        i += 1
-                    continue
-                if lines[i].startswith('rm '):
-                    self._neighbors.remove_neighbor(lines[i])
-                    i += 1
-                if self._command_sent.is_set() and i < l:
-                    self._command_sent.clear()
-                    self._response_q.put(lines[i])
-                    i += 1
-                elif lines[i].startswith('Node On: '):
-                    # Node just rebooted
-                    # Clear ranges and neighbors since the timestamps are wrong now
-                    self._ranges_queue.clear()
-                    self._neighbors_queue.clear()
-                    self._neighbors.clear()
+    def _process_rx_buffer(self, buf: bytearray) -> bytearray:
+        frame_start, frame_size, _ = BelugaFrame.frame_present(buf)
+        if frame_start < 0:
+            return buf
 
-                    # Wait until settings are printed to resume
-                    rebooting = True
-                    i += 1
-                else:
-                    i += 1
-
-            if self._neighbors.range_update:
-                self._ranges_queue.put(self._neighbors.get_updates(), block=False)
-            if self._neighbors.neighbors_update:
-                self._neighbors_queue.put(self._neighbors.get_list(), block=False)
-
-    def _get_lines(self) -> List[bytes]:
-        lines = []
-        for _ in range(self._read_max_lines):
-            line = self._serial.readline()
-            if not line:
-                break
-            lines.append(line)
-        return lines
+        frame = BelugaFrame.extract_frame(buf, frame_start)
+        self._batch_queue.put(frame, block=False)
+        return buf[frame_start + frame_size:]
 
     def _read_serial(self):
         rx = b""
@@ -500,7 +480,7 @@ class BelugaSerial:
     def start(self):
         if self._rx_task is not None or self._processing_task is not None:
             raise RuntimeError('Please stop before restarting')
-        self._processing_task = mp.Process(target=self._process_lines)
+        self._processing_task = mp.Process(target=self._process_frames)
         self._rx_task = mp.Process(target=self._read_serial)
 
         self._processing_task.start()
