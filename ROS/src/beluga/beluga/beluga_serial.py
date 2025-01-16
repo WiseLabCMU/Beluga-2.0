@@ -9,8 +9,6 @@ import multiprocessing as mp
 import multiprocessing.queues as mp_queues
 import queue
 import time
-import json
-import re
 import itertools
 
 TARGETS = [
@@ -73,6 +71,52 @@ class BelugaNeighbor:
         if "EXCHANGE" in neighbor.keys():
             self._exchange_id = neighbor["EXCHANGE"]
         self._updated = True
+
+
+class BelugaNeighborList:
+    def __init__(self):
+        self._list: Dict[int, BelugaNeighbor] = {}
+        self._neighbors_update: bool = False
+        self._range_update: bool = False
+        return
+
+    def update(self, updates: List[Dict[str, Union[int, float]]]):
+        for entry in updates:
+            if entry["ID"] not in self._list.keys():
+                self._list[entry["ID"]] = BelugaNeighbor(entry)
+                self._range_update = True
+                self._neighbors_update = True
+            else:
+                self._list[entry["ID"]].update(entry)
+                self._range_update = True
+
+    def remove_neighbor(self, neighbor_id: int):
+        if neighbor_id in self._list.keys():
+            del self._list[neighbor_id]
+            self._neighbors_update = True
+
+    def get_updates(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        ret = {}
+        for x in self._list.values():
+            if x.updated:
+                ret[x.id] = dict(x)
+                x.updated = False
+        return ret
+
+    def clear(self):
+        if self._list:
+            self._list.clear()
+            self._neighbors_update = True
+            self._range_update = False
+
+    @property
+    def neighbor_updates(self) -> bool:
+        return self._neighbors_update
+
+    @property
+    def range_update(self) -> bool:
+        return self._range_update
+
 
 
 class BelugaQueue(mp_queues.Queue):
