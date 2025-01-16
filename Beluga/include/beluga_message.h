@@ -26,7 +26,8 @@ enum beluga_msg_type {
     COMMAND_RESPONSE,
     NEIGHBOR_UPDATES,
     RANGING_EVENT,
-    NEIGHBOR_DROP
+    NEIGHBOR_DROP,
+    REBOOT_EVENT,
 };
 
 struct ranging_event {
@@ -43,7 +44,7 @@ struct beluga_msg {
             bool stream;
         };
         const struct ranging_event *event; ///< RANGING_EVENT
-        uint32_t dropped_neighbor;
+        uint32_t dropped_neighbor;         ///< NEIGHBOR_DROP
     } payload;
 };
 

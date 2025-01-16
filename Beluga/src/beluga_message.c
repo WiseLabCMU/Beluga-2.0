@@ -196,6 +196,11 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
                           "%" PRIu32, msg->payload.dropped_neighbor);
         break;
     }
+    case REBOOT_EVENT: {
+        // No payload
+        msgLen = 0;
+        break;
+    }
     default:
         __ASSERT(false, "Invalid beluga message type: (%d)",
                  (uint32_t)msg->type);
