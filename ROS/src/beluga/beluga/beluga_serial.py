@@ -10,6 +10,7 @@ import multiprocessing.queues as mp_queues
 import queue
 import time
 import itertools
+from beluga_frame import BelugaFrame, FrameType
 
 TARGETS = [
     'CMU Beluga',
@@ -324,10 +325,12 @@ class BelugaSerial:
         return lines
 
     def _read_serial(self):
+        rx = b""
         while True:
-            lines = self._get_lines()
-            if lines:
-                self._batch_queue.put(lines, block=False)
+            if self._serial.inWaiting() > 0:
+                rx += self._serial.read(self._serial.inWaiting())
+            rx = self._process_rx_buffer(rx)
+
 
     def _send_command(self, command: bytes) -> str:
         self._serial.write(command)
