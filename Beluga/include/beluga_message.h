@@ -27,7 +27,7 @@ enum beluga_msg_type {
     NEIGHBOR_UPDATES,
     RANGING_EVENT,
     NEIGHBOR_DROP,
-    REBOOT_EVENT,
+    START_EVENT,
 };
 
 struct ranging_event {
@@ -45,6 +45,7 @@ struct beluga_msg {
         };
         const struct ranging_event *event; ///< RANGING_EVENT
         uint32_t dropped_neighbor;         ///< NEIGHBOR_DROP
+        const char *node_version;          ///< START_EVENT
     } payload;
 };
 

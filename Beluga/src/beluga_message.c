@@ -196,9 +196,12 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
                           "%" PRIu32, msg->payload.dropped_neighbor);
         break;
     }
-    case REBOOT_EVENT: {
-        // No payload
-        msgLen = 0;
+    case START_EVENT: {
+        if (msg->payload.node_version == NULL) {
+            return -EINVAL;
+        }
+        msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD, "%s",
+                          msg->payload.node_version);
         break;
     }
     default:
