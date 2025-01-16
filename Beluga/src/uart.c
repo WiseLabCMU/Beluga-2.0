@@ -157,7 +157,7 @@ static void serial_callback(const struct device *dev, void *user_data) {
 #define WAIT_DTR()    LOG_INF("UART ready")
 #endif // DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
 
-#if defined(CONFIG_SERIAL_LEDS)
+#if defined(CONFIG_SERIAL_LEDS) && !defined(CONFIG_BELUGA_FRAMES)
 
 /**
  * @brief Serial output hook for printing serial data
@@ -224,6 +224,41 @@ static void install_uart_hooks(void) {
  * @brief Macro to enable the tx complete irq for serial
  */
 #define enable_uart_tx_irq(x) uart_irq_tx_enable(x)
+#elif defined(CONFIG_BELUGA_FRAMES)
+
+/**
+ * Prevents characters from being printed to console while frames are being
+ * used.
+ * @param c
+ * @return
+ */
+static int dev_null(int c) { return c; }
+
+#if defined(CONFIG_STDOUT_CONSOLE)
+extern void __stdout_hook_install(int (*hook)(int c));
+#endif // defined(CONFIG_STDOUT_CONSOLE)
+
+/**
+ * @brief Helper function to replace the original console output hooks
+ */
+static void install_uart_hooks(void) {
+#if defined(CONFIG_STDOUT_CONSOLE)
+    __stdout_hook_install(dev_null);
+#endif // defined(CONFIG_STDOUT_CONSOLE)
+}
+
+#if defined(CONFIG_SERIAL_LEDS)
+/**
+ * @brief Macro to enable the tx complete irq for serial
+ */
+#define enable_uart_tx_irq(x) uart_irq_tx_enable(x)
+#else
+/**
+ * @brief Macro to enable the tx complete irq for serial
+ */
+#define enable_uart_tx_irq(x) (void)0
+#endif
+
 #else
 /**
  * @brief Helper function to replace the original console output hooks

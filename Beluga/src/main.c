@@ -34,10 +34,10 @@ LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 #if defined(CONFIG_BELUGA_FRAMES)
 #include <beluga_message.h>
 
-#define INIT_MSG(...)         (void)0
-#define CUSTOM_INIT_MSG(...)  (void)0
-#define NODE_VERSION_BANNER() (void)0
-#define FW_CONFIG_BANNER()    (void)0
+#define INIT_MSG(...)                   (void)0
+#define CUSTOM_INIT_MSG(callback_, ...) callback_(__VA_ARGS__)
+#define NODE_VERSION_BANNER()           (void)0
+#define FW_CONFIG_BANNER()              (void)0
 #define SETTINGS_BREAK()                                                       \
     do {                                                                       \
         struct beluga_msg msg = {.type = START_EVENT,                          \
