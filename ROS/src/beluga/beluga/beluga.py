@@ -79,7 +79,7 @@ class BelugaPublisherService(Node):
         signal.signal(signal.SIGUSR1, self._resync_time)
 
         self.serial: typing.Optional[BelugaSerial] = None
-        self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info)
+        self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info, neighbor_update_func=self.publish_neighbors, range_update_func=self.publish_ranges)
         self.serial.start()
         callbacks = {
             "boot mode": self.serial.bootmode,
@@ -121,8 +121,6 @@ class BelugaPublisherService(Node):
         self._timestamp_sync = Lock()
         self._init_time_sync()
 
-        self.timer = self.create_timer(period, self.publish_neighbors)
-        self.range_timer = self.create_timer(period, self.publish_ranges)
         self.sync_timer = self.create_timer(300, self._time_sync)
         self.resync_timer = self.create_timer(1, self._resync_time_callback)
         self.resync_timer.cancel()
@@ -132,16 +130,12 @@ class BelugaPublisherService(Node):
 
     def _resync_time(self, signum, frame) -> None:
         self.get_logger().info('Node rebooted')
-        self.timer.cancel()
-        self.range_timer.cancel()
         self.sync_timer.cancel()
         self.resync_timer.reset()
 
     def _resync_time_callback(self):
         self.resync_timer.cancel()
         self._init_time_sync()
-        self.timer.reset()
-        self.range_timer.reset()
         self.sync_timer.reset()
 
     def _init_time_sync(self):
@@ -229,40 +223,36 @@ class BelugaPublisherService(Node):
         self._timestamp_sync.release()
         return ros_time + Duration(nanoseconds=t_delta)
 
-    def publish_neighbors(self):
-        update, neighbors_list = self.serial.get_neighbors()
-        if update:
-            pub_list = []
-            for x in neighbors_list.keys():
-                neighbor = BelugaNeighbor()
-                neighbor.id = x
-                neighbor.distance = neighbors_list[x]['RANGE']
-                neighbor.rssi = neighbors_list[x]['RSSI']
-                neighbor.exchange = neighbors_list[x]['EXCHANGE']
-                timestamp = self._beluga_to_ros_time(neighbors_list[x]['TIMESTAMP'])
-                neighbor.timestamp = timestamp.to_msg()
-                pub_list.append(neighbor)
-            msg = BelugaNeighbors()
-            msg.neighbors = pub_list
-            self.publisher_.publish(msg)
-            self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}, "EXCHANGE": {x.exchange}}}' for x in pub_list))
+    def publish_neighbors(self, neighbors: dict):
+        pub_list = []
+        for x in neighbors.keys():
+            neighbor = BelugaNeighbor()
+            neighbor.id = x
+            neighbor.distance = neighbors[x]["RANGE"]
+            neighbor.rssi = neighbors[x]["RSSI"]
+            neighbor.exchange = neighbors[x]["EXCHANGE"]
+            timestamp = self._beluga_to_ros_time(neighbors[x]["TIMESTAMP"])
+            neighbor.timestamp = timestamp.to_msg()
+            pub_list.append(neighbor)
+        msg = BelugaNeighbors()
+        msg.neighbors = pub_list
+        self.publisher_.publish(msg)
+        self.get_logger().info("Publishing:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.distance}, "RSSI": {x.rssi}, "TIMESTAMP": {x.timestamp}, "EXCHANGE": {x.exchange}}}' for x in pub_list))
 
-    def publish_ranges(self):
-        range_updates = self.serial.get_ranges()
-        if range_updates:
-            updates = []
-            for x in range_updates.keys():
-                range_ = BelugaRange()
-                range_.id = x
-                range_.range = range_updates[x]['RANGE']
-                range_.exchange = range_updates[x]['EXCHANGE']
-                timestamp = self._beluga_to_ros_time(range_updates[x]['TIMESTAMP'])
-                range_.timestamp = timestamp.to_msg()
-                updates.append(range_)
-            msg = BelugaRanges()
-            msg.ranges = updates
-            self.range_publish_.publish(msg)
-            self.get_logger().info("Publishing Ranges:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.range}, "TIMESTAMP": {x.timestamp}, "EXCHANGE": {x.exchange}}}' for x in updates))
+    def publish_ranges(self, ranges: dict):
+        updates = []
+        for x in ranges.keys():
+            range_ = BelugaRange()
+            range_.id = x
+            range_.range = ranges[x]["RANGE"]
+            range_.exchange = ranges[x]["EXCHANGE"]
+            timestamp = self._beluga_to_ros_time(ranges[x]["TIMESTAMP"])
+            range_.timestamp = timestamp.to_msg()
+            updates.append(range_)
+        msg = BelugaRanges()
+        msg.ranges = updates
+        self.range_publish_.publish(msg)
+        self.get_logger().info("Publishing Ranges:\n" + '\n'.join(f'{{"ID": {x.id}, "RANGE": {x.range}, "TIMESTAMP": {x.timestamp}, "EXCHANGE": {x.exchange}}}' for x in updates))
 
     def at_command(self, request, response):
         if not self.dummy_data:
