@@ -25,19 +25,18 @@ class BelugaEntryError(Exception):
         super().__init__(msg)
 
 
-class BelugaNeighborListEntry:
-    def __init__(self, line: str):
-        self._id = 0
-        self._range = 0
-        self._rssi = 0
-        self._time = 0
-        self._exchange_id = 0
+class BelugaNeighbor:
+    def __init__(self, neighbor: dict):
+        self._id: int = neighbor["ID"]
+        self._range: float = 0.0
+        self._rssi: int = 0
+        self._time: int = 0
+        self._exchange_id: int = 0
         self._updated = False
+        self.update(neighbor)
 
-        ret = self.update_entry(line)
-        if not ret:
-            raise BelugaEntryError('Line is a header', True)
-        return
+    def __iter__(self):
+        return iter([("RANGE", self._range), ("RSSI", self._rssi), ("TIMESTAMP", self._time), ("EXCHANGE", self._exchange_id)])
 
     @property
     def id(self) -> int:
@@ -64,101 +63,16 @@ class BelugaNeighborListEntry:
         return self._updated
 
     @updated.setter
-    def updated(self, update: bool) -> None:
+    def updated(self, update: bool):
         self._updated = update
-        return
 
-    @staticmethod
-    def _parse_entry(line):
-        entries = line.split(',')
-        try:
-            entry = {'ID': int(entries[0]), 'RANGE': float(entries[1]), 'RSSI': int(entries[2]),
-                     'TIMESTAMP': int(entries[3])}
-            if len(entries) > 4:
-                entry['EXCHANGE'] = int(entry[4])
-        except Exception as e:
-            raise BelugaEntryError(f'Incomplete entry: {e}')
-        return entry
-
-    def update_entry(self, line: str) -> bool:
-        try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
-            if line == '# ID, RANGE, RSSI, TIMESTAMP':
-                return False
-            entry = self._parse_entry(line)
-        self._id = entry['ID']
-        self._range = entry['RANGE']
-        self._rssi = entry['RSSI']
-        self._time = entry['TIMESTAMP']
-        self._exchange_id = entry['EXCHANGE']
+    def update(self, neighbor: dict):
+        self._range = neighbor["RANGE"]
+        self._rssi = neighbor["RSSI"]
+        self._time = neighbor["TIMESTAMP"]
+        if "EXCHANGE" in neighbor.keys():
+            self._exchange_id = neighbor["EXCHANGE"]
         self._updated = True
-        return True
-
-
-class BelugaNeighborsList:
-    def __init__(self):
-        self._list: Dict[str, BelugaNeighborListEntry] = {}
-        self._neighbors_update: bool = False
-        self._range_update: bool = False
-        return
-
-    @staticmethod
-    def _parse_id(line: str) -> str:
-        return re.sub('[^0-9]', "", line.split(',', 1)[0])
-
-    def update(self, line: str) -> None:
-        _id = self._parse_id(line)
-        if not _id:
-            return
-        if _id not in self._list.keys():
-            self._list[_id] = BelugaNeighborListEntry(line)
-            self._range_update = True
-            self._neighbors_update = True
-            return
-        if self._list[_id].update_entry(line):
-            self._range_update = True
-        return
-
-    def remove_neighbor(self, line: str):
-        _id = self._parse_id(line)
-        if not _id:
-            return
-        if _id in self._list.keys():
-            del self._list[_id]
-            self._neighbors_update = True
-        return
-
-    def get_updates(self) -> Dict[int, Dict[str, Union[int, float]]]:
-        ret = {}
-        for x in self._list.values():
-            if x.updated:
-                ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time, "EXCHANGE": x.exchange}
-                x.updated = False
-        self._range_update = False
-        return ret
-
-    def get_list(self) -> Dict[int, Dict[str, Union[int, float]]]:
-        ret = {}
-        for x in self._list.values():
-            ret[x.id] = {"RANGE": x.range, "RSSI": x.rssi, "TIMESTAMP": x.time, "EXCHANGE": x.exchange}
-        self._neighbors_update = False
-        return ret
-
-    def clear(self) -> None:
-        if self._list:
-            self._list.clear()
-            self._neighbors_update = True
-            self._range_update = False
-        return
-
-    @property
-    def neighbors_update(self) -> bool:
-        return self._neighbors_update
-
-    @property
-    def range_update(self) -> bool:
-        return self._range_update
 
 
 class BelugaQueue(mp_queues.Queue):
