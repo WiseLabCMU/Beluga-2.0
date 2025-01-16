@@ -262,7 +262,18 @@ class BelugaSerial:
             self._response_q.put(response)
 
     def _process_reboot(self, payload):
-        pass
+        if self._ranges_queue is not None:
+            self._ranges_queue.clear()
+        if self._neighbors_queue is not None:
+            self._neighbors_queue.clear()
+        if self._range_event_queue is not None:
+            self._range_event_queue.clear()
+        self._neighbors.clear()
+        if not self._reboot_done.is_set():
+            # Unexpected reboot
+            os.kill(os.getppid(), signal.SIGUSR1)
+        else:
+            self._reboot_done.set()
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
@@ -416,8 +427,8 @@ class BelugaSerial:
         return ret
 
     def reboot(self) -> str:
-        ret = self._send_command(b'AT+REBOOT\r\n')
         self._reboot_done.clear()
+        ret = self._send_command(b'AT+REBOOT\r\n')
         self._reboot_done.wait()
         return ret
 
