@@ -25,7 +25,7 @@
 
 #define MSG_OVERHEAD                   (MSG_HEAD_OVERHEAD + BELUGA_MSG_FOOTER_OVERHEAD)
 
-#define MSG_FOOTER_OFFSET(payload_len) (MSG_HEAD_OVERHEAD + ((payload_len)-1))
+#define MSG_FOOTER_OFFSET(payload_len) (MSG_HEAD_OVERHEAD + (payload_len))
 
 #define ENCODE_FRAME(_buf, _payload_len, _type)                                \
     do {                                                                       \
@@ -97,7 +97,7 @@ static int message_size(ssize_t payload_size) {
     if (payload_size == 0) {
         return MSG_OVERHEAD;
     }
-    return MSG_OVERHEAD + payload_size - 1;
+    return MSG_OVERHEAD + payload_size;
 }
 
 static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
@@ -181,7 +181,6 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
         }
         msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD, "%s",
                           msg->payload.response);
-        msgLen += 1; // Account for the NULL character
         break;
     }
     case NEIGHBOR_UPDATES:
@@ -195,7 +194,6 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
     case NEIGHBOR_DROP: {
         msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD,
                           "%" PRIu32, msg->payload.dropped_neighbor);
-        msgLen += 1;
         break;
     }
     default:
