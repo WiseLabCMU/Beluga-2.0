@@ -6,7 +6,7 @@ from rclpy.time import Time, Duration
 import typing
 from beluga.beluga_serial import BelugaSerial
 import json
-from threading import Lock, Event
+from multiprocessing import Manager, Lock, Value
 import os
 import signal
 
@@ -78,6 +78,19 @@ class BelugaPublisherService(Node):
 
         signal.signal(signal.SIGUSR1, self._resync_time)
 
+        # Time sync stuff
+        self._timesync_manager = Manager()
+        self._timestamp_sync = Lock()
+        self._last_mapping = self._timesync_manager.dict()
+        self._last_mapping = {
+            'ros': Time(),
+            'beluga': 0
+        }
+        self._ns_per_timestamp_unit = Value("d", 0.0)
+        self.sync_timer = self.create_timer(300, self._time_sync)
+        self.resync_timer = self.create_timer(1, self._resync_time_callback)
+        self.resync_timer.cancel()
+
         self.serial: typing.Optional[BelugaSerial] = None
         self.serial: BelugaSerial = BelugaSerial(port=port, logger_func=self.get_logger().info, neighbor_update_func=self.publish_neighbors, range_update_func=self.publish_ranges)
         self.serial.start()
@@ -117,13 +130,7 @@ class BelugaPublisherService(Node):
         self.get_logger().info(f'Reboot response {response}')
         self.get_logger().info('Done rebooting')
 
-        # Time Sync Stuff
-        self._timestamp_sync = Lock()
         self._init_time_sync()
-
-        self.sync_timer = self.create_timer(300, self._time_sync)
-        self.resync_timer = self.create_timer(1, self._resync_time_callback)
-        self.resync_timer.cancel()
 
         self.get_logger().info('Ready')
         return
@@ -140,7 +147,7 @@ class BelugaPublisherService(Node):
 
     def _init_time_sync(self):
         self.get_logger().info('Syncing Time')
-        self._ns_per_timestamp_unit = 0
+        self._ns_per_timestamp_unit.value = 0.0
         self._last_mapping = {
             'ros': Time(),
             'beluga': 0
@@ -185,7 +192,9 @@ class BelugaPublisherService(Node):
                 map_diff = map2 - map1
                 t_diff = t2 - t1
                 self._timestamp_sync.acquire()
-                self._ns_per_timestamp_unit += map_diff.nanoseconds / t_diff
+                cur_val = self._ns_per_timestamp_unit.value
+                temp_ = (map_diff.nanoseconds / t_diff) + cur_val
+                self._ns_per_timestamp_unit.value = temp_
             except ValueError:
                 retries -= 1
                 if retries > 0:
@@ -198,7 +207,7 @@ class BelugaPublisherService(Node):
                 if retries > 0:
                     self.get_logger().error('No time difference, retrying...')
                     # Assuming all previous data was invalid
-                    self._ns_per_timestamp_unit = 0
+                    self._ns_per_timestamp_unit.value = 0.0
                     first = True
                 else:
                     self.get_logger().error('No time difference. Will retry in 10 minutes')
@@ -206,19 +215,22 @@ class BelugaPublisherService(Node):
                 continue
             else:
                 if not first:
-                    self._ns_per_timestamp_unit /= 2
+                    cur_val = self._ns_per_timestamp_unit.value / 2
+                    self._ns_per_timestamp_unit.value = cur_val
 
                 # Calculate average time between the mappings and use that as the new mapping for conversion
                 delta = Duration(nanoseconds=(map_diff.nanoseconds / 2))
                 self._last_mapping['ros'] = map1 + delta
                 self._last_mapping['beluga'] = int(t_diff / 2) + t1
-                self.get_logger().info(f'Synced time: {self._last_mapping["beluga"]} -> {self._last_mapping["ros"].seconds_nanoseconds()} ({self._ns_per_timestamp_unit} ns/tick)')
+                self.get_logger().info(f'Synced time: {self._last_mapping["beluga"]} -> {self._last_mapping["ros"].seconds_nanoseconds()} ({self._ns_per_timestamp_unit.value} ns/tick)')
                 self._timestamp_sync.release()
                 retries = -1
 
     def _beluga_to_ros_time(self, t: int) -> Time:
         self._timestamp_sync.acquire()
-        t_delta = int((t - self._last_mapping['beluga']) * self._ns_per_timestamp_unit)
+        ns_per_timestamp = self._ns_per_timestamp_unit.value
+        beluga_mapping = self._last_mapping["beluga"]
+        t_delta = int((t - beluga_mapping) * ns_per_timestamp)
         ros_time = self._last_mapping['ros']
         self._timestamp_sync.release()
         return ros_time + Duration(nanoseconds=t_delta)
