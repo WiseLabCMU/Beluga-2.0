@@ -83,7 +83,7 @@ class BelugaFrame:
             payload_len = struct.unpack(PAYLOAD_FORMAT, data[payload_len_index:payload_len_index + PAYLOAD_LEN_BYTES])[0]
 
             footer_index = header_index + FRAME_HEADER_OVERHEAD + payload_len
-            if footer_index >= data_len and not error_no_footer:
+            if footer_index >= data_len and error_no_footer:
                 continue
 
             if error_no_footer:
