@@ -121,6 +121,10 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
         }
     }
 
+    if (neighbors.neighbors_len < 1) {
+        return -EAGAIN;
+    }
+
     numBytes = json_calc_encoded_arr_len(json_neighbor_list, &neighbors);
 
     if (numBytes < 0 || buffer == NULL) {
