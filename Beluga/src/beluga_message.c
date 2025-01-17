@@ -244,6 +244,13 @@ int frame_length(const struct beluga_msg *msg) {
         msgLen += 1;
         break;
     }
+    case START_EVENT: {
+        if (msg->payload.node_version == NULL) {
+            return -EINVAL;
+        }
+        msgLen = (ssize_t)strlen(msg->payload.node_version) + 1;
+        break;
+    }
     default:
         __ASSERT(false, "Invalid beluga message type: (%d)",
                  (uint32_t)msg->type);
