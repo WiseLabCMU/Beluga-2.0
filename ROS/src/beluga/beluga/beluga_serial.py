@@ -10,7 +10,7 @@ import multiprocessing.queues as mp_queues
 import queue
 import time
 import itertools
-from beluga_frame import BelugaFrame, FrameType
+from beluga.beluga_frame import BelugaFrame, FrameType
 
 TARGETS = [
     'CMU Beluga',
@@ -212,9 +212,10 @@ class BelugaSerial:
         self._reboot_done: mp.Event = mp.Event()
 
         if neighbor_update_func is None:
-            self._neighbors_queue: BelugaQueue = BelugaQueue()
+            self._neighbors_queue: Optional[BelugaQueue] = BelugaQueue()
             self._neighbors_callback = None
         else:
+            self._neighbors_queue = None
             self._neighbors_callback = neighbor_update_func
 
         if range_update_func is None:
@@ -269,8 +270,9 @@ class BelugaSerial:
         if self._range_event_queue is not None:
             self._range_event_queue.clear()
         self._neighbors.clear()
-        if not self._reboot_done.is_set():
+        if self._reboot_done.is_set():
             # Unexpected reboot
+            self._log("Beluga rebooted unexpectedly")
             os.kill(os.getppid(), signal.SIGUSR1)
         else:
             self._reboot_done.set()
