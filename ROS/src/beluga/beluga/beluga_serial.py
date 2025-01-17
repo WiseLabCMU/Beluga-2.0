@@ -310,6 +310,12 @@ class BelugaSerial:
             self._publish_neighbor_update()
             self._publish_range_update()
 
+    def _process_frames_entry(self):
+        try:
+            self._process_frames()
+        except KeyboardInterrupt:
+            pass # Shutting down
+
     def _process_rx_buffer(self, buf: bytearray) -> bytearray:
         frame_start, frame_size, _ = BelugaFrame.frame_present(buf)
         if frame_start < 0:
@@ -326,6 +332,11 @@ class BelugaSerial:
                 rx += self._serial.read(self._serial.inWaiting())
             rx = self._process_rx_buffer(rx)
 
+    def _read_task_entry(self):
+        try:
+            self._read_serial()
+        except KeyboardInterrupt:
+            pass # Shutting down
 
     def _send_command(self, command: bytes) -> str:
         self._serial.write(command)
@@ -495,8 +506,8 @@ class BelugaSerial:
     def start(self):
         if self._rx_task is not None or self._processing_task is not None:
             raise RuntimeError('Please stop before restarting')
-        self._processing_task = mp.Process(target=self._process_frames)
-        self._rx_task = mp.Process(target=self._read_serial)
+        self._processing_task = mp.Process(target=self._process_frames_entry)
+        self._rx_task = mp.Process(target=self._read_task_entry)
 
         self._processing_task.start()
         self._rx_task.start()
@@ -510,9 +521,13 @@ class BelugaSerial:
         if self._processing_task is not None:
             self._processing_task.kill()
             while self._processing_task.is_alive():
-                pass
+                time.sleep(0.1)
             self._processing_task.close()
         return
+
+    def close(self):
+        if self._serial.isOpen():
+            self._serial.close()
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
         # Needed to indicate if the queue is just empty or if the only neighbor got removed
@@ -571,6 +586,7 @@ def main():
                 last_tr = dt.datetime.now()
     except KeyboardInterrupt:
         beluga.stop()
+        beluga.close()
 
 
 if __name__ == '__main__':

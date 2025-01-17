@@ -325,13 +325,20 @@ class BelugaPublisherService(Node):
             response.response = 'AT commands unavailable in dummy data mode'
         return response
 
+    def destroy_node(self):
+        self.serial.stop()
+        self.serial.close()
+        super().destroy_node()
+
 
 def main(args=None):
     rclpy.init(args=args)
     beluga_pub_serv = BelugaPublisherService()
-    rclpy.spin(beluga_pub_serv)
+    try:
+        rclpy.spin(beluga_pub_serv)
+    except KeyboardInterrupt:
+        pass
     beluga_pub_serv.destroy_node()
-    rclpy.shutdown()
 
 
 if __name__ == '__main__':
