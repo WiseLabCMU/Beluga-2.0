@@ -70,7 +70,7 @@ struct neighbor_list_json_struct {
 };
 
 static const struct json_obj_descr neighbor_json[] = {
-    JSON_OBJ_DESCR_PRIM(struct node_json_struct, UUID, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM_NAMED(struct node_json_struct, "ID", UUID, JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct node_json_struct, RSSI, JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct node_json_struct, TIMESTAMP, JSON_TOK_INT64),
     JSON_OBJ_DESCR_PRIM(struct node_json_struct, RANGE, JSON_TOK_FLOAT),
