@@ -102,6 +102,7 @@ class BelugaNeighborList:
             if x.updated:
                 ret[x.id] = dict(x)
                 x.updated = False
+        self._range_update = False
         return ret
 
     def get_neighbors(self) -> Dict[int, Dict[str, Union[int, float]]]:
