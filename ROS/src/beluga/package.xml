@@ -5,18 +5,19 @@
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="tschmitz@andrew.cmu.edu">tom</maintainer>
-  <license>TODO</license>
+  <license>TODO: License declaration</license>
 
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>beluga_messages</exec_depend>
-  <depend>python3-serial</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
+  <depend>rclcpp</depend>
+  <depend>beluga_messages</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
-    <build_type>ament_python</build_type>
+    <build_type>ament_cmake</build_type>
+    <depend>rclcpp</depend>
+    <depend>std_msgs</depend>
   </export>
 </package>
