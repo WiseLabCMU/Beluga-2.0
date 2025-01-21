@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.22)
 project(beluga)
+
+set(CMAKE_CXX_STANDARD 20)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -11,14 +13,21 @@ include_directories(include)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(beluga_messages REQUIRED)
+find_package(daw-json-link)
+find_package(PkgConfig)
+pkg_check_modules(SERIAL libserial)
+
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED))
 
 add_executable(beluga
         src/beluga_main.cpp
-        src/beluga.cpp)
-ament_target_dependencies(beluga rclcpp beluga_messages)
+        src/beluga.cpp
+        src/beluga_frame.cpp)
+#target_link_libraries(beluga daw::daw_json_link)
+ament_target_dependencies(beluga rclcpp beluga_messages daw-json-link)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
