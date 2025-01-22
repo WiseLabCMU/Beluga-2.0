@@ -14,9 +14,9 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(beluga_messages REQUIRED)
 find_package(daw-json-link)
-find_package(PkgConfig)
-pkg_check_modules(SERIAL libserial)
 
+file(GLOB SERIAL_SRC serial/*.cpp)
+file(GLOB SERIAL_TOOLS serial/tools/*.cpp)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -25,7 +25,9 @@ pkg_check_modules(SERIAL libserial)
 add_executable(beluga
         src/beluga_main.cpp
         src/beluga.cpp
-        src/beluga_frame.cpp)
+        src/beluga_frame.cpp
+        ${SERIAL_SRC}
+        ${SERIAL_TOOLS})
 #target_link_libraries(beluga daw::daw_json_link)
 ament_target_dependencies(beluga rclcpp beluga_messages daw-json-link)
 
