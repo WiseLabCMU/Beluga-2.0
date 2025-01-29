@@ -30,7 +30,7 @@ class SerialPosix : public SerialBase {
                          bool xonxoff = false, bool rtscts = false,
                          const std::chrono::milliseconds &write_timeout =
                              std::chrono::milliseconds::max(),
-                         bool dsrdtr = false, uint32_t inter_byte_timeout = 0,
+                         bool dsrdtr = false, int32_t inter_byte_timeout = -1,
                          bool exclusive = false)
         : SerialBase(port, baudrate, bytesize, parity, stopbits, timeout,
                      xonxoff, rtscts, write_timeout, dsrdtr, inter_byte_timeout,
@@ -57,6 +57,7 @@ class SerialPosix : public SerialBase {
     bool cd() override;
 
   private:
+    const size_t rw_chunk_size = 1024;
     int fd = -1;
 
     void _init_flow_control();

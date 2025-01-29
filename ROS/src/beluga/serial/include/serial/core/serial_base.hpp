@@ -79,7 +79,7 @@ class Timeout {
 
 class SerialBase {
   public:
-    explicit SerialBase(std::string port = "",
+    explicit SerialBase(const std::string &port = "",
                         enum BaudRate baudrate = BAUD_DEFAULT,
                         enum ByteSize bytesize = SIZE_DEFAULT,
                         enum Parity parity = PARITY_DEFAULT,
@@ -87,7 +87,7 @@ class SerialBase {
                         const milliseconds &timeout = milliseconds::max(),
                         bool xonxoff = false, bool rtscts = false,
                         const milliseconds &write_timeout = milliseconds::max(),
-                        bool dsrdtr = false, uint32_t inter_byte_timeout = 0,
+                        bool dsrdtr = false, int32_t inter_byte_timeout = -1,
                         bool exclusive = false);
     virtual ~SerialBase() = 0;
 
@@ -170,12 +170,12 @@ class SerialBase {
     enum ByteSize _bytesize;
     enum Parity _parity;
     enum StopBits _stopbits;
-    milliseconds _timeout;
-    milliseconds _write_timeout;
+    milliseconds _timeout{};
+    milliseconds _write_timeout{};
     bool _xonxoff;
     bool _rtscts;
     bool _dsrdtr;
-    uint32_t _inter_byte_timeout;
+    int32_t _inter_byte_timeout;
     bool _rts_state;
     bool _dtr_state;
     bool _exclusive;

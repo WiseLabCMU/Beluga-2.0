@@ -69,12 +69,12 @@ std::chrono::milliseconds Timeout::duration() const noexcept {
     return _duration;
 }
 
-SerialBase::SerialBase(std::string port, enum BaudRate baudrate,
+SerialBase::SerialBase(const std::string &port, enum BaudRate baudrate,
                        enum ByteSize bytesize, enum Parity parity,
                        enum StopBits stopbits, const milliseconds &timeout,
                        bool xonxoff, bool rtscts,
                        const milliseconds &write_timeout, bool dsrdtr,
-                       uint32_t inter_byte_timeout, bool exclusive) {
+                       int32_t inter_byte_timeout, bool exclusive) {
     _is_open = false;
     _port = port;
     _baudrate = baudrate;

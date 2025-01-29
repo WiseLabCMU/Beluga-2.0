@@ -27,7 +27,7 @@ class Serial : public SerialInternal::SerialPosix {
                     const milliseconds &timeout = milliseconds::max(),
                     bool xonxoff = false, bool rtscts = false,
                     const milliseconds &write_timeout = milliseconds::max(),
-                    bool dsrdtr = false, uint32_t inter_byte_timeout = 0,
+                    bool dsrdtr = false, int32_t inter_byte_timeout = -1,
                     bool exclusive = false)
         : SerialInternal::SerialPosix(
               port, baudrate, bytesize, parity, stopbits, timeout, xonxoff,

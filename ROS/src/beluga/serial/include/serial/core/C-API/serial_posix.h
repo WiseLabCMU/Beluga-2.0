@@ -30,9 +30,8 @@ struct serial_posix_config {
     enum StopBits stopbits;
     bool xonxoff;
     bool rtscts;
-    bool dsrdtr;
     bool exclusive;
-    uint32_t inter_byte_timeout;
+    int32_t inter_byte_timeout;
 };
 
 int open_port(const char *port);

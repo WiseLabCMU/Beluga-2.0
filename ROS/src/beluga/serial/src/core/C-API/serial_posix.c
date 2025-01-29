@@ -188,11 +188,79 @@ static int set_bytesize(struct termios *tty, enum ByteSize size) {
     return 0;
 }
 
+static int port_update_file_lock(int fd, bool exclusive) {
+    int ret;
+    struct flock lock;
+    lock.l_type = F_WRLCK;
+    lock.l_len = 0;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_SET;
+    pid_t pid = getpid();
+
+    lock.l_pid = pid;
+
+    if (exclusive) {
+        lock.l_type = F_WRLCK;
+    } else {
+        lock.l_type = F_UNLCK;
+    }
+
+    ret = fcntl(fd, F_SETLK, &lock);
+    if (ret < 0) {
+        return -errno;
+    }
+    return 0;
+}
+
+static void set_xonxoff(struct termios *tty, bool xonxoff) {
+    if (xonxoff) {
+        tty->c_iflag |= (IXON | IXOFF);
+    } else {
+        tty->c_iflag &= ~(IXON | IXOFF | IXANY);
+    }
+}
+
+static void set_rtscts(struct termios *tty, bool rtscts) {
+    if (rtscts) {
+        tty->c_cflag |= CRTSCTS;
+    } else {
+        tty->c_cflag &= ~CRTSCTS;
+    }
+}
+
+static int set_ic_timeout(struct termios *tty, int32_t timeout) {
+    cc_t vmin = 0;
+    int32_t vtime = 0;
+    int32_t cc_max_val = (1 << (sizeof(cc_t) * __CHAR_BIT__)) - 1;
+
+    if (timeout >= 0) {
+        vmin = 1;
+        vtime = timeout * 10;
+
+        if (vtime < 0 || vtime > cc_max_val) {
+            return -EINVAL;
+        }
+    }
+    tty->c_cc[VMIN] = vmin;
+    tty->c_cc[VTIME] = (cc_t)vtime;
+    return 0;
+}
+
 int configure_port(struct serial_posix_config *config) {
     struct termios tty;
     int ret;
     if (config == NULL) {
         return -EINVAL;
+    }
+
+    tty.c_cflag |= (CLOCAL | CREAD);
+    tty.c_lflag = 0;
+    tty.c_oflag = 0;
+    tty.c_iflag &= ~(INLCR | IGNCR | ICRNL | IGNBRK);
+
+    ret = port_update_file_lock(config->fd, config->exclusive);
+    if (ret < 0) {
+        return ret;
     }
 
     if (tcgetattr(config->fd, &tty) != 0) {
@@ -219,14 +287,13 @@ int configure_port(struct serial_posix_config *config) {
         return ret;
     }
 
-    tty.c_iflag &= ~IGNBRK;
-    tty.c_lflag = 0;
-    tty.c_oflag = 0;
-    tty.c_cc[VMIN] = 0;
-    tty.c_cc[VTIME] = 5;
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY);
-    tty.c_cflag |= (CLOCAL | CREAD);
-    tty.c_cflag &= ~CRTSCTS;
+    set_xonxoff(&tty, config->xonxoff);
+    set_rtscts(&tty, config->rtscts);
+
+    ret = set_ic_timeout(&tty, config->inter_byte_timeout);
+    if (ret < 0) {
+        return ret;
+    }
 
     if (tcsetattr(config->fd, TCSANOW, &tty) != 0) {
         return -errno;

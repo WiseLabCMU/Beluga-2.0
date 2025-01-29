@@ -63,7 +63,6 @@ void SerialPosix::_reconfigure_port_internal() {
         .stopbits = _stopbits,
         .xonxoff = _xonxoff,
         .rtscts = _rtscts,
-        .dsrdtr = _dsrdtr,
         .exclusive = _exclusive,
         .inter_byte_timeout = _inter_byte_timeout,
     };
