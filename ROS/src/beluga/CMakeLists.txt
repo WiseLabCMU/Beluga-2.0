@@ -7,7 +7,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-include_directories(include)
+include_directories(include serial/include)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -15,8 +15,9 @@ find_package(rclcpp REQUIRED)
 find_package(beluga_messages REQUIRED)
 find_package(daw-json-link)
 
-file(GLOB SERIAL_SRC serial/*.cpp)
-file(GLOB SERIAL_TOOLS serial/tools/*.cpp)
+file(GLOB SERIAL_C_API serial/src/core/C-API/*.c)
+file(GLOB SERIAL_CORE serial/src/core/*.cpp)
+file(GLOB SERIAL_TOOLS serial/src/tools/*.cpp)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -26,7 +27,8 @@ add_executable(beluga
         src/beluga_main.cpp
         src/beluga.cpp
         src/beluga_frame.cpp
-        ${SERIAL_SRC}
+        ${SERIAL_C_API}
+        ${SERIAL_CORE}
         ${SERIAL_TOOLS})
 #target_link_libraries(beluga daw::daw_json_link)
 ament_target_dependencies(beluga rclcpp beluga_messages daw-json-link)
