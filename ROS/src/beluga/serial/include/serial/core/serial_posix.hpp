@@ -57,7 +57,6 @@ class SerialPosix : public SerialBase {
     bool cd() override;
 
   private:
-    constexpr size_t rw_chunk_size = 1024;
     int fd = -1;
 
     void _init_flow_control();

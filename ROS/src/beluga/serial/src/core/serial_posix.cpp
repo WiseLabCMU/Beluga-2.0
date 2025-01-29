@@ -100,7 +100,6 @@ size_t SerialPosix::in_waiting() {
 }
 
 size_t SerialPosix::read(std::vector<uint8_t> &b, size_t n) {
-    uint8_t bytes[SerialInternal::SerialPosix::rw_chunk_size];
     size_t bytes_read = 0;
 
     if (!_is_open) {
@@ -112,14 +111,14 @@ size_t SerialPosix::read(std::vector<uint8_t> &b, size_t n) {
     Timeout timeout(_timeout);
 
     while (bytes_read < n) {
-        size_t read_len = std::min(SerialInternal::SerialPosix::rw_chunk_size,
-                                   n - bytes_read);
         ssize_t ret;
+        size_t read_len = n - bytes_read;
+        std::vector<uint8_t> buf(read_len);
         if (timeout.infinite()) {
-            ret = read_port(fd, bytes, read_len, NULL);
+            ret = read_port(fd, buf.data(), read_len, NULL);
         } else {
             struct timeval tv = timeout.time_left_tv();
-            ret = read_port(fd, bytes, read_len, &tv);
+            ret = read_port(fd, buf.data(), read_len, &tv);
         }
         if (ret < 0) {
             int err = errno;
@@ -133,8 +132,8 @@ size_t SerialPosix::read(std::vector<uint8_t> &b, size_t n) {
                     "device reports readiness to read but returned no data "
                     "(device disconnected or multiple access on port?)");
             }
-            b.insert(b.end(), bytes, bytes + read_len);
-            bytes_read += read_len;
+            b.insert(b.end(), buf.begin(), buf.begin() + ret);
+            bytes_read += ret;
         }
 
         if (timeout.expired()) {
@@ -203,7 +202,10 @@ size_t SerialPosix::read_byte(uint8_t *byte) {
     if (!_is_open) {
         throw PortNotOpenError();
     }
-    struct timeval tv = {0};
+    struct timeval tv = {
+        .tv_sec = 0,
+        .tv_usec = 0,
+    };
     return read_port(fd, byte, 1, &tv);
 }
 
