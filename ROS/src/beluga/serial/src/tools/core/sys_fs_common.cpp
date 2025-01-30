@@ -3,15 +3,15 @@
  *
  * @brief
  *
- * @date 1/22/25
+ * @date 1/21/25
  *
  * @author tom
  */
 
-#include <serial/tools/sys_fs_common.hpp>
+#include <serial/tools/core/sys_fs_common.hpp>
 #include <sstream>
 
-namespace SerialTools {
+namespace SerialToolsInternal {
 
 SysFsBase::SysFsBase(const fs::path &dev, bool skip_link_detection) {
     _device = dev.string();
@@ -80,4 +80,4 @@ void SysFsBase::_apply_usb_info() {
     _description = usb_description();
     _hwid = usb_info();
 }
-} // namespace SerialTools
+} // namespace SerialToolsInternal

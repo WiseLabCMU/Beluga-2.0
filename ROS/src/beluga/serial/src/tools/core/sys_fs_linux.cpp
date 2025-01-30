@@ -10,9 +10,9 @@
 
 #include <fstream>
 #include <glob.h>
-#include <serial/tools/sys_fs_linux.hpp>
+#include <serial/tools/core/sys_fs_linux.hpp>
 
-namespace SerialTools {
+namespace SerialToolsInternal {
 SysFsLinux::SysFsLinux(const fs::path &dev) : SysFsBase(dev) {
     fs::path device, device_path;
     bool is_link = false;
@@ -125,7 +125,7 @@ static std::vector<std::string> _glob(const char *pattern) {
 
     if (glob(pattern, 0, NULL, &glob_result) == 0) {
         for (size_t i = 0; i < glob_result.gl_pathc; i++) {
-            results.emplace_back(glob_result.gl_pathv[i]);
+            results.push_back(std::string(glob_result.gl_pathv[i]));
         }
         globfree(&glob_result);
     }
@@ -138,7 +138,7 @@ static std::vector<std::string> _glob(const char *pattern) {
         .insert((_destination).end(), (_source).begin(), (_source).end())
 #define UPDATE_VECTOR(_destination, _source, _pattern)                         \
     do {                                                                       \
-        (_source) = _glob(_pattern);                                           \
+        _source = _glob(_pattern);                                             \
         APPEND_VECTOR(_destination, _source);                                  \
     } while (false)
 
@@ -163,4 +163,4 @@ std::vector<SysFsLinux> comports() {
 
     return ret;
 }
-} // namespace SerialTools
+} // namespace SerialToolsInternal

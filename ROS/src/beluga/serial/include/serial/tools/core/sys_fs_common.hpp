@@ -3,18 +3,18 @@
  *
  * @brief
  *
- * @date 1/22/25
+ * @date 1/21/25
  *
  * @author tom
  */
 
-#ifndef _SYS_FS_COMMON_HPP
-#define _SYS_FS_COMMON_HPP
+#ifndef BELUGA_FRAME_SYS_FS_COMMON_HPP
+#define BELUGA_FRAME_SYS_FS_COMMON_HPP
 
 #include <filesystem>
 #include <string>
 
-namespace SerialTools {
+namespace SerialToolsInternal {
 namespace fs = std::filesystem;
 class SysFsBase {
   public:
@@ -48,6 +48,6 @@ class SysFsBase {
 
     void _apply_usb_info();
 };
-} // namespace SerialTools
+} // namespace SerialToolsInternal
 
-#endif //_SYS_FS_COMMON_HPP
+#endif // BELUGA_FRAME_SYS_FS_COMMON_HPP

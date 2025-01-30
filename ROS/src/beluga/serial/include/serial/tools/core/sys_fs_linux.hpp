@@ -8,13 +8,13 @@
  * @author tom
  */
 
-#ifndef _SYS_FS_LINUX_HPP
-#define _SYS_FS_LINUX_HPP
+#ifndef BELUGA_FRAME_SYS_FS_LINUX_HPP
+#define BELUGA_FRAME_SYS_FS_LINUX_HPP
 
-#include <serial/tools/sys_fs_common.hpp>
+#include <serial/tools/core/sys_fs_common.hpp>
 #include <vector>
 
-namespace SerialTools {
+namespace SerialToolsInternal {
 class SysFsLinux : public SysFsBase {
   public:
     explicit SysFsLinux(const fs::path &dev);
@@ -37,6 +37,6 @@ class SysFsLinux : public SysFsBase {
 };
 
 std::vector<SysFsLinux> comports();
-} // namespace SerialTools
+} // namespace SerialToolsInternal
 
-#endif // BELUGA_SYS_FS_LINUX_HPP
+#endif // BELUGA_FRAME_SYS_FS_LINUX_HPP

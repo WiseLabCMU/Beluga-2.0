@@ -156,6 +156,7 @@ static int set_stopbits(struct termios *tty, enum StopBits bits) {
     switch (bits) {
     case STOPBITS_1:
         tty->c_cflag &= ~CSTOPB;
+        break;
     case STOPBITS_1P5:
     case STOPBITS_2:
         tty->c_cflag |= CSTOPB;
@@ -253,11 +254,6 @@ int configure_port(struct serial_posix_config *config) {
         return -EINVAL;
     }
 
-    tty.c_cflag |= (CLOCAL | CREAD);
-    tty.c_lflag = 0;
-    tty.c_oflag = 0;
-    tty.c_iflag &= ~(INLCR | IGNCR | ICRNL | IGNBRK);
-
     ret = port_update_file_lock(config->fd, config->exclusive);
     if (ret < 0) {
         return ret;
@@ -266,6 +262,11 @@ int configure_port(struct serial_posix_config *config) {
     if (tcgetattr(config->fd, &tty) != 0) {
         return -errno;
     }
+
+    tty.c_cflag |= (CLOCAL | CREAD);
+    tty.c_lflag = 0;
+    tty.c_oflag = 0;
+    tty.c_iflag &= ~(INLCR | IGNCR | ICRNL | IGNBRK);
 
     ret = set_baud(&tty, config->baudrate);
     if (ret < 0) {
