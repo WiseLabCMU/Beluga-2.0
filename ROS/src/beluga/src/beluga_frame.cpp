@@ -44,7 +44,8 @@ template <> struct json_data_contract<Beluga::BelugaFrame::NeighborUpdate> {
 
 template <> struct json_data_contract<Beluga::BelugaFrame::RangeEvent> {
     using type = json_member_list<json_number<"ID", uint16_t>,
-                                  json_number<"EXCHANGE", uint32_t>, json_number<"TIMESTAMP", int64_t>>;
+                                  json_number<"EXCHANGE", uint32_t>,
+                                  json_number<"TIMESTAMP", int64_t>>;
 };
 } // namespace daw::json
 
@@ -141,10 +142,10 @@ std::tuple<ssize_t, ssize_t, ssize_t>
 Beluga::BelugaFrame::frame_present(const std::vector<uint8_t> &bytearray,
                                    bool error_no_footer) {
     size_t len = bytearray.size();
-    ssize_t header_index, type_index, payload_len_index, frame_size;
+    size_t header_index, type_index, payload_len_index, frame_size;
     size_t payload_len, footer_index;
 
-    for (ssize_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         if (bytearray[i] != BELUGA_MSG_HEADER) {
             continue;
         }
