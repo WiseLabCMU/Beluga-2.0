@@ -50,7 +50,7 @@ template <> struct json_data_contract<Beluga::BelugaFrame::RangeEvent> {
 
 Beluga::BelugaFrame::BelugaFrame() { parsed_data.type = NO_TYPE; }
 
-Beluga::BelugaFrame::BelugaFrame(const std::string &str) {
+Beluga::BelugaFrame::BelugaFrame(const std::vector<uint8_t> &str) {
     auto [start_index, length, bytes_left] =
         Beluga::BelugaFrame::frame_present(str);
 
@@ -62,11 +62,11 @@ Beluga::BelugaFrame::BelugaFrame(const std::string &str) {
 }
 
 Beluga::BelugaFrame::BelugaFrame(const char *str, size_t len) {
-    auto [start_index, length, bytes_left] =
-        Beluga::BelugaFrame::frame_present(std::string(str, len));
+    auto [start_index, length, bytes_left] = Beluga::BelugaFrame::frame_present(
+        std::vector<uint8_t>((uint8_t *)str, (uint8_t *)str + len));
 
     if (start_index >= 0) {
-        parse_frame(std::string(str, len), start_index);
+        parse_frame(std::vector<uint8_t>(str, str + len), start_index);
     } else {
         throw BelugaFrameError("Frame is not present");
     }
@@ -74,17 +74,21 @@ Beluga::BelugaFrame::BelugaFrame(const char *str, size_t len) {
 
 void Beluga::BelugaFrame::parse_frame(const char *serial_data,
                                       size_t start_index, size_t len) {
-    this->parse_frame(std::string(serial_data, len), start_index);
+    this->parse_frame(std::vector<uint8_t>(serial_data, serial_data + len),
+                      start_index);
 }
 #include <iostream>
-void Beluga::BelugaFrame::parse_frame(const std::string &serial_data,
+void Beluga::BelugaFrame::parse_frame(const std::vector<uint8_t> &serial_data,
                                       size_t start_index) {
     size_t payload_len =
         CONSTRUCT_PAYLOAD_LEN(serial_data, start_index + MSG_LEN_OFFSET);
     BelugaFrameType type =
         (BelugaFrameType)serial_data[start_index + MSG_TYPE_OFFSET];
-    std::string _payload =
-        serial_data.substr(start_index + MSG_PAYLOAD_OFFSET, payload_len);
+    // std::string _payload = serial_data.substr(start_index +
+    // MSG_PAYLOAD_OFFSET, payload_len);
+    std::string _payload = std::string(
+        serial_data.begin() + start_index + MSG_PAYLOAD_OFFSET,
+        serial_data.begin() + start_index + MSG_PAYLOAD_OFFSET + payload_len);
     size_t last_index;
 
     try {
@@ -130,18 +134,20 @@ Beluga::BelugaFrame::DecodedFrame Beluga::BelugaFrame::get_parsed_data() const {
 std::tuple<ssize_t, ssize_t, ssize_t>
 Beluga::BelugaFrame::frame_present(const char *bytearray, size_t len,
                                    bool error_no_footer) {
-    return frame_present(std::string(bytearray, len), error_no_footer);
+    return frame_present(
+        std::vector<uint8_t>((uint8_t *)bytearray, (uint8_t *)bytearray + len),
+        error_no_footer);
 }
 
 std::tuple<ssize_t, ssize_t, ssize_t>
-Beluga::BelugaFrame::frame_present(const std::string &bytearray,
+Beluga::BelugaFrame::frame_present(const std::vector<uint8_t> &bytearray,
                                    bool error_no_footer) {
     size_t len = bytearray.size();
     ssize_t header_index, type_index, payload_len_index, frame_size;
     size_t payload_len, footer_index;
 
     for (ssize_t i = 0; i < len; i++) {
-        if ((uint8_t)bytearray[i] != BELUGA_MSG_HEADER) {
+        if (bytearray[i] != BELUGA_MSG_HEADER) {
             continue;
         }
         header_index = i;
