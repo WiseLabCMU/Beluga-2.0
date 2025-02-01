@@ -24,7 +24,10 @@ add_subdirectory(serial)
 add_executable(beluga
         src/beluga_main.cpp
         src/beluga.cpp
-        src/beluga_frame.cpp)
+        src/beluga_frame.cpp
+        src/beluga_neighbor_list.cpp
+        src/beluga_event.cpp
+        src/beluga_serial.cpp)
 target_link_libraries(beluga serial)
 ament_target_dependencies(beluga rclcpp beluga_messages daw-json-link)
 
