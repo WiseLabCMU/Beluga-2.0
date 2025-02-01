@@ -16,6 +16,9 @@
 namespace Serial {
 
 using SerialInternal::milliseconds;
+using SerialInternal::PortNotOpenError;
+using SerialInternal::SerialException;
+using SerialInternal::SerialTimeoutException;
 
 class Serial : public SerialInternal::SerialPosix {
   public:
