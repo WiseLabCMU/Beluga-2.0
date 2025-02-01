@@ -86,6 +86,23 @@ Run the following command:
 
     ./setup.sh
 
+Set up for ROS node dependencies (Tested on ROS Humble)
+-------------------------------------------------------
+1. Install `ROS Humble`_
+2. Install `Daw-JSON`_
+    a. Run the following commands to install
+.. code-block:: bash
+
+        git clone https://github.com/beached/daw_json_link
+        cd daw_json_link
+        mkdir build
+        cd build
+        cmake ..
+        cmake --install .
+
+.. _ROS Humble: https://docs.ros.org/en/humble/Installation.html
+.. _Daw-JSON: https://github.com/beached/daw_json_link
+
 Build Configurations
 --------------------
 Before building your application, you need to set up your build configurations. There are two important build
