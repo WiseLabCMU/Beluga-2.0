@@ -70,7 +70,8 @@ struct neighbor_list_json_struct {
 };
 
 static const struct json_obj_descr neighbor_json[] = {
-    JSON_OBJ_DESCR_PRIM_NAMED(struct node_json_struct, "ID", UUID, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM_NAMED(struct node_json_struct, "ID", UUID,
+                              JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct node_json_struct, RSSI, JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct node_json_struct, TIMESTAMP, JSON_TOK_INT64),
     JSON_OBJ_DESCR_PRIM(struct node_json_struct, RANGE, JSON_TOK_FLOAT),
@@ -90,6 +91,8 @@ static const struct json_obj_descr json_ranging_event[] = {
     JSON_OBJ_DESCR_PRIM_NAMED(struct ranging_event, "ID", id, JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM_NAMED(struct ranging_event, "EXCHANGE", exchange_id,
                               JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM_NAMED(struct ranging_event, "TIMESTAMP", timestamp,
+                              JSON_TOK_INT64),
 };
 #endif
 

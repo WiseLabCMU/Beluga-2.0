@@ -33,6 +33,7 @@ enum beluga_msg_type {
 struct ranging_event {
     uint32_t id;
     uint32_t exchange_id;
+    int64_t timestamp;
 };
 
 struct beluga_msg {

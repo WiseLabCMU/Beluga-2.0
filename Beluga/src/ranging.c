@@ -154,8 +154,11 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #define _RANGE_EVENT_REPORT(ret_, id, exchange)                                \
     do {                                                                       \
         if ((ret_) == 0) {                                                     \
-            struct ranging_event evt = {.id = (id),                            \
-                                        .exchange_id = (exchange)};            \
+            struct ranging_event evt = {                                       \
+                .id = (id),                                                    \
+                .exchange_id = (exchange),                                     \
+                .timestamp = k_uptime_get(),                                   \
+            };                                                                 \
             struct beluga_msg msg = {.type = RANGING_EVENT,                    \
                                      .payload.event = &evt};                   \
             (void)write_message_frame(&msg);                                   \

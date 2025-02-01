@@ -50,6 +50,7 @@ struct print_parameters {
         .offset = offsetof(struct_, field_name_),                              \
     }
 
+#if !defined(CONFIG_BELUGA_FRAMES)
 static const struct print_parameters params[] = {
     PARAMETER_DESC("ID", struct node, UUID, PARAM_U16),
     PARAMETER_DESC("RANGE", struct node, range, PARAM_FLOAT),
@@ -59,6 +60,7 @@ static const struct print_parameters params[] = {
     PARAMETER_DESC("EXCHANGE", struct node, exchange_id, PARAM_U32),
 #endif
 };
+#endif
 
 #define PRINT_PARAMETER(type, data)                                            \
     do {                                                                       \
