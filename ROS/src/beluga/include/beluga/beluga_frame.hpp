@@ -58,6 +58,7 @@ class BelugaFrame {
     struct RangeEvent {
         uint16_t ID;
         uint32_t EXCHANGE;
+        int64_t TIMESTAMP;
     };
 
     struct DecodedFrame {

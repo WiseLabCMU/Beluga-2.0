@@ -44,7 +44,7 @@ template <> struct json_data_contract<Beluga::BelugaFrame::NeighborUpdate> {
 
 template <> struct json_data_contract<Beluga::BelugaFrame::RangeEvent> {
     using type = json_member_list<json_number<"ID", uint16_t>,
-                                  json_number<"EXCHANGE", uint32_t>>;
+                                  json_number<"EXCHANGE", uint32_t>, json_number<"TIMESTAMP", int64_t>>;
 };
 } // namespace daw::json
 
@@ -77,15 +77,13 @@ void Beluga::BelugaFrame::parse_frame(const char *serial_data,
     this->parse_frame(std::vector<uint8_t>(serial_data, serial_data + len),
                       start_index);
 }
-#include <iostream>
+
 void Beluga::BelugaFrame::parse_frame(const std::vector<uint8_t> &serial_data,
                                       size_t start_index) {
     size_t payload_len =
         CONSTRUCT_PAYLOAD_LEN(serial_data, start_index + MSG_LEN_OFFSET);
     BelugaFrameType type =
         (BelugaFrameType)serial_data[start_index + MSG_TYPE_OFFSET];
-    // std::string _payload = serial_data.substr(start_index +
-    // MSG_PAYLOAD_OFFSET, payload_len);
     std::string _payload = std::string(
         serial_data.begin() + start_index + MSG_PAYLOAD_OFFSET,
         serial_data.begin() + start_index + MSG_PAYLOAD_OFFSET + payload_len);
