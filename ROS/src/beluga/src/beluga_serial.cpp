@@ -272,90 +272,61 @@ std::string BelugaSerial::start_ble() {
 
 std::string BelugaSerial::stop_ble() { return _send_command("AT+STOPBLE\r\n"); }
 
-std::string BelugaSerial::id(int id_) {
+std::string BelugaSerial::id(const std::string &id_) {
     std::stringstream oss;
     oss << "AT+ID " << id_ << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::id() { return _send_command("AT+ID\r\n"); }
-
-std::string BelugaSerial::bootmode(int mode) {
+std::string BelugaSerial::bootmode(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+BOOTMODE " << mode << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::bootmode() {
-    return _send_command("AT+BOOTMODE\r\n");
-}
-
-std::string BelugaSerial::rate(int rate_) {
+std::string BelugaSerial::rate(const std::string &rate_) {
     std::stringstream oss;
     oss << "AT+RATE " << rate_ << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::rate() { return _send_command("AT+RATE\r\n"); }
-
-std::string BelugaSerial::channel(int channel_) {
+std::string BelugaSerial::channel(const std::string &channel_) {
     std::stringstream oss;
     oss << "AT+CHANNEL " << channel_ << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::channel() { return _send_command("AT+CHANNEL\r\n"); }
-
 std::string BelugaSerial::reset() { return _send_command("AT+RESET\r\n"); }
 
-std::string BelugaSerial::timeout(int timeout_) {
+std::string BelugaSerial::timeout(const std::string &timeout_) {
     std::stringstream oss;
     oss << "AT+TIMEOUT " << timeout_ << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::timeout() { return _send_command("AT+TIMEOUT\r\n"); }
-
-std::string BelugaSerial::tx_power(int power) {
+std::string BelugaSerial::tx_power(const std::string &power) {
     std::stringstream oss;
     oss << "AT+TXPOWER " << power << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::tx_power(int stage, int coarse_gain, int fine_gain) {
-    std::stringstream oss;
-    oss << "AT+TXPOWER " << stage << " " << coarse_gain << " " << fine_gain
-        << "\r\n";
-    return _send_command(oss.str());
-}
-
-std::string BelugaSerial::tx_power() { return _send_command("AT+TXPOWER\r\n"); }
-
-std::string BelugaSerial::stream_mode(int updates_only) {
+std::string BelugaSerial::stream_mode(const std::string &updates_only) {
     std::stringstream oss;
     oss << "AT+STREAMMODE " << updates_only << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::stream_mode() {
-    return _send_command("AT+STREAMMODE\r\n");
-}
-
-std::string BelugaSerial::twr_mode(int mode) {
+std::string BelugaSerial::twr_mode(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+TWRMODE " << mode << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::twr_mode() { return _send_command("AT+TWRMODE\r\n"); }
-
-std::string BelugaSerial::led_mode(int mode) {
+std::string BelugaSerial::led_mode(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+LEDMODE " << mode << "\r\n";
     return _send_command(oss.str());
 }
-
-std::string BelugaSerial::led_mode() { return _send_command("AT+LEDMODE\r\n"); }
 
 std::string BelugaSerial::reboot() {
     _reboot_done.clear();
@@ -364,66 +335,48 @@ std::string BelugaSerial::reboot() {
     return ret;
 }
 
-std::string BelugaSerial::pwr_amp(int mode) {
+std::string BelugaSerial::pwr_amp(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+PWRAMP " << mode << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::pwr_amp() { return _send_command("AT+PWRAMP\r\n"); }
-
-std::string BelugaSerial::antenna(int antenna) {
+std::string BelugaSerial::antenna(const std::string &antenna) {
     std::stringstream oss;
     oss << "AT+ANTENNA " << antenna << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::antenna() { return _send_command("AT+ANTENNA\r\n"); }
-
 std::string BelugaSerial::time() { return _send_command("AT+TIME\r\n"); }
 
-std::string BelugaSerial::format(int mode) {
+std::string BelugaSerial::format(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+FORMAT " << mode << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::format() { return _send_command("AT+FORMAT\r\n"); }
-
 std::string BelugaSerial::deepsleep() {
     return _send_command("AT+DEEPSLEEP\r\n");
 }
 
-std::string BelugaSerial::datarate(int rate_) {
+std::string BelugaSerial::datarate(const std::string &rate_) {
     std::stringstream oss;
     oss << "AT+DATARATE " << rate_ << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::datarate() {
-    return _send_command("AT+DATARATE\r\n");
-}
-
-std::string BelugaSerial::preamble(int preamble) {
+std::string BelugaSerial::preamble(const std::string &preamble) {
     std::stringstream oss;
     oss << "AT+PREAMBLE " << preamble << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::preamble() {
-    return _send_command("AT+PREAMBLE\r\n");
-}
-
-std::string BelugaSerial::pulserate(int pr) {
+std::string BelugaSerial::pulserate(const std::string &pr) {
     std::stringstream oss;
     oss << "AT+PULSERATE " << pr << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::pulserate() {
-    return _send_command("AT+PULSERATE\r\n");
-}
-#include <cstdio>
 void BelugaSerial::start() {
     if (_tasks_running) {
         throw std::runtime_error("Please stop before restarting");

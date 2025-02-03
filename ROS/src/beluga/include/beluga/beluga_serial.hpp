@@ -62,59 +62,25 @@ class BelugaSerial {
     std::string start_ble();
     std::string stop_ble();
 
-    std::string id(int id_);
-    std::string id();
-
-    std::string bootmode(int mode);
-    std::string bootmode();
-
-    std::string rate(int rate_);
-    std::string rate();
-
-    std::string channel(int channel_);
-    std::string channel();
-
+    std::string id(const std::string & id_);
+    std::string bootmode(const std::string & mode);
+    std::string rate(const std::string & rate_);
+    std::string channel(const std::string & channel_);
     std::string reset();
-
-    std::string timeout(int timeout_);
-    std::string timeout();
-
-    std::string tx_power(int power);
-    std::string tx_power(int stage, int coarse_gain, int fine_gain);
-    std::string tx_power();
-
-    std::string stream_mode(int updates_only);
-    std::string stream_mode();
-
-    std::string twr_mode(int mode);
-    std::string twr_mode();
-
-    std::string led_mode(int mode);
-    std::string led_mode();
-
+    std::string timeout(const std::string & timeout_);
+    std::string tx_power(const std::string & power);
+    std::string stream_mode(const std::string & updates_only);
+    std::string twr_mode(const std::string & mode);
+    std::string led_mode(const std::string & mode);
     std::string reboot();
-
-    std::string pwr_amp(int mode);
-    std::string pwr_amp();
-
-    std::string antenna(int antenna);
-    std::string antenna();
-
+    std::string pwr_amp(const std::string & mode);
+    std::string antenna(const std::string & antenna);
     std::string time();
-
-    std::string format(int mode);
-    std::string format();
-
+    std::string format(const std::string & mode);
     std::string deepsleep();
-
-    std::string datarate(int rate_);
-    std::string datarate();
-
-    std::string preamble(int preamble);
-    std::string preamble();
-
-    std::string pulserate(int pr);
-    std::string pulserate();
+    std::string datarate(const std::string & rate_);
+    std::string preamble(const std::string & preamble);
+    std::string pulserate(const std::string & pr);
 
     void start();
     void stop();
