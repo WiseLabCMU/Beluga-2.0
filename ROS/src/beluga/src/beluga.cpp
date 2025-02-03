@@ -18,6 +18,18 @@ void Beluga::run_at_command(
         request,
     std::shared_ptr<beluga_messages::srv::BelugaATCommand::Response> response) {
     switch (request->at_command) {
+    case BelugaATCommand::Request::AT_COMMAND_STARTBLE:
+        response->response = _serial.start_ble();
+        break;
+    case BelugaATCommand::Request::AT_COMMAND_STARTUWB:
+        response->response = _serial.start_uwb();
+        break;
+    case BelugaATCommand::Request::AT_COMMAND_STOPBLE:
+        response->response = _serial.stop_ble();
+        break;
+    case BelugaATCommand::Request::AT_COMMAND_STOPUWB:
+        response->response = _serial.stop_uwb();
+        break;
     case BelugaATCommand::Request::AT_COMMAND_ID:
         response->response = _serial.id(request->arg);
         break;
@@ -80,7 +92,8 @@ void Beluga::run_at_command(
     }
 }
 
-void Beluga::publish_neighbor_list(const std::vector<BelugaSerial::BelugaNeighbor> &neighbors) {
+void Beluga::publish_neighbor_list(
+    const std::vector<BelugaSerial::BelugaNeighbor> &neighbors) {
     auto message = beluga_messages::msg::BelugaNeighbors();
     for (const auto &it : neighbors) {
         auto neighbor = beluga_messages::msg::BelugaNeighbor();
@@ -94,7 +107,8 @@ void Beluga::publish_neighbor_list(const std::vector<BelugaSerial::BelugaNeighbo
     neighbor_list_publisher->publish(message);
 }
 
-void Beluga::publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ranges) {
+void Beluga::publish_ranges(
+    const std::vector<BelugaSerial::BelugaNeighbor> &ranges) {
     auto message = beluga_messages::msg::BelugaRanges();
     for (const auto &it : ranges) {
         auto range = beluga_messages::msg::BelugaRange();
@@ -107,7 +121,7 @@ void Beluga::publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ran
     range_updates_publisher->publish(message);
 }
 
-void Beluga::publish_exchange(const BelugaSerial::BelugaFrame::RangeEvent &event) {
+void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
     auto message = beluga_messages::msg::BelugaExchange();
     message.id = event.ID;
     message.exchange = event.EXCHANGE;

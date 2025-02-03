@@ -8,7 +8,6 @@
  * @author tom
  */
 
-#include <beluga/beluga_event.hpp>
 #include <beluga/beluga_serial.hpp>
 #include <chrono>
 #include <csignal>
@@ -16,6 +15,7 @@
 #include <serial/tools/list_ports.hpp>
 #include <stdexcept>
 #include <thread>
+#include <utility>
 
 using namespace std::chrono_literals;
 
@@ -34,24 +34,24 @@ BelugaSerial::BelugaSerial(
     const std::string &port, BaudRate baud,
     const std::chrono::milliseconds &timeout,
     const std::chrono::milliseconds &serial_timeout, uint32_t max_lines_read,
-    void (*neighbor_updates_func)(const std::vector<BelugaNeighbor> &),
-    void (*range_updates_func)(const std::vector<BelugaNeighbor> &),
-    void (*range_event_func)(const BelugaFrame::RangeEvent &),
-    int (*logger)(const char *, ...)) {
+    std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
+    std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
+    std::function<void(const RangeEvent &)> range_event_cb,
+    std::function<int(const char *, va_list)> logger_cb) {
     _initialize(baud, timeout, serial_timeout, max_lines_read, port,
-                neighbor_updates_func, range_updates_func, range_event_func,
-                logger);
+                std::move(neighbor_update_cb), std::move(range_updates_cb),
+                std::move(range_event_cb), std::move(logger_cb));
 }
 
 void BelugaSerial::_initialize(
     BaudRate baud, const std::chrono::milliseconds &timeout,
     const std::chrono::milliseconds &serial_timeout, uint32_t max_lines_read,
     const std::string &port,
-    void (*neighbor_updates_func)(const std::vector<BelugaNeighbor> &),
-    void (*range_updates_func)(const std::vector<BelugaNeighbor> &),
-    void (*range_event_func)(const BelugaFrame::RangeEvent &),
-    int (*logger)(const char *, ...)) {
-    _logger = logger;
+    std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
+    std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
+    std::function<void(const RangeEvent &)> range_event_cb,
+    std::function<int(const char *, va_list)> logger_cb) {
+    _logger_cb = std::move(logger_cb);
 
     _serial.baudrate(baud);
     _serial.timeout(serial_timeout);
@@ -96,17 +96,20 @@ void BelugaSerial::_initialize(
     _read_max_lines = max_lines_read;
     _timeout = timeout;
 
-    _neighbor_callback = neighbor_updates_func;
-    _range_callback = range_updates_func;
-    _range_event_callback = range_event_func;
+    _neighbor_cb = std::move(neighbor_update_cb);
+    _range_cb = std::move(range_updates_cb);
+    _range_event_cb = std::move(range_event_cb);
     pid = getpid();
 }
 
 BelugaSerial::~BelugaSerial() { this->close(); }
 
-void BelugaSerial::_log(const char *msg) {
-    if (_logger != nullptr) {
-        _logger(msg);
+void BelugaSerial::_log(const char *msg, ...) {
+    if (_logger_cb != nullptr) {
+        va_list args;
+        va_start(args, msg);
+        _logger_cb(msg, args);
+        va_end(args);
     }
 }
 
@@ -114,8 +117,8 @@ void BelugaSerial::_publish_neighbor_update() {
     if (_neighbors.neighbor_updates()) {
         std::vector<BelugaNeighbor> updates;
         _neighbors.get_neighbors(updates);
-        if (_neighbor_callback != nullptr) {
-            _neighbor_callback(updates);
+        if (_neighbor_cb != nullptr) {
+            _neighbor_cb(updates);
         } else {
             _neighbor_queue.put(updates, false);
         }
@@ -126,17 +129,17 @@ void BelugaSerial::_publish_range_update() {
     if (_neighbors.range_updates()) {
         std::vector<BelugaNeighbor> updates;
         _neighbors.get_updates(updates);
-        if (_range_callback != nullptr) {
-            _range_callback(updates);
+        if (_range_cb != nullptr) {
+            _range_cb(updates);
         } else {
             _range_queue.put(updates, false);
         }
     }
 }
 
-void BelugaSerial::_publish_range_event(BelugaFrame::RangeEvent event) {
-    if (_range_event_callback != nullptr) {
-        _range_event_callback(event);
+void BelugaSerial::_publish_range_event(RangeEvent event) {
+    if (_range_event_cb != nullptr) {
+        _range_event_cb(event);
     } else {
         _range_event_queue.put(event, false);
     }
@@ -191,8 +194,7 @@ void BelugaSerial::_process_frames() {
                     frame.payload));
             break;
         case BelugaFrame::BelugaFrameType::RANGING_EVENT:
-            _publish_range_event(
-                std::get<BelugaFrame::RangeEvent>(frame.payload));
+            _publish_range_event(std::get<RangeEvent>(frame.payload));
             break;
         case BelugaFrame::BelugaFrameType::NEIGHBOR_DROP:
             _neighbors.remove(std::get<uint32_t>(frame.payload));
@@ -468,8 +470,8 @@ void BelugaSerial::get_ranges(std::vector<BelugaNeighbor> &list) {
     }
 }
 
-BelugaFrame::RangeEvent BelugaSerial::get_range_event() {
-    BelugaFrame::RangeEvent event{};
+RangeEvent BelugaSerial::get_range_event() {
+    RangeEvent event{};
     try {
         event = _range_event_queue.get(false);
     } catch (const BelugaQueueException &exc) {

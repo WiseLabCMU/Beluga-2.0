@@ -43,7 +43,7 @@ struct json_data_contract<BelugaSerial::BelugaFrame::NeighborUpdate> {
         json_number<"EXCHANGE", uint32_t>>;
 };
 
-template <> struct json_data_contract<BelugaSerial::BelugaFrame::RangeEvent> {
+template <> struct json_data_contract<BelugaSerial::RangeEvent> {
     using type = json_member_list<json_number<"ID", uint16_t>,
                                   json_number<"EXCHANGE", uint32_t>,
                                   json_number<"TIMESTAMP", int64_t>>;
@@ -104,7 +104,7 @@ void BelugaSerial::BelugaFrame::parse_frame(
             break;
         case RANGING_EVENT:
             this->parsed_data.payload =
-                daw::json::from_json<RangeEvent>(_payload);
+                daw::json::from_json<BelugaSerial::RangeEvent>(_payload);
             break;
         case NEIGHBOR_DROP:
             this->parsed_data.payload = (uint32_t)stoull(_payload, &last_index);

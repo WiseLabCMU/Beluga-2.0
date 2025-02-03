@@ -19,6 +19,12 @@
 
 namespace BelugaSerial {
 
+struct RangeEvent {
+    uint16_t ID;
+    uint32_t EXCHANGE;
+    int64_t TIMESTAMP;
+};
+
 class BelugaFrameError : public std::exception {
   public:
     explicit BelugaFrameError(std::string error) : message(std::move(error)) {}
@@ -55,16 +61,10 @@ class BelugaFrame {
         uint32_t EXCHANGE;
     };
 
-    struct RangeEvent {
-        uint16_t ID;
-        uint32_t EXCHANGE;
-        int64_t TIMESTAMP;
-    };
-
     struct DecodedFrame {
         BelugaFrame::BelugaFrameType type;
         std::variant<std::string, std::vector<BelugaFrame::NeighborUpdate>,
-                     BelugaFrame::RangeEvent, uint32_t>
+                     RangeEvent, uint32_t>
             payload;
     };
 

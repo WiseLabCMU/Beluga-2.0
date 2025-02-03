@@ -12,15 +12,25 @@
 #define BELUGA_BELUGA_HPP
 
 #include <beluga/beluga_serial.hpp>
+#include <beluga_messages/msg/beluga_exchange.hpp>
 #include <beluga_messages/msg/beluga_neighbors.hpp>
 #include <beluga_messages/msg/beluga_ranges.hpp>
 #include <beluga_messages/srv/beluga_at_command.hpp>
-#include <beluga_messages/msg/beluga_exchange.hpp>
+#include <chrono>
 #include <rclcpp/rclcpp.hpp>
+
+using namespace std::chrono_literals;
 
 class Beluga : public rclcpp::Node {
   public:
-    Beluga() : Node("beluga") {
+    Beluga()
+        : Node("beluga"), _serial("", BAUD_115200, 2s, 100ms, 16,
+                                  std::bind(&Beluga::publish_neighbor_list,
+                                            this, std::placeholders::_1),
+                                  std::bind(&Beluga::publish_ranges, this,
+                                            std::placeholders::_1),
+                                  std::bind(&Beluga::publish_exchange, this,
+                                            std::placeholders::_1)) {
         neighbor_list_publisher =
             this->create_publisher<beluga_messages::msg::BelugaNeighbors>(
                 "neighbor_list", 10);
@@ -32,7 +42,9 @@ class Beluga : public rclcpp::Node {
                 "at_command",
                 std::bind(&Beluga::run_at_command, this, std::placeholders::_1,
                           std::placeholders::_2));
-        ranging_event_publisher = this->create_publisher<beluga_messages::msg::BelugaExchange>("ranging_events", 10);
+        ranging_event_publisher =
+            this->create_publisher<beluga_messages::msg::BelugaExchange>(
+                "ranging_events", 10);
     }
 
   private:
@@ -42,7 +54,8 @@ class Beluga : public rclcpp::Node {
         range_updates_publisher;
     rclcpp::Service<beluga_messages::srv::BelugaATCommand>::SharedPtr
         at_command_service;
-    rclcpp::Publisher<beluga_messages::msg::BelugaExchange>::SharedPtr ranging_event_publisher;
+    rclcpp::Publisher<beluga_messages::msg::BelugaExchange>::SharedPtr
+        ranging_event_publisher;
 
     void run_at_command(
         const std::shared_ptr<beluga_messages::srv::BelugaATCommand::Request>
@@ -54,7 +67,7 @@ class Beluga : public rclcpp::Node {
         const std::vector<BelugaSerial::BelugaNeighbor> &neighbors);
     void
     publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ranges);
-    void publish_exchange(const BelugaSerial::BelugaFrame::RangeEvent &event);
+    void publish_exchange(const BelugaSerial::RangeEvent &event);
 
     BelugaSerial::BelugaSerial _serial;
 };
