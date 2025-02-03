@@ -11,7 +11,7 @@
 #include <beluga/beluga_frame.hpp>
 #include <beluga/beluga_neighbor_list.hpp>
 
-namespace Beluga {
+namespace BelugaSerial {
 BelugaNeighbor::BelugaNeighbor(const BelugaFrame::NeighborUpdate &neighbor) {
     _id = neighbor.ID;
     update(neighbor);
@@ -93,4 +93,4 @@ bool BelugaNeighborList::neighbor_updates() const noexcept {
 bool BelugaNeighborList::range_updates() const noexcept {
     return _range_update;
 }
-} // namespace Beluga
+} // namespace BelugaSerial

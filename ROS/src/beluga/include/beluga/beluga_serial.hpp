@@ -24,7 +24,7 @@ extern "C" {
 #include <unistd.h>
 };
 
-namespace Beluga {
+namespace BelugaSerial {
 typedef std::pair<std::string, std::string> target_pair;
 
 class FileNotFoundError : std::exception {
@@ -191,6 +191,6 @@ class BelugaSerial {
 
     pid_t pid{};
 };
-} // namespace Beluga
+} // namespace BelugaSerial
 
 #endif // BELUGA_SERIAL_BELUGA_SERIAL_HPP

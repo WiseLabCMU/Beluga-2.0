@@ -17,7 +17,7 @@
 #include <variant>
 #include <vector>
 
-namespace Beluga {
+namespace BelugaSerial {
 
 class BelugaFrameError : public std::exception {
   public:
@@ -84,6 +84,6 @@ class BelugaFrame {
   private:
     BelugaFrame::DecodedFrame parsed_data;
 };
-}; // namespace Beluga
+}; // namespace BelugaSerial
 
 #endif // BELUGA_FRAME_BELUGA_FRAME_HPP

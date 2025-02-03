@@ -19,7 +19,7 @@
 
 using namespace std::chrono_literals;
 
-namespace Beluga {
+namespace BelugaSerial {
 
 static const std::vector<target_pair> TARGETS = {{"CMU", "Beluga"},
                                                  {"SEGGER", "J-Link"}};
@@ -526,4 +526,4 @@ BelugaFrame::RangeEvent BelugaSerial::get_range_event() {
     }
     return event;
 }
-} // namespace Beluga
+} // namespace BelugaSerial

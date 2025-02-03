@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-namespace Beluga {
+namespace BelugaSerial {
 class BelugaEntryError : std::exception {
   public:
     explicit BelugaEntryError(const char *msg) { _msg = msg; }
@@ -79,6 +79,6 @@ class BelugaNeighborList {
     bool _neighbors_update = false;
     bool _range_update = false;
 };
-} // namespace Beluga
+} // namespace BelugaSerial
 
 #endif // BELUGA_SERIAL_BELUGA_NEIGHBOR_LIST_HPP

@@ -9,7 +9,7 @@
 #include <mutex>
 #include <string>
 
-namespace Beluga {
+namespace BelugaSerial {
 class BelugaQueueException : public std::exception {
   public:
     enum QueueExceptionReason { QUEUE_EMPTY, QUEUE_FULL, QUEUE_TIMEOUT };
@@ -141,6 +141,6 @@ void BelugaQueue<Type, max_size, overwrite>::clear() {
     consumer_index = 0;
     producer_index = 0;
 }
-} // namespace Beluga
+} // namespace BelugaSerial
 
 #endif
