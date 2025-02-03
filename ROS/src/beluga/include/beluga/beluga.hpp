@@ -18,6 +18,7 @@
 #include <beluga_messages/srv/beluga_at_command.hpp>
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
+#include <tuple>
 
 using namespace std::chrono_literals;
 
@@ -70,6 +71,15 @@ class Beluga : public rclcpp::Node {
     void publish_exchange(const BelugaSerial::RangeEvent &event);
 
     BelugaSerial::BelugaSerial _serial;
+
+    static int64_t extract_time(const std::string &s);
+    void _time_sync(bool first = false);
+    std::tuple<std::string, rclcpp::Time, rclcpp::Time>
+    _time_sync_get_measurement();
+    double _ns_per_timestamp_unit;
+    std::map<std::string, std::variant<int64_t, rclcpp::Time>> _last_mapping = {
+        {"ros", rclcpp::Time()}, {"beluga", 0}};
+    std::mutex _timestamp_sync;
 };
 
 #endif // BELUGA_BELUGA_HPP

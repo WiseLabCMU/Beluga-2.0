@@ -10,6 +10,25 @@
 
 #include <beluga/beluga.hpp>
 #include <beluga_messages/srv/beluga_at_command.hpp>
+#include <cinttypes>
+
+class ValueError : std::exception {
+  public:
+    ValueError() = default;
+
+    [[nodiscard]] const char *what() const noexcept override {
+        return "Invalid value";
+    }
+};
+
+class ZeroDivisionError : std::exception {
+  public:
+    ZeroDivisionError() = default;
+
+    [[nodiscard]] const char *what() const noexcept override {
+        return "Unable to divide by 0";
+    }
+};
 
 using beluga_messages::srv::BelugaATCommand;
 
@@ -127,4 +146,101 @@ void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
     message.exchange = event.EXCHANGE;
     // TODO: Timestamp
     ranging_event_publisher->publish(message);
+}
+
+void Beluga::_time_sync(bool first) {
+    int retries = 5;
+    while (retries > 0) {
+        auto [t1_, req1, resp1] = _time_sync_get_measurement();
+        int64_t delta = (resp1 - req1).nanoseconds() / 2;
+        auto map1 = req1 + rclcpp::Duration(std::chrono::nanoseconds(delta));
+
+        // Wait 100ms
+        this->get_clock()->sleep_until(resp1 + rclcpp::Duration(100ms));
+
+        auto [t2_, req2, resp2] = _time_sync_get_measurement();
+        delta = (resp2 - req2).nanoseconds() / 2;
+        auto map2 = req2 + rclcpp::Duration(std::chrono::nanoseconds(delta));
+
+        int64_t t1, t2, t_diff;
+        auto map_diff = map2 - map1;
+        try {
+            t1 = extract_time(t1_);
+            t2 = extract_time(t2_);
+            t_diff = t2 - t1;
+            if (t_diff == 0) {
+                throw ZeroDivisionError();
+            }
+
+            _timestamp_sync.lock();
+            this->_ns_per_timestamp_unit +=
+                (double)map_diff.nanoseconds() / (double)t_diff;
+
+        } catch (const ValueError &exc) {
+            retries--;
+            if (retries > 0) {
+                RCLCPP_ERROR(this->get_logger(),
+                             "Unable to sync time: t1: %s, t2: %s", t1_.c_str(),
+                             t2_.c_str());
+            } else {
+                RCLCPP_ERROR(this->get_logger(),
+                             "Unable to sync time. Will retry in 10 minutes");
+            }
+            continue;
+        } catch (const ZeroDivisionError &exc) {
+            retries--;
+            if (retries > 0) {
+                RCLCPP_ERROR(this->get_logger(),
+                             "No time difference, retrying...");
+                // Assuming previous data is invalid...
+                _ns_per_timestamp_unit = 0;
+                first = true;
+            } else {
+                RCLCPP_ERROR(this->get_logger(),
+                             "No time difference. Will retry in 10 minutes.");
+            }
+            continue;
+        }
+        if (!first) {
+            _ns_per_timestamp_unit /= 2.0;
+        }
+
+        auto dur_delta = rclcpp::Duration(
+            std::chrono::nanoseconds(map_diff.nanoseconds() / 2));
+        _last_mapping["ros"] = map1 + dur_delta;
+        _last_mapping["beluga"] = (t_diff / 2) + t1;
+        RCLCPP_INFO(this->get_logger(), "Synced time: %" PRId64 " -> %lf (%lf)",
+                    std::get<int64_t>(_last_mapping["beluga"]),
+                    std::get<rclcpp::Time>(_last_mapping["ros"]).seconds(),
+                    _ns_per_timestamp_unit);
+        _timestamp_sync.unlock();
+        retries = -1;
+    }
+}
+
+std::tuple<std::string, rclcpp::Time, rclcpp::Time>
+Beluga::_time_sync_get_measurement() {
+    auto req = this->get_clock()->now();
+    std::string t = _serial.time();
+    auto resp = this->get_clock()->now();
+
+    return {t, req, req};
+}
+
+int64_t Beluga::extract_time(const std::string &s) {
+    std::string s_num;
+
+    for (const auto &it : s) {
+        if (isdigit(it)) {
+            s_num += it;
+        } else if (!s_num.empty()) {
+            break;
+        }
+    }
+
+    if (s_num.empty()) {
+        throw ValueError();
+    }
+
+    return std::stoll(s_num);
 }
