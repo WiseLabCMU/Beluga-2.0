@@ -1,3 +1,8 @@
+if BOARD_BELUGA
+
+config BT_CTLR
+	default BT
+	
 config BOARD_ENABLE_DCDC
 	bool "DCDC mode"
 	select SOC_DCDC_NRF52X
@@ -12,3 +17,5 @@ config BOARD_ENABLE_DCDC_HV
 config SERIAL_LEDS
     bool "Serial LEDs"
     default y
+
+endif # BOARD_BELUGA
