@@ -76,10 +76,11 @@ class Beluga : public rclcpp::Node {
     void _time_sync(bool first = false);
     std::tuple<std::string, rclcpp::Time, rclcpp::Time>
     _time_sync_get_measurement();
-    double _ns_per_timestamp_unit;
+    double _ns_per_timestamp_unit = 0.0;
     std::map<std::string, std::variant<int64_t, rclcpp::Time>> _last_mapping = {
         {"ros", rclcpp::Time()}, {"beluga", 0}};
     std::mutex _timestamp_sync;
+    rclcpp::Time _beluga_to_ros_time(int64_t t);
 };
 
 #endif // BELUGA_BELUGA_HPP

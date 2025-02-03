@@ -120,7 +120,7 @@ void Beluga::publish_neighbor_list(
         neighbor.rssi = it.rssi();
         neighbor.distance = (float)it.range();
         neighbor.exchange = it.exchange();
-        // TODO: Timestamp
+        neighbor.timestamp = _beluga_to_ros_time(it.time());
         message.neighbors.push_back(neighbor);
     }
     neighbor_list_publisher->publish(message);
@@ -134,7 +134,7 @@ void Beluga::publish_ranges(
         range.id = it.id();
         range.range = (float)it.range();
         range.exchange = it.exchange();
-        // TODO: Timestamp
+        range.timestamp = _beluga_to_ros_time(it.time());
         message.ranges.push_back(range);
     }
     range_updates_publisher->publish(message);
@@ -144,7 +144,7 @@ void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
     auto message = beluga_messages::msg::BelugaExchange();
     message.id = event.ID;
     message.exchange = event.EXCHANGE;
-    // TODO: Timestamp
+    message.timestamp = _beluga_to_ros_time(event.TIMESTAMP);
     ranging_event_publisher->publish(message);
 }
 
@@ -243,4 +243,14 @@ int64_t Beluga::extract_time(const std::string &s) {
     }
 
     return std::stoll(s_num);
+}
+
+rclcpp::Time Beluga::_beluga_to_ros_time(int64_t t) {
+    _timestamp_sync.lock();
+    int64_t delta =
+        (int64_t)((double)(t - std::get<int64_t>(_last_mapping["beluga"])) *
+                  _ns_per_timestamp_unit);
+    auto ros_time = std::get<rclcpp::Time>(_last_mapping["ros"]);
+    _timestamp_sync.unlock();
+    return ros_time + rclcpp::Duration(std::chrono::nanoseconds(delta));
 }
