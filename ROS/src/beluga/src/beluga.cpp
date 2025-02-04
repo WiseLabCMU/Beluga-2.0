@@ -254,3 +254,33 @@ rclcpp::Time Beluga::_beluga_to_ros_time(int64_t t) {
     _timestamp_sync.unlock();
     return ros_time + rclcpp::Duration(std::chrono::nanoseconds(delta));
 }
+
+void Beluga::_init_time_sync() {
+    const size_t init_time_sync_runs = 11;
+    RCLCPP_INFO(this->get_logger(), "Syncing time");
+    _ns_per_timestamp_unit = 0.0;
+    _last_mapping["ros"] = rclcpp::Time();
+    _last_mapping["beluga"] = 0;
+    _time_sync(true);
+
+    for (size_t i = 0; i < init_time_sync_runs; i++) {
+        this->get_clock()->sleep_until(this->get_clock()->now() +
+                                       rclcpp::Duration(500ms));
+        _time_sync();
+    }
+    RCLCPP_INFO(this->get_logger(), "Time is synced");
+}
+
+void Beluga::_resync_time_cb() {
+    this->resync_timer->cancel();
+    _init_time_sync();
+    this->sync_timer->reset();
+}
+
+void Beluga::_sigusr1_handler(int sig) {
+    RCLCPP_INFO(this->get_logger(), "Node rebooted");
+    this->sync_timer->cancel();
+    this->resync_timer->reset();
+}
+
+void Beluga::__time_sync() { _time_sync(); }
