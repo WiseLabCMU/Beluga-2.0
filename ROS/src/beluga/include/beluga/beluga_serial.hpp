@@ -58,31 +58,34 @@ class BelugaSerial {
         std::function<int(const char *, va_list)> logger_cb = nullptr);
     ~BelugaSerial();
 
+    void register_resync_cb(std::function<void()> cb);
+    void swap_port(const std::string &port);
+
     std::string start_uwb();
     std::string stop_uwb();
 
     std::string start_ble();
     std::string stop_ble();
 
-    std::string id(const std::string &id_);
-    std::string bootmode(const std::string &mode);
-    std::string rate(const std::string &rate_);
+    std::string id(const std::string &id_ = "");
+    std::string bootmode(const std::string &mode = "");
+    std::string rate(const std::string &rate_ = "");
     std::string channel(const std::string &channel_);
     std::string reset();
-    std::string timeout(const std::string &timeout_);
-    std::string tx_power(const std::string &power);
-    std::string stream_mode(const std::string &updates_only);
-    std::string twr_mode(const std::string &mode);
-    std::string led_mode(const std::string &mode);
+    std::string timeout(const std::string &timeout_ = "");
+    std::string tx_power(const std::string &power = "");
+    std::string stream_mode(const std::string &updates_only = "");
+    std::string twr_mode(const std::string &mode = "");
+    std::string led_mode(const std::string &mode = "");
     std::string reboot();
-    std::string pwr_amp(const std::string &mode);
-    std::string antenna(const std::string &antenna);
+    std::string pwr_amp(const std::string &mode = "");
+    std::string antenna(const std::string &antenna = "");
     std::string time();
-    std::string format(const std::string &mode);
+    std::string format(const std::string &mode = "");
     std::string deepsleep();
-    std::string datarate(const std::string &rate_);
-    std::string preamble(const std::string &preamble);
-    std::string pulserate(const std::string &pr);
+    std::string datarate(const std::string &rate_ = "");
+    std::string preamble(const std::string &preamble = "");
+    std::string pulserate(const std::string &pr = "");
 
     void start();
     void stop();
@@ -159,7 +162,7 @@ class BelugaSerial {
     Event _command_sent;
     Event _reboot_done;
 
-    pid_t pid{};
+    std::function<void()> _time_resync = nullptr;
 };
 } // namespace BelugaSerial
 

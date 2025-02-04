@@ -11,6 +11,8 @@
 #include <beluga/beluga.hpp>
 #include <beluga_messages/srv/beluga_at_command.hpp>
 #include <cinttypes>
+#include <daw/json/daw_json_link.h>
+#include <fstream>
 
 class ValueError : std::exception {
   public:
@@ -165,8 +167,8 @@ void Beluga::_time_sync(bool first) {
         int64_t t1, t2, t_diff;
         auto map_diff = map2 - map1;
         try {
-            t1 = extract_time(t1_);
-            t2 = extract_time(t2_);
+            t1 = extract_number(t1_);
+            t2 = extract_number(t2_);
             t_diff = t2 - t1;
             if (t_diff == 0) {
                 throw ZeroDivisionError();
@@ -227,13 +229,22 @@ Beluga::_time_sync_get_measurement() {
     return {t, req, req};
 }
 
-int64_t Beluga::extract_time(const std::string &s) {
+int64_t Beluga::extract_number(const std::string &s) {
     std::string s_num;
+    int base = 10;
+    int (*check_digit)(int) = isdigit;
 
     for (const auto &it : s) {
-        if (isdigit(it)) {
+
+        if (check_digit(it)) {
             s_num += it;
         } else if (!s_num.empty()) {
+            if (s_num.size() == 1 && s_num == "0" && (it == 'x' || it == 'X')) {
+                base = 16;
+                check_digit = isxdigit;
+                s_num += it;
+                continue;
+            }
             break;
         }
     }
@@ -242,7 +253,7 @@ int64_t Beluga::extract_time(const std::string &s) {
         throw ValueError();
     }
 
-    return std::stoll(s_num);
+    return std::stoll(s_num, nullptr, base);
 }
 
 rclcpp::Time Beluga::_beluga_to_ros_time(int64_t t) {
@@ -272,15 +283,126 @@ void Beluga::_init_time_sync() {
 }
 
 void Beluga::_resync_time_cb() {
-    this->resync_timer->cancel();
+    this->sync_timer->cancel();
     _init_time_sync();
     this->sync_timer->reset();
 }
 
-void Beluga::_sigusr1_handler(int sig) {
-    RCLCPP_INFO(this->get_logger(), "Node rebooted");
-    this->sync_timer->cancel();
-    this->resync_timer->reset();
+void Beluga::__time_sync() { _time_sync(); }
+
+constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{
+    {"boot mode", 2},
+    {"poll rate", 100},
+    {"channel", 5},
+    {"timeout", 9000},
+    {"tx power", 0},
+    {"stream mode", 1},
+    {"twr mode", 1},
+    {"led mode", 0},
+    {"range extend", 0},
+    {"uwb data rate", 0},
+    {"uwb preamble", 128},
+    {"pulse rate", 1},
+}};
+
+void Beluga::_setup() {
+    std::map<std::string, int64_t> configs;
+    for (const auto &[key, value] : DEFAULT_CONFIGS) {
+        configs[key] = value;
+    }
+    if (!this->get_parameter("config").as_string().empty()) {
+        // Splice custom configs with default ones
+        auto file_configs =
+            read_configs(this->get_parameter("config").as_string());
+        for (const auto &[key, value] : file_configs) {
+            configs[key] = value;
+        }
+    }
+
+    if (!this->get_parameter("port").as_string().empty()) {
+        _serial.swap_port(this->get_parameter("port").as_string());
+    }
+
+    _serial.register_resync_cb(std::bind(&Beluga::_resync_time_cb, this));
+    _serial.start();
+
+    std::map<std::string, std::function<std::string(const std::string &)>>
+        callbacks = {
+            {"boot mode", std::bind(&BelugaSerial::BelugaSerial::bootmode,
+                                    &this->_serial, std::placeholders::_1)},
+            {"poll rate", std::bind(&BelugaSerial::BelugaSerial::rate,
+                                    &this->_serial, std::placeholders::_1)},
+            {"channel", std::bind(&BelugaSerial::BelugaSerial::channel,
+                                  &this->_serial, std::placeholders::_1)},
+            {"timeout", std::bind(&BelugaSerial::BelugaSerial::timeout,
+                                  &this->_serial, std::placeholders::_1)},
+            {"tx power", std::bind(&BelugaSerial::BelugaSerial::stream_mode,
+                                   &this->_serial, std::placeholders::_1)},
+            {"stream mode", std::bind(&BelugaSerial::BelugaSerial::stream_mode,
+                                      &this->_serial, std::placeholders::_1)},
+            {"twr mode", std::bind(&BelugaSerial::BelugaSerial::twr_mode,
+                                   &this->_serial, std::placeholders::_1)},
+            {"led mode", std::bind(&BelugaSerial::BelugaSerial::led_mode,
+                                   &this->_serial, std::placeholders::_1)},
+            {"range extend", std::bind(&BelugaSerial::BelugaSerial::pwr_amp,
+                                       &this->_serial, std::placeholders::_1)},
+            {"uwb data rate", std::bind(&BelugaSerial::BelugaSerial::datarate,
+                                        &this->_serial, std::placeholders::_1)},
+            {"uwb preamble", std::bind(&BelugaSerial::BelugaSerial::preamble,
+                                       &this->_serial, std::placeholders::_1)},
+            {"pulse rate", std::bind(&BelugaSerial::BelugaSerial::pulserate,
+                                     &this->_serial, std::placeholders::_1)},
+        };
+
+    // Tel beluga to shut up
+    _serial.stop_ble();
+    _serial.stop_uwb();
+
+    std::string response;
+
+    for (const auto &it : configs) {
+        std::string setting = callbacks[it.first]("");
+        RCLCPP_INFO(this->get_logger(), "Current setting: %s", setting.c_str());
+        int64_t int_setting;
+        try {
+            int_setting = extract_number(setting);
+        } catch (const ValueError &exc) {
+            int_setting = -1;
+        }
+
+        if (int_setting != configs[it.first]) {
+            RCLCPP_INFO(this->get_logger(),
+                        "Difference in setting. Now setting to %" PRId64,
+                        configs[it.first]);
+            response = callbacks[it.first](std::to_string(configs[it.first]));
+            if (!response.ends_with("OK")) {
+                std::stringstream oss;
+                oss << "Tried setting bad configurations: " << int_setting
+                    << ", response: " << response;
+                throw std::runtime_error(oss.str());
+            }
+        }
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Rebooting beluga");
+    response = this->_serial.reboot();
+    RCLCPP_INFO(this->get_logger(), "Reboot response: %s", response.c_str());
+    RCLCPP_INFO(this->get_logger(), "Done rebooting");
+
+    _init_time_sync();
+
+    RCLCPP_INFO(this->get_logger(), "Ready");
 }
 
-void Beluga::__time_sync() { _time_sync(); }
+std::map<std::string, int64_t> Beluga::read_configs(const std::string &config) {
+    std::ifstream file(config);
+
+    if (file.fail()) {
+        throw std::runtime_error("Failed to open configuration file");
+    }
+    std::string json_str((std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>());
+    file.close();
+
+    return daw::json::from_json<std::map<std::string, int64_t>>(json_str);
+}

@@ -32,26 +32,36 @@ class Beluga : public rclcpp::Node {
                                             std::placeholders::_1),
                                   std::bind(&Beluga::publish_exchange, this,
                                             std::placeholders::_1)) {
+
+        this->declare_parameter("neighbors_name", "neighbor_list");
+        this->declare_parameter("ranges_name", "range_updates");
+        this->declare_parameter("exchange_name", "range_exchanges");
+        this->declare_parameter("history_depth", 10);
+        this->declare_parameter("service_topic", "at_command");
+        this->declare_parameter("port", "");
+        this->declare_parameter("config", "");
+
+        int64_t qos = this->get_parameter("history_depth").as_int();
+
         neighbor_list_publisher =
             this->create_publisher<beluga_messages::msg::BelugaNeighbors>(
-                "neighbor_list", 10);
+                this->get_parameter("neighbors_name").as_string(), qos);
         range_updates_publisher =
             this->create_publisher<beluga_messages::msg::BelugaRanges>(
-                "range_updates", 10);
+                this->get_parameter("ranges_name").as_string(), qos);
         at_command_service =
             this->create_service<beluga_messages::srv::BelugaATCommand>(
-                "at_command",
+                this->get_parameter("service_topic").as_string(),
                 std::bind(&Beluga::run_at_command, this, std::placeholders::_1,
                           std::placeholders::_2));
         ranging_event_publisher =
             this->create_publisher<beluga_messages::msg::BelugaExchange>(
-                "ranging_events", 10);
+                this->get_parameter("exchange_name").as_string(), qos);
+
+        _setup();
 
         sync_timer = this->create_wall_timer(
             300s, std::bind(&Beluga::__time_sync, this));
-        resync_timer = this->create_wall_timer(
-            1s, std::bind(&Beluga::_resync_time_cb, this));
-        resync_timer->cancel();
     }
 
   private:
@@ -65,7 +75,6 @@ class Beluga : public rclcpp::Node {
         ranging_event_publisher;
 
     rclcpp::TimerBase::SharedPtr sync_timer;
-    rclcpp::TimerBase::SharedPtr resync_timer;
 
     void run_at_command(
         const std::shared_ptr<beluga_messages::srv::BelugaATCommand::Request>
@@ -81,7 +90,9 @@ class Beluga : public rclcpp::Node {
 
     BelugaSerial::BelugaSerial _serial;
 
-    static int64_t extract_time(const std::string &s);
+    void _setup();
+
+    static int64_t extract_number(const std::string &s);
     void _init_time_sync();
     void _resync_time_cb();
     void __time_sync();
@@ -93,8 +104,8 @@ class Beluga : public rclcpp::Node {
         {"ros", rclcpp::Time()}, {"beluga", 0}};
     std::mutex _timestamp_sync;
     rclcpp::Time _beluga_to_ros_time(int64_t t);
-
-    void _sigusr1_handler(int sig);
+    static std::map<std::string, int64_t>
+    read_configs(const std::string &config);
 };
 
 #endif // BELUGA_BELUGA_HPP

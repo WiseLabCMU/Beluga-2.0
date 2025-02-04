@@ -10,7 +10,7 @@
 
 #include <beluga/beluga_serial.hpp>
 #include <chrono>
-#include <csignal>
+#include <filesystem>
 #include <serial/serial.hpp>
 #include <serial/tools/list_ports.hpp>
 #include <stdexcept>
@@ -18,6 +18,7 @@
 #include <utility>
 
 using namespace std::chrono_literals;
+namespace fs = std::filesystem;
 
 namespace BelugaSerial {
 
@@ -99,7 +100,6 @@ void BelugaSerial::_initialize(
     _neighbor_cb = std::move(neighbor_update_cb);
     _range_cb = std::move(range_updates_cb);
     _range_event_cb = std::move(range_event_cb);
-    pid = getpid();
 }
 
 BelugaSerial::~BelugaSerial() { this->close(); }
@@ -159,7 +159,10 @@ void BelugaSerial::_process_reboot(const std::string &) {
     _neighbors.clear();
     if (_reboot_done.is_set()) {
         _log("Beluga rebooted unexpectedly");
-        kill(pid, SIGUSR1);
+        if (_time_resync != nullptr) {
+            std::thread t(_time_resync);
+            t.detach();
+        }
     } else {
         _reboot_done.set();
     }
@@ -480,5 +483,27 @@ RangeEvent BelugaSerial::get_range_event() {
         }
     }
     return event;
+}
+
+void BelugaSerial::register_resync_cb(std::function<void()> cb) {
+    _time_resync = std::move(cb);
+}
+
+void BelugaSerial::swap_port(const std::string &port) {
+    fs::path path = port;
+
+    if (!fs::exists(path)) {
+        throw std::invalid_argument(port + " is not a valid path");
+    }
+
+    if (_tasks_running) {
+        throw std::runtime_error(
+            "Cannot swap ports if port is still in use! PLease call stop() "
+            "before calling this function.");
+    }
+
+    _serial.close();
+    _serial.port(port);
+    _serial.open();
 }
 } // namespace BelugaSerial
