@@ -25,13 +25,15 @@ using namespace std::chrono_literals;
 class Beluga : public rclcpp::Node {
   public:
     Beluga()
-        : Node("beluga"), _serial("", BAUD_115200, 2s, 100ms, 16,
-                                  std::bind(&Beluga::publish_neighbor_list,
-                                            this, std::placeholders::_1),
-                                  std::bind(&Beluga::publish_ranges, this,
-                                            std::placeholders::_1),
-                                  std::bind(&Beluga::publish_exchange, this,
-                                            std::placeholders::_1)) {
+        : Node("beluga"),
+          _serial(
+              "", BAUD_115200, 2s, 100ms, 16,
+              std::bind(&Beluga::publish_neighbor_list, this,
+                        std::placeholders::_1),
+              std::bind(&Beluga::publish_ranges, this, std::placeholders::_1),
+              std::bind(&Beluga::publish_exchange, this, std::placeholders::_1),
+              std::bind(&Beluga::serial_logger, this, std::placeholders::_1,
+                        std::placeholders::_2)) {
 
         this->declare_parameter("neighbors_name", "neighbor_list");
         this->declare_parameter("ranges_name", "range_updates");
@@ -106,6 +108,7 @@ class Beluga : public rclcpp::Node {
     rclcpp::Time _beluga_to_ros_time(int64_t t);
     static std::map<std::string, int64_t>
     read_configs(const std::string &config);
+    int serial_logger(const char *msg, va_list args);
 };
 
 #endif // BELUGA_BELUGA_HPP

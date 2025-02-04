@@ -406,3 +406,23 @@ std::map<std::string, int64_t> Beluga::read_configs(const std::string &config) {
 
     return daw::json::from_json<std::map<std::string, int64_t>>(json_str);
 }
+
+int Beluga::serial_logger(const char *msg, va_list args) {
+    va_list args_copy;
+    va_copy(args_copy, args);
+
+    int len = vsnprintf(nullptr, 0, msg, args_copy);
+    va_end(args_copy);
+
+    if (len < 0) {
+        return -1;
+    }
+
+    char *buf = new char[len + 1];
+    vsnprintf(buf, len + 1, msg, args);
+
+    RCLCPP_INFO(this->get_logger(), "%s", buf);
+    delete[] buf;
+
+    return len;
+}

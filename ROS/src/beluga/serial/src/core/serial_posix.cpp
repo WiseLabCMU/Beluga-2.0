@@ -75,7 +75,7 @@ void SerialPosix::_reconfigure_port_internal() {
 
 void SerialPosix::_reconfigure_port() {
     if (!_is_open) {
-        throw PortNotOpenError();
+        return;
     }
     _reconfigure_port_internal();
 }

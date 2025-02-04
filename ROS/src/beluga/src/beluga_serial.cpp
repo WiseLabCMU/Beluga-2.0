@@ -186,7 +186,7 @@ void BelugaSerial::_find_ports(
     }
 }
 
-void BelugaSerial::_process_frames() {
+void BelugaSerial::__process_frames() {
     while (_tasks_running) {
         BelugaFrame::DecodedFrame frame = _batch_queue.get();
 
@@ -217,6 +217,16 @@ void BelugaSerial::_process_frames() {
     }
 }
 
+void BelugaSerial::_process_frames() {
+    try {
+        __process_frames();
+    } catch (const std::exception &exc) {
+        _log("An uncaught exception occurred in processing thread. %s",
+             exc.what());
+        std::abort();
+    }
+}
+
 void BelugaSerial::_process_rx_buffer(std::vector<uint8_t> &buf) {
     while (true) {
         auto [frame_start, frame_size, _] =
@@ -234,7 +244,7 @@ void BelugaSerial::_process_rx_buffer(std::vector<uint8_t> &buf) {
     }
 }
 
-void BelugaSerial::_read_serial() {
+void BelugaSerial::__read_serial() {
     std::vector<uint8_t> rx;
 
     while (_tasks_running) {
@@ -244,6 +254,16 @@ void BelugaSerial::_read_serial() {
             rx.insert(rx.end(), buf.begin(), buf.end());
         }
         _process_rx_buffer(rx);
+    }
+}
+
+void BelugaSerial::_read_serial() {
+    try {
+        __read_serial();
+    } catch (const std::exception &exc) {
+        _log("An uncaught exception occurred in reading thread. %s",
+             exc.what());
+        std::abort();
     }
 }
 

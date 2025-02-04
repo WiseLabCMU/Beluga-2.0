@@ -140,9 +140,11 @@ class BelugaSerial {
     _find_ports(const std::vector<target_pair> &valid,
                 std::map<target_pair, std::vector<std::string>> &avail_ports);
 
+    void __process_frames();
     void _process_frames();
 
     void _process_rx_buffer(std::vector<uint8_t> &buf);
+    void __read_serial();
     void _read_serial();
 
     std::string _send_command(const std::string &command);
