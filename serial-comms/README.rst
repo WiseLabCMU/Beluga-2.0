@@ -23,5 +23,9 @@ Python Architectures
 Architecture using Queues
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. image:: architectures/python-Beluga-serial-queues.drawio.png
+.. |Beluga Serial using Queues for Python| image:: architectures/python-Beluga-serial-queues.drawio.png
 
+
+Architecture using Callbacks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. |Beluga Serial using Callbacks for Python| image:: architectures/python-Beluga-serial-callbacks.drawio.png
