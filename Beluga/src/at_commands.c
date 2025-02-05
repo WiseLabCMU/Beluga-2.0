@@ -468,6 +468,7 @@ AT_CMD_DEFINE(ID) {
 
     if (set_initiator_id((uint16_t)newID) != 0) {
         ERROR("Unable to set ID: UWB currently active");
+        return;
     }
 
     // We know that UWB is inactive at this point
@@ -494,6 +495,11 @@ AT_CMD_DEFINE(BOOTMODE) {
 
     if (mode < 0 || mode > 2 || !success) {
         ERROR("Invalid bootmode parameter");
+        return;
+    }
+
+    if (retrieveSetting(BELUGA_ID) <= 0) {
+        ERROR("Cannot set boot mode: Node has invalid ID");
         return;
     }
 
