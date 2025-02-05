@@ -29,3 +29,15 @@ Architecture using Queues
 Architecture using Callbacks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. image:: architectures/python-Beluga-serial-callbacks.drawio.png
+
+C++ Architectures
+--------------------
+Architecture using Queues
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: architectures/cpp-Beluga-serial-queues.drawio.png
+
+
+Architecture using Callbacks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. image:: architectures/cpp-Beluga-serial-callbacks.drawio.png
