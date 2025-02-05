@@ -25,6 +25,128 @@
  */
 LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
 
+enum param_type {
+    PARAM_I8,
+    PARAM_U8,
+    PARAM_I16,
+    PARAM_U16,
+    PARAM_I32,
+    PARAM_U32,
+    PARAM_I64,
+    PARAM_U64,
+    PARAM_FLOAT,
+    PARAM_STRING
+};
+
+struct print_parameters {
+    const char *name;
+    enum param_type type;
+    uint16_t offset;
+};
+
+#define PARAMETER_DESC(name_, struct_, field_name_, type_)                     \
+    {                                                                          \
+        .name = (name_), .type = (type_),                                      \
+        .offset = offsetof(struct_, field_name_),                              \
+    }
+
+#if !defined(CONFIG_BELUGA_FRAMES)
+static const struct print_parameters params[] = {
+    PARAMETER_DESC("ID", struct node, UUID, PARAM_U16),
+    PARAMETER_DESC("RANGE", struct node, range, PARAM_FLOAT),
+    PARAMETER_DESC("RSSI", struct node, RSSI, PARAM_I8),
+    PARAMETER_DESC("TIMESTAMP", struct node, time_stamp, PARAM_I64),
+#if defined(CONFIG_UWB_LOGIC_CLK)
+    PARAMETER_DESC("EXCHANGE", struct node, exchange_id, PARAM_U32),
+#endif
+};
+#endif
+
+#define PRINT_PARAMETER(type, data)                                            \
+    do {                                                                       \
+        switch (type) {                                                        \
+        case PARAM_I8:                                                         \
+            printf("%" PRId8, *(int8_t *)(data));                              \
+            break;                                                             \
+        case PARAM_U8:                                                         \
+            printf("%" PRIu8, *(uint8_t *)(data));                             \
+            break;                                                             \
+        case PARAM_I16:                                                        \
+            printf("%" PRId16, *(int16_t *)(data));                            \
+            break;                                                             \
+        case PARAM_U16:                                                        \
+            printf("%" PRIu16, *(uint16_t *)(data));                           \
+            break;                                                             \
+        case PARAM_I32:                                                        \
+            printf("%" PRId32, *(int32_t *)(data));                            \
+            break;                                                             \
+        case PARAM_U32:                                                        \
+            printf("%" PRIu32, *(uint32_t *)(data));                           \
+            break;                                                             \
+        case PARAM_I64:                                                        \
+            printf("%" PRId64, *(int64_t *)(data));                            \
+            break;                                                             \
+        case PARAM_U64:                                                        \
+            printf("%" PRIu64, *(uint64_t *)(data));                           \
+            break;                                                             \
+        case PARAM_FLOAT:                                                      \
+            printf("%f", *(double *)(data));                                   \
+            break;                                                             \
+        case PARAM_STRING:                                                     \
+            printf("\"%s\"", *(char *)(data));                                 \
+            break;                                                             \
+        default:                                                               \
+            __ASSERT(false, "Invalid print parameter: %d", (int)(type));       \
+            break;                                                             \
+        }                                                                      \
+    } while (0)
+
+#define CSV_SEP(idx_, len_)                                                    \
+    do {                                                                       \
+        if ((idx_) < ((len_)-1)) {                                             \
+            printf(", ");                                                      \
+        } else {                                                               \
+            printf("\n");                                                      \
+        }                                                                      \
+    } while (0)
+
+#define GENERATE_CSV_HEADER(array_, len_)                                      \
+    do {                                                                       \
+        for (size_t i = 0; i < (len_); i++) {                                  \
+            printf("%s", (array_)[i].name);                                    \
+            CSV_SEP(i, len_);                                                  \
+        }                                                                      \
+    } while (0)
+
+#define GENERATE_CSV_DATA(params_, len_, node_)                                \
+    do {                                                                       \
+        for (size_t i = 0; i < (len_); i++) {                                  \
+            void *data = (char *)&(node_) + (params_)[i].offset;               \
+            PRINT_PARAMETER((params_)[i].type, data);                          \
+            CSV_SEP(i, len_);                                                  \
+        }                                                                      \
+    } while (0)
+
+#define JSON_SEP(idx_, len_)                                                   \
+    do {                                                                       \
+        if ((idx_) < ((len_)-1)) {                                             \
+            printf(",");                                                       \
+        } else {                                                               \
+            printf("}\n");                                                     \
+        }                                                                      \
+    } while (0)
+
+#define GENERATE_JSON_DATA(params_, len_, node_)                               \
+    do {                                                                       \
+        printf("{");                                                           \
+        for (size_t i = 0; i < (len_); i++) {                                  \
+            void *data = (char *)&(node_) + (params_)[i].offset;               \
+            printf("\"%s\":", (params_)[i].name);                              \
+            PRINT_PARAMETER((params_)[i].type, data);                          \
+            JSON_SEP(i, len_);                                                 \
+        }                                                                      \
+    } while (0)
+
 /**
  * Alias to indicate that printing is done in CSV format
  */
@@ -35,76 +157,10 @@ LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
  */
 #define json_mode true
 
-#if defined(CONFIG_UWB_LOGIC_CLK)
-
-/**
- * Format string for JSON format
- */
-#define JSON_FORMAT                                                            \
-    "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32                  \
-    ", \"TIMESTAMP\": %" PRId64 ", \"EXCHANGE\": %" PRId32 "} \r\n"
-
-/**
- * Format string for CSV format
- */
-#define CSV_FORMAT "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 ", %" PRId32 " \r\n"
-
-/**
- * First string printed while in CSV mode
- */
-#define CSV_HEADER "# ID, RANGE, RSSI, TIMESTAMP, EXCHANGE\r\n"
-
-/**
- * Prints entry in the neighbor list to the console
- */
-#define PRINT_ENTRY(entry)                                                     \
-    printf(format_str(format_mode), (entry).UUID, (double)(entry).range,       \
-           (entry).RSSI, (entry).time_stamp, (entry).exchange_id)
-#else
-
-/**
- * Format string for JSON format
- */
-#define JSON_FORMAT                                                            \
-    "{\"ID\": %" PRIu16 ", \"RANGE\": %f, \"RSSI\": %" PRId32                  \
-    ", \"TIMESTAMP\": %" PRId64 "} \r\n"
-
-/**
- * Format string for CSV format
- */
-#define CSV_FORMAT "%" PRIu16 ", %f, %" PRId32 ", %" PRId64 " \r\n"
-
-/**
- * First string printed while in CSV mode
- */
-#define CSV_HEADER "# ID, RANGE, RSSI, TIMESTAMP\r\n"
-
-/**
- * Prints entry in the neighbor list to the console
- */
-#define PRINT_ENTRY(entry)                                                     \
-    printf(format_str(format_mode), (entry).UUID, (entry).range, (entry).RSSI, \
-           (entry).time_stamp)
-#endif // defined(CONFIG_UWB_LOGIC_CLK)
-
-/**
- * Determines what format string to use depending on the mode
- *
- * @param[in] mode The current format mode
- *
- * @return The format string based on the mode
- */
-#define format_str(mode) ((mode) == json_mode) ? JSON_FORMAT : CSV_FORMAT
-
 /**
  * Semaphore for suspending the task that prints the neighbors to the console
  */
 K_SEM_DEFINE(print_list_sem, 0, 1);
-
-/**
- * Mutex for locking the format mode
- */
-K_MUTEX_DEFINE(format_mutex);
 
 /**
  * Indicates whether to print the whole list or only updates
@@ -145,11 +201,7 @@ bool get_stream_mode(void) { return stream_mode; }
  *
  * @param[in] json If true, sets the format to JSON. If false, sets it to CSV.
  */
-void set_format_mode(bool json) {
-    k_mutex_lock(&format_mutex, K_FOREVER);
-    format_mode = json;
-    k_mutex_unlock(&format_mutex);
-}
+void set_format_mode(bool json) { format_mode = json; }
 
 /**
  * @brief Gets the current format mode.
@@ -161,57 +213,50 @@ void set_format_mode(bool json) {
  */
 bool get_format_mode(void) { return format_mode; }
 
-/**
- * @brief Helper macro that substitutes additional conditions if there are any
- * provided. If there are no conditions provided, then true is automatically
- * substituted.
- */
-#define PRINT_CONDITION(...)                                                   \
+#define _STREAM_CONDITION(...)                                                 \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (true), (GET_ARG_N(1, __VA_ARGS__)))
 
-/**
- * @brief Helper macro that resets the update flag if there is an argument
- * present.
- */
-#define UPDATE_AFTER_PRINT(...)                                                \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (seen_list[j].update_flag = 0;))
+#define _STREAM_FLAG_RESET(idx_, ...)                                          \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (seen_list[(idx_)].update_flag = 0))
 
-/**
- * @brief Helper macro that initializes a flag to keep track if the header has
- * been printed or not. If no arguments are present, then nothing is generated.
- */
-#define HEADER_VAR(...)                                                        \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (int header_flag = 0;))
-
-/**
- * @brief Helper macro that generates an if statement to check if the CSV header
- * has been printed while in CSV mode. If no argument is provided, then the if
- * statement is not generated.
- */
-#define PRINT_HEADER(...)                                                      \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (),                                     \
-                (if (header_flag == 0 && format_mode == csv_mode) {            \
-                    printf(CSV_HEADER);                                        \
-                    header_flag = 1;                                           \
-                }))
-
-/**
- * @brief Generator macro that loops through the neighbor list and prints
- * entries. If no condition is provided, it will print all neighbors in the
- * list. If a condition is provided, then that condition will be used to
- * determine which neighbors get printed.
- */
-#define PRINT_LIST(...)                                                        \
+#define _PRINT_NORMAL(idx_, ...)                                               \
     do {                                                                       \
-        HEADER_VAR(__VA_ARGS__)                                                \
-        for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {                           \
-            if (seen_list[j].UUID != 0 && PRINT_CONDITION(__VA_ARGS__)) {      \
-                PRINT_HEADER(__VA_ARGS__)                                      \
-                PRINT_ENTRY(seen_list[j]);                                     \
-                UPDATE_AFTER_PRINT(__VA_ARGS__)                                \
+        bool header_printed = false;                                           \
+        ARRAY_FOR_EACH(seen_list, idx_) {                                      \
+            if (_STREAM_CONDITION(__VA_ARGS__)) {                              \
+                if (format_mode == csv_mode) {                                 \
+                    if (header_printed) {                                      \
+                        GENERATE_CSV_HEADER(params, ARRAY_SIZE(params));       \
+                        header_printed = true;                                 \
+                    }                                                          \
+                    GENERATE_CSV_DATA(params, ARRAY_SIZE(params),              \
+                                      seen_list[(idx_)]);                      \
+                } else {                                                       \
+                    GENERATE_JSON_DATA(params, ARRAY_SIZE(params),             \
+                                       seen_list[(idx_)]);                     \
+                }                                                              \
+                _STREAM_FLAG_RESET(idx_, __VA_ARGS__);                         \
             }                                                                  \
         }                                                                      \
     } while (0)
+
+#include <beluga_message.h>
+#include <uart.h>
+
+#define _FRAME_PRINT()                                                         \
+    do {                                                                       \
+        struct beluga_msg msg = {.type = NEIGHBOR_UPDATES,                     \
+                                 .payload.neighbor_list = seen_list,           \
+                                 .payload.stream = stream_mode};               \
+        (void)write_message_frame(&msg);                                       \
+        if (stream_mode) {                                                     \
+            ARRAY_FOR_EACH(seen_list, i) { seen_list[i].update_flag = 0; }     \
+        }                                                                      \
+    } while (0)
+
+#define PRINT_LIST(idx_, ...)                                                  \
+    COND_CODE_1(IS_ENABLED(CONFIG_BELUGA_FRAMES), (_FRAME_PRINT()),            \
+                (_PRINT_NORMAL(idx_, __VA_ARGS__)))
 
 /**
  * @brief Custom print function for printing the format setting
@@ -219,27 +264,6 @@ bool get_format_mode(void) { return format_mode; }
  */
 void print_output_format(int32_t format) {
     printf("Output Format: %s ", (format == 1) ? "JSON" : "CSV");
-}
-
-/**
- * @brief Prints all the neighbors in the list
- */
-static void normal_print(void) {
-    LOG_INF("Dumping all neighbors");
-    if (format_mode == csv_mode) {
-        LOG_INF("Logging in CSV mode");
-        printf(CSV_HEADER);
-    }
-
-    PRINT_LIST();
-}
-
-/**
- * @brief Prints the neighbors that have been updated since the last run
- */
-static void stream_print(void) {
-    LOG_INF("Dumping updated neighbors");
-    PRINT_LIST(seen_list[j].update_flag != 0);
 }
 
 /**
@@ -258,17 +282,17 @@ NO_RETURN static void list_task_function(void *p1, void *p2, void *p3) {
         k_sleep(K_MSEC(50));
 
         k_sem_take(&print_list_sem, K_FOREVER);
-        k_mutex_lock(&format_mutex, K_FOREVER);
 
         /* Normal mode to print all neighbor nodes */
-        if (!get_stream_mode()) {
-            normal_print();
+        if (!stream_mode) {
+            LOG_INF("Dumping all neighbors");
+            PRINT_LIST(j);
         } else {
             /* Streaming mode to print only new updated nodes */
-            stream_print();
+            LOG_INF("Dumping updated neighbors");
+            PRINT_LIST(j, seen_list[j].update_flag != 0);
         }
 
-        k_mutex_unlock(&format_mutex);
         k_sem_give(&print_list_sem);
     }
 }

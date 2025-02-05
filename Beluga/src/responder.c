@@ -332,7 +332,7 @@ static int send_report(uint64 tof_dtu) {
  */
 int ds_resp_run(uint16_t *id, uint32_t *logic_clk) {
     int err;
-    uint16_t src_id;
+    uint16_t src_id = 0;
     uint64 tof_dtu;
     uint64_t poll_rx_ts;
     uint32_t _logic_clk = 0;
@@ -435,7 +435,7 @@ static int ss_respond(void) {
  */
 int ss_resp_run(uint16_t *id, uint32_t *logic_clk) {
     int err;
-    uint16_t src_id;
+    uint16_t src_id = 0;
     uint32_t _logic_clk = 0;
 
     if (k_sem_count_get(&k_sus_resp) == 0) {

@@ -1,0 +1,10 @@
+identifier: beluga/nrf52840
+name: beluga-nRF52840
+vendor: wiselab
+type: mcu
+arch: arm
+ram: 256
+flash: 1024
+toolchain:
+  - zephyr
+supported: [ble, counter, gpio, i2c, spi, usb_cdc, usb_device, usbd, watchdog]

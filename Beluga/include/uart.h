@@ -17,6 +17,7 @@
 #ifndef BELUGA_UART_H
 #define BELUGA_UART_H
 
+#include <beluga_message.h>
 #include <zephyr/kernel.h>
 
 /**
@@ -27,6 +28,8 @@
  * @return negative error code otherwise
  */
 int uart_init(void);
+
+int write_message_frame(const struct beluga_msg *msg);
 
 /**
  * Received data over serial
