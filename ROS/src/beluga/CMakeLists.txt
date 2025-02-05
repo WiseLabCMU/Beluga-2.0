@@ -9,6 +9,12 @@ endif()
 
 # Debugging
 # add_compile_options(-g -O0)
+add_definitions(
+        # -DLOG_PUBS      # Log all messages being published
+        # -DLOG_RANGES    # Log range reports
+        # -DLOG_NEIGHBORS # Log neighbor updates
+        # -DLOG_EXCHANGES # Log exchanges
+)
 
 include_directories(include)
 

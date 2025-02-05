@@ -14,6 +14,51 @@
 #include <daw/json/daw_json_link.h>
 #include <fstream>
 
+#if defined(LOG_RANGES) || defined(LOG_PUBS)
+#define PRINT_RANGES(msg_)                                                     \
+    do {                                                                       \
+        std::stringstream oss;                                                 \
+        oss << "[";                                                            \
+        for (const auto &range_ : (msg_).ranges) {                             \
+            oss << "{" << range_.id << "," << range_.range << ","              \
+                << range_.exchange << "," << range_.timestamp.sec << "},";     \
+        }                                                                      \
+        oss << "]";                                                            \
+        RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());              \
+    } while (false)
+#else
+#define PRINT_RANGES(...) (void)0
+#endif
+
+#if defined(LOG_NEIGHBORS) || defined(LOG_PUBS)
+#define PRINT_NEIGHBORS(msg_)                                                  \
+    do {                                                                       \
+        std::stringstream oss;                                                 \
+        oss << "[";                                                            \
+        for (const auto &neighbor_ : (msg_).neighbors) {                       \
+            oss << "{" << (int32_t)neighbor_.id << "," << neighbor_.rssi       \
+                << "," << neighbor_.distance << neighbor_.timestamp.sec        \
+                << "}";                                                        \
+        }                                                                      \
+        oss << "]";                                                            \
+        RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());              \
+    } while (false)
+#else
+#define PRINT_NEIGHBORS(...) (void)0
+#endif
+
+#if defined(LOG_EXCHANGES) || defined(LOG_PUBS)
+#define PRINT_EXCHANGE(msg_)                                                   \
+    do {                                                                       \
+        std::stringstream oss;                                                 \
+        oss << "{" << (msg_).id << "," << (msg_).exchange << ","               \
+            << (msg_).timestamp.sec << "}";                                    \
+        RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());              \
+    } while (false)
+#else
+#define PRINT_EXCHANGE(...) (void)0
+#endif
+
 class ValueError : std::exception {
   public:
     ValueError() = default;
@@ -126,6 +171,7 @@ void Beluga::publish_neighbor_list(
         message.neighbors.push_back(neighbor);
     }
     neighbor_list_publisher->publish(message);
+    PRINT_NEIGHBORS(message);
 }
 
 void Beluga::publish_ranges(
@@ -140,6 +186,7 @@ void Beluga::publish_ranges(
         message.ranges.push_back(range);
     }
     range_updates_publisher->publish(message);
+    PRINT_RANGES(message);
 }
 
 void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
@@ -148,6 +195,7 @@ void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
     message.exchange = event.EXCHANGE;
     message.timestamp = _beluga_to_ros_time(event.TIMESTAMP);
     ranging_event_publisher->publish(message);
+    PRINT_EXCHANGE(message);
 }
 
 void Beluga::_time_sync(bool first) {
@@ -336,7 +384,7 @@ void Beluga::_setup() {
                                   &this->_serial, std::placeholders::_1)},
             {"timeout", std::bind(&BelugaSerial::BelugaSerial::timeout,
                                   &this->_serial, std::placeholders::_1)},
-            {"tx power", std::bind(&BelugaSerial::BelugaSerial::stream_mode,
+            {"tx power", std::bind(&BelugaSerial::BelugaSerial::tx_power,
                                    &this->_serial, std::placeholders::_1)},
             {"stream mode", std::bind(&BelugaSerial::BelugaSerial::stream_mode,
                                       &this->_serial, std::placeholders::_1)},
@@ -360,9 +408,11 @@ void Beluga::_setup() {
 
     std::string response;
 
-    for (const auto &it : configs) {
-        std::string setting = callbacks[it.first]("");
-        RCLCPP_INFO(this->get_logger(), "Current setting: %s", setting.c_str());
+    for (const auto &[key, value] : configs) {
+        // Get the setting
+        std::string setting = callbacks[key]("");
+        RCLCPP_INFO(this->get_logger(), "Current %s setting: %s", key.c_str(),
+                    setting.c_str());
         int64_t int_setting;
         try {
             int_setting = extract_number(setting);
@@ -370,11 +420,11 @@ void Beluga::_setup() {
             int_setting = -1;
         }
 
-        if (int_setting != configs[it.first]) {
+        if (int_setting != value) {
             RCLCPP_INFO(this->get_logger(),
-                        "Difference in setting. Now setting to %" PRId64,
-                        configs[it.first]);
-            response = callbacks[it.first](std::to_string(configs[it.first]));
+                        "Difference in %s setting. Now setting %s to %" PRId64,
+                        key.c_str(), key.c_str(), value);
+            response = callbacks[key](std::to_string(value));
             if (!response.ends_with("OK")) {
                 std::stringstream oss;
                 oss << "Tried setting bad configurations: " << int_setting
