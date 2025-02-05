@@ -24,7 +24,7 @@ Downloading and using in cmake
 The first option (and least convenient) is to download the beluga directory and drop it right into your project.
 After that, add the following to your CMakeLists.txt file:
 
-.. code-block::
+.. code-block::cmake
 
     add_subdirectory(beluga)
     target_link_libraries( executable-name PRIVATE beluga-lib )
@@ -34,7 +34,7 @@ Including in cmake project via FetchContent
 
 The second option (preferable one) is to include the package via FetchContent
 
-.. code-block::
+.. code-block::cmake
 
     include( FetchContent )
     FetchContent_Declare(
