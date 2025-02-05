@@ -39,8 +39,8 @@ The second option (preferable one) is to include the package via FetchContent
     include( FetchContent )
     FetchContent_Declare(
         beluga-lib
-        GIT_REPOSITORY https://github.com/WiseLabCMU/Beluga-2.0.git  # Replace with the actual repository URL
-        GIT_TAG docs2  # You can specify a branch, tag, or commit hash
+        GIT_REPOSITORY https://github.com/WiseLabCMU/Beluga-2.0.git
+        GIT_TAG master
         SOURCE_SUBDIR serial-comms/cpp/beluga
     )
     FetchContent_MakeAvailable(beluga-lib)
