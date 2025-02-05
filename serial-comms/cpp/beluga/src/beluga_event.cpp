@@ -10,7 +10,7 @@
 
 #include <beluga/beluga_event.hpp>
 
-namespace Beluga {
+namespace BelugaSerial {
 void Event::wait() {
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait(lock, [this]() { return signal; });
@@ -31,4 +31,4 @@ bool Event::is_set() {
     std::lock_guard<std::mutex> lock(mtx);
     return signal;
 }
-} // namespace Beluga
+} // namespace BelugaSerial

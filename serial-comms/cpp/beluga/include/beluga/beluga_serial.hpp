@@ -17,6 +17,8 @@
 #include <beluga/beluga_neighbor_list.hpp>
 #include <beluga/beluga_queue.hpp>
 #include <condition_variable>
+#include <cstdarg>
+#include <functional>
 #include <future>
 #include <serial/serial.hpp>
 #include <serial/tools/list_ports.hpp>
@@ -24,7 +26,7 @@ extern "C" {
 #include <unistd.h>
 };
 
-namespace Beluga {
+namespace BelugaSerial {
 typedef std::pair<std::string, std::string> target_pair;
 
 class FileNotFoundError : std::exception {
@@ -48,13 +50,16 @@ class BelugaSerial {
         const std::chrono::milliseconds &serial_timeout =
             std::chrono::milliseconds(100),
         uint32_t max_lines_read = 16,
-        void (*neighbor_updates_func)(const std::vector<BelugaNeighbor> &) =
-            nullptr,
-        void (*range_updates_func)(const std::vector<BelugaNeighbor> &) =
-            nullptr,
-        void (*range_event_func)(const BelugaFrame::RangeEvent &) = nullptr,
-        int (*logger)(const char *, ...) = nullptr);
+        std::function<void(const std::vector<BelugaNeighbor> &)>
+            neighbor_update_cb = nullptr,
+        std::function<void(const std::vector<BelugaNeighbor> &)>
+            range_updates_cb = nullptr,
+        std::function<void(const RangeEvent &)> range_event_cb = nullptr,
+        std::function<int(const char *, va_list)> logger_cb = nullptr);
     ~BelugaSerial();
+
+    void register_resync_cb(std::function<void()> cb);
+    void swap_port(const std::string &port);
 
     std::string start_uwb();
     std::string stop_uwb();
@@ -62,59 +67,25 @@ class BelugaSerial {
     std::string start_ble();
     std::string stop_ble();
 
-    std::string id(int id_);
-    std::string id();
-
-    std::string bootmode(int mode);
-    std::string bootmode();
-
-    std::string rate(int rate_);
-    std::string rate();
-
-    std::string channel(int channel_);
-    std::string channel();
-
+    std::string id(const std::string &id_ = "");
+    std::string bootmode(const std::string &mode = "");
+    std::string rate(const std::string &rate_ = "");
+    std::string channel(const std::string &channel_);
     std::string reset();
-
-    std::string timeout(int timeout_);
-    std::string timeout();
-
-    std::string tx_power(int power);
-    std::string tx_power(int stage, int coarse_gain, int fine_gain);
-    std::string tx_power();
-
-    std::string stream_mode(int updates_only);
-    std::string stream_mode();
-
-    std::string twr_mode(int mode);
-    std::string twr_mode();
-
-    std::string led_mode(int mode);
-    std::string led_mode();
-
+    std::string timeout(const std::string &timeout_ = "");
+    std::string tx_power(const std::string &power = "");
+    std::string stream_mode(const std::string &updates_only = "");
+    std::string twr_mode(const std::string &mode = "");
+    std::string led_mode(const std::string &mode = "");
     std::string reboot();
-
-    std::string pwr_amp(int mode);
-    std::string pwr_amp();
-
-    std::string antenna(int antenna);
-    std::string antenna();
-
+    std::string pwr_amp(const std::string &mode = "");
+    std::string antenna(const std::string &antenna = "");
     std::string time();
-
-    std::string format(int mode);
-    std::string format();
-
+    std::string format(const std::string &mode = "");
     std::string deepsleep();
-
-    std::string datarate(int rate_);
-    std::string datarate();
-
-    std::string preamble(int preamble);
-    std::string preamble();
-
-    std::string pulserate(int pr);
-    std::string pulserate();
+    std::string datarate(const std::string &rate_ = "");
+    std::string preamble(const std::string &preamble = "");
+    std::string pulserate(const std::string &pr = "");
 
     void start();
     void stop();
@@ -122,23 +93,25 @@ class BelugaSerial {
 
     bool get_neighbors(std::vector<BelugaNeighbor> &list);
     void get_ranges(std::vector<BelugaNeighbor> &list);
-    BelugaFrame::RangeEvent get_range_event();
+    RangeEvent get_range_event();
 
   private:
-    int (*_logger)(const char *, ...) = nullptr;
+    std::function<int(const char *, va_list)> _logger_cb = nullptr;
     Serial::Serial _serial;
     uint32_t _read_max_lines = 16;
     std::chrono::milliseconds _timeout{};
     BelugaNeighborList _neighbors;
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
-    void (*_neighbor_callback)(const std::vector<BelugaNeighbor> &) = nullptr;
+    std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
+        nullptr;
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
-    void (*_range_callback)(const std::vector<BelugaNeighbor> &) = nullptr;
+    std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
+        nullptr;
 
-    BelugaQueue<BelugaFrame::RangeEvent, 1, true> _range_event_queue;
-    void (*_range_event_callback)(const BelugaFrame::RangeEvent &) = nullptr;
+    BelugaQueue<RangeEvent, 1, true> _range_event_queue;
+    std::function<void(const RangeEvent &)> _range_event_cb = nullptr;
 
     void _initialize(
         BaudRate baud = BAUD_115200,
@@ -147,18 +120,18 @@ class BelugaSerial {
         const std::chrono::milliseconds &serial_timeout =
             std::chrono::milliseconds(100),
         uint32_t max_lines_read = 16, const std::string &port = "",
-        void (*neighbor_updates_func)(const std::vector<BelugaNeighbor> &) =
-            nullptr,
-        void (*range_updates_func)(const std::vector<BelugaNeighbor> &) =
-            nullptr,
-        void (*range_event_func)(const BelugaFrame::RangeEvent &) = nullptr,
-        int (*logger)(const char *, ...) = nullptr);
+        std::function<void(const std::vector<BelugaNeighbor> &)>
+            neighbor_update_cb = nullptr,
+        std::function<void(const std::vector<BelugaNeighbor> &)>
+            range_updates_cb = nullptr,
+        std::function<void(const RangeEvent &)> range_event_cb = nullptr,
+        std::function<int(const char *, va_list)> logger = nullptr);
 
-    void _log(const char *msg);
+    void _log(const char *msg, ...);
 
     void _publish_neighbor_update();
     void _publish_range_update();
-    void _publish_range_event(BelugaFrame::RangeEvent event);
+    void _publish_range_event(RangeEvent event);
     void _publish_response(std::string &response);
 
     void _process_reboot(const std::string &payload);
@@ -167,9 +140,11 @@ class BelugaSerial {
     _find_ports(const std::vector<target_pair> &valid,
                 std::map<target_pair, std::vector<std::string>> &avail_ports);
 
+    void __process_frames();
     void _process_frames();
 
     void _process_rx_buffer(std::vector<uint8_t> &buf);
+    void __read_serial();
     void _read_serial();
 
     std::string _send_command(const std::string &command);
@@ -189,8 +164,8 @@ class BelugaSerial {
     Event _command_sent;
     Event _reboot_done;
 
-    pid_t pid{};
+    std::function<void()> _time_resync = nullptr;
 };
-} // namespace Beluga
+} // namespace BelugaSerial
 
 #endif // BELUGA_SERIAL_BELUGA_SERIAL_HPP

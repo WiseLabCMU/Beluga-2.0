@@ -14,7 +14,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace Beluga {
+namespace BelugaSerial {
 class Event {
   public:
     Event() = default;
@@ -29,6 +29,6 @@ class Event {
     std::condition_variable cv;
     bool signal = false;
 };
-} // namespace Beluga
+} // namespace BelugaSerial
 
 #endif // BELUGA_SERIAL_BELUGA_EVENT_HPP
