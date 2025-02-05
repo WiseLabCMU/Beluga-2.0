@@ -15,4 +15,4 @@ file(GLOB BELUGA_SRC PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 
 target_sources(beluga-lib PRIVATE ${BELUGA_SRC})
 target_include_directories(beluga-lib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(beluga-lib PRIVATE daw::daw-json-link pthread serial)
+target_link_libraries(beluga-lib PUBLIC daw::daw-json-link pthread serial)
