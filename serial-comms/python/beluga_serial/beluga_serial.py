@@ -164,6 +164,7 @@ class BelugaQueue(mp_queues.Queue):
 class BelugaSerial:
     # TODO: Discuss how we want to handle case where USB communication fails. Do we want to log the error and try to reconnect? Do we want to terminate the node?
     def __init__(self,
+                 auto_connect: bool = True,
                  baud: int = 115200,
                  timeout: float = 2.0,
                  serial_timeout: float = 0.1,
@@ -176,7 +177,7 @@ class BelugaSerial:
 
         self._logger = logger_func
 
-        if port is None:
+        if port is None and auto_connect:
             targets = self._find_ports(TARGETS)
             self._serial = None
             if not targets:
@@ -347,6 +348,19 @@ class BelugaSerial:
         except queue.Empty:
             ret = 'Response timed out'
         return ret
+
+    def find_ports(self) -> Dict[str, List[str]]:
+        return self._find_ports(TARGETS)
+
+    def open_target(self, port: str):
+        self.stop()
+        self._serial.close()
+        self._serial.port = port
+        try:
+            self._serial.open()
+        except serial.SerialException:
+            raise FileNotFoundError
+        self.start()
 
     def start_uwb(self) -> str:
         ret = self._send_command(b'AT+STARTUWB\r\n')
@@ -524,10 +538,19 @@ class BelugaSerial:
             while self._processing_task.is_alive():
                 time.sleep(0.1)
             self._processing_task.close()
+        self._rx_task = None
+        self._processing_task = None
+        if self._ranges_queue is not None:
+            self._ranges_queue.clear()
+        if self._neighbors_queue is not None:
+            self._neighbors_queue.clear()
+        if self._range_event_queue is not None:
+            self._range_event_queue.clear()
+        self._neighbors.clear()
         return
 
     def close(self):
-        if self._serial.isOpen():
+        if self._serial.is_open:
             self._serial.close()
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:

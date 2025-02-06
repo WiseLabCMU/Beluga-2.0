@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "beluga_serial"
+version = "0.0.1"
+authors = [
+    { name= "Tom Schmitz", email="tschmitz@andrew.cmu.edu" },
+]
+description = "Python Serial Communications Library for a Beluga node"
+readme = "README.rst"
+requires-python = ">=3.10"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Comunnications",
+    "Topic :: Terminals"
+]
+dependencies = [
+    "pyserial",
+    "cmd2",
+]
+
+[project.entry-points]
+console_scripts = { "beluga-miniterm" = "beluga_serial.app.terminal:main" }
