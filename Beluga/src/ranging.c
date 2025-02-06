@@ -410,6 +410,7 @@ int uwb_set_datarate(enum uwb_datarate rate) {
         SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
     dwt_configure(&config);
+    set_freq_offset_multiplier(rate == UWB_DR_110K);
     return 0;
 }
 
@@ -583,6 +584,7 @@ int set_uwb_channel(uint32_t channel) {
     config.chan = (uint8_t)channel;
     dwt_configure(&config);
     dwt_configuretxrf(&config_tx);
+    set_hertz_to_ppm_multiplier((uint8_t)channel);
     return 0;
 }
 

@@ -51,6 +51,22 @@ int set_initiator_id(uint16_t id);
 int set_initiator_pan_id(uint16_t id);
 
 /**
+ * @brief Sets the multiplication factor to convert carrier integrator value to
+ * a frequency offset in Hertz depending on the data rate.
+ *
+ * @param[in] datarate_110k `true` if data rate is 110K, `false` otherwise
+ */
+void set_freq_offset_multiplier(bool datarate_110k);
+
+/**
+ * @brief Sets the multiplication factor to convert frequency offset in Hertz to
+ * PPM crystal offset depending on the channel.
+ *
+ * @param[in] channel The channel being used for UWB
+ */
+void set_hertz_to_ppm_multiplier(uint8_t channel);
+
+/**
  * @brief Initiates a two-way/double-sided ranging measurement to a certain
  * node.
  *
