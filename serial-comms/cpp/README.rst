@@ -41,7 +41,7 @@ The second option (preferable one) is to include the package via FetchContent
         beluga-lib
         GIT_REPOSITORY https://github.com/WiseLabCMU/Beluga-2.0.git
         GIT_TAG master
-        SOURCE_SUBDIR serial-comms/cpp/beluga
+        SOURCE_SUBDIR serial-comms/cpp/beluga-serial
     )
     FetchContent_MakeAvailable(beluga-lib)
 

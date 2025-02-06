@@ -22,23 +22,16 @@ include_directories(include)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(beluga_messages REQUIRED)
-find_package(daw-json-link)
 
-add_subdirectory(serial)
+set(BELUGA_SERIAL_DIR ../../../serial-comms/cpp/beluga-serial)
 
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED))
+add_subdirectory(${BELUGA_SERIAL_DIR} build)
 
 add_executable(beluga
         src/beluga_main.cpp
-        src/beluga.cpp
-        src/beluga_frame.cpp
-        src/beluga_neighbor_list.cpp
-        src/beluga_event.cpp
-        src/beluga_serial.cpp)
-target_link_libraries(beluga serial)
-ament_target_dependencies(beluga rclcpp beluga_messages daw-json-link)
+        src/beluga.cpp)
+target_link_libraries(beluga beluga-lib)
+ament_target_dependencies(beluga rclcpp beluga_messages)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
