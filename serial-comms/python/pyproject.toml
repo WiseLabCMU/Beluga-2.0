@@ -19,5 +19,9 @@ classifiers = [
     "Topic :: Terminals"
 ]
 dependencies = [
-    "pyserial"
+    "pyserial",
+    "cmd2",
 ]
+
+[project.entry-points]
+console_scripts = { "beluga-miniterm" = "beluga_serial.app.terminal:main" }

@@ -8,9 +8,10 @@ def serial_command(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         except PortNotOpenError:
             print("Port is not open")
+            return False
     return wrapper
 
 
@@ -23,28 +24,32 @@ class BelugaTerminal(cmd2.Cmd):
     _ranges = {}
     _last_exchange = {}
 
+    def _open(self, arg):
+        """Opens a targeted port"""
+        try:
+            self._serial.open_target(arg)
+        except FileNotFoundError:
+            print("Port not found")
+            exit(1)
+
+    def preloop(self) -> None:
+        targets = self._serial.find_ports()
+        if not targets:
+            print("No targets found")
+            exit(1)
+        for target in targets:
+            for port in targets[target]:
+                print(f"{target}: {port}")
+        port = input("Enter a port name: ")
+        print(port)
+        self._open(port)
+
     @staticmethod
     def _run_command(cmd, arg):
         if not arg:
             print(cmd())
         else:
             print(cmd(arg))
-
-    def do_find_ports(self, args):
-        """Displays ports that can be connected to"""
-        ports = self._serial.find_ports()
-        print("")
-        for target in ports:
-            for port in ports[target]:
-                print(f"{target}: {port}")
-            print("")
-
-    def do_open(self, arg):
-        """Opens a targeted port"""
-        try:
-            self._serial.open_target(arg)
-        except FileNotFoundError:
-            print("Port not found")
 
     @serial_command
     def do_startuwb(self, arg):
@@ -272,6 +277,7 @@ class BelugaTerminal(cmd2.Cmd):
         self._run_command(self._serial.pulserate, arg)
 
     def do_neighbors(self, arg):
+        """Display the most recent neighbor list."""
         resp = self._serial.get_neighbors()
         if resp[0]:
             self._neighbors = resp[1]
@@ -282,6 +288,7 @@ class BelugaTerminal(cmd2.Cmd):
         print("")
 
     def do_ranges(self, arg):
+        """Display the recent range reading."""
         resp = self._serial.get_ranges()
         print("\nID,RSSI,RANGE,TIMESTAMP,EXCHANGE")
         for id_ in resp:
@@ -289,9 +296,11 @@ class BelugaTerminal(cmd2.Cmd):
         print("")
 
     def do_exchange(self, arg):
+        """Display the recent ranging exchange."""
         print(self._serial.get_range_event())
 
     def do_stream_neighbors(self, arg):
+        """Stream neighbor updates. Press CTRL+C to stop streaming."""
         try:
             while True:
                 resp = self._serial.get_neighbors()
@@ -306,6 +315,7 @@ class BelugaTerminal(cmd2.Cmd):
         print("")
 
     def do_stream_ranges(self, arg):
+        """Stream ranging updates. Press CTRL+C to stop streaming."""
         try:
             while True:
                 resp = self._serial.get_ranges()
@@ -319,6 +329,7 @@ class BelugaTerminal(cmd2.Cmd):
         print("")
 
     def do_stream_exchanges(self, arg):
+        """Stream ranging exchanges. Press CTRL+C to stop streaming."""
         try:
             while True:
                 resp = self._serial.get_range_event()
@@ -338,7 +349,7 @@ class BelugaTerminal(cmd2.Cmd):
         self._serial.close()
 
 
-if __name__ == "__main__":
+def main():
     setattr(BelugaTerminal, 'do_stream-neighbors', BelugaTerminal.do_stream_neighbors)
     setattr(BelugaTerminal, 'do_stream-ranges', BelugaTerminal.do_stream_ranges)
     setattr(BelugaTerminal, 'do_stream-exchanges', BelugaTerminal.do_stream_exchanges)
@@ -346,3 +357,7 @@ if __name__ == "__main__":
     del BelugaTerminal.do_stream_ranges
     del BelugaTerminal.do_stream_exchanges
     BelugaTerminal().cmdloop()
+
+
+if __name__ == "__main__":
+    main()
