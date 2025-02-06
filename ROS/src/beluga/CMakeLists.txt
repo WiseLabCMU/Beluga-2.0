@@ -25,12 +25,12 @@ find_package(beluga_messages REQUIRED)
 
 set(BELUGA_SERIAL_DIR ../../../serial-comms/cpp/beluga-serial)
 
-add_subdirectory(${BELUGA_SERIAL_DIR} build)
+add_subdirectory(${BELUGA_SERIAL_DIR} beluga-serial-lib)
 
 add_executable(beluga
         src/beluga_main.cpp
         src/beluga.cpp)
-target_link_libraries(beluga beluga-lib)
+target_link_libraries(beluga beluga-serial)
 ament_target_dependencies(beluga rclcpp beluga_messages)
 
 if(BUILD_TESTING)

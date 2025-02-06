@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-add_library(beluga-lib)
+add_library(beluga-serial)
 
 include( FetchContent )
 FetchContent_Declare(
@@ -13,6 +13,6 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/serial)
 
 file(GLOB BELUGA_SRC PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 
-target_sources(beluga-lib PRIVATE ${BELUGA_SRC})
-target_include_directories(beluga-lib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(beluga-lib PUBLIC daw::daw-json-link pthread serial)
+target_sources(beluga-serial PRIVATE ${BELUGA_SRC})
+target_include_directories(beluga-serial PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(beluga-serial PUBLIC daw::daw-json-link pthread serial)

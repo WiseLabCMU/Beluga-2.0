@@ -26,8 +26,8 @@ After that, add the following to your CMakeLists.txt file:
 
 .. code-block:: cmake
 
-    add_subdirectory(beluga)
-    target_link_libraries( executable-name PRIVATE beluga-lib )
+    add_subdirectory(beluga-serial)
+    target_link_libraries( executable-name PRIVATE beluga-serial )
 
 Including in cmake project via FetchContent
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -38,11 +38,11 @@ The second option (preferable one) is to include the package via FetchContent
 
     include( FetchContent )
     FetchContent_Declare(
-        beluga-lib
+        beluga-serial
         GIT_REPOSITORY https://github.com/WiseLabCMU/Beluga-2.0.git
         GIT_TAG master
         SOURCE_SUBDIR serial-comms/cpp/beluga-serial
     )
-    FetchContent_MakeAvailable(beluga-lib)
+    FetchContent_MakeAvailable(beluga-serial)
 
-    target_link_libraries( target-name PRIVATE beluga-lib )
+    target_link_libraries( target-name PRIVATE beluga-serial )
