@@ -2,6 +2,7 @@ import cmd2
 from beluga_serial import BelugaSerial
 from serial import PortNotOpenError
 import functools
+import signal
 
 
 def serial_command(func):
@@ -350,12 +351,16 @@ class BelugaTerminal(cmd2.Cmd):
 
 
 def main():
+    # Ignore reboots
+    signal.signal(signal.SIGUSR1, signal.SIG_IGN)
+    # Rename commands
     setattr(BelugaTerminal, 'do_stream-neighbors', BelugaTerminal.do_stream_neighbors)
     setattr(BelugaTerminal, 'do_stream-ranges', BelugaTerminal.do_stream_ranges)
     setattr(BelugaTerminal, 'do_stream-exchanges', BelugaTerminal.do_stream_exchanges)
     del BelugaTerminal.do_stream_neighbors
     del BelugaTerminal.do_stream_ranges
     del BelugaTerminal.do_stream_exchanges
+    # Run
     BelugaTerminal().cmdloop()
 
 
