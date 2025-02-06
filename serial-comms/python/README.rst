@@ -37,3 +37,12 @@ Installing
 .. code-block:: bash
 
     pip install git+https://github.com/WiseLabCMU/Beluga-2.0.git#subdirectory=serial-comms/python
+
+Beluga Serial Command Shell
+---------------------------
+The python package comes with a shell that can be ran within the environment. To invoke it, run the following command
+in your Python environment
+
+.. code-block:: bash
+
+    beluga-miniterm
