@@ -18,6 +18,7 @@
  */
 
 #include <app_leds.h>
+#include <beluga_message.h>
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <init_resp_common.h>
@@ -29,6 +30,7 @@
 #include <spi.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <uart.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
@@ -148,6 +150,23 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
         k_sem_give(&k_sus_init);                                               \
         k_sem_give(&k_sus_resp);                                               \
     } while (0)
+
+#define _RANGE_EVENT_REPORT(ret_, id, exchange)                                \
+    do {                                                                       \
+        if ((ret_) == 0) {                                                     \
+            struct ranging_event evt = {                                       \
+                .id = (id),                                                    \
+                .exchange_id = (exchange),                                     \
+                .timestamp = k_uptime_get(),                                   \
+            };                                                                 \
+            struct beluga_msg msg = {.type = RANGING_EVENT,                    \
+                                     .payload.event = &evt};                   \
+            (void)write_message_frame(&msg);                                   \
+        }                                                                      \
+    } while (0)
+
+#define RANGE_EVENT_REPORT(ret_, id, exchange)                                 \
+    IF_ENABLED(CONFIG_BELUGA_FRAMES, (_RANGE_EVENT_REPORT(ret_, id, exchange)))
 
 /**
  * The number of milliseconds between initiator runs
@@ -805,6 +824,9 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
+    uint16_t id;
+    uint32_t exchange;
+    int ret;
 
     if (are_leds_on()) {
         dwt_setleds(DWT_LEDS_ENABLE);
@@ -820,11 +842,14 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
 
         if (suspend_start != 0) {
             if (twr_mode) {
-                ds_resp_run(NULL, NULL);
+                ret = ds_resp_run(&id, &exchange);
             } else {
-                ss_resp_run(NULL, NULL);
+                ret = ss_resp_run(&id, &exchange);
             }
+        } else {
+            ret = -EBUSY;
         }
+        RANGE_EVENT_REPORT(ret, id, exchange);
     }
 }
 

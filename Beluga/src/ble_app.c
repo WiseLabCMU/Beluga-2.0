@@ -117,7 +117,7 @@ static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
 
 static int32_t last_seen_index = 0;
-node seen_list[MAX_ANCHOR_COUNT];
+struct node seen_list[MAX_ANCHOR_COUNT];
 static enum adv_mode currentAdvMode = ADVERTISING_OFF;
 
 struct ble_data {

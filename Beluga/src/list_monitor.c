@@ -13,12 +13,14 @@
  * @author Tom Schmitz
  */
 
+#include <beluga_message.h>
 #include <ble_app.h>
 #include <initiator.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <uart.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
@@ -49,6 +51,30 @@ LOG_MODULE_REGISTER(list_monitor, CONFIG_LIST_MONITOR_LOG_LEVEL);
  * Routine to resume neighbor scanning
  */
 #define RESUME_NEIGHBOR_SCANNING() enable_bluetooth()
+
+#define _DROP_NODE_PRINT(node)                                                 \
+    do {                                                                       \
+        if (get_format_mode()) {                                               \
+            printf("rm %" PRId16 "\n", (node).UUID);                           \
+        }                                                                      \
+    } while (0)
+
+#define _DROP_NODE_FRAME(node)                                                 \
+    do {                                                                       \
+        struct beluga_msg msg = {.type = NEIGHBOR_DROP,                        \
+                                 .payload.dropped_neighbor = (node).UUID};     \
+        (void)write_message_frame(&msg);                                       \
+    } while (0)
+
+#define _DROP_NODE(node)                                                       \
+    COND_CODE_1(IS_ENABLED(CONFIG_BELUGA_FRAMES), (_DROP_NODE_FRAME(node)),    \
+                (_DROP_NODE_PRINT(node)))
+
+#define DROP_NODE(node)                                                        \
+    do {                                                                       \
+        _DROP_NODE(node);                                                      \
+        memset(&(node), 0, sizeof(node));                                      \
+    } while (0)
 
 /**
  * Number of milliseconds allowed to elapse before evicting a neighbor
@@ -115,11 +141,8 @@ static bool evict_nodes(void) {
         if (seen_list[x].UUID != 0) {
             if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
                 LOG_INF("Removing node %" PRId16, seen_list[x].UUID);
-                if (get_format_mode()) {
-                    printf("rm %" PRId16 "\r\n", seen_list[x].UUID);
-                }
+                DROP_NODE(seen_list[x]);
                 removed = true;
-                memset(&seen_list[x], 0, sizeof(seen_list[0]));
             }
         }
     }
@@ -136,7 +159,7 @@ static void sort_nodes(void) {
     for (int j = 0; j < MAX_ANCHOR_COUNT; j++) {
         for (int k = j + 1; k < MAX_ANCHOR_COUNT; k++) {
             if (seen_list[j].RSSI < seen_list[k].RSSI) {
-                node A = seen_list[j];
+                struct node A = seen_list[j];
                 seen_list[j] = seen_list[k];
                 seen_list[k] = A;
             }

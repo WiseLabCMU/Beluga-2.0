@@ -32,6 +32,7 @@ set(msg_files
         "srv/BelugaATCommand.srv"
         "msg/BelugaRange.msg"
         "msg/BelugaRanges.msg"
+        "msg/BelugaExchange.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

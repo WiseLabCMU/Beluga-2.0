@@ -209,16 +209,15 @@ int init_range_extension(void) {
 /**
  * @brief Handles the case when a FEM pin is not specified in the device tree
  *
- * This macro logs a "Not supported" message and sets the return code (`ret`) to
- * `-ENOTSUP`, indicating that the pin is not present
+ * This macro Sets the return code (`ret`) to `-ENODEV`, indicating that the
+ * pin is not present
  *
- * @param[out] ret The return code that will be set to `-ENOTSUP` to indicate
+ * @param[out] ret The return code that will be set to `-ENODEV` to indicate
  * the feature is not supported.
  */
 #define FEM_PIN_NOTSUP(ret)                                                    \
     do {                                                                       \
-        printf("Not supported\r\n");                                           \
-        (ret) = -ENOTSUP;                                                      \
+        (ret) = -ENODEV;                                                       \
     } while (0)
 
 /**
@@ -282,14 +281,13 @@ int update_power_mode(enum ble_power_mode mode) {
         break;
     }
     default:
-        printf("Power mode not recognized\r\n");
         ret = -EINVAL;
         break;
     }
 
     restore_bluetooth(ble_state);
 
-    if (ret == 0 || ret == -ENOTSUP) {
+    if (ret == 0 || ret == -ENODEV) {
         dwt_setlnapamode(0, uwb_pa);
     }
 
@@ -318,7 +316,6 @@ int select_antenna(int32_t antenna) {
         err = gpio_pin_set_dt(&_fem_gpios.ant_sel, 1);
         break;
     default:
-        printf("Invalid antenna selection\r\n");
         err = -EINVAL;
         break;
     }
@@ -331,7 +328,6 @@ int select_antenna(int32_t antenna) {
     return err;
 #else
     ARG_UNUSED(antenna);
-    printf("Not implemented\r\n");
     return -ENOTSUP;
 #endif
 }
@@ -401,7 +397,6 @@ int update_power_mode(enum ble_power_mode mode) {
     if (mode == POWER_MODE_BYPASS) {
         return 0;
     }
-    printf("Not implemented\r\n");
     return -ENOTSUP;
 }
 
@@ -416,7 +411,6 @@ int update_power_mode(enum ble_power_mode mode) {
  */
 int select_antenna(int32_t ant) {
     ARG_UNUSED(ant);
-    printf("Not implemented\r\n");
     return -ENOTSUP;
 }
 
