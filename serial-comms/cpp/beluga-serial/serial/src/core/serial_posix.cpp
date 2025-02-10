@@ -128,6 +128,7 @@ size_t SerialPosix::read(std::vector<uint8_t> &b, size_t n) {
         } else {
             if (ret == 0) {
                 throw SerialException(
+                    -ENODEV,
                     "device reports readiness to read but returned no data "
                     "(device disconnected or multiple access on port?)");
             }
