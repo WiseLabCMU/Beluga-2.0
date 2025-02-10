@@ -22,6 +22,7 @@
 #include <future>
 #include <serial/serial.hpp>
 #include <serial/tools/list_ports.hpp>
+#include <mutex>
 extern "C" {
 #include <unistd.h>
 };
@@ -101,6 +102,8 @@ class BelugaSerial {
     uint32_t _read_max_lines = 16;
     std::chrono::milliseconds _timeout{};
     BelugaNeighborList _neighbors;
+    bool _usbRemainsOpen = false;
+    uint16_t _id{};
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
     std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
@@ -147,6 +150,27 @@ class BelugaSerial {
     void __read_serial();
     void _read_serial();
 
+    static uint16_t _extract_id(std::string &s);
+
+    enum ReconnectStates {
+        RECONNECT_FIND,
+        RECONNECT_SLEEP,
+        RECONNECT_CONNECT,
+        RECONNECT_UPDATE_SKIPS,
+        RECONNECT_GET_ID,
+        RECONNECT_CHECK_ID,
+        RECONNECT_DONE,
+
+        RECONNECT_INVALID,
+    };
+
+    static std::string _find_port_candidate(std::vector<std::string> &skip_list);
+    bool _open_port(std::string &port);
+    std::string _get_id_from_device();
+    void __reconnect();
+    void _reconnect();
+    void _reboot();
+
     std::string _send_command(const std::string &command);
 
     struct task_t {
@@ -165,6 +189,8 @@ class BelugaSerial {
     Event _reboot_done;
 
     std::function<void()> _time_resync = nullptr;
+
+    std::recursive_mutex _serial_lock;
 };
 } // namespace BelugaSerial
 
