@@ -74,12 +74,12 @@ class BelugaSerial {
     std::string channel(const std::string &channel_);
     std::string reset();
     std::string timeout(const std::string &timeout_ = "");
-    std::string tx_power(const std::string &power = "");
-    std::string stream_mode(const std::string &updates_only = "");
-    std::string twr_mode(const std::string &mode = "");
-    std::string led_mode(const std::string &mode = "");
+    std::string txpower(const std::string &power = "");
+    std::string streammode(const std::string &updates_only = "");
+    std::string twrmode(const std::string &mode = "");
+    std::string ledmode(const std::string &mode = "");
     std::string reboot();
-    std::string pwr_amp(const std::string &mode = "");
+    std::string pwramp(const std::string &mode = "");
     std::string antenna(const std::string &antenna = "");
     std::string time();
     std::string format(const std::string &mode = "");
@@ -87,6 +87,10 @@ class BelugaSerial {
     std::string datarate(const std::string &rate_ = "");
     std::string preamble(const std::string &preamble = "");
     std::string pulserate(const std::string &pr = "");
+    std::string phr(const std::string &phr_ = "");
+    std::string pac(const std::string &pac = "");
+    std::string sfd(const std::string &sfd = "");
+    std::string panid(const std::string &pan_id = "");
 
     void start();
     void stop();

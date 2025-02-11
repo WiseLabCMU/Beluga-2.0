@@ -358,25 +358,25 @@ std::string BelugaSerial::timeout(const std::string &timeout_) {
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::tx_power(const std::string &power) {
+std::string BelugaSerial::txpower(const std::string &power) {
     std::stringstream oss;
     oss << "AT+TXPOWER " << power << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::stream_mode(const std::string &updates_only) {
+std::string BelugaSerial::streammode(const std::string &updates_only) {
     std::stringstream oss;
     oss << "AT+STREAMMODE " << updates_only << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::twr_mode(const std::string &mode) {
+std::string BelugaSerial::twrmode(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+TWRMODE " << mode << "\r\n";
     return _send_command(oss.str());
 }
 
-std::string BelugaSerial::led_mode(const std::string &mode) {
+std::string BelugaSerial::ledmode(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+LEDMODE " << mode << "\r\n";
     return _send_command(oss.str());
@@ -404,7 +404,7 @@ std::string BelugaSerial::reboot() {
     return ret;
 }
 
-std::string BelugaSerial::pwr_amp(const std::string &mode) {
+std::string BelugaSerial::pwramp(const std::string &mode) {
     std::stringstream oss;
     oss << "AT+PWRAMP " << mode << "\r\n";
     return _send_command(oss.str());
@@ -443,6 +443,30 @@ std::string BelugaSerial::preamble(const std::string &preamble) {
 std::string BelugaSerial::pulserate(const std::string &pr) {
     std::stringstream oss;
     oss << "AT+PULSERATE " << pr << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::phr(const std::string &phr_) {
+    std::stringstream oss;
+    oss << "AT+PHR " << phr_ << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::pac(const std::string &pac) {
+    std::stringstream oss;
+    oss << "AT+PHR " << pac << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::sfd(const std::string &sfd) {
+    std::stringstream oss;
+    oss << "AT+SFD " << sfd << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::panid(const std::string &pan_id) {
+    std::stringstream oss;
+    oss << "AT+PANID " << pan_id << "\r\n";
     return _send_command(oss.str());
 }
 
