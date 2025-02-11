@@ -258,13 +258,23 @@ static void load_pan_id(void) {
  * Retrieve the power amplifier state, set it, and display what it is
  */
 UNUSED static void load_power_amplifiers(void) {
+    int ret;
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
-    if (pwramp == 1) {
-        update_power_mode(POWER_MODE_LOW);
-    } else {
+    if (pwramp == 0) {
         update_power_mode(POWER_MODE_BYPASS);
+    } else if (pwramp == 1) {
+        ret = update_power_mode(POWER_MODE_LOW);
+    } else {
+        ret = update_power_mode(POWER_MODE_HIGH);
     }
+
+    if (pwramp == 0 || ret != 0) {
+        update_led_state(LED_PWRAMP_OFF);
+    } else {
+        update_led_state(LED_PWRAMP_ON);
+    }
+
     INIT_MSG("Range Extension: %d", pwramp);
 }
 

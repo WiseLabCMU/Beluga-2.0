@@ -528,7 +528,12 @@ This setting is saved in flash.
 |             | inactive                    |
 +-------------+-----------------------------+
 | 1           | External amplifiers are     |
-|             | active                      |
+|             | active. The BLE amplifier   |
+|             | is amplifying by 10 dB      |
++-------------+-----------------------------+
+| 2           | External amplifiers are     |
+|             | active. The BLE amplifier   |
+|             | is amplifying by 22 dB      |
 +-------------+-----------------------------+
 
 .. note::

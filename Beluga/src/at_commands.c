@@ -782,13 +782,15 @@ AT_CMD_DEFINE(PWRAMP) {
     bool success = strtoint32(argv[1], &pwramp);
     int err;
 
-    if (!success || pwramp < 0 || pwramp > 1) {
+    if (!success || pwramp < 0 || pwramp > 2) {
         ERROR("Power amp parameter input error");
         return;
     }
 
     if (pwramp == 0) {
         err = update_power_mode(POWER_MODE_BYPASS);
+    } else if (pwramp == 1) {
+        err = update_power_mode(POWER_MODE_LOW);
     } else {
         err = update_power_mode(POWER_MODE_HIGH);
     }
