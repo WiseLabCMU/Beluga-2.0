@@ -1127,14 +1127,14 @@ AT_CMD_DEFINE(PANID) {
     bool success = strtoint32(argv[1], &pan_id);
 
     if (!success || pan_id < INT32_C(0) || pan_id > (uint32_t)UINT16_MAX) {
-        ERROR("Invalid PAN ID\r\n");
+        ERROR("Invalid PAN ID");
         return;
     }
 
     retVal = set_initiator_pan_id((uint16_t)pan_id);
 
     if (retVal != 0) {
-        ERROR("Cannot set PAN ID: UWB Active\r\n");
+        ERROR("Cannot set PAN ID: UWB Active");
         return;
     }
     set_responder_pan_id((uint16_t)pan_id);
