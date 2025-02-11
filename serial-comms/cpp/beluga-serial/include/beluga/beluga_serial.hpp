@@ -22,6 +22,7 @@
 #include <future>
 #include <serial/serial.hpp>
 #include <serial/tools/list_ports.hpp>
+#include <mutex>
 extern "C" {
 #include <unistd.h>
 };
@@ -73,12 +74,12 @@ class BelugaSerial {
     std::string channel(const std::string &channel_);
     std::string reset();
     std::string timeout(const std::string &timeout_ = "");
-    std::string tx_power(const std::string &power = "");
-    std::string stream_mode(const std::string &updates_only = "");
-    std::string twr_mode(const std::string &mode = "");
-    std::string led_mode(const std::string &mode = "");
+    std::string txpower(const std::string &power = "");
+    std::string streammode(const std::string &updates_only = "");
+    std::string twrmode(const std::string &mode = "");
+    std::string ledmode(const std::string &mode = "");
     std::string reboot();
-    std::string pwr_amp(const std::string &mode = "");
+    std::string pwramp(const std::string &mode = "");
     std::string antenna(const std::string &antenna = "");
     std::string time();
     std::string format(const std::string &mode = "");
@@ -86,6 +87,10 @@ class BelugaSerial {
     std::string datarate(const std::string &rate_ = "");
     std::string preamble(const std::string &preamble = "");
     std::string pulserate(const std::string &pr = "");
+    std::string phr(const std::string &phr_ = "");
+    std::string pac(const std::string &pac = "");
+    std::string sfd(const std::string &sfd = "");
+    std::string panid(const std::string &pan_id = "");
 
     void start();
     void stop();
@@ -101,6 +106,8 @@ class BelugaSerial {
     uint32_t _read_max_lines = 16;
     std::chrono::milliseconds _timeout{};
     BelugaNeighborList _neighbors;
+    bool _usbRemainsOpen = false;
+    uint16_t _id{};
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
     std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
@@ -147,6 +154,27 @@ class BelugaSerial {
     void __read_serial();
     void _read_serial();
 
+    static uint16_t _extract_id(std::string &s);
+
+    enum ReconnectStates {
+        RECONNECT_FIND,
+        RECONNECT_SLEEP,
+        RECONNECT_CONNECT,
+        RECONNECT_UPDATE_SKIPS,
+        RECONNECT_GET_ID,
+        RECONNECT_CHECK_ID,
+        RECONNECT_DONE,
+
+        RECONNECT_INVALID,
+    };
+
+    static std::string _find_port_candidate(std::vector<std::string> &skip_list);
+    bool _open_port(std::string &port);
+    std::string _get_id_from_device();
+    void __reconnect();
+    void _reconnect();
+    void _reboot();
+
     std::string _send_command(const std::string &command);
 
     struct task_t {
@@ -165,6 +193,8 @@ class BelugaSerial {
     Event _reboot_done;
 
     std::function<void()> _time_resync = nullptr;
+
+    std::recursive_mutex _serial_lock;
 };
 } // namespace BelugaSerial
 

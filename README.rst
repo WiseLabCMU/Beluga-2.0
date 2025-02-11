@@ -23,37 +23,35 @@ Project Structure
 
     Beluga-2.0
     ├── Beluga
-    │   ├── CMakeLists.txt
+    │   ├── boards
+    │   │   └── wiselab
+    │   │       └── beluga
     │   ├── config
     │   ├── DecaDriver
-    │   │   ├── include
-    │   │   └── src
     │   ├── dts
-    │   │   └── bindings
     │   ├── images
-    │   │   └── decawave_dwm1001_dev
     │   ├── include
-    │   ├── Kconfig
-    │   ├── Kconfig.sysbuild
-    │   ├── Makefile
     │   ├── overlay
-    │   ├── prj.conf
-    │   ├── src
-    │   └── VERSION
-    ├── boards
-    │   └── arm
-    │       └── Beluga
-    ├── DW1000_docs
+    │   │   └── extra
+    │   └── src
+    ├── Documentation
+    │   ├── Beluga
+    │   └── DW1000_docs
+    ├── Hardware
     ├── JLink
-    │   └── JLink_Linux_V798a_x86_64.deb
-    ├── Makefile
-    ├── README.rst
     ├── ROS
     │   └── src
     │       ├── beluga
     │       ├── beluga_messages
     │       └── example_beluga_client
-    └── setup.sh
+    └── serial-comms
+        ├── architectures
+        ├── cpp
+        │   └── beluga-serial
+        └── python
+            └── beluga_serial
+
+
 
 Setup and Building
 ==================
@@ -89,19 +87,80 @@ Run the following command:
 Set up for ROS node dependencies (Tested on ROS Humble)
 -------------------------------------------------------
 1. Install `ROS Humble`_
-2. Install `Daw-JSON`_
-    a. Run the following commands to install
-.. code-block:: bash
-
-        git clone https://github.com/beached/daw_json_link
-        cd daw_json_link
-        mkdir build
-        cd build
-        cmake ..
-        cmake --install .
 
 .. _ROS Humble: https://docs.ros.org/en/humble/Installation.html
-.. _Daw-JSON: https://github.com/beached/daw_json_link
+
+ROS node
+--------
+This project contains a ROS node that can communicate with a Beluga node. To build and run it, navigate to the
+``ROS`` directory and follow the `ROS package installation and usage`_ instructions. The node contains 3 publishers
+and 1 service:
+
+1. Publisher for neighborhood list updates (additions or removals of neighbors)
+2. Publisher for distances to neighbors (Only updates)
+3. Publisher for responding to neighbor distancing requests
+4. Service for the Beluga AT commands
+
+By default, these publishers and service are named ``neighbor_list``, ``range_updates``, ``range_exchanges``, and
+``at_command``, respectively. These topic names can be customized through the ROS args.
+
+ROS Arguments
+^^^^^^^^^^^^^
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Argument           | Description                                                                                                                                                                                |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``neighbors_name`` | Topic name for the neighborhood list updates publisher                                                                                                                                     |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``ranges_name``    | Topic name for the range updates publisher                                                                                                                                                 |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``exchange_name``  | Topic name for the ranging exchanges publisher                                                                                                                                             |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``service_topic``  | Topic name for the AT command service                                                                                                                                                      |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``history_depth``  | The publisher queue depth for all the publishers in the node                                                                                                                               |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``port``           | The specific port to connect to. Note: This may change mid program due to the node rebooting. The node ID is fetched and saved during execution to ensure the same node is reconnected to. |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``config``         | JSON file for custom node configurations                                                                                                                                                   |
++--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Example Usage
+
+.. code-block:: bash
+
+    ros2 run beluga beluga --ros-args --param port:=/dev/ttyACM1
+
+Starter JSON file for customized settings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: json
+
+    {
+        "id": 1,
+        "bootmode": 2,
+        "rate": 100,
+        "channel": 5,
+        "timeout": 9000,
+        "txpower": 1,
+        "streammode": 1,
+        "twrmode": 1,
+        "ledmode": 0,
+        "pwramp": 1,
+        "antenna": 1,
+        "phr": 0,
+        "datarate": 0,
+        "pulserate": 0,
+        "preamble": 128,
+        "pac": 0,
+        "sfd": 0,
+        "panid": 41760
+    }
+
+The above JSON can be used as a starting file. If a default setting is desired,
+delete the entry from the JSON.
+
+
+.. _ROS package installation and usage: https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Creating-Your-First-ROS2-Package.html#build-a-package
 
 Build Configurations
 --------------------

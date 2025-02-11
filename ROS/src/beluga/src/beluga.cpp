@@ -115,22 +115,22 @@ void Beluga::run_at_command(
         response->response = _serial.timeout(request->arg);
         break;
     case BelugaATCommand::Request::AT_COMMAND_TXPOWER:
-        response->response = _serial.tx_power(request->arg);
+        response->response = _serial.txpower(request->arg);
         break;
     case BelugaATCommand::Request::AT_COMMAND_STREAMMODE:
-        response->response = _serial.stream_mode(request->arg);
+        response->response = _serial.streammode(request->arg);
         break;
     case BelugaATCommand::Request::AT_COMMAND_TWRMODE:
-        response->response = _serial.twr_mode(request->arg);
+        response->response = _serial.twrmode(request->arg);
         break;
     case BelugaATCommand::Request::AT_COMMAND_LEDMODE:
-        response->response = _serial.led_mode(request->arg);
+        response->response = _serial.ledmode(request->arg);
         break;
     case BelugaATCommand::Request::AT_COMMAND_REBOOT:
         response->response = _serial.reboot();
         break;
     case BelugaATCommand::Request::AT_COMMAND_PWRAMP:
-        response->response = _serial.pwr_amp(request->arg);
+        response->response = _serial.pwramp(request->arg);
         break;
     case BelugaATCommand::Request::AT_COMMAND_ANTENNA:
         response->response = _serial.antenna(request->arg);
@@ -149,6 +149,18 @@ void Beluga::run_at_command(
         break;
     case BelugaATCommand::Request::AT_COMMAND_PULSERATE:
         response->response = _serial.pulserate(request->arg);
+        break;
+    case BelugaATCommand::Request::AT_COMMAND_PHR:
+        response->response = _serial.phr(request->arg);
+        break;
+    case BelugaATCommand::Request::AT_COMMAND_PAC:
+        response->response = _serial.pac(request->arg);
+        break;
+    case BelugaATCommand::Request::AT_COMMAND_SFD:
+        response->response = _serial.sfd(request->arg);
+        break;
+    case BelugaATCommand::Request::AT_COMMAND_PANID:
+        response->response = _serial.panid(request->arg);
         break;
     default:
         response->response = "INVALID";
@@ -338,19 +350,25 @@ void Beluga::_resync_time_cb() {
 
 void Beluga::__time_sync() { _time_sync(); }
 
+#define CALLBACK_DEF(name_)                                                    \
+    {                                                                          \
+#name_, std::bind(&BelugaSerial::BelugaSerial::name_, &this->_serial,  \
+                          std::placeholders::_1)                               \
+    }
+
 constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{
-    {"boot mode", 2},
-    {"poll rate", 100},
+    {"bootmode", 2},
+    {"rate", 100},
     {"channel", 5},
     {"timeout", 9000},
-    {"tx power", 0},
-    {"stream mode", 1},
-    {"twr mode", 1},
-    {"led mode", 0},
-    {"range extend", 0},
-    {"uwb data rate", 0},
-    {"uwb preamble", 128},
-    {"pulse rate", 1},
+    {"txpower", 0},
+    {"streammode", 1},
+    {"twrmode", 1},
+    {"ledmode", 0},
+    {"pwramp", 0},
+    {"datarate", 0},
+    {"preamble", 128},
+    {"pulserate", 1},
 }};
 
 void Beluga::_setup() {
@@ -376,30 +394,15 @@ void Beluga::_setup() {
 
     std::map<std::string, std::function<std::string(const std::string &)>>
         callbacks = {
-            {"boot mode", std::bind(&BelugaSerial::BelugaSerial::bootmode,
-                                    &this->_serial, std::placeholders::_1)},
-            {"poll rate", std::bind(&BelugaSerial::BelugaSerial::rate,
-                                    &this->_serial, std::placeholders::_1)},
-            {"channel", std::bind(&BelugaSerial::BelugaSerial::channel,
-                                  &this->_serial, std::placeholders::_1)},
-            {"timeout", std::bind(&BelugaSerial::BelugaSerial::timeout,
-                                  &this->_serial, std::placeholders::_1)},
-            {"tx power", std::bind(&BelugaSerial::BelugaSerial::tx_power,
-                                   &this->_serial, std::placeholders::_1)},
-            {"stream mode", std::bind(&BelugaSerial::BelugaSerial::stream_mode,
-                                      &this->_serial, std::placeholders::_1)},
-            {"twr mode", std::bind(&BelugaSerial::BelugaSerial::twr_mode,
-                                   &this->_serial, std::placeholders::_1)},
-            {"led mode", std::bind(&BelugaSerial::BelugaSerial::led_mode,
-                                   &this->_serial, std::placeholders::_1)},
-            {"range extend", std::bind(&BelugaSerial::BelugaSerial::pwr_amp,
-                                       &this->_serial, std::placeholders::_1)},
-            {"uwb data rate", std::bind(&BelugaSerial::BelugaSerial::datarate,
-                                        &this->_serial, std::placeholders::_1)},
-            {"uwb preamble", std::bind(&BelugaSerial::BelugaSerial::preamble,
-                                       &this->_serial, std::placeholders::_1)},
-            {"pulse rate", std::bind(&BelugaSerial::BelugaSerial::pulserate,
-                                     &this->_serial, std::placeholders::_1)},
+            CALLBACK_DEF(id),         CALLBACK_DEF(bootmode),
+            CALLBACK_DEF(rate),       CALLBACK_DEF(channel),
+            CALLBACK_DEF(timeout),    CALLBACK_DEF(txpower),
+            CALLBACK_DEF(streammode), CALLBACK_DEF(twrmode),
+            CALLBACK_DEF(ledmode),    CALLBACK_DEF(pwramp),
+            CALLBACK_DEF(antenna),    CALLBACK_DEF(phr),
+            CALLBACK_DEF(datarate),   CALLBACK_DEF(pulserate),
+            CALLBACK_DEF(preamble),   CALLBACK_DEF(pac),
+            CALLBACK_DEF(sfd),        CALLBACK_DEF(panid),
         };
 
     // Tel beluga to shut up
