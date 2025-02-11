@@ -20,9 +20,9 @@
 #include <cstdarg>
 #include <functional>
 #include <future>
+#include <mutex>
 #include <serial/serial.hpp>
 #include <serial/tools/list_ports.hpp>
-#include <mutex>
 extern "C" {
 #include <unistd.h>
 };
@@ -154,7 +154,7 @@ class BelugaSerial {
     void __read_serial();
     void _read_serial();
 
-    static uint16_t _extract_id(std::string &s);
+    static uint16_t _extract_id(const std::string &s);
 
     enum ReconnectStates {
         RECONNECT_FIND,
@@ -168,7 +168,8 @@ class BelugaSerial {
         RECONNECT_INVALID,
     };
 
-    static std::string _find_port_candidate(std::vector<std::string> &skip_list);
+    static std::string
+    _find_port_candidate(std::vector<std::string> &skip_list);
     bool _open_port(std::string &port);
     std::string _get_id_from_device();
     void __reconnect();

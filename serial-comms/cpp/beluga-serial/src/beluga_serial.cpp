@@ -328,8 +328,14 @@ std::string BelugaSerial::stop_ble() { return _send_command("AT+STOPBLE\r\n"); }
 
 std::string BelugaSerial::id(const std::string &id_) {
     std::stringstream oss;
+    std::string ret;
     oss << "AT+ID " << id_ << "\r\n";
-    return _send_command(oss.str());
+    ret = _send_command(oss.str());
+
+    if (!id_.empty() && ret.ends_with("OK")) {
+        _id = _extract_id(oss.str());
+    }
+    return ret;
 }
 
 std::string BelugaSerial::bootmode(const std::string &mode) {
@@ -597,7 +603,7 @@ void BelugaSerial::swap_port(const std::string &port) {
     _serial.open();
 }
 
-uint16_t BelugaSerial::_extract_id(std::string &s) {
+uint16_t BelugaSerial::_extract_id(const std::string &s) {
     std::vector<std::string> tokens;
     size_t start = 0;
     size_t end;
