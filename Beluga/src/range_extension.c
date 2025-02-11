@@ -238,6 +238,16 @@ int init_range_extension(void) {
                 (FEM_PIN_NOTSUP(ret)))
 
 /**
+ * Generates the code to toggle on and off the external UWB amplifier. If the
+ * UWB external amp is disabled in the config, then an empty statement is
+ * inserted.
+ *
+ * @param[in] uwb_pa_ The external power amp setting for the DW1000
+ */
+#define TOGGLE_UWB_AMP(uwb_pa_)                                                \
+    IF_ENABLED(IS_ENABLED(CONFIG_UWB_ENABLE_PA), (dwt_setlnapamode(0, uwb_pa_)))
+
+/**
  * @brief Updates the power mode of the FEM and controls the external
  * amplifiers.
  *
@@ -288,7 +298,7 @@ int update_power_mode(enum ble_power_mode mode) {
     restore_bluetooth(ble_state);
 
     if (ret == 0 || ret == -ENODEV) {
-        dwt_setlnapamode(0, uwb_pa);
+        TOGGLE_UWB_AMP(uwb_pa);
     }
 
     return ret;

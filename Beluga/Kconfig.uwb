@@ -84,4 +84,8 @@ config DWT_API_ERROR_CHECK
     bool "Have DecaDriver check for errors"
     default n
 
+config UWB_ENABLE_PA
+    bool "Allow the UWB external to be toggled on"
+    default y
+
 endmenu
