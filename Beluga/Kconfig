@@ -51,6 +51,15 @@ config WDT_MAX_WINDOW
     int "Maximum window of the watchdog timer"
     default 2000
 
+config MCUMGR_TRANSPORT_COMMS_MTU
+    int "Comms SMP MTU"
+    default 256
+    depends on MCUMGR
+    help
+        Maximum size of SMP frames sent and received. This value
+        must satisfy the following relation:
+        MCUMGR_TRANSPORT_COMMS_MTU <= MCUMGR_TRANSPORT_NETBUF_SIZE + 2
+
 endmenu
 
 source "Kconfig.zephyr"

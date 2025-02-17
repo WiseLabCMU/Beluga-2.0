@@ -9,12 +9,14 @@ project(Beluga)
 
 # NORDIC SDK APP START
 file(GLOB SOURCE "src/*.c")
+file(GLOB SERIAL_SRC "src/serial/*.c")
 file(GLOB DECAWAVE_SRC "DecaDriver/src/*.c")
 
 include_directories(include DecaDriver/include)
 
 target_sources(app PRIVATE
   ${SOURCE}
+  ${SERIAL_SRC}
   ${DECAWAVE_SRC}
 )
 # NORDIC SDK APP END
