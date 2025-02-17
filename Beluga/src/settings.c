@@ -31,91 +31,6 @@
  */
 LOG_MODULE_REGISTER(settings_logger, CONFIG_SETTINGS_MODULE_LOG_LEVEL);
 
-/**
- * Default value for the UWB initiator polling rate
- */
-#define DEFAULT_RATE 250
-
-/**
- * Default value for the node timeout
- */
-#define DEFAULT_TIMEOUT 9000
-
-/**
- * Default value for the stream mode
- */
-#define DEFAULT_STREAMMODE 0
-
-/**
- * Default value for led mode
- */
-#define DEFAULT_LEDMODE 0
-
-/**
- * Default value for the boot mode
- */
-#define DEFAULT_BOOTMODE 0
-
-/**
- * Default value for the UWB channel
- */
-#define DEFAULT_CHANNEL 5
-
-/**
- * Default value for the UWB TX power
- */
-#define DEFAULT_TXPOWER TX_POWER_MAN_DEFAULT
-
-/**
- * Default value for the two-way ranging mode
- */
-#define DEFAULT_TWR 1
-
-/**
- * Default value for the output format
- */
-#define DEFAULT_OUT_FORMAT 0
-
-/**
- * Default value for the amplifier state
- */
-#define DEFAULT_AMPLIFICATION 0
-
-/**
- * Default value for the UWB PHR
- */
-#define DEFAULT_PHR 0
-
-/**
- * Default value for the UWB data rate
- */
-#define DEFAULT_DATARATE 0 // 6M8
-
-/**
- * Default value for the UWB pulse rate
- */
-#define DEFAULT_PULSERATE 1 // 64M
-
-/**
- * Default value for the UWB preamble length
- */
-#define DEFAULT_PREAMBLE 128
-
-/**
- * Default value for the UWB PAC size
- */
-#define DEFAULT_PAC 0 // 8
-
-/**
- * Default value for the UWB SFD
- */
-#define DEFAULT_NSSFD 0 // Standard SFD
-
-/**
- * Default value for the UWB PAN ID
- */
-#define DEFAULT_PAN_ID 0xDECA
-
 #if defined(CONFIG_SETTINGS_FILE)
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
@@ -142,42 +57,27 @@ struct beluga_settings_dict {
     int32_t value;   ///< The value of the setting
 };
 
+#define GENERATE_BELUGA_DEFAULTS(name_, value_) value_,
+
 /**
  * Default values associated with each setting
  *
  * @note Each value is mapped to the value of the beluga settings enumerator
  */
 static const int32_t default_settings[] = {
-    DEFAULT_ID_SETTING, DEFAULT_BOOTMODE,      DEFAULT_RATE,
-    DEFAULT_CHANNEL,    DEFAULT_TIMEOUT,       DEFAULT_TXPOWER,
-    DEFAULT_STREAMMODE, DEFAULT_TWR,           DEFAULT_LEDMODE,
-    DEFAULT_OUT_FORMAT, DEFAULT_AMPLIFICATION, DEFAULT_PHR,
-    DEFAULT_DATARATE,   DEFAULT_PULSERATE,     DEFAULT_PREAMBLE,
-    DEFAULT_PAC,        DEFAULT_NSSFD,         DEFAULT_PAN_ID};
+    FOREACH_BELUGA_SETTING(GENERATE_BELUGA_DEFAULTS)};
+
+#undef GENERATE_BELUGA_DEFAULTS
+
+#define GENERATE_BELUGA_SETTINGS(name_, value_) {#name_, value_},
 
 /**
  * Runtime storage of the settings
  */
 static struct beluga_settings_dict settingValues[] = {
-    {"id", DEFAULT_ID_SETTING},
-    {"boot_mode", DEFAULT_BOOTMODE},
-    {"poll_rate", DEFAULT_RATE},
-    {"uwb_channel", DEFAULT_CHANNEL},
-    {"ble_timeout", DEFAULT_TIMEOUT},
-    {"tx_power", DEFAULT_TXPOWER},
-    {"stream_mode", DEFAULT_STREAMMODE},
-    {"twr", DEFAULT_TWR},
-    {"led_mode", DEFAULT_LEDMODE},
-    {"out_format", DEFAULT_OUT_FORMAT},
-    {"range_ext", DEFAULT_AMPLIFICATION},
-    {"phr", DEFAULT_PHR},
-    {"datarate", DEFAULT_DATARATE},
-    {"pulserate", DEFAULT_PULSERATE},
-    {"preamble", DEFAULT_PREAMBLE},
-    {"pac", DEFAULT_PAC},
-    {"nssfd", DEFAULT_NSSFD},
-    {"pan_id", DEFAULT_PAN_ID},
-};
+    FOREACH_BELUGA_SETTING(GENERATE_BELUGA_SETTINGS)};
+
+#undef GENERATE_BELUGA_SETTINGS
 
 /**
  * Maximum length of a setting key

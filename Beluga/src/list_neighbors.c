@@ -12,10 +12,12 @@
  * @author Tom Schmitz
  */
 
+#include <beluga_message.h>
 #include <ble_app.h>
 #include <inttypes.h>
 #include <list_neighbors.h>
 #include <stdio.h>
+#include <uart.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -24,128 +26,6 @@
  * Logger for the neighbor report module
  */
 LOG_MODULE_REGISTER(neighbor_listing, CONFIG_NEIGHBOR_LISTING_LOG_LEVEL);
-
-enum param_type {
-    PARAM_I8,
-    PARAM_U8,
-    PARAM_I16,
-    PARAM_U16,
-    PARAM_I32,
-    PARAM_U32,
-    PARAM_I64,
-    PARAM_U64,
-    PARAM_FLOAT,
-    PARAM_STRING
-};
-
-struct print_parameters {
-    const char *name;
-    enum param_type type;
-    uint16_t offset;
-};
-
-#define PARAMETER_DESC(name_, struct_, field_name_, type_)                     \
-    {                                                                          \
-        .name = (name_), .type = (type_),                                      \
-        .offset = offsetof(struct_, field_name_),                              \
-    }
-
-#if !defined(CONFIG_BELUGA_FRAMES)
-static const struct print_parameters params[] = {
-    PARAMETER_DESC("ID", struct node, UUID, PARAM_U16),
-    PARAMETER_DESC("RANGE", struct node, range, PARAM_FLOAT),
-    PARAMETER_DESC("RSSI", struct node, RSSI, PARAM_I8),
-    PARAMETER_DESC("TIMESTAMP", struct node, time_stamp, PARAM_I64),
-#if defined(CONFIG_UWB_LOGIC_CLK)
-    PARAMETER_DESC("EXCHANGE", struct node, exchange_id, PARAM_U32),
-#endif
-};
-#endif
-
-#define PRINT_PARAMETER(type, data)                                            \
-    do {                                                                       \
-        switch (type) {                                                        \
-        case PARAM_I8:                                                         \
-            printf("%" PRId8, *(int8_t *)(data));                              \
-            break;                                                             \
-        case PARAM_U8:                                                         \
-            printf("%" PRIu8, *(uint8_t *)(data));                             \
-            break;                                                             \
-        case PARAM_I16:                                                        \
-            printf("%" PRId16, *(int16_t *)(data));                            \
-            break;                                                             \
-        case PARAM_U16:                                                        \
-            printf("%" PRIu16, *(uint16_t *)(data));                           \
-            break;                                                             \
-        case PARAM_I32:                                                        \
-            printf("%" PRId32, *(int32_t *)(data));                            \
-            break;                                                             \
-        case PARAM_U32:                                                        \
-            printf("%" PRIu32, *(uint32_t *)(data));                           \
-            break;                                                             \
-        case PARAM_I64:                                                        \
-            printf("%" PRId64, *(int64_t *)(data));                            \
-            break;                                                             \
-        case PARAM_U64:                                                        \
-            printf("%" PRIu64, *(uint64_t *)(data));                           \
-            break;                                                             \
-        case PARAM_FLOAT:                                                      \
-            printf("%f", *(double *)(data));                                   \
-            break;                                                             \
-        case PARAM_STRING:                                                     \
-            printf("\"%s\"", *(char *)(data));                                 \
-            break;                                                             \
-        default:                                                               \
-            __ASSERT(false, "Invalid print parameter: %d", (int)(type));       \
-            break;                                                             \
-        }                                                                      \
-    } while (0)
-
-#define CSV_SEP(idx_, len_)                                                    \
-    do {                                                                       \
-        if ((idx_) < ((len_)-1)) {                                             \
-            printf(", ");                                                      \
-        } else {                                                               \
-            printf("\n");                                                      \
-        }                                                                      \
-    } while (0)
-
-#define GENERATE_CSV_HEADER(array_, len_)                                      \
-    do {                                                                       \
-        for (size_t i = 0; i < (len_); i++) {                                  \
-            printf("%s", (array_)[i].name);                                    \
-            CSV_SEP(i, len_);                                                  \
-        }                                                                      \
-    } while (0)
-
-#define GENERATE_CSV_DATA(params_, len_, node_)                                \
-    do {                                                                       \
-        for (size_t i = 0; i < (len_); i++) {                                  \
-            void *data = (char *)&(node_) + (params_)[i].offset;               \
-            PRINT_PARAMETER((params_)[i].type, data);                          \
-            CSV_SEP(i, len_);                                                  \
-        }                                                                      \
-    } while (0)
-
-#define JSON_SEP(idx_, len_)                                                   \
-    do {                                                                       \
-        if ((idx_) < ((len_)-1)) {                                             \
-            printf(",");                                                       \
-        } else {                                                               \
-            printf("}\n");                                                     \
-        }                                                                      \
-    } while (0)
-
-#define GENERATE_JSON_DATA(params_, len_, node_)                               \
-    do {                                                                       \
-        printf("{");                                                           \
-        for (size_t i = 0; i < (len_); i++) {                                  \
-            void *data = (char *)&(node_) + (params_)[i].offset;               \
-            printf("\"%s\":", (params_)[i].name);                              \
-            PRINT_PARAMETER((params_)[i].type, data);                          \
-            JSON_SEP(i, len_);                                                 \
-        }                                                                      \
-    } while (0)
 
 /**
  * Alias to indicate that printing is done in CSV format
@@ -219,29 +99,52 @@ bool get_format_mode(void) { return format_mode; }
 #define _STREAM_FLAG_RESET(idx_, ...)                                          \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (), (seen_list[(idx_)].update_flag = 0))
 
+#define _ID_FORMAT        "%" PRIu16
+#define _RSSI_FORMAT      "%" PRId8
+#define _RANGE_FORMAT     "%f"
+#define _TIMESTAMP_FORMAT "%" PRId64
+#define _EXCHANGE_FORMAT  "%" PRIu32
+#define _SEP              ","
+
+#define _BASE_CSV_FORMAT                                                       \
+    _ID_FORMAT _SEP _RSSI_FORMAT _SEP _RANGE_FORMAT _SEP _TIMESTAMP_FORMAT
+#define _BASE_CSV_HEADER "ID,RSSI,RANGE,TIMESTAMP"
+#define _BASE_JSON_FORMAT                                                      \
+    "{ID:" _ID_FORMAT ",RSSI:" _RSSI_FORMAT ",RANGE:" _RANGE_FORMAT            \
+    ",TIMESTAMP:" _TIMESTAMP_FORMAT
+#define _BASE_PRINT_ARGS(idx_)                                                 \
+    seen_list[(idx_)].UUID, seen_list[(idx_)].RSSI,                            \
+        (double)seen_list[(idx_)].range, seen_list[(idx_)].time_stamp
+
+#if defined(CONFIG_UWB_LOGIC_CLK)
+#define _CSV_FORMAT_STR   _BASE_CSV_FORMAT _SEP _EXCHANGE_FORMAT "\n"
+#define _CSV_HEADER       _BASE_CSV_HEADER ",EXCHANGE\n"
+#define _JSON_FORMAT_STR  _BASE_JSON_FORMAT ",EXCHANGE:" _EXCHANGE_FORMAT "}\n"
+#define _PRINT_ARGS(idx_) _BASE_PRINT_ARGS(idx_), seen_list[(idx_)].exchange_id
+#else
+#define _CSV_FORMAT_STR   _BASE_CSV_FORMAT "\n"
+#define _CSV_HEADER       _BASE_CSV_HEADER "\n"
+#define _JSON_FORMAT_STR  _BASE_JSON_FORMAT "}\n"
+#define _PRINT_ARGS(idx_) _BASE_PRINT_ARGS(idx_)
+#endif
+
 #define _PRINT_NORMAL(idx_, ...)                                               \
     do {                                                                       \
         bool header_printed = false;                                           \
         ARRAY_FOR_EACH(seen_list, idx_) {                                      \
+            if (!header_printed && format_mode == csv_mode &&                  \
+                _STREAM_CONDITION(__VA_ARGS__)) {                              \
+                printf(_CSV_HEADER);                                           \
+                header_printed = true;                                         \
+            }                                                                  \
             if (_STREAM_CONDITION(__VA_ARGS__)) {                              \
-                if (format_mode == csv_mode) {                                 \
-                    if (header_printed) {                                      \
-                        GENERATE_CSV_HEADER(params, ARRAY_SIZE(params));       \
-                        header_printed = true;                                 \
-                    }                                                          \
-                    GENERATE_CSV_DATA(params, ARRAY_SIZE(params),              \
-                                      seen_list[(idx_)]);                      \
-                } else {                                                       \
-                    GENERATE_JSON_DATA(params, ARRAY_SIZE(params),             \
-                                       seen_list[(idx_)]);                     \
-                }                                                              \
+                printf((format_mode == json_mode) ? _JSON_FORMAT_STR           \
+                                                  : _CSV_FORMAT_STR,           \
+                       _PRINT_ARGS(idx_));                                     \
                 _STREAM_FLAG_RESET(idx_, __VA_ARGS__);                         \
             }                                                                  \
         }                                                                      \
     } while (0)
-
-#include <beluga_message.h>
-#include <uart.h>
 
 #define _FRAME_PRINT()                                                         \
     do {                                                                       \

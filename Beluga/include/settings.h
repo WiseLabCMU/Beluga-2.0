@@ -16,7 +16,55 @@
 #ifndef BELUGA_SETTINGS_H
 #define BELUGA_SETTINGS_H
 
+#include <deca_regs.h>
 #include <stdint.h>
+
+/**
+ * The settings for Beluga and their default values
+ *
+ * - Node ID
+ * - Boot mode
+ * - Rate that UWB initiates ranging requests
+ * - UWB channel used
+ * - Timeout before removing from neighbor list
+ * - UWB transmission power
+ * - Neighbor list streaming option
+ * - UWB ranging mode
+ * - LED mode
+ * - Output format
+ * - Power amplifier state
+ * - UWB PHR mode
+ * - UWB data rate
+ * - UWB pulse repetition rate
+ * - UWB preamble length
+ * - UWB PAC size
+ * - UWB SFD length option
+ * - UWB PAN ID
+ * .
+ *
+ * Format: setting name, default value
+ */
+#define FOREACH_BELUGA_SETTING(FUNC)                                           \
+    FUNC(ID, 0)                                                                \
+    FUNC(BOOTMODE, 0)                                                          \
+    FUNC(POLL_RATE, 250)                                                       \
+    FUNC(UWB_CHANNEL, 5)                                                       \
+    FUNC(BLE_TIMEOUT, 9000)                                                    \
+    FUNC(TX_POWER, TX_POWER_MAN_DEFAULT)                                       \
+    FUNC(STREAMMODE, 0)                                                        \
+    FUNC(TWR, 1)                                                               \
+    FUNC(LEDMODE, 0)                                                           \
+    FUNC(OUT_FORMAT, 0)                                                        \
+    FUNC(RANGE_EXTEND, 0)                                                      \
+    FUNC(UWB_PHR, 0)                                                           \
+    FUNC(UWB_DATA_RATE, 0)                                                     \
+    FUNC(UWB_PULSE_RATE, 1)                                                    \
+    FUNC(UWB_PREAMBLE, 128)                                                    \
+    FUNC(UWB_PAC, 0)                                                           \
+    FUNC(UWB_NSSFD, 0)                                                         \
+    FUNC(PAN_ID, 0xDECA)
+
+#define GENERATE_ENUM(setting_, ...) BELUGA_##setting_,
 
 /**
  * @brief Beluga settings.
@@ -27,27 +75,12 @@
  * in the system to configure or modify different device behaviors.
  */
 enum beluga_setting {
-    BELUGA_ID,             ///< Node ID
-    BELUGA_BOOTMODE,       ///< Boot mode
-    BELUGA_POLL_RATE,      ///< Rate that UWB initiates ranging requests
-    BELUGA_UWB_CHANNEL,    ///< UWB channel used
-    BELUGA_BLE_TIMEOUT,    ///< Timeout before removing from neighbor list
-    BELUGA_TX_POWER,       ///< UWB transmission power
-    BELUGA_STREAMMODE,     ///< Neighbor list streaming option
-    BELUGA_TWR,            ///< UWB ranging mode
-    BELUGA_LEDMODE,        ///< LED mode
-    BELUGA_OUT_FORMAT,     ///< Output format
-    BELUGA_RANGE_EXTEND,   ///< Power amplifier state
-    BELUGA_UWB_PHR,        ///< UWB PHR mode
-    BELUGA_UWB_DATA_RATE,  ///< UWB data rate
-    BELUGA_UWB_PULSE_RATE, ///< UWB pulse repetition rate
-    BELUGA_UWB_PREAMBLE,   ///< UWB preamble length
-    BELUGA_UWB_PAC,        ///< UWB PAC size
-    BELUGA_UWB_NSSFD,      ///< UWB SFD length option
-    BELUGA_PAN_ID,         ///< UWB PAN ID
-    BELUGA_RESERVED        ///< Reserved settings enumerator indicating the last
-                           ///< setting
+    FOREACH_BELUGA_SETTING(GENERATE_ENUM)
+        BELUGA_RESERVED, ///< Reserved settings enumerator indicating the last
+                         ///< setting
 };
+
+#undef GENERATE_ENUM
 
 /**
  * Default (invalid) value for the ID setting
