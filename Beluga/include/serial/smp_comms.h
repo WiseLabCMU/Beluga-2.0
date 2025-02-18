@@ -22,8 +22,9 @@ struct smp_comms_data {
     atomic_t esc_state;
 };
 
-size_t smp_comms_rx_bytes(struct smp_comms_data *data, const uint8_t *bytes, size_t size);
+size_t smp_comms_rx_bytes(struct smp_comms_data *data, const uint8_t *bytes,
+                          size_t size);
 void smp_comms_process(struct smp_comms_data *data);
 int smp_comms_init(void);
 
-#endif //BELUGA_DTS_SMP_COMMS_H
+#endif // BELUGA_DTS_SMP_COMMS_H

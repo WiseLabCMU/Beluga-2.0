@@ -8,23 +8,23 @@
  * @author tom
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/init.h>
-#include <zephyr/net_buf.h>
-#include <zephyr/drivers/uart.h>
-#include <zephyr/mgmt/mcumgr/transport/smp.h>
-#include <zephyr/mgmt/mcumgr/transport/serial.h>
-#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
-#include <string.h>
 #include <serial/smp_comms.h>
-#include <serial_led.h>
+#include <string.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/init.h>
+#include <zephyr/kernel.h>
+#include <zephyr/mgmt/mcumgr/mgmt/mgmt.h>
+#include <zephyr/mgmt/mcumgr/transport/serial.h>
+#include <zephyr/mgmt/mcumgr/transport/smp.h>
+#include <zephyr/net_buf.h>
 
 #include <mgmt/mcumgr/transport/smp_internal.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(smp_comms);
 
-BUILD_ASSERT(CONFIG_MCUMGR_TRANSPORT_COMMS_MTU != 0, "CONFIG_MCUMGR_TRANSPORT_COMMS_MTU must be > 0");
+BUILD_ASSERT(CONFIG_MCUMGR_TRANSPORT_COMMS_MTU != 0,
+             "CONFIG_MCUMGR_TRANSPORT_COMMS_MTU must be > 0");
 
 static struct smp_transport smp_comms_transport;
 
@@ -89,9 +89,9 @@ static int read_mcumgr_byte(struct smp_comms_data *data, uint8_t byte) {
     return SMP_COMMS_MCUMGR_STATE_NONE;
 }
 
-size_t smp_comms_rx_bytes(struct smp_comms_data *data, const uint8_t *bytes, size_t size)
-{
-    size_t consumed = 0;		/* Number of bytes consumed by SMP */
+size_t smp_comms_rx_bytes(struct smp_comms_data *data, const uint8_t *bytes,
+                          size_t size) {
+    size_t consumed = 0; /* Number of bytes consumed by SMP */
 
     /* Process all bytes that are accepted as SMP commands. */
     while (size != consumed) {
@@ -113,8 +113,7 @@ size_t smp_comms_rx_bytes(struct smp_comms_data *data, const uint8_t *bytes, siz
         }
 
         /* Newline in payload means complete frame */
-        if (mcumgr_state == SMP_COMMS_MCUMGR_STATE_PAYLOAD &&
-            byte == '\n') {
+        if (mcumgr_state == SMP_COMMS_MCUMGR_STATE_PAYLOAD && byte == '\n') {
             if (data->buf) {
                 k_fifo_put(&data->buf_ready, data->buf);
                 data->buf = NULL;
@@ -135,7 +134,7 @@ void smp_comms_process(struct smp_comms_data *data) {
     struct net_buf *buf;
     struct net_buf *nb;
 
-    while(true) {
+    while (true) {
         buf = k_fifo_get(&data->buf_ready, K_NO_WAIT);
         if (!buf) {
             break;
@@ -156,14 +155,11 @@ static uint16_t smp_comms_get_mtu(const struct net_buf *nb) {
 }
 
 static int smp_comms_tx_raw(const void *data, int len) {
-    static const struct device *const comms_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+    static const struct device *const comms_dev =
+        DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
     const uint8_t *out = data;
 
-    if (out != NULL) {
-        serial_leds_update_state(LED_START_TX);
-    }
-
-    while((out != NULL) && (len != 0)) {
+    while ((out != NULL) && (len != 0)) {
         uart_poll_out(comms_dev, *out);
         out++;
         len--;
@@ -181,8 +177,7 @@ static int smp_comms_tx_pkt(struct net_buf *nb) {
     return rc;
 }
 
-int smp_comms_init(void)
-{
+int smp_comms_init(void) {
     int rc;
 
     smp_comms_transport.functions.output = smp_comms_tx_pkt;
