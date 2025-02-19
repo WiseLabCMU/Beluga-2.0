@@ -13,6 +13,40 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
+
+struct at_command_static_entry;
+
+union at_command_entry {
+    const struct at_command_static_entry *entry;
+};
+
+struct comms;
+
+typedef int (*at_command_handler)(const struct comms *comms, size_t argc,
+                                  char const *const *argv);
+
+struct at_command_static_entry {
+    const char *command;
+    at_command_handler handler;
+};
+
+#define AT_CMD_DEFINE(_command)                                                \
+    static int at_##_command(const struct comms *comms, size_t argc,           \
+                             char const *const *argv)
+#define AT_CMD_REGISTER(_command)                                              \
+    static const struct at_command_static_entry UTIL_CAT(_comms_,              \
+                                                         _command) = {         \
+        .command = (const char *)STRINGIFY(_command),                          \
+        .handler = (at_command_handler)UTIL_CAT(at_, _command),                \
+    };                                                                         \
+    static const TYPE_SECTION_ITERABLE(                                        \
+        union at_command_entry, UTIL_CAT(at_cmd_, _command), shell_root_cmds,  \
+        UTIL_CAT(at_cmd_, _command)) = {.entry = &UTIL_CAT(_comms_, _command)}
+
+BUILD_ASSERT(!IS_ENABLED(CONFIG_SHELL),
+             "Shell cannot be enabled when using AT commands");
 
 enum comms_transport_evt {
     COMMS_TRANSPORT_EVT_RX_RDY,
@@ -25,11 +59,14 @@ typedef void (*comms_transport_handler_t)(enum comms_transport_evt evt,
 struct comms_transport;
 
 struct comms_transport_api {
-    int (*init)(const struct comms_transport *transport, const void *config, comms_transport_handler_t evt_handler, void *context);
+    int (*init)(const struct comms_transport *transport, const void *config,
+                comms_transport_handler_t evt_handler, void *context);
     int (*uninit)(const struct comms_transport *transport);
     int (*enable)(const struct comms_transport *transport, bool blocking_tx);
-    int (*write)(const struct comms_transport *transport, const void *data, size_t length, size_t *cnt);
-    int (*read)(const struct comms_transport *transport, void *data, size_t length, size_t *cnt);
+    int (*write)(const struct comms_transport *transport, const void *data,
+                 size_t length, size_t *cnt);
+    int (*read)(const struct comms_transport *transport, void *data,
+                size_t length, size_t *cnt);
     void (*update)(const struct comms_transport *transport);
 };
 
@@ -37,5 +74,46 @@ struct comms_transport {
     const struct comms_transport_api *api;
     void *ctx;
 };
+
+enum comms_signal { COMMS_SIGNAL_RXRDY, COMMS_SIGNAL_TXDONE, COMMS_SIGNALS };
+
+struct comms_buf {
+    uint8_t buf[256];
+    size_t len;
+};
+
+struct comms_ctx {
+    struct comms_buf rx_buf;
+
+    struct k_poll_signal signals[COMMS_SIGNALS];
+    struct k_poll_event events[COMMS_SIGNALS];
+
+    struct k_mutex wr_mtx;
+    k_tid_t tid;
+};
+
+struct comms {
+    const struct comms_transport *iface;
+    struct comms_ctx *ctx;
+    const char *name;
+    struct k_thread *thread;
+    k_thread_stack_t *stack;
+};
+
+#define COMMS_DEFINE(_name, _transport)                                        \
+    static const struct comms _name;                                           \
+    static struct comms_ctx UTIL_CAT(_name, _ctx);                             \
+    static uint8_t _name##_out_buf[256];                                       \
+    static K_KERNEL_STACK_DEFINE(_name##_stack, CONFIG_COMMANDS_STACK_SIZE);   \
+    static struct k_thread _name##_thread;                                     \
+    static const STRUCT_SECTION_ITERABLE(comms, _name) = {                     \
+        .iface = _transport,                                                   \
+        .ctx = &UTIL_CAT(_name, _ctx),                                         \
+        .name = STRINGIFY(_name),                                              \
+        .thread = &_name##_thread,                                             \
+        .stack = _name##_stack}
+
+int comms_init(const struct comms *comms, const void *transport_config);
+void comms_process(const struct comms *comms);
 
 #endif // BELUGA_DTS_COMMS_H

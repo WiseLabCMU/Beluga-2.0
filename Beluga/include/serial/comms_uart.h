@@ -48,7 +48,7 @@ struct comms_uart_int_driven {
         .ctx = (struct comms_telnet *)&_name##_comms_uart,                     \
     }
 
-// const struct comms *comms_backend_uart_get_ptr(void);
+const struct comms *comms_backend_uart_get_ptr(void);
 
 struct smp_comms_data *comms_uart_smp_comms_data_get_ptr(void);
 

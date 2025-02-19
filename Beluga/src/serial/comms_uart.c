@@ -9,16 +9,19 @@
  */
 
 #include <serial/comms_uart.h>
-#include <zephyr/net_buf.h>
-#include <zephyr/drivers/uart.h>
 #include <serial_led.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/net_buf.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(comms_uart);
 
-NET_BUF_POOL_DEFINE(smp_comms_rx_pool, CONFIG_MCUMGR_TRANSPORT_COMMS_RX_BUF_COUNT, SMP_COMMS_RX_BUF_SIZE, 0, NULL);
+NET_BUF_POOL_DEFINE(smp_comms_rx_pool,
+                    CONFIG_MCUMGR_TRANSPORT_COMMS_RX_BUF_COUNT,
+                    SMP_COMMS_RX_BUF_SIZE, 0, NULL);
 
-static void uart_rx_handle(const struct device *dev, struct comms_uart_int_driven *uart) {
+static void uart_rx_handle(const struct device *dev,
+                           struct comms_uart_int_driven *uart) {
     uint8_t *data;
     uint32_t len;
     uint32_t rd_len;
@@ -26,7 +29,8 @@ static void uart_rx_handle(const struct device *dev, struct comms_uart_int_drive
     struct smp_comms_data *const smp = &uart->common.smp;
 
     do {
-        len = ring_buf_put_claim(&uart->rx_ringbuf, &data, uart->rx_ringbuf.size);
+        len =
+            ring_buf_put_claim(&uart->rx_ringbuf, &data, uart->rx_ringbuf.size);
 
         if (len > 0) {
             rd_len = uart_fifo_read(dev, data, len);
@@ -55,8 +59,8 @@ static void uart_rx_handle(const struct device *dev, struct comms_uart_int_drive
             rd_len = uart_fifo_read(dev, &dummy, 1);
 
             /* If successful in getting byte from the fifo, try
-			 * feeding it to SMP as a part of mcumgr frame.
-			 */
+             * feeding it to SMP as a part of mcumgr frame.
+             */
             if ((rd_len != 0) && (smp_comms_rx_bytes(smp, &dummy, 1) == 1)) {
                 new_data = true;
             }
@@ -69,7 +73,9 @@ static void uart_rx_handle(const struct device *dev, struct comms_uart_int_drive
 }
 
 static bool uart_dtr_check(const struct device *dev) {
-    BUILD_ASSERT(!IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_CHECK_DTR) || IS_ENABLED(CONFIG_UART_LINE_CTRL), "DTR check requires CONFIG_UART_LINE_CTRL");
+    BUILD_ASSERT(!IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_CHECK_DTR) ||
+                     IS_ENABLED(CONFIG_UART_LINE_CTRL),
+                 "DTR check requires CONFIG_UART_LINE_CTRL");
 
 #if IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_CHECK_DTR)
     int dtr, err;
@@ -96,7 +102,8 @@ static void dtr_timer_handler(struct k_timer *timer) {
     uart_irq_tx_enable(uart->common.dev);
 }
 
-static void uart_tx_handle(const struct device *dev, struct comms_uart_int_driven *uart) {
+static void uart_tx_handle(const struct device *dev,
+                           struct comms_uart_int_driven *uart) {
     uint32_t len;
     const uint8_t *data;
 
@@ -106,7 +113,8 @@ static void uart_tx_handle(const struct device *dev, struct comms_uart_int_drive
         return;
     }
 
-    len = ring_buf_get_claim(&uart->tx_ringbuf, (uint8_t **)&data, uart->tx_ringbuf.size);
+    len = ring_buf_get_claim(&uart->tx_ringbuf, (uint8_t **)&data,
+                             uart->tx_ringbuf.size);
 
     if (len) {
         int err;
@@ -124,7 +132,8 @@ static void uart_tx_handle(const struct device *dev, struct comms_uart_int_drive
 }
 
 static void uart_callback(const struct device *dev, void *user_data) {
-    struct comms_uart_int_driven *uart = (struct comms_uart_int_driven *)user_data;
+    struct comms_uart_int_driven *uart =
+        (struct comms_uart_int_driven *)user_data;
 
     uart_irq_update(dev);
 
@@ -144,8 +153,12 @@ static void uart_callback(const struct device *dev, void *user_data) {
 static void irq_init(struct comms_uart_int_driven *uart) {
     const struct device *dev = uart->common.dev;
 
-    ring_buf_init(&uart->rx_ringbuf, CONFIG_COMMS_BACKEND_SERIAL_RX_RING_BUFFER_SIZE, uart->rx_buf);
-    ring_buf_init(&uart->tx_ringbuf, CONFIG_COMMS_BACKEND_SERIAL_TX_RING_BUFFER_SIZE, uart->tx_buf);
+    ring_buf_init(&uart->rx_ringbuf,
+                  CONFIG_COMMS_BACKEND_SERIAL_RX_RING_BUFFER_SIZE,
+                  uart->rx_buf);
+    ring_buf_init(&uart->tx_ringbuf,
+                  CONFIG_COMMS_BACKEND_SERIAL_TX_RING_BUFFER_SIZE,
+                  uart->tx_buf);
 
     uart->tx_busy = false;
     uart_irq_callback_user_data_set(dev, uart_callback, (void *)uart);
@@ -161,8 +174,10 @@ static int rx_enable(const struct device *dev, uint8_t *buf, size_t len) {
     return uart_rx_enable(dev, buf, len, 10000);
 }
 
-static int init(const struct comms_transport *transport, const void *config, comms_transport_handler_t evt_handler, void *context) {
-    struct comms_uart_common *common = (struct comms_uart_common *)transport->ctx;
+static int init(const struct comms_transport *transport, const void *config,
+                comms_transport_handler_t evt_handler, void *context) {
+    struct comms_uart_common *common =
+        (struct comms_uart_common *)transport->ctx;
 
     common->dev = (const struct device *)config;
     common->handler = evt_handler;
@@ -189,7 +204,8 @@ static int uninit(const struct comms_transport *transport) {
 static int enable(const struct comms_transport *transport, bool blocking_tx) {
     struct comms_uart_common *uart = (struct comms_uart_common *)transport->ctx;
 
-    uart->blocking_tx = blocking_tx || IS_ENABLED(CONFIG_COMMS_BACKEND_FOREC_TX_BLOCKING_MODE);
+    uart->blocking_tx =
+        blocking_tx || IS_ENABLED(CONFIG_COMMS_BACKEND_FOREC_TX_BLOCKING_MODE);
 
     // TODO: int driven API stuff. See shell_uart.c
     if (blocking_tx) {
@@ -199,7 +215,8 @@ static int enable(const struct comms_transport *transport, bool blocking_tx) {
     return 0;
 }
 
-static int irq_write(struct comms_uart_int_driven *uart, const void *data, size_t length, size_t *cnt) {
+static int irq_write(struct comms_uart_int_driven *uart, const void *data,
+                     size_t length, size_t *cnt) {
     *cnt = ring_buf_put(&uart->tx_ringbuf, data, length);
 
     if (atomic_set(&uart->tx_busy, 1) == 0) {
@@ -209,58 +226,65 @@ static int irq_write(struct comms_uart_int_driven *uart, const void *data, size_
     return 0;
 }
 
-static int write_uart(const struct comms_transport *transport, const void *data, size_t length, size_t *cnt) {
+static int write_uart(const struct comms_transport *transport, const void *data,
+                      size_t length, size_t *cnt) {
     struct comms_uart_common *uart = (struct comms_uart_common *)transport->ctx;
-    return irq_write((struct comms_uart_int_driven *)transport->ctx, data, length, cnt);
+    return irq_write((struct comms_uart_int_driven *)transport->ctx, data,
+                     length, cnt);
 }
 
-static int irq_read(struct comms_uart_int_driven *uart, void *data, size_t length, size_t *cnt) {
+static int irq_read(struct comms_uart_int_driven *uart, void *data,
+                    size_t length, size_t *cnt) {
     *cnt = ring_buf_get(&uart->rx_ringbuf, data, length);
     return 0;
 }
 
-static int read_uart(const struct comms_transport *transport, void *data, size_t length, size_t *cnt) {
-    return irq_read((struct comms_uart_int_driven *)transport->ctx, data, length, cnt);
+static int read_uart(const struct comms_transport *transport, void *data,
+                     size_t length, size_t *cnt) {
+    return irq_read((struct comms_uart_int_driven *)transport->ctx, data,
+                    length, cnt);
 }
 
 static void update(const struct comms_transport *transport) {
     /*
-	 * This is dependent on the fact that `struct comms_uart_common`
-	 * is always the first member, regardless of the UART configuration
-	 */
+     * This is dependent on the fact that `struct comms_uart_common`
+     * is always the first member, regardless of the UART configuration
+     */
     struct comms_uart_common *uart = (struct comms_uart_common *)transport->ctx;
 
     smp_comms_process(&uart->smp);
 }
 
-const struct comms_transport_api comms_uart_transport_api = {
-        .init = init,
-        .uninit = uninit,
-        .enable = enable,
-        .write = write_uart,
-        .read = read_uart,
-        .update = update
-};
+const struct comms_transport_api comms_uart_transport_api = {.init = init,
+                                                             .uninit = uninit,
+                                                             .enable = enable,
+                                                             .write =
+                                                                 write_uart,
+                                                             .read = read_uart,
+                                                             .update = update};
 COMMS_UART_DEFINE(comms_transport_uart);
-// TODO: Figure how to create a comms define
+COMMS_DEFINE(comms_uart, &comms_transport_uart);
 
 static int enable_comms_uart(void) {
     const struct device *const dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
-    // TODO: Other config stuff
 
     if (!device_is_ready(dev)) {
         return -ENODEV;
     }
 
     smp_comms_init();
-    // TODO: comms init
+    comms_init(&comms_uart, dev);
 
     return 0;
 }
 
-SYS_INIT(enable_comms_uart, POST_KERNEL, 90);
+SYS_INIT(enable_comms_uart, APPLICATION,
+         UTIL_INC(CONFIG_APPLICATION_INIT_PRIORITY));
 
 struct smp_comms_data *comms_uart_smp_comms_data_get_ptr(void) {
-    struct comms_uart_common *common = (struct comms_uart_common *)comms_transport_uart.ctx;
+    struct comms_uart_common *common =
+        (struct comms_uart_common *)comms_transport_uart.ctx;
     return &common->smp;
 }
+
+const struct comms *comms_backend_uart_get_ptr(void) { return &comms_uart; }
