@@ -103,7 +103,6 @@ struct comms {
 #define COMMS_DEFINE(_name, _transport)                                        \
     static const struct comms _name;                                           \
     static struct comms_ctx UTIL_CAT(_name, _ctx);                             \
-    static uint8_t _name##_out_buf[256];                                       \
     static K_KERNEL_STACK_DEFINE(_name##_stack, CONFIG_COMMANDS_STACK_SIZE);   \
     static struct k_thread _name##_thread;                                     \
     static const STRUCT_SECTION_ITERABLE(comms, _name) = {                     \

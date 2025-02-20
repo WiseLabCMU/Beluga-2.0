@@ -29,9 +29,4 @@ struct buffer {
     size_t len;          ///< The length of the data
 };
 
-/**
- * Initializes and launches the commands task and gives the thread a name.
- */
-void init_commands_thread(void);
-
 #endif

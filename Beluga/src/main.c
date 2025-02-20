@@ -344,10 +344,10 @@ int main(void) {
         return 1;
     }
 
-    if (uart_init() < 0) {
-        printk("Failed to init uart\n");
-        return 1;
-    }
+    //    if (uart_init() < 0) {
+    //        printk("Failed to init uart\n");
+    //        return 1;
+    //    }
 
     if (init_spi1() < 0) {
         printk("Failed to initialize SPI 1\n");
@@ -380,7 +380,6 @@ int main(void) {
     kill_task_watchdog(&task_watchdog);
 
     init_responder_thread();
-    init_commands_thread();
     init_print_list_task();
     init_ranging_thread();
     init_monitor_thread();
