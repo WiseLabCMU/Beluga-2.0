@@ -8,13 +8,13 @@
  * @author tom
  */
 
+#include <beluga_message.h>
 #include <ctype.h>
 #include <serial/comms.h>
+#include <unistd.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/cbprintf.h>
-#include <beluga_message.h>
-#include <unistd.h>
 
 #define _COMMS_API(_comms, _func, ...)                                         \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__),                                         \
@@ -298,7 +298,8 @@ static void comms_write(const struct comms *comms, const void *data,
 }
 
 #if defined(CONFIG_BELUGA_FRAMES)
-static int z_write_frame(const struct comms *comms, const struct beluga_msg *msg) {
+static int z_write_frame(const struct comms *comms,
+                         const struct beluga_msg *msg) {
     __ASSERT_NO_MSG(comms && msg);
 
     ssize_t len = frame_length(msg);
@@ -324,7 +325,8 @@ static int z_write_frame(const struct comms *comms, const struct beluga_msg *msg
     return 0;
 }
 
-int write_message_frame(const struct comms *comms, const struct beluga_msg *msg) {
+int write_message_frame(const struct comms *comms,
+                        const struct beluga_msg *msg) {
     int ret;
 
     if (comms == NULL || msg == NULL) {
@@ -356,7 +358,8 @@ int write_message_frame(const struct comms *comms, const struct beluga_msg *msg)
     return 0;
 }
 #else
-int write_message_frame(const struct comms *comms, const struct beluga_msg *msg) {
+int write_message_frame(const struct comms *comms,
+                        const struct beluga_msg *msg) {
     ARG_UNUSED(comms);
     ARG_UNUSED(msg);
     return -ENOTSUP;
@@ -376,10 +379,9 @@ static void at_respond(const struct comms *comms, bool ok) {
     }
 
 #if defined(CONFIG_BELUGA_FRAMES)
-    struct beluga_msg msg = {
-            .type = COMMAND_RESPONSE,
-            .payload.response = (const char *)comms->ctx->tx_buf.buf
-            };
+    struct beluga_msg msg = {.type = COMMAND_RESPONSE,
+                             .payload.response =
+                                 (const char *)comms->ctx->tx_buf.buf};
     comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len] = '\0';
     (void)z_write_frame(comms, &msg);
 #else

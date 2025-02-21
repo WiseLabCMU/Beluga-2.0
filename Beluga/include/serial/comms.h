@@ -106,7 +106,7 @@ struct comms {
     static K_KERNEL_STACK_DEFINE(_name##_stack, CONFIG_COMMANDS_STACK_SIZE);   \
     static struct k_thread _name##_thread;                                     \
     static const STRUCT_SECTION_ITERABLE(comms, _name) = {                     \
-        .iface = _transport,                                                   \
+        .iface = (_transport),                                                 \
         .ctx = &UTIL_CAT(_name, _ctx),                                         \
         .name = STRINGIFY(_name),                                              \
         .thread = &_name##_thread,                                             \
@@ -118,6 +118,8 @@ void comms_process(const struct comms *comms);
 void at_msg(const struct comms *comms, const char *msg);
 void __printflike(2, 3)
     at_msg_fmt(const struct comms *comms, const char *msg, ...);
+int write_message_frame(const struct comms *comms,
+                        const struct beluga_msg *msg);
 
 #define Z_OK_MSG_NOARGS(_comms, _msg)                                          \
     do {                                                                       \
