@@ -12,6 +12,9 @@
 #include <serial/comms.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/cbprintf.h>
+#include <beluga_message.h>
+#include <unistd.h>
 
 #define _COMMS_API(_comms, _func, ...)                                         \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__),                                         \
@@ -49,6 +52,8 @@ static void comms_signal_handle(const struct comms *comms,
 static void cmd_buffer_clear(const struct comms *comms) {
     comms->ctx->rx_buf.buf[0] = '\0';
     comms->ctx->rx_buf.len = 0;
+    comms->ctx->tx_buf.buf[0] = '\0';
+    comms->ctx->tx_buf.len = 0;
 }
 
 /**
@@ -127,7 +132,7 @@ static int execute_command(const struct comms *comms, size_t argc,
                            const struct at_command_static_entry *entry) {
 
     if (entry->handler == NULL) {
-        // TODO: Error not implemented
+        at_msg(comms, "Not implemented");
         return -ENOTSUP;
     }
     return entry->handler(comms, argc, argv);
@@ -143,22 +148,22 @@ static int execute(const struct comms *comms) {
 
     if (0 != strncmp((const char *)comms->ctx->rx_buf.buf, "AT+", 3)) {
         if (0 == strncmp((const char *)comms->ctx->rx_buf.buf, "AT", 2)) {
-            // TODO: Error: Only input AT without + command
+            at_msg(comms, "Only input AT without + command");
         } else {
-            // TODO: Error: Not an AT command
+            at_msg(comms, "Not an AT command");
         }
         return -ENOEXEC;
     }
 
     if (comms->ctx->rx_buf.len == 3) {
-        // TODO: Error: No command found after AT+
+        at_msg(comms, "No command found after AT+");
         return -ENOEXEC;
     }
 
     entry = find_at_cmd(argv[0] + 3);
 
     if (entry == NULL) {
-        // TODO: Error: ERROR Invalid AT Command
+        at_msg(comms, "Invalid AT command");
         return -ENOEXEC;
     }
 
@@ -244,6 +249,8 @@ int comms_init(const struct comms *comms, const void *transport_config) {
     return 0;
 }
 
+static void at_respond(const struct comms *comms, bool ok);
+
 void comms_process(const struct comms *comms) {
     __ASSERT_NO_MSG(comms);
     __ASSERT_NO_MSG(comms->ctx);
@@ -261,6 +268,7 @@ void comms_process(const struct comms *comms) {
 
         if ((data == '\n' || data == '\r') && buf->len != 0) {
             int ret = execute(comms);
+            at_respond(comms, ret == 0);
             cmd_buffer_clear(comms);
             continue;
         }
@@ -268,4 +276,151 @@ void comms_process(const struct comms *comms) {
             _COMMS_BUF_APPEND(comms, data);
         }
     }
+}
+
+static void comms_write(const struct comms *comms, const void *data,
+                        size_t length) {
+    __ASSERT_NO_MSG(comms && data);
+
+    size_t offset = 0;
+    size_t tmp_cnt;
+
+    while (length) {
+        int err = _COMMS_API(comms, write, &((const uint8_t *)data)[offset],
+                             length, &tmp_cnt);
+        (void)err;
+
+        __ASSERT_NO_MSG(err == 0);
+        __ASSERT_NO_MSG(length >= tmp_cnt);
+        offset += tmp_cnt;
+        length -= tmp_cnt;
+    }
+}
+
+#if defined(CONFIG_BELUGA_FRAMES)
+static int z_write_frame(const struct comms *comms, const struct beluga_msg *msg) {
+    __ASSERT_NO_MSG(comms && msg);
+
+    ssize_t len = frame_length(msg);
+    if (len < 1) {
+        return -EINVAL;
+    }
+
+    uint8_t *buffer = k_malloc(len + 1);
+    if (buffer == NULL) {
+        return -ENOMEM;
+    }
+
+    len = construct_frame(msg, buffer, len + 1);
+
+    if (len < 0) {
+        k_free(buffer);
+        return len;
+    }
+
+    comms_write(comms, buffer, len);
+    k_free(buffer);
+
+    return 0;
+}
+
+int write_message_frame(const struct comms *comms, const struct beluga_msg *msg) {
+    int ret;
+
+    if (comms == NULL || msg == NULL) {
+        return -EINVAL;
+    }
+
+    ssize_t len = frame_length(msg);
+    if (len < 1) {
+        return -EINVAL;
+    }
+
+    uint8_t *buffer = k_malloc(len + 1);
+    if (buffer == NULL) {
+        return -ENOMEM;
+    }
+
+    len = construct_frame(msg, buffer, len + 1);
+
+    if (len < 0) {
+        k_free(buffer);
+        return len;
+    }
+
+    k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
+    comms_write(comms, buffer, len);
+    k_mutex_unlock(&comms->ctx->wr_mtx);
+    k_free(buffer);
+
+    return 0;
+}
+#else
+int write_message_frame(const struct comms *comms, const struct beluga_msg *msg) {
+    ARG_UNUSED(comms);
+    ARG_UNUSED(msg);
+    return -ENOTSUP;
+}
+#endif
+
+static void at_respond(const struct comms *comms, bool ok) {
+    __ASSERT(comms->ctx->tx_buf.len <= (sizeof(comms->ctx->tx_buf.buf) - 5),
+             "Not enough room in TX buffer");
+
+    if (ok) {
+        if (comms->ctx->tx_buf.len != 0) {
+            comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = ' ';
+        }
+        comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = 'O';
+        comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = 'K';
+    }
+
+#if defined(CONFIG_BELUGA_FRAMES)
+    struct beluga_msg msg = {
+            .type = COMMAND_RESPONSE,
+            .payload.response = (const char *)comms->ctx->tx_buf.buf
+            };
+    comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len] = '\0';
+    (void)z_write_frame(comms, &msg);
+#else
+    comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = '\r';
+    comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = '\n';
+    comms_write(comms, comms->ctx->tx_buf.buf, comms->ctx->tx_buf.len);
+#endif
+}
+
+void at_msg(const struct comms *comms, const char *msg) {
+    char *buf = comms->ctx->tx_buf.buf;
+    size_t msg_len = comms->ctx->tx_buf.len;
+    const size_t buf_size =
+        sizeof(comms->ctx->tx_buf.buf) - 5; // Leave room for " OK\r\n"
+    const char *msg_ = msg;
+
+    for (; msg_len < buf_size; msg_len++, msg_++) {
+        if (*msg_ == '\r' || *msg_ == '\n') {
+            // Ignore line endings
+            msg_len--;
+            continue;
+        }
+        if (*msg_ == '\0') {
+            break;
+        }
+        buf[msg_len] = *msg_;
+    }
+
+    comms->ctx->tx_buf.len = msg_len;
+}
+
+static int out_func(int c, void *ctx) {
+    const struct comms *comms = ctx;
+    char c_str[2] = {(char)c, '\0'};
+    at_msg(comms, c_str);
+    return 0;
+}
+
+void at_msg_fmt(const struct comms *comms, const char *msg, ...) {
+    va_list args;
+    va_start(args, msg);
+    (void)cbvprintf(out_func, (void *)comms, msg, args);
+    va_end(args);
 }

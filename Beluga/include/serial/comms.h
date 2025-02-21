@@ -84,10 +84,10 @@ struct comms_buf {
 
 struct comms_ctx {
     struct comms_buf rx_buf;
+    struct comms_buf tx_buf;
 
     struct k_poll_signal signals[COMMS_SIGNALS];
     struct k_poll_event events[COMMS_SIGNALS];
-
     struct k_mutex wr_mtx;
     k_tid_t tid;
 };
@@ -114,5 +114,51 @@ struct comms {
 
 int comms_init(const struct comms *comms, const void *transport_config);
 void comms_process(const struct comms *comms);
+
+void at_msg(const struct comms *comms, const char *msg);
+void __printflike(2, 3)
+    at_msg_fmt(const struct comms *comms, const char *msg, ...);
+
+#define Z_OK_MSG_NOARGS(_comms, _msg)                                          \
+    do {                                                                       \
+        at_msg(_comms, _msg);                                                  \
+        return 0;                                                              \
+    } while (0)
+
+#define Z_OK_MSG_ARGS(_comms, _msg, ...)                                       \
+    do {                                                                       \
+        at_msg_fmt(_comms, _msg, __VA_ARGS__);                                 \
+        return 0;                                                              \
+    } while (0)
+
+#define Z_OK_MSG(_comms, _msg, ...)                                            \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (Z_OK_MSG_NOARGS(_comms, _msg)),        \
+                (Z_OK_MSG_ARGS(_comms, _msg, __VA_ARGS__)))
+
+#define OK(_comms, ...)                                                        \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (return 0),                             \
+                (Z_OK_MSG(_comms, GET_ARG_N(1, __VA_ARGS__),                   \
+                          GET_ARGS_LESS_N(1, __VA_ARGS__))))
+
+#define Z_ERR_MSG_NOARGS(_comms, _msg)                                         \
+    do {                                                                       \
+        at_msg(_comms, _msg);                                                  \
+        return 1;                                                              \
+    } while (0)
+#define Z_ERR_MSG_ARGS(_comms, _msg, ...)                                      \
+    do {                                                                       \
+        at_msg_fmt(_comms, _msg, __VA_ARGS__);                                 \
+        return 1;                                                              \
+    } while (0)
+#define ERROR(_comms, _msg, ...)                                               \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (Z_ERR_MSG_NOARGS(_comms, _msg)),       \
+                (Z_ERR_MSG_ARGS(_comms, _msg, __VA_ARGS__)))
+
+#define Z_ERR_MSG_NOARGS_NORET(_comms, _msg) at_msg(_comms, _msg)
+#define Z_ERR_MSG_ARGS_NORET(_comms, _msg, ...)                                \
+    at_msg_fmt(_comms, _msg, __VA_ARGS__)
+#define ERROR_NORET(_comms, _msg, ...)                                         \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (Z_ERR_MSG_NOARGS_NORET(_comms, _msg)), \
+                (Z_ERR_MSG_ARGS_NORET(_comms, _msg, __VA_ARGS__)))
 
 #endif // BELUGA_DTS_COMMS_H

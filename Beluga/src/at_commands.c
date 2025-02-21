@@ -45,79 +45,58 @@
  */
 LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
 
-/**
- * Prints "OK" and moves the cursor down to the next line
- */
-#if !defined(CONFIG_BELUGA_FRAMES)
-
-#define _OK printf("OK\n")
-#define _OK_MSG(msg, ...)                                                      \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (printf(msg " OK\n")),                  \
-                (printf(msg " OK\n", __VA_ARGS__)))
-
-#define OK(...)                                                                \
-    COND_CODE_1(                                                               \
-        IS_EMPTY(__VA_ARGS__), (_OK),                                          \
-        (_OK_MSG(GET_ARG_N(1, __VA_ARGS__), GET_ARGS_LESS_N(1, __VA_ARGS__))))
-
-#define ERROR(msg, ...)                                                        \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (printf(msg "\n")),                     \
-                (printf(msg "\n", __VA_ARGS__)))
-
-#else
-#include <beluga_message.h>
-
-#define _OK                                                                    \
-    do {                                                                       \
-        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
-                                 .payload.response = "OK"};                    \
-        (void)write_message_frame(&msg);                                       \
-    } while (0)
-
-#define _OK_MSG(_msg)                                                          \
-    do {                                                                       \
-        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
-                                 .payload.response = _msg " OK"};              \
-        (void)write_message_frame(&msg);                                       \
-    } while (0)
-
-#define _OK_MSG_ARGS(_msg, ...)                                                \
-    do {                                                                       \
-        uint8_t format_buf[128];                                               \
-        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
-                                 .payload.response = format_buf};              \
-        snprintf(format_buf, sizeof(format_buf), _msg " OK", __VA_ARGS__);     \
-        (void)write_message_frame(&msg);                                       \
-    } while (0)
-
-#define _OK_MSG_(msg, ...)                                                     \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_OK_MSG(msg)),                         \
-                (_OK_MSG_ARGS(msg, __VA_ARGS__)))
-
-#define OK(...)                                                                \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_OK),                                  \
-                (_OK_MSG_(GET_ARG_N(1, __VA_ARGS__),                           \
-                          GET_ARGS_LESS_N(1, __VA_ARGS__))))
-
-#define _ERROR(_msg)                                                           \
-    do {                                                                       \
-        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
-                                 .payload.response = (_msg)};                  \
-        (void)write_message_frame(&msg);                                       \
-    } while (0)
-#define _ERROR_ARGS(_msg, ...)                                                 \
-    do {                                                                       \
-        uint8_t format_buf[256];                                               \
-        struct beluga_msg msg = {.type = COMMAND_RESPONSE,                     \
-                                 .payload.response = format_buf};              \
-        snprintf(format_buf, sizeof(format_buf), (_msg), __VA_ARGS__);         \
-        (void)write_message_frame(&msg);                                       \
-    } while (0)
-
-#define ERROR(msg, ...)                                                        \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_ERROR(msg)),                          \
-                (_ERROR_ARGS(msg, __VA_ARGS__)))
-#endif // !defined(CONFIG_BELUGA_FRAMES)
+// #include <beluga_message.h>
+//
+// #def ine  _OK \
+//    do { \
+//        struct beluga_msg msg = {.type = COMMAND_RESPONSE, \
+//                                 .payload.response = "OK"}; \
+//        (void)write_message_frame(&msg); \
+//    } while (0)
+//
+// #def ine  _OK_MSG(_msg) \
+//    do { \
+//        struct beluga_msg msg = {.type = COMMAND_RESPONSE, \
+//                                 .payload.response = _msg " OK"}; \
+//        (void)write_message_frame(&msg); \
+//    } while (0)
+//
+// #def ine  _OK_MSG_ARGS(_msg, ...) \
+//    do { \
+//        uint8_t format_buf[128]; \
+//        struct beluga_msg msg = {.type = COMMAND_RESPONSE, \
+//                                 .payload.response = format_buf}; \
+//        snprintf(format_buf, sizeof(format_buf), _msg " OK", __VA_ARGS__); \
+//        (void)write_message_frame(&msg); \
+//    } while (0)
+//
+// #def ine _OK_MSG_ (msg, ...) \
+//    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_OK_MSG(msg)), \
+//                (_OK_MSG_ARGS(msg, __VA_ARGS__)))
+//
+// #def ine OK(...) \
+//    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_OK), \
+//                (_OK_MSG_(GET_ARG_N(1, __VA_ARGS__), \
+//                          GET_ARGS_LESS_N(1, __VA_ARGS__))))
+//
+// #def ine  _ERROR(_msg) \
+//    do { \
+//        struct beluga_msg msg = {.type = COMMAND_RESPONSE, \
+//                                 .payload.response = (_msg)}; \
+//        (void)write_message_frame(&msg); \
+//    } while (0)
+// #def ine  _ERROR_ARGS(_msg, ...) \
+//    do { \
+//        uint8_t format_buf[256]; \
+//        struct beluga_msg msg = {.type = COMMAND_RESPONSE, \
+//                                 .payload.response = format_buf}; \
+//        snprintf(format_buf, sizeof(format_buf), (_msg), __VA_ARGS__); \
+//        (void)write_message_frame(&msg); \
+//    } while (0)
+//
+// #def ine ERROR(ms g, ...) \
+//    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_ERROR(msg)), \
+//                (_ERROR_ARGS(msg, __VA_ARGS__)))
 
 /**
  * Determines the maximum amount of tokens a string can get parsed into
@@ -132,10 +111,10 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * @param[in] required The required amount of tokens needed for the function to
  * work properly
  */
-#define CHECK_ARGC(argc, required)                                             \
+#define CHECK_ARGC(_comms, argc, required)                                     \
     do {                                                                       \
         if ((uint16)(argc) < (uint16_t)(required)) {                           \
-            ERROR("Missing argument(s)");                                      \
+            ERROR(_comms, "Missing argument(s)");                              \
             return;                                                            \
         }                                                                      \
     } while (0)
@@ -150,12 +129,11 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * @param[in] setting The enum that defines the setting
  * @param[in] settingstr The string representation of the setting
  */
-#define READ_SETTING_DEFAULT(argc, required, setting, settingstr)              \
+#define READ_SETTING_DEFAULT(_comms, argc, required, setting, settingstr)      \
     do {                                                                       \
         if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
             int32_t _setting = retrieveSetting(setting);                       \
-            OK(settingstr ": %" PRIu32, (uint32_t)_setting);                   \
-            return 0;                                                          \
+            OK(_comms, settingstr ": %" PRIu32, (uint32_t)_setting);           \
         }                                                                      \
     } while (0)
 
@@ -170,15 +148,15 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * @param[in] settingstr The string representation of the setting
  * @param[in] callback The custom print function for the setting
  */
-#define READ_SETTING_CALLBACK(argc, required, setting, settingstr, callback)   \
+#define READ_SETTING_CALLBACK(_comms, argc, required, setting, settingstr,     \
+                              callback)                                        \
     do {                                                                       \
         if (get_format_mode()) {                                               \
-            READ_SETTING_DEFAULT(argc, required, setting, settingstr);         \
+            READ_SETTING_DEFAULT(_comms, argc, required, setting, settingstr); \
         } else if ((uint16_t)(argc) < (uint16_t)(required)) {                  \
             int32_t _setting = retrieveSetting(setting);                       \
             callback(_setting);                                                \
-            OK();                                                              \
-            return 0;                                                          \
+            OK(_comms);                                                        \
         }                                                                      \
     } while (0)
 
@@ -193,11 +171,12 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * @param[in] settingstr The string representation of the setting
  * @param[in] callback An optional custom print function for the setting
  */
-#define READ_SETTING(argc, required, setting, settingstr, callback...)         \
-    COND_CODE_1(IS_EMPTY(callback),                                            \
-                (READ_SETTING_DEFAULT(argc, required, setting, settingstr)),   \
-                (READ_SETTING_CALLBACK(argc, required, setting, settingstr,    \
-                                       GET_ARG_N(1, callback))))
+#define READ_SETTING(_comms, argc, required, setting, settingstr, callback...) \
+    COND_CODE_1(                                                               \
+        IS_EMPTY(callback),                                                    \
+        (READ_SETTING_DEFAULT(_comms, argc, required, setting, settingstr)),   \
+        (READ_SETTING_CALLBACK(_comms, argc, required, setting, settingstr,    \
+                               GET_ARG_N(1, callback))))
 
 /**
  * Converts an integer into a boolean given that the integer is a valid value.
@@ -266,12 +245,10 @@ AT_CMD_DEFINE(STARTUWB) {
     LOG_INF("Running STARTUWB command");
     if (get_ble_led_state() == LED_BLE_OFF) {
         // Avoid undefined behavior
-        ERROR("Cannot start UWB: BLE has not been started");
-        return -EILSEQ;
+        ERROR(comms, "Cannot start UWB: BLE has not been started");
     }
     if (get_uwb_led_state() == LED_UWB_ON) {
-        ERROR("UWB is already on");
-        return -EALREADY;
+        ERROR(comms, "UWB is already on");
     }
     if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
         update_power_mode(POWER_MODE_HIGH);
@@ -281,8 +258,7 @@ AT_CMD_DEFINE(STARTUWB) {
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
     update_led_state(LED_UWB_ON);
-    OK();
-    return 0;
+    OK(comms);
 }
 AT_CMD_REGISTER(STARTUWB);
 
@@ -297,14 +273,12 @@ AT_CMD_REGISTER(STARTUWB);
 AT_CMD_DEFINE(STOPUWB) {
     LOG_INF("Running STOPUWB command");
     if (get_uwb_led_state() == LED_UWB_OFF) {
-        ERROR("UWB is not running");
-        return 0;
+        ERROR(comms, "UWB is not running");
     }
     k_sem_take(&k_sus_resp, K_FOREVER);
     k_sem_take(&k_sus_init, K_FOREVER);
     update_led_state(LED_UWB_OFF);
-    OK();
-    return 0;
+    OK(comms);
 }
 AT_CMD_REGISTER(STOPUWB);
 
@@ -319,22 +293,18 @@ AT_CMD_REGISTER(STOPUWB);
 AT_CMD_DEFINE(STARTBLE) {
     LOG_INF("Running STARTBLE) command");
     if (get_NODE_UUID() == 0) {
-        ERROR("Cannot start BLE: Node ID is not set");
-        return 0;
+        ERROR(comms, "Cannot start BLE: Node ID is not set");
     } else if (get_ble_led_state() == LED_UWB_ON) {
-        ERROR("BLE is already on");
-        return 0;
+        ERROR(comms, "BLE is already on");
     }
     k_sem_give(&print_list_sem);
     int err = enable_bluetooth();
     if (err) {
-        ERROR("Failed to start BLE (%d)", err);
         k_sem_take(&print_list_sem, K_FOREVER);
-        return 0;
+        ERROR(comms, "Failed to start BLE (%d)", err);
     }
     update_led_state(LED_BLE_ON);
-    OK();
-    return 0;
+    OK(comms);
 }
 AT_CMD_REGISTER(STARTBLE);
 
@@ -349,18 +319,15 @@ AT_CMD_REGISTER(STARTBLE);
 AT_CMD_DEFINE(STOPBLE) {
     LOG_INF("Running STOPBLE command");
     if (get_ble_led_state() == LED_UWB_OFF) {
-        ERROR("BLE is already off");
-        return 0;
+        ERROR(comms, "BLE is already off");
     }
     int err = disable_bluetooth();
     if (err) {
-        ERROR("Failed to stop BLE (%d)", err);
-        return 0;
+        ERROR(comms, "Failed to stop BLE (%d)", err);
     }
     k_sem_take(&print_list_sem, K_FOREVER);
     update_led_state(LED_BLE_OFF);
-    OK();
-    return 0;
+    OK(comms);
 }
 AT_CMD_REGISTER(STOPBLE);
 
@@ -375,26 +342,23 @@ AT_CMD_REGISTER(STOPBLE);
  */
 AT_CMD_DEFINE(ID) {
     LOG_INF("Running ID command");
-    READ_SETTING(argc, 2, BELUGA_ID, "ID");
+    READ_SETTING(comms, argc, 2, BELUGA_ID, "ID");
     int32_t newID;
     bool success = strtoint32(argv[1], &newID);
 
     if (!success || newID <= 0 || newID > (int32_t)UINT16_MAX) {
-        ERROR("Invalid ID");
-        return 0;
+        ERROR(comms, "Invalid ID");
     }
 
     if (set_initiator_id((uint16_t)newID) != 0) {
-        ERROR("Unable to set ID: UWB currently active");
-        return 0;
+        ERROR(comms, "Unable to set ID: UWB currently active");
     }
 
     // We know that UWB is inactive at this point
     set_responder_id((uint16_t)newID);
     update_node_id((uint16_t)newID);
     updateSetting(BELUGA_ID, newID);
-    OK();
-    return 0;
+    OK(comms);
 }
 AT_CMD_REGISTER(ID);
 
