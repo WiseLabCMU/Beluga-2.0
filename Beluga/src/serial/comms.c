@@ -182,7 +182,7 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
     }
 
     while (true) {
-        //k_sleep(K_MSEC(100));
+        // k_sleep(K_MSEC(100));
         err = k_poll(comms->ctx->events, COMMS_SIGNAL_TXDONE, K_FOREVER);
 
         if (err != 0) {
@@ -438,4 +438,15 @@ void at_msg_fmt(const struct comms *comms, const char *msg, ...) {
     va_start(args, msg);
     (void)cbvprintf(out_func, (void *)comms, msg, args);
     va_end(args);
+}
+
+void comms_flush_out(const struct comms *comms, int ret) {
+    int set;
+    int res;
+    struct k_poll_signal *sig = &comms->ctx->signals[COMMS_SIGNAL_TXDONE];
+    k_poll_signal_reset(sig);
+    at_respond(comms, ret == 0);
+
+    k_poll(&comms->ctx->events[COMMS_SIGNAL_TXDONE], 1, K_MSEC(500));
+    k_poll_signal_check(sig, &set, &res);
 }

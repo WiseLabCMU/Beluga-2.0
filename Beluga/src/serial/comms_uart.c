@@ -539,7 +539,7 @@ static int enable_comms_uart(void) {
 
     if (IS_ENABLED(CONFIG_USB_DEVICE_STACK)) {
         uint32_t dtr = 0;
-        while(!dtr) {
+        while (!dtr) {
             uart_line_ctrl_get(dev, UART_LINE_CTRL_DTR, &dtr);
             k_sleep(K_MSEC(100));
         }

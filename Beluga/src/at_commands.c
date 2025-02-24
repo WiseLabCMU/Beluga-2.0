@@ -585,8 +585,7 @@ AT_CMD_REGISTER(LEDMODE);
  */
 AT_CMD_DEFINE(REBOOT) {
     LOG_INF("Running REBOOT command");
-    OK(comms);
-    // TODO: wait written/fix this command
+    OK_NOW(comms);
     disable_bluetooth();
     sys_reboot(SYS_REBOOT_COLD);
 }
@@ -726,8 +725,7 @@ AT_CMD_REGISTER(FORMAT);
  */
 AT_CMD_DEFINE(DEEPSLEEP) {
     LOG_INF("Running DEEPSLEEP command");
-    OK(comms);
-    // TODO: Fix this command
+    OK_NOW(comms);
     enter_deep_sleep();
 }
 AT_CMD_REGISTER(DEEPSLEEP);

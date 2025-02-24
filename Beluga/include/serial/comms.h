@@ -8,8 +8,8 @@
  * @author tom
  */
 
-#ifndef BELUGA_DTS_COMMS_H
-#define BELUGA_DTS_COMMS_H
+#ifndef BELUGA_COMMS_H
+#define BELUGA_COMMS_H
 
 #include <beluga_message.h>
 #include <stdbool.h>
@@ -123,6 +123,7 @@ void __printflike(2, 3)
     at_msg_fmt(const struct comms *comms, const char *msg, ...);
 int write_message_frame(const struct comms *comms,
                         const struct beluga_msg *msg);
+void comms_flush_out(const struct comms *comms, int ret);
 
 #define Z_OK_MSG_NOARGS(_comms, _msg)                                          \
     do {                                                                       \
@@ -145,6 +146,21 @@ int write_message_frame(const struct comms *comms,
                 (Z_OK_MSG(_comms, GET_ARG_N(1, __VA_ARGS__),                   \
                           GET_ARGS_LESS_N(1, __VA_ARGS__))))
 
+#define Z_NOW_MSG_NOARGS(_comms, _msg)    at_msg(_comms, _msg)
+#define Z_NOW_MSG_ARGS(_comms, _msg, ...) at_msg_fmt(_comms, _msg, __VA_ARGS__)
+#define Z_NOW_MSG(_comms, _msg, ...)                                           \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (Z_NOW_MSG_NOARGS(_comms, _msg)),       \
+                (Z_NOW_MSG_ARGS(_comms, _msg, __VA_ARGS__)))
+#define Z_INSERT_MSG_NOW(_comms, ...)                                          \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (),                                     \
+                (Z_NOW_MSG(_comms, GET_ARG_N(1, __VA_ARGS__),                  \
+                           GET_ARGS_LESS_N(1, __VA_ARGS__));))
+
+#define OK_NOW(_comms, ...)                                                    \
+    do {                                                                       \
+        Z_INSERT_MSG_NOW(_comms, __VA_ARGS__) comms_flush_out(_comms, 0);      \
+    } while (0)
+
 #define Z_ERR_MSG_NOARGS(_comms, _msg)                                         \
     do {                                                                       \
         at_msg(_comms, _msg);                                                  \
@@ -166,4 +182,4 @@ int write_message_frame(const struct comms *comms,
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (Z_ERR_MSG_NOARGS_NORET(_comms, _msg)), \
                 (Z_ERR_MSG_ARGS_NORET(_comms, _msg, __VA_ARGS__)))
 
-#endif // BELUGA_DTS_COMMS_H
+#endif // BELUGA_COMMS_H

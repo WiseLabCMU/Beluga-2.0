@@ -5,6 +5,6 @@
 #ifndef BELUGA_POWER_MANAGER_H
 #define BELUGA_POWER_MANAGER_H
 
-void enter_deep_sleep(void);
+FUNC_NORETURN void enter_deep_sleep(void);
 
 #endif // BELUGA_POWER_MANAGER_H
