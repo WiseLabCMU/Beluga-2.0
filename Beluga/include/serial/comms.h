@@ -11,10 +11,21 @@
 #ifndef BELUGA_DTS_COMMS_H
 #define BELUGA_DTS_COMMS_H
 
+#include <beluga_message.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
+
+enum comms_transport_evt {
+    COMMS_TRANSPORT_EVT_RX_RDY,
+    COMMS_TRANSPORT_EVT_TX_RDY,
+};
+
+typedef void (*comms_transport_handler_t)(enum comms_transport_evt evt,
+                                          void *context);
+
+#include <serial/comms_uart.h>
 
 struct at_command_static_entry;
 
@@ -47,14 +58,6 @@ struct at_command_static_entry {
 
 BUILD_ASSERT(!IS_ENABLED(CONFIG_SHELL),
              "Shell cannot be enabled when using AT commands");
-
-enum comms_transport_evt {
-    COMMS_TRANSPORT_EVT_RX_RDY,
-    COMMS_TRANSPORT_EVT_TX_RDY,
-};
-
-typedef void (*comms_transport_handler_t)(enum comms_transport_evt evt,
-                                          void *context);
 
 struct comms_transport;
 

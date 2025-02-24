@@ -172,3 +172,7 @@ config COMMS_BACKEND_SERIAL_CHECK_DTR
 endif # COMMS_BACKEND_SERIAL
 
 endif # COMMS_BACKENDS
+
+config COMMS_MAX_TOKENS
+    int "Maximum argument tokens"
+    default 20

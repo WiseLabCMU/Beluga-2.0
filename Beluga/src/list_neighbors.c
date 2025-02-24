@@ -16,8 +16,8 @@
 #include <ble_app.h>
 #include <inttypes.h>
 #include <list_neighbors.h>
+#include <serial/comms.h>
 #include <stdio.h>
-#include <uart.h>
 #include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -146,19 +146,19 @@ bool get_format_mode(void) { return format_mode; }
         }                                                                      \
     } while (0)
 
-#define _FRAME_PRINT()                                                         \
+#define _FRAME_PRINT(_comms)                                                   \
     do {                                                                       \
         struct beluga_msg msg = {.type = NEIGHBOR_UPDATES,                     \
                                  .payload.neighbor_list = seen_list,           \
                                  .payload.stream = stream_mode};               \
-        (void)write_message_frame(&msg);                                       \
+        (void)write_message_frame(_comms, &msg);                               \
         if (stream_mode) {                                                     \
             ARRAY_FOR_EACH(seen_list, i) { seen_list[i].update_flag = 0; }     \
         }                                                                      \
     } while (0)
 
-#define PRINT_LIST(idx_, ...)                                                  \
-    COND_CODE_1(IS_ENABLED(CONFIG_BELUGA_FRAMES), (_FRAME_PRINT()),            \
+#define PRINT_LIST(_comms, idx_, ...)                                          \
+    COND_CODE_1(IS_ENABLED(CONFIG_BELUGA_FRAMES), (_FRAME_PRINT(_comms)),      \
                 (_PRINT_NORMAL(idx_, __VA_ARGS__)))
 
 /**
@@ -180,6 +180,7 @@ NO_RETURN static void list_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
+    const struct comms *comms = comms_backend_uart_get_ptr();
 
     while (true) {
         k_sleep(K_MSEC(50));
@@ -189,11 +190,11 @@ NO_RETURN static void list_task_function(void *p1, void *p2, void *p3) {
         /* Normal mode to print all neighbor nodes */
         if (!stream_mode) {
             LOG_INF("Dumping all neighbors");
-            PRINT_LIST(j);
+            PRINT_LIST(comms, j);
         } else {
             /* Streaming mode to print only new updated nodes */
             LOG_INF("Dumping updated neighbors");
-            PRINT_LIST(j, seen_list[j].update_flag != 0);
+            PRINT_LIST(comms, j, seen_list[j].update_flag != 0);
         }
 
         k_sem_give(&print_list_sem);

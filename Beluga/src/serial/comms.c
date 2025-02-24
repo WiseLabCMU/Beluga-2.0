@@ -13,6 +13,7 @@
 #include <serial/comms.h>
 #include <unistd.h>
 #include <utils.h>
+#include <watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/cbprintf.h>
 
@@ -29,8 +30,7 @@
         (_comms)->ctx->rx_buf.buf[(_comms)->ctx->rx_buf.len] = '\0';           \
     } while (0)
 
-// TODO: Make into config
-#define MAX_TOKENS 20
+#define MAX_TOKENS CONFIG_COMMS_MAX_TOKENS
 
 typedef void (*comms_signal_handler_t)(const struct comms *comms);
 
@@ -182,6 +182,7 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
     }
 
     while (true) {
+        //k_sleep(K_MSEC(100));
         err = k_poll(comms->ctx->events, COMMS_SIGNAL_TXDONE, K_FOREVER);
 
         if (err != 0) {
@@ -191,10 +192,12 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
             return;
         }
 
-        k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
         comms_signal_handle(comms, COMMS_SIGNAL_RXRDY, comms_process);
-        _COMMS_API(comms, update);
-        k_mutex_unlock(&comms->ctx->wr_mtx);
+        if (comms->iface->api->update) {
+            k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
+            _COMMS_API(comms, update);
+            k_mutex_unlock(&comms->ctx->wr_mtx);
+        }
     }
     __ASSERT_UNREACHABLE;
 }
@@ -259,11 +262,18 @@ void comms_process(const struct comms *comms) {
     char data;
     struct comms_buf *buf = &comms->ctx->rx_buf;
 
+    struct task_wdt_attr watchdog = {.period = 2000};
+    if (spawn_task_watchdog(&watchdog) < 0) {
+        printk("Unable to spawn task watchdog in command thread\n");
+        return;
+    }
+
     while (true) {
+        watchdog_red_rocket(&watchdog);
         (void)_COMMS_API(comms, read, &data, sizeof(data), &count);
         if (count == 0) {
             // No data
-            return;
+            break;
         }
 
         if ((data == '\n' || data == '\r') && buf->len != 0) {
@@ -276,6 +286,9 @@ void comms_process(const struct comms *comms) {
             _COMMS_BUF_APPEND(comms, data);
         }
     }
+    if (kill_task_watchdog(&watchdog) < 0) {
+        printk("Unable to spawn task watchdog in command thread\n");
+    }
 }
 
 static void comms_write(const struct comms *comms, const void *data,
@@ -285,6 +298,7 @@ static void comms_write(const struct comms *comms, const void *data,
     size_t offset = 0;
     size_t tmp_cnt;
 
+    k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
     while (length) {
         int err = _COMMS_API(comms, write, &((const uint8_t *)data)[offset],
                              length, &tmp_cnt);
@@ -295,6 +309,7 @@ static void comms_write(const struct comms *comms, const void *data,
         offset += tmp_cnt;
         length -= tmp_cnt;
     }
+    k_mutex_unlock(&comms->ctx->wr_mtx);
 }
 
 #if defined(CONFIG_BELUGA_FRAMES)
@@ -327,8 +342,6 @@ static int z_write_frame(const struct comms *comms,
 
 int write_message_frame(const struct comms *comms,
                         const struct beluga_msg *msg) {
-    int ret;
-
     if (comms == NULL || msg == NULL) {
         return -EINVAL;
     }

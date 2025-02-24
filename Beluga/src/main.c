@@ -9,7 +9,6 @@
 #include "ble_app.h"
 #include <app_leds.h>
 #include <app_version.h>
-#include <at_commands.h>
 #include <debug.h>
 #include <initiator.h>
 #include <led_config.h>
@@ -18,10 +17,9 @@
 #include <range_extension.h>
 #include <ranging.h>
 #include <responder.h>
+#include <serial/comms.h>
 #include <settings.h>
 #include <spi.h>
-#include <stdio.h>
-#include <uart.h>
 #include <unistd.h>
 #include <utils.h>
 #include <voltage_regulator.h>
@@ -40,13 +38,13 @@ LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 #define FW_CONFIG_BANNER()              (void)0
 #define SETTINGS_BREAK()                                                       \
     do {                                                                       \
+        const struct comms *comms = comms_backend_uart_get_ptr();              \
         struct beluga_msg msg = {.type = START_EVENT,                          \
                                  .payload.node_version = APP_VERSION_STRING};  \
-        (void)write_message_frame(&msg);                                       \
+        (void)write_message_frame(comms, &msg);                                \
     } while (0)
 
 #else
-
 #define _INIT_MSG(str)           printf("  " str "\n")
 #define _INIT_MSG_ARGS(str, ...) printf("  " str "\n", __VA_ARGS__)
 #define INIT_MSG(format_str, ...)                                              \
