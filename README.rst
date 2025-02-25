@@ -176,16 +176,30 @@ decawave_dwm1000_dev
 * **Optimization level:** Os (Optimize for size)
 * **Sysbuild:** No sysbuild
 
+.. note::
+
+    This board can theoretically be built with sysbuild, however, due to memory constraints, it will fail
+    because the program memory is split into 2 sections, each section being 200 kB of flash. Since the current
+    firmware requires more than 200 kB of flash, sysbuild with McuMgr is not used. Additionally, McuMgr is not
+    necessary since this board comes with a built in J-Link debuggger.
+
 Beluga
 ^^^^^^
 See `Adding Board Roots <#adding-board-roots>`_ for finding custom boards.
 
 * **Board Target:** Beluga
 * **Base configuration file:** prj.conf
-* **Extra Kconfig fragments:** config/beluga.conf and config/usb.conf
+* **Extra Kconfig fragments:** config/beluga.conf, config/usb.conf, and config/mcumgr.conf
 * **Base Device tree overlay:** overlay/beluga.overlay
+* **Extra Device tree overlays:** overlay/extra/usb.overlay
 * **Optimization level:** Anything works
-* **Sysbuild:** No sysbuild
+* **Sysbuild:** Use sysbuild
+
+.. note::
+
+    If a larger program section is desired for Beluga, then that leaves 2 options. The first option is to compile
+    without McuMgr (Exclude config/mcumgr.conf and overlay/extra/usb.overlay and build with the No sysbuild flag), or
+    to build the hardware with the external flash.
 
 Building and Flashing
 ---------------------
