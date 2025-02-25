@@ -232,12 +232,14 @@ void BelugaSerial::__process_frames() {
 }
 
 void BelugaSerial::_process_frames() {
-    try {
-        __process_frames();
-    } catch (const std::exception &exc) {
-        _log("An uncaught exception occurred in processing thread. %s",
-             exc.what());
-        std::abort();
+    while (_tasks_running) {
+        try {
+            __process_frames();
+        } catch (const std::exception &exc) {
+            _log("An uncaught exception occurred in processing thread. %s",
+                 exc.what());
+            std::abort();
+        }
     }
 }
 
@@ -260,15 +262,16 @@ void BelugaSerial::_process_rx_buffer(std::vector<uint8_t> &buf) {
 
 void BelugaSerial::__read_serial() {
     std::vector<uint8_t> rx;
+    std::unique_lock<std::recursive_mutex> lock(_serial_lock, std::defer_lock);
 
     while (_tasks_running) {
-        _serial_lock.lock();
+        lock.lock();
         if (_serial.in_waiting() > 0) {
             std::vector<uint8_t> buf;
             _serial.read_all(buf);
             rx.insert(rx.end(), buf.begin(), buf.end());
         }
-        _serial_lock.unlock();
+        lock.unlock();
         _process_rx_buffer(rx);
     }
 }
@@ -277,15 +280,21 @@ void BelugaSerial::_read_serial() {
     while (_tasks_running) {
         try {
             __read_serial();
-        } catch (const Serial::SerialException &serial_exception) {
+        } catch (const Serial::SerialException &) {
             _serial.close();
-            if (serial_exception.code() == -ENODEV) {
-                // Disconnected. Need to reconnect
-                std::this_thread::sleep_for(100ms);
+            // Probably rebooted. Need to attempt reconnection
+            std::this_thread::sleep_for(open_delay);
+            try {
+                _log("Reconnect called from read serial");
                 _reconnect();
+                if (_time_resync) {
+                    std::thread t_(_time_resync);
+                    t_.detach();
+                }
+            } catch (const std::runtime_error &exc) {
+                _log(exc.what());
+                std::abort();
             }
-            _log(serial_exception.what());
-            std::abort();
         } catch (const std::exception &exc) {
             _log("An uncaught exception occurred in reading thread. %s",
                  exc.what());
@@ -398,6 +407,7 @@ void BelugaSerial::_reboot() {
     _serial.write(tx_data);
     _serial.flush();
     _serial.close();
+    _log("Called reconnect from reboot");
     _reconnect();
 }
 
@@ -779,6 +789,7 @@ void BelugaSerial::__reconnect() {
             break;
         }
     }
+    _log("Connected to %s", it->c_str());
 }
 
 void BelugaSerial::_reconnect() {

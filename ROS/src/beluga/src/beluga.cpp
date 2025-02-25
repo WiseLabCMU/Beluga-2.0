@@ -211,6 +211,7 @@ void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
 }
 
 void Beluga::_time_sync(bool first) {
+    std::unique_lock<std::mutex> lock(_timestamp_sync, std::defer_lock);
     int retries = 5;
     while (retries > 0) {
         auto [t1_, req1, resp1] = _time_sync_get_measurement();
@@ -234,7 +235,7 @@ void Beluga::_time_sync(bool first) {
                 throw ZeroDivisionError();
             }
 
-            _timestamp_sync.lock();
+            lock.lock();
             this->_ns_per_timestamp_unit +=
                 (double)map_diff.nanoseconds() / (double)t_diff;
 
@@ -275,7 +276,7 @@ void Beluga::_time_sync(bool first) {
                     std::get<int64_t>(_last_mapping["beluga"]),
                     std::get<rclcpp::Time>(_last_mapping["ros"]).seconds(),
                     _ns_per_timestamp_unit);
-        _timestamp_sync.unlock();
+        lock.unlock();
         retries = -1;
     }
 }
@@ -317,12 +318,11 @@ int64_t Beluga::extract_number(const std::string &s) {
 }
 
 rclcpp::Time Beluga::_beluga_to_ros_time(int64_t t) {
-    _timestamp_sync.lock();
+    std::lock_guard<std::mutex> lock(_timestamp_sync);
     int64_t delta =
         (int64_t)((double)(t - std::get<int64_t>(_last_mapping["beluga"])) *
                   _ns_per_timestamp_unit);
     auto ros_time = std::get<rclcpp::Time>(_last_mapping["ros"]);
-    _timestamp_sync.unlock();
     return ros_time + rclcpp::Duration(std::chrono::nanoseconds(delta));
 }
 
