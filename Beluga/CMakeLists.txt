@@ -19,7 +19,6 @@ include_directories(include DecaDriver/include)
 target_sources(app PRIVATE
     ${SOURCE}
     ${SERIAL_SRC}
-    ${MCUMGR_SRC}
     ${DECAWAVE_SRC}
 )
 target_sources_ifdef(CONFIG_MCUMGR_TRANSPORT_COMMS app PRIVATE
