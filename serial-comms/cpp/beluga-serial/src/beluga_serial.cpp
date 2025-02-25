@@ -27,6 +27,8 @@ static const target_pair segger_jlink = {"SEGGER", "J-Link"};
 
 static const std::vector<target_pair> TARGETS = {cmu_beluga, segger_jlink};
 
+constexpr auto open_delay = 500ms;
+
 static const std::map<target_pair, bool> USB_STILL_ALIVE = {
     {cmu_beluga, false}, {segger_jlink, true}};
 
@@ -82,6 +84,7 @@ void BelugaSerial::_initialize(
                     _log(oss.str().c_str());
                     _serial.port(port_);
                     _serial.open();
+                    std::this_thread::sleep_for(open_delay);
                     auto iterator = USB_STILL_ALIVE.find(target);
                     if (iterator == USB_STILL_ALIVE.end()) {
                         throw std::runtime_error("Unable to determine if port "
@@ -643,25 +646,26 @@ uint16_t BelugaSerial::_extract_id(const std::string &s) {
     throw std::overflow_error("Unable to convert ID to `uint16_t`");
 }
 
-std::string
-BelugaSerial::_find_port_candidate(std::vector<std::string> &skip_list) {
+std::vector<std::string>
+BelugaSerial::_find_port_candidates(const std::vector<std::string> &skip_list) {
     std::map<target_pair, std::vector<std::string>> avail_ports;
-    BelugaSerial::BelugaSerial::_find_ports(TARGETS, avail_ports);
-    if (avail_ports.empty()) {
-        return "";
-    }
+    std::vector<std::string> candidates;
+    BelugaSerial::_find_ports(TARGETS, avail_ports);
+
     for (const auto &target : TARGETS) {
         if (avail_ports.find(target) == avail_ports.end()) {
             continue;
         }
         for (const auto &port_ : avail_ports[target]) {
-            if (std::find(skip_list.begin(), skip_list.end(), port_) ==
+            if (std::find(skip_list.begin(), skip_list.end(), port_) !=
                 skip_list.end()) {
-                return port_;
+                continue;
             }
+            candidates.push_back(port_);
         }
     }
-    return "";
+
+    return candidates;
 }
 
 bool BelugaSerial::_open_port(std::string &port) {
@@ -673,6 +677,7 @@ bool BelugaSerial::_open_port(std::string &port) {
         _log(oss.str().c_str());
         _serial.port(port);
         _serial.open();
+        std::this_thread::sleep_for(open_delay);
     } catch (const Serial::SerialException &exc) {
         _serial.close();
         oss.clear();
@@ -725,34 +730,26 @@ std::string BelugaSerial::_get_id_from_device() {
 void BelugaSerial::__reconnect() {
     enum ReconnectStates state = RECONNECT_FIND;
     std::vector<std::string> skips;
+    std::vector<std::string> ports;
     std::string port, id_resp;
+    std::vector<std::string>::iterator it;
 
     while (state != RECONNECT_DONE) {
         switch (state) {
         case RECONNECT_FIND: {
-            port = _find_port_candidate(skips);
-            state = (port.empty()) ? RECONNECT_SLEEP : RECONNECT_CONNECT;
-            break;
-        }
-        case RECONNECT_SLEEP: {
-            std::this_thread::sleep_for(1s);
-            state = RECONNECT_FIND;
+            ports = _find_port_candidates(skips);
+            it = ports.begin();
+            state = (ports.empty()) ? RECONNECT_SLEEP : RECONNECT_CONNECT;
             break;
         }
         case RECONNECT_CONNECT: {
-            bool opened = _open_port(port);
+            bool opened = _open_port(*it);
             state = opened ? RECONNECT_GET_ID : RECONNECT_SLEEP;
-            break;
-        }
-        case RECONNECT_UPDATE_SKIPS: {
-            _serial.close();
-            skips.push_back(port);
-            state = RECONNECT_FIND;
             break;
         }
         case RECONNECT_GET_ID: {
             id_resp = _get_id_from_device();
-            state = id_resp.empty() ? RECONNECT_SLEEP : RECONNECT_CHECK_ID;
+            state = id_resp.empty() ? RECONNECT_NEXT : RECONNECT_CHECK_ID;
             break;
         }
         case RECONNECT_CHECK_ID: {
@@ -760,10 +757,24 @@ void BelugaSerial::__reconnect() {
             state = (id_ == _id) ? RECONNECT_DONE : RECONNECT_UPDATE_SKIPS;
             break;
         }
-        case RECONNECT_DONE:
+        case RECONNECT_SLEEP: {
+            std::this_thread::sleep_for(open_delay);
+            state = RECONNECT_FIND;
             break;
+        }
+        case RECONNECT_UPDATE_SKIPS: {
+            _serial.close();
+            skips.push_back(*it);
+            state = RECONNECT_NEXT;
+            break;
+        }
+        case RECONNECT_NEXT: {
+            it++;
+            state = (it == ports.end()) ? RECONNECT_SLEEP : RECONNECT_CONNECT;
+            break;
+        }
         default:
-            _log("Reached invalid connection state");
+            _log("reached invalid connection state");
             abort();
             break;
         }

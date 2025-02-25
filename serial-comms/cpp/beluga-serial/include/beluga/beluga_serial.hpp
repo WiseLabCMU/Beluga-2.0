@@ -161,6 +161,7 @@ class BelugaSerial {
         RECONNECT_SLEEP,
         RECONNECT_CONNECT,
         RECONNECT_UPDATE_SKIPS,
+        RECONNECT_NEXT,
         RECONNECT_GET_ID,
         RECONNECT_CHECK_ID,
         RECONNECT_DONE,
@@ -168,8 +169,8 @@ class BelugaSerial {
         RECONNECT_INVALID,
     };
 
-    static std::string
-    _find_port_candidate(std::vector<std::string> &skip_list);
+    static std::vector<std::string>
+    _find_port_candidates(const std::vector<std::string> &skip_list);
     bool _open_port(std::string &port);
     std::string _get_id_from_device();
     void __reconnect();
