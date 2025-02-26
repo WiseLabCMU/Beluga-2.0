@@ -640,7 +640,7 @@ AT_CMD_DEFINE(PWRAMP) {
         ERROR(comms, "Power amplifier error occurred: %d", err);
     }
 }
-AT_CMD_REGISTER(PWRAMP);
+AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), PWRAMP);
 
 /**
  * The ANTENNA AT command
@@ -673,7 +673,7 @@ AT_CMD_DEFINE(ANTENNA) {
         ERROR(comms, "Unknown error occurred: %d", err);
     }
 }
-AT_CMD_REGISTER(ANTENNA);
+AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), ANTENNA);
 
 /**
  * The TIME AT command
@@ -713,7 +713,7 @@ AT_CMD_DEFINE(FORMAT) {
     set_format_mode(mode == 1);
     OK(comms);
 }
-AT_CMD_REGISTER(FORMAT);
+AT_CMD_COND_REGISTER(IS_EQ(IS_ENABLED(CONFIG_BELUGA_FRAMES), 0), FORMAT);
 
 /**
  * The DEEPSLEEP AT command

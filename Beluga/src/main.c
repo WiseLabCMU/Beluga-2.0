@@ -342,11 +342,6 @@ int main(void) {
         return 1;
     }
 
-    //    if (uart_init() < 0) {
-    //        printk("Failed to init uart\n");
-    //        return 1;
-    //    }
-
     if (init_spi1() < 0) {
         printk("Failed to initialize SPI 1\n");
         return 1;

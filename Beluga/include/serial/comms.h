@@ -56,6 +56,8 @@ struct at_command_static_entry {
         union at_command_entry, UTIL_CAT(at_cmd_, _command), shell_root_cmds,  \
         UTIL_CAT(at_cmd_, _command)) = {.entry = &UTIL_CAT(_comms_, _command)}
 
+#define AT_CMD_COND_REGISTER(_flag, _command) IF_ENABLED(_flag, (AT_CMD_REGISTER(_command)))
+
 BUILD_ASSERT(!IS_ENABLED(CONFIG_SHELL),
              "Shell cannot be enabled when using AT commands");
 
