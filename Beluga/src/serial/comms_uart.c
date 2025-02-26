@@ -8,6 +8,7 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/ring_buffer.h>
 #include <zephyr/usb/usb_device.h>
+#include <serial_led.h>
 
 #define LOG_MODULE_NAME comms_uart
 LOG_MODULE_REGISTER(comms_uart);
@@ -197,11 +198,15 @@ static void uart_callback(const struct device *dev, void *user_data) {
     uart_irq_update(dev);
 
     if (uart_irq_rx_ready(dev)) {
+        serial_leds_update_state(LED_START_RX);
         uart_rx_handle(dev, sh_uart);
+        serial_leds_update_state(LED_STOP_RX);
     }
 
     if (uart_irq_tx_ready(dev)) {
+        serial_leds_update_state(LED_START_TX);
         uart_tx_handle(dev, sh_uart);
+        serial_leds_update_state(LED_STOP_TX);
     }
 }
 
