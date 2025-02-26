@@ -199,7 +199,8 @@ See `Adding Board Roots <#adding-board-roots>`_ for finding custom boards.
 
     If a larger program section is desired for Beluga, then that leaves 2 options. The first option is to compile
     without McuMgr (Exclude config/mcumgr.conf and overlay/extra/usb.overlay and build with the No sysbuild flag), or
-    to build the hardware with the external flash.
+    to build the hardware with the external flash (See `Using DFU with External Flash <#using-dfu-with-external-flash>`_
+    for more information).
 
 Building and Flashing
 ---------------------
@@ -809,3 +810,51 @@ environment:
 See `VS Code Extension - west flash fails from missing python dependencies`_ for more details.
 
 .. _VS Code Extension - west flash fails from missing python dependencies: https://devzone.nordicsemi.com/f/nordic-q-a/100164/vs-code-extension---west-flash-fails-from-missing-python-dependencies/496078
+
+Using DFU with External Flash
+-----------------------------
+If the firmware image is too large to fit into a single code partition in the internal flash, the hardware can be
+assembled with external flash. The external flash can be used for a few things, including but not limited to saving
+configurations and being used to store firmware images. To use the external flash as an image partition for larger
+firmware images, additional configurations have to be added.
+
+Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+To configure the application, all you need to do is add the following files to the existing build configuration:
+
+* **Extra Kconfig fragments:** config/flash.conf
+* **Extra Device tree overlays:** overlay/extra/flash.overlay
+
+MCUBoot Configuration
+^^^^^^^^^^^^^^^^^^^^^
+Configuring MCUBoot is not as strait forward as the application. Instead of adding files to a build configuration, you
+want to add the following (or uncomment) to sysbuild/mcuboot.conf:
+
+.. code-block:: Kconfig
+
+    CONFIG_NORDIC_QSPI_NOR=y
+    CONFIG_BOOT_MAX_IMG_SECTORS=256
+
+Additionally, you want to add the following (or uncomment) to sysbuild/mcuboot.overlay:
+
+.. code-block:: devicetree
+
+    &mx25r64 {
+	    status = "okay";
+    };
+
+    / {
+	    chosen {
+		    nordic,pm-ext-flash = &mx25r64;
+	    };
+    };
+
+Sysbuild Configuration
+^^^^^^^^^^^^^^^^^^^^^^
+The last step towards configuring external flash is modifying the sysbuild configuration. Again, this is not as strait
+forward as the application configuration, but it is very similar to the MCUBoot configuration. Add the following line
+(or uncomment) to sysbuild.conf:
+
+.. code-block:: Kconfig
+
+    SB_CONFIG_PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY=y
