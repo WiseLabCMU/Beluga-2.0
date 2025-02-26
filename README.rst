@@ -816,7 +816,7 @@ Using DFU with External Flash
 If the firmware image is too large to fit into a single code partition in the internal flash, the hardware can be
 assembled with external flash. The external flash can be used for a few things, including but not limited to saving
 configurations and being used to store firmware images. To use the external flash as an image partition for larger
-firmware images, additional configurations have to be added.
+firmware images, additional configurations have to be added to the application, MCUBoot, and sysbuild.
 
 Application Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^
