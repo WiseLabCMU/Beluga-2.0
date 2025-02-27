@@ -604,6 +604,11 @@ This setting is saved in flash.
 |             | Removed neighbors are       |
 |             | indicated by ``rm "ID"``    |
 +-------------+-----------------------------+
+| 2           | Frame Format                |
+|             | See Beluga-Message.pdf in   |
+|             | Documentation/Beluga for    |
+|             | more information            |
++-------------+-----------------------------+
 
 DEEPSLEEP
 ---------

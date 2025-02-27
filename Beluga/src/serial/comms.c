@@ -11,6 +11,7 @@
 #include <beluga_message.h>
 #include <ctype.h>
 #include <serial/comms.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <utils.h>
 #include <watchdog.h>
@@ -312,73 +313,6 @@ static void comms_write(const struct comms *comms, const void *data,
     k_mutex_unlock(&comms->ctx->wr_mtx);
 }
 
-#if defined(CONFIG_BELUGA_FRAMES)
-static int z_write_frame(const struct comms *comms,
-                         const struct beluga_msg *msg) {
-    __ASSERT_NO_MSG(comms && msg);
-
-    ssize_t len = frame_length(msg);
-    if (len < 1) {
-        return -EINVAL;
-    }
-
-    uint8_t *buffer = k_malloc(len + 1);
-    if (buffer == NULL) {
-        return -ENOMEM;
-    }
-
-    len = construct_frame(msg, buffer, len + 1);
-
-    if (len < 0) {
-        k_free(buffer);
-        return len;
-    }
-
-    comms_write(comms, buffer, len);
-    k_free(buffer);
-
-    return 0;
-}
-
-int write_message_frame(const struct comms *comms,
-                        const struct beluga_msg *msg) {
-    if (comms == NULL || msg == NULL) {
-        return -EINVAL;
-    }
-
-    ssize_t len = frame_length(msg);
-    if (len < 1) {
-        return -EINVAL;
-    }
-
-    uint8_t *buffer = k_malloc(len + 1);
-    if (buffer == NULL) {
-        return -ENOMEM;
-    }
-
-    len = construct_frame(msg, buffer, len + 1);
-
-    if (len < 0) {
-        k_free(buffer);
-        return len;
-    }
-
-    k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
-    comms_write(comms, buffer, len);
-    k_mutex_unlock(&comms->ctx->wr_mtx);
-    k_free(buffer);
-
-    return 0;
-}
-#else
-int write_message_frame(const struct comms *comms,
-                        const struct beluga_msg *msg) {
-    ARG_UNUSED(comms);
-    ARG_UNUSED(msg);
-    return -ENOTSUP;
-}
-#endif
-
 static void at_respond(const struct comms *comms, bool ok) {
     __ASSERT(comms->ctx->tx_buf.len <= (sizeof(comms->ctx->tx_buf.buf) - 5),
              "Not enough room in TX buffer");
@@ -391,17 +325,18 @@ static void at_respond(const struct comms *comms, bool ok) {
         comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = 'K';
     }
 
-#if defined(CONFIG_BELUGA_FRAMES)
+    if (comms->ctx->format == FORMAT_FRAMES) {
+        comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len] = '\0';
+    } else {
+        comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = '\r';
+        comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = '\n';
+    }
+
     struct beluga_msg msg = {.type = COMMAND_RESPONSE,
                              .payload.response =
                                  (const char *)comms->ctx->tx_buf.buf};
-    comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len] = '\0';
-    (void)z_write_frame(comms, &msg);
-#else
-    comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = '\r';
-    comms->ctx->tx_buf.buf[comms->ctx->tx_buf.len++] = '\n';
-    comms_write(comms, comms->ctx->tx_buf.buf, comms->ctx->tx_buf.len);
-#endif
+
+    comms_write_msg(comms, &msg);
 }
 
 void at_msg(const struct comms *comms, const char *msg) {
@@ -449,4 +384,191 @@ void comms_flush_out(const struct comms *comms, int ret) {
 
     k_poll(&comms->ctx->events[COMMS_SIGNAL_TXDONE], 1, K_MSEC(500));
     k_poll_signal_check(sig, &set, &res);
+}
+
+int set_format(const struct comms *comms, enum comms_out_format_mode mode) {
+    if (mode >= FORMAT_INVALID || comms == NULL) {
+        return -EINVAL;
+    }
+    comms->ctx->format = mode;
+    return 0;
+}
+
+#define HEADER_GEN(_comms, _msg)                                               \
+    do {                                                                       \
+        const char *header = _msg;                                             \
+        size_t header_len = sizeof((uint8_t[]){_msg}) - 1;                     \
+        comms_write(_comms, header, header_len);                               \
+    } while (0)
+
+static int s_write_neighbors(const struct comms *comms,
+                             const struct beluga_msg *msg) {
+    __ASSERT_NO_MSG(comms && msg);
+    bool stream = msg->payload.stream;
+    const struct node *list = msg->payload.neighbor_list;
+
+    if (!list) {
+        return -EINVAL;
+    }
+
+    if (comms->ctx->format == FORMAT_ASCII) {
+#if defined(CONFIG_UWB_LOGIC_CLK)
+        HEADER_GEN(comms, "ID,RSSI,RANGE,TIMESTAMP,EXCHANGE\r\n");
+#else
+        HEADER_GEN(comms, "ID,RSSI,RANGE,TIMESTAMP\r\n");
+#endif
+    }
+
+    for (size_t i = 0; i < MAX_ANCHOR_COUNT; i++) {
+        if (list[i].UUID != 0 && (!stream || list[i].update_flag)) {
+            char s[256];
+            size_t len;
+            if (comms->ctx->format == FORMAT_ASCII) {
+#if defined(CONFIG_UWB_LOGIC_CLK)
+                len = snprintf(
+                    s, sizeof(s) - 1,
+                    "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 ",%" PRIu32 "\r\n",
+                    list[i].UUID, list[i].RSSI, (double)list[i].range,
+                    list[i].time_stamp, list[i].exchange_id);
+#else
+                len = snprintf(s, sizeof(s) - 1,
+                               "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 "\r\n",
+                               list[i].UUID, list[i].RSSI,
+                               (double)list[i].range, list[i].time_stamp);
+#endif
+            } else {
+#if defined(CONFIG_UWB_LOGIC_CLK)
+                len = snprintf(
+                    s, sizeof(s) - 1,
+                    "{ID:%" PRIu16 ",RSSI:%" PRId8
+                    ",RANGE:%f,TIMESTAMP:%" PRId64 ",EXCHANGE:%" PRIu32 "}\r\n",
+                    list[i].UUID, list[i].RSSI, (double)list[i].range,
+                    list[i].time_stamp, list[i].exchange_id);
+#else
+                len = snprintf(s, sizeof(s) - 1,
+                               "{ID:%" PRIu16 ",RSSI:%" PRId8
+                               ",RANGE:%f,TIMESTAMP:%" PRId64 "}\r\n",
+                               list[i].UUID, list[i].RSSI,
+                               (double)list[i].range, list[i].time_stamp);
+#endif
+            }
+            comms_write(comms, s, len);
+        }
+    }
+
+    return 0;
+}
+
+static int ascii_write_start_event(const struct comms *comms,
+                                   const struct beluga_msg *msg) {
+    const char *ending = "\r\n";
+    const char *payload = msg->payload.node_version;
+
+    if (!payload) {
+        return -EINVAL;
+    }
+
+    for (; *payload != '\0'; payload++) {
+        comms_write(comms, payload, 1);
+    }
+
+    comms_write(comms, ending, 2);
+    return 0;
+}
+
+static int json_write_dropped_neighbor(const struct comms *comms,
+                                       const struct beluga_msg *msg) {
+    if (comms->ctx->format != FORMAT_JSON) {
+        return -ENOTSUP;
+    }
+
+    char s[32];
+    size_t len = snprintf(s, sizeof(s) - 1, "rm: %" PRId32 "\r\n",
+                          msg->payload.dropped_neighbor);
+
+    comms_write(comms, s, len);
+    return 0;
+}
+
+static int comms_write_normal(const struct comms *comms,
+                              const struct beluga_msg *msg) {
+    __ASSERT_NO_MSG(comms && msg);
+    int ret = 0;
+
+    switch (msg->type) {
+    case COMMAND_RESPONSE: {
+        comms_write(comms, comms->ctx->tx_buf.buf, comms->ctx->tx_buf.len);
+        break;
+    }
+    case NEIGHBOR_UPDATES: {
+        ret = s_write_neighbors(comms, msg);
+        break;
+    }
+    case START_EVENT: {
+        ret = ascii_write_start_event(comms, msg);
+        break;
+    }
+    case NEIGHBOR_DROP: {
+        ret = json_write_dropped_neighbor(comms, msg);
+        break;
+    }
+    default: {
+        ret = -ECANCELED;
+        break;
+    }
+    }
+
+    return ret;
+}
+
+static int comms_write_frame(const struct comms *comms,
+                             const struct beluga_msg *msg) {
+    __ASSERT_NO_MSG(comms && msg);
+
+    ssize_t len = frame_length(msg);
+    if (len < 1) {
+        return -EINVAL;
+    }
+
+    uint8_t *buffer = k_malloc(len + 1);
+    if (buffer == NULL) {
+        return -ENOMEM;
+    }
+
+    len = construct_frame(msg, buffer, len + 1);
+
+    if (len < 0) {
+        k_free(buffer);
+        return len;
+    }
+
+    comms_write(comms, buffer, len);
+    k_free(buffer);
+
+    return 0;
+}
+
+int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
+    int ret;
+    if (comms == NULL || msg == NULL) {
+        return -EINVAL;
+    }
+
+    switch (comms->ctx->format) {
+    case FORMAT_ASCII:
+    case FORMAT_JSON: {
+        ret = comms_write_normal(comms, msg);
+        break;
+    }
+    case FORMAT_FRAMES: {
+        ret = comms_write_frame(comms, msg);
+        break;
+    }
+    default: {
+        ret = -EFAULT;
+        break;
+    }
+    }
+
+    return ret;
 }

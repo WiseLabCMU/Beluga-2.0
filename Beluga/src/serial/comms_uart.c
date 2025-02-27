@@ -1,5 +1,6 @@
 #include <serial/comms_uart.h>
 #include <serial/smp_comms.h>
+#include <serial_led.h>
 #include <zephyr/drivers/serial/uart_async_rx.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/init.h>
@@ -8,7 +9,6 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/ring_buffer.h>
 #include <zephyr/usb/usb_device.h>
-#include <serial_led.h>
 
 #define LOG_MODULE_NAME comms_uart
 LOG_MODULE_REGISTER(comms_uart);

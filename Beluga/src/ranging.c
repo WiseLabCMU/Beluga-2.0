@@ -151,24 +151,6 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
         k_sem_give(&k_sus_resp);                                               \
     } while (0)
 
-#define _RANGE_EVENT_REPORT(_comms, ret_, id, exchange)                        \
-    do {                                                                       \
-        if ((ret_) == 0) {                                                     \
-            struct ranging_event evt = {                                       \
-                .id = (id),                                                    \
-                .exchange_id = (exchange),                                     \
-                .timestamp = k_uptime_get(),                                   \
-            };                                                                 \
-            struct beluga_msg msg = {.type = RANGING_EVENT,                    \
-                                     .payload.event = &evt};                   \
-            (void)write_message_frame(_comms, &msg);                           \
-        }                                                                      \
-    } while (0)
-
-#define RANGE_EVENT_REPORT(_comms, ret_, id, exchange)                         \
-    IF_ENABLED(CONFIG_BELUGA_FRAMES,                                           \
-               (_RANGE_EVENT_REPORT(_comms, ret_, id, exchange)))
-
 /**
  * The number of milliseconds between initiator runs
  */
@@ -829,6 +811,7 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     uint32_t exchange;
     int ret;
     const struct comms *comms = comms_backend_uart_get_ptr();
+    struct beluga_msg msg = {.type = RANGING_EVENT};
 
     if (are_leds_on()) {
         dwt_setleds(DWT_LEDS_ENABLE);
@@ -851,7 +834,13 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
         } else {
             ret = -EBUSY;
         }
-        RANGE_EVENT_REPORT(comms, ret, id, exchange);
+
+        if (ret == 0) {
+            struct ranging_event event = {
+                .exchange_id = exchange, .id = id, .timestamp = k_uptime_get()};
+            msg.payload.event = &event;
+            comms_write_msg(comms, &msg);
+        }
     }
 }
 

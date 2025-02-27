@@ -8,7 +8,6 @@
  * @author tom
  */
 
-#if defined(CONFIG_BELUGA_FRAMES)
 #include <beluga_message.h>
 #include <stdio.h>
 #include <string.h>
@@ -269,5 +268,3 @@ int frame_length(const struct beluga_msg *msg) {
 
     return message_size(msgLen);
 }
-
-#endif // defined(CONFIG_BELUGA_FRAMES)

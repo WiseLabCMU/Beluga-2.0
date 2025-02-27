@@ -705,7 +705,7 @@ AT_CMD_DEFINE(FORMAT) {
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
 
-    if (!success || mode < 0 || mode > 1) {
+    if (!success || mode < 0 || mode > 2) {
         ERROR(comms, "Format parameter input error");
     }
 
@@ -713,7 +713,7 @@ AT_CMD_DEFINE(FORMAT) {
     set_format_mode(mode == 1);
     OK(comms);
 }
-AT_CMD_COND_REGISTER(IS_EQ(IS_ENABLED(CONFIG_BELUGA_FRAMES), 0), FORMAT);
+AT_CMD_REGISTER(FORMAT);
 
 /**
  * The DEEPSLEEP AT command

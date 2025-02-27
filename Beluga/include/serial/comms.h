@@ -56,7 +56,8 @@ struct at_command_static_entry {
         union at_command_entry, UTIL_CAT(at_cmd_, _command), shell_root_cmds,  \
         UTIL_CAT(at_cmd_, _command)) = {.entry = &UTIL_CAT(_comms_, _command)}
 
-#define AT_CMD_COND_REGISTER(_flag, _command) IF_ENABLED(_flag, (AT_CMD_REGISTER(_command)))
+#define AT_CMD_COND_REGISTER(_flag, _command)                                  \
+    IF_ENABLED(_flag, (AT_CMD_REGISTER(_command)))
 
 BUILD_ASSERT(!IS_ENABLED(CONFIG_SHELL),
              "Shell cannot be enabled when using AT commands");
@@ -82,6 +83,13 @@ struct comms_transport {
 
 enum comms_signal { COMMS_SIGNAL_RXRDY, COMMS_SIGNAL_TXDONE, COMMS_SIGNALS };
 
+enum comms_out_format_mode {
+    FORMAT_ASCII = 0,
+    FORMAT_JSON = 1,
+    FORMAT_FRAMES = 2,
+    FORMAT_INVALID
+};
+
 struct comms_buf {
     uint8_t buf[256];
     size_t len;
@@ -95,6 +103,7 @@ struct comms_ctx {
     struct k_poll_event events[COMMS_SIGNALS];
     struct k_mutex wr_mtx;
     k_tid_t tid;
+    enum comms_out_format_mode format;
 };
 
 struct comms {
@@ -123,8 +132,9 @@ void comms_process(const struct comms *comms);
 void at_msg(const struct comms *comms, const char *msg);
 void __printflike(2, 3)
     at_msg_fmt(const struct comms *comms, const char *msg, ...);
-int write_message_frame(const struct comms *comms,
-                        const struct beluga_msg *msg);
+
+int set_format(const struct comms *comms, enum comms_out_format_mode mode);
+int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg);
 void comms_flush_out(const struct comms *comms, int ret);
 
 #define Z_OK_MSG_NOARGS(_comms, _msg)                                          \

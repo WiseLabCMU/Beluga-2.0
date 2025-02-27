@@ -52,30 +52,6 @@ LOG_MODULE_REGISTER(list_monitor, CONFIG_LIST_MONITOR_LOG_LEVEL);
  */
 #define RESUME_NEIGHBOR_SCANNING() enable_bluetooth()
 
-#define _DROP_NODE_PRINT(node)                                                 \
-    do {                                                                       \
-        if (get_format_mode()) {                                               \
-            printf("rm %" PRId16 "\n", (node).UUID);                           \
-        }                                                                      \
-    } while (0)
-
-#define _DROP_NODE_FRAME(_comms, node)                                         \
-    do {                                                                       \
-        struct beluga_msg msg = {.type = NEIGHBOR_DROP,                        \
-                                 .payload.dropped_neighbor = (node).UUID};     \
-        (void)write_message_frame(_comms, &msg);                               \
-    } while (0)
-
-#define _DROP_NODE(_comms, node)                                               \
-    COND_CODE_1(IS_ENABLED(CONFIG_BELUGA_FRAMES),                              \
-                (_DROP_NODE_FRAME(_comms, node)), (_DROP_NODE_PRINT(node)))
-
-#define DROP_NODE(_comms, node)                                                \
-    do {                                                                       \
-        _DROP_NODE(_comms, node);                                              \
-        memset(&(node), 0, sizeof(node));                                      \
-    } while (0)
-
 /**
  * Number of milliseconds allowed to elapse before evicting a neighbor
  */
@@ -141,7 +117,11 @@ static bool evict_nodes(const struct comms *comms) {
         if (seen_list[x].UUID != 0) {
             if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
                 LOG_INF("Removing node %" PRId16, seen_list[x].UUID);
-                DROP_NODE(comms, seen_list[x]);
+                struct beluga_msg msg = {.type = NEIGHBOR_DROP,
+                                         .payload.dropped_neighbor =
+                                             seen_list[x].UUID};
+
+                comms_write_msg(comms, &msg);
                 removed = true;
             }
         }
