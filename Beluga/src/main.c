@@ -31,6 +31,15 @@
 
 LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 
+#define SETTINGS_HEADER(_comms)                                                \
+    do {                                                                       \
+        if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
+            struct beluga_msg msg = {.type = START_EVENT,                      \
+                                     .payload.node_version =                   \
+                                         "Node On: " APP_VERSION_STRING};      \
+            comms_write_msg(_comms, &msg);                                     \
+        }                                                                      \
+    } while (0)
 #define _SETTINGS_PRINT_FMT(_comms, _str, ...)                                 \
     do {                                                                       \
         struct beluga_msg msg = {.type = START_EVENT};                         \
@@ -69,19 +78,19 @@ LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
         }                                                                      \
     } while (0)
 
-#if defined(CONFIG_BELUGA_FRAMES)
-
-// TODO
-#define CUSTOM_INIT_MSG(callback_, ...) callback_(__VA_ARGS__)
-
-#else
-#define CUSTOM_INIT_MSG(callback_, ...)                                        \
+#define _CUSTOM_INIT_MSG_ARGS(_comms, callback, ...)                           \
+    callback(_comms, __VA_ARGS__)
+#define _CUSTOM_INIT_MSG_NOARGS(_comms, callback) callback(_comms)
+#define _CUSTOM_INIT_MSG(_comms, callback, ...)                                \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__),                                         \
+                (_CUSTOM_INIT_MSG_NOARGS(_comms, callback)),                   \
+                (_CUSTOM_INIT_MSG_ARGS(_comms, callback, __VA_ARGS__)))
+#define CUSTOM_INIT_MSG(_comms, callback, ...)                                 \
     do {                                                                       \
-        printf("  ");                                                          \
-        callback_(__VA_ARGS__);                                                \
-        printf("\n");                                                          \
+        if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
+            _CUSTOM_INIT_MSG(_comms, callback, __VA_ARGS__);                   \
+        }                                                                      \
     } while (0)
-#endif
 
 /**
  * Load the LED mode from the settings and display the current state
@@ -177,7 +186,7 @@ static void load_timeout(const struct comms *comms) {
 static void load_tx_power(const struct comms *comms) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
     set_tx_power((uint32_t)tx_power);
-    CUSTOM_INIT_MSG(print_tx_power, (uint32_t)tx_power);
+    CUSTOM_INIT_MSG(comms, print_tx_power, (uint32_t)tx_power);
 }
 
 /**
@@ -202,9 +211,7 @@ static void load_twr_mode(const struct comms *comms) {
  * Retrieve the output format mode, set it, and display what it is
  */
 static void load_out_format(const struct comms *comms) {
-    int32_t format = retrieveSetting(BELUGA_OUT_FORMAT);
-    set_format_mode(format == 1);
-    CUSTOM_INIT_MSG(print_output_format, format);
+    CUSTOM_INIT_MSG(comms, print_format);
 }
 
 /**
@@ -222,7 +229,7 @@ static void load_phr_mode(const struct comms *comms) {
 static void load_data_rate(const struct comms *comms) {
     enum uwb_datarate rate =
         (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
-    CUSTOM_INIT_MSG(rate = print_uwb_datarate, rate);
+    CUSTOM_INIT_MSG(comms, rate = print_uwb_datarate, rate);
     uwb_set_datarate(rate);
 }
 
@@ -232,7 +239,7 @@ static void load_data_rate(const struct comms *comms) {
 static void load_pulse_rate(const struct comms *comms) {
     enum uwb_pulse_rate rate =
         (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
-    CUSTOM_INIT_MSG(rate = print_pulse_rate, rate);
+    CUSTOM_INIT_MSG(comms, rate = print_pulse_rate, rate);
     uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
 }
 
@@ -250,7 +257,7 @@ static void load_preamble_length(const struct comms *comms) {
  */
 static void load_pac_size(const struct comms *comms) {
     int32_t pac = retrieveSetting(BELUGA_UWB_PAC);
-    CUSTOM_INIT_MSG(pac = print_pac_size, pac);
+    CUSTOM_INIT_MSG(comms, pac = print_pac_size, pac);
     set_pac_size((enum uwb_pac)pac);
 }
 
@@ -268,7 +275,7 @@ static void load_sfd_mode(const struct comms *comms) {
  */
 static void load_pan_id(const struct comms *comms) {
     int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
-    CUSTOM_INIT_MSG(print_pan_id, pan_id);
+    CUSTOM_INIT_MSG(comms, print_pan_id, pan_id);
     set_initiator_pan_id((uint16_t)pan_id);
     set_responder_pan_id((uint16_t)pan_id);
 }
@@ -310,7 +317,7 @@ static void load_settings(void) {
     const struct comms *comms = comms_backend_uart_get_ptr();
     load_format_no_msg(comms);
 
-    SETTINGS_PRINT(comms, "Node On: " APP_VERSION_STRING);
+    SETTINGS_HEADER(comms);
     SETTINGS_PRINT(comms, "Flash Configuration:");
 
     load_led_mode(comms);

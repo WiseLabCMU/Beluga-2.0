@@ -33,7 +33,6 @@
 #include <settings.h>
 #include <stdlib.h>
 #include <utils.h>
-#include <watchdog.h>
 #include <zephyr/logging/log.h>
 
 /**
@@ -65,55 +64,15 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * "read the setting"
  * @param[in] setting The enum that defines the setting
  * @param[in] settingstr The string representation of the setting
+ * @param[in] callback An optional custom print function for the setting
  */
-#define READ_SETTING_DEFAULT(_comms, argc, required, setting, settingstr)      \
+#define READ_SETTING(_comms, argc, required, setting, settingstr)              \
     do {                                                                       \
-        if ((uint16_t)(argc) < (uint16_t)(required)) {                         \
+        if ((argc) < (required)) {                                             \
             int32_t _setting = retrieveSetting(setting);                       \
             OK(_comms, settingstr ": %" PRIu32, (uint32_t)_setting);           \
         }                                                                      \
     } while (0)
-
-/**
- * @brief Prints out the saved setting if the minimum amount of tokens have not
- * been passed in
- *
- * @param[in] argc The amount of tokens parsed
- * @param[in] required The amount of tokens required to do something other than
- * "read the setting"
- * @param[in] setting The enum that defines the setting
- * @param[in] settingstr The string representation of the setting
- * @param[in] callback The custom print function for the setting
- */
-#define READ_SETTING_CALLBACK(_comms, argc, required, setting, settingstr,     \
-                              callback)                                        \
-    do {                                                                       \
-        if (get_format_mode()) {                                               \
-            READ_SETTING_DEFAULT(_comms, argc, required, setting, settingstr); \
-        } else if ((uint16_t)(argc) < (uint16_t)(required)) {                  \
-            int32_t _setting = retrieveSetting(setting);                       \
-            callback(_setting);                                                \
-            OK(_comms);                                                        \
-        }                                                                      \
-    } while (0)
-
-/**
- * @brief Prints out the saved setting if the minimum amount of tokens have not
- * been passed in
- *
- * @param[in] argc The amount of tokens parsed
- * @param[in] required The amount of tokens required to do something other than
- * "read the setting"
- * @param[in] setting The enum that defines the setting
- * @param[in] settingstr The string representation of the setting
- * @param[in] callback An optional custom print function for the setting
- */
-#define READ_SETTING(_comms, argc, required, setting, settingstr, callback...) \
-    COND_CODE_1(                                                               \
-        IS_EMPTY(callback),                                                    \
-        (READ_SETTING_DEFAULT(_comms, argc, required, setting, settingstr)),   \
-        (READ_SETTING_CALLBACK(_comms, argc, required, setting, settingstr,    \
-                               GET_ARG_N(1, callback))))
 
 /**
  * Converts an integer into a boolean given that the integer is a valid value.
@@ -445,7 +404,7 @@ AT_CMD_REGISTER(TIMEOUT);
  */
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
-    READ_SETTING(comms, argc, 2, BELUGA_TX_POWER, "TX Power", print_tx_power);
+    READ_SETTING(comms, argc, 2, BELUGA_TX_POWER, "TX Power");
     int32_t arg1, coarse_control, fine_control;
     bool value, success = strtoint32(argv[1], &arg1);
     uint32_t power, mask = UINT8_MAX, new_setting;
@@ -700,8 +659,7 @@ AT_CMD_REGISTER(TIME);
  */
 AT_CMD_DEFINE(FORMAT) {
     LOG_INF("Running FORMAT command");
-    READ_SETTING(comms, argc, 2, BELUGA_OUT_FORMAT, "Format Mode",
-                 print_output_format);
+    READ_SETTING(comms, argc, 2, BELUGA_OUT_FORMAT, "Format Mode");
     int32_t mode;
     bool success = strtoint32(argv[1], &mode);
 
@@ -710,7 +668,7 @@ AT_CMD_DEFINE(FORMAT) {
     }
 
     updateSetting(BELUGA_OUT_FORMAT, mode);
-    set_format_mode(mode == 1);
+    set_format(comms, (enum comms_out_format_mode)mode);
     OK(comms);
 }
 AT_CMD_REGISTER(FORMAT);
@@ -774,8 +732,7 @@ AT_CMD_REGISTER(PHR);
  */
 AT_CMD_DEFINE(DATARATE) {
     LOG_INF("Running DATARATE command");
-    READ_SETTING(comms, argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate",
-                 print_uwb_datarate);
+    READ_SETTING(comms, argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
     int32_t rate;
     int retVal;
     bool success = strtoint32(argv[1], &rate);
@@ -807,8 +764,7 @@ AT_CMD_REGISTER(DATARATE);
  */
 AT_CMD_DEFINE(PULSERATE) {
     LOG_INF("Running PULSERATE command");
-    READ_SETTING(comms, argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate",
-                 print_pulse_rate);
+    READ_SETTING(comms, argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
     int32_t rate;
     int retVal;
     bool success = strtoint32(argv[1], &rate);
@@ -873,7 +829,7 @@ AT_CMD_REGISTER(PREAMBLE);
  */
 AT_CMD_DEFINE(PAC) {
     LOG_INF("Running PAC command");
-    READ_SETTING(comms, argc, 2, BELUGA_UWB_PAC, "PAC Size", print_pac_size);
+    READ_SETTING(comms, argc, 2, BELUGA_UWB_PAC, "PAC Size");
     int32_t pac_size;
     int retVal;
     bool success = strtoint32(argv[1], &pac_size);
@@ -937,7 +893,7 @@ AT_CMD_REGISTER(SFD);
  */
 AT_CMD_DEFINE(PANID) {
     LOG_INF("Running PANID command");
-    READ_SETTING(comms, argc, 2, BELUGA_PAN_ID, "PAN ID", print_pan_id);
+    READ_SETTING(comms, argc, 2, BELUGA_PAN_ID, "PAN ID");
     int32_t pan_id;
     int retVal;
     bool success = strtoint32(argv[1], &pan_id);

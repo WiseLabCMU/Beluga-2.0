@@ -572,3 +572,37 @@ int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
 
     return ret;
 }
+
+int print_format(const struct comms *comms) {
+    struct beluga_msg msg = {.type = START_EVENT};
+    int ret = 0;
+
+    if (comms == NULL || comms->ctx == NULL) {
+        return -EINVAL;
+    }
+
+    switch (comms->ctx->format) {
+    case FORMAT_ASCII: {
+        msg.payload.node_version = "  Format: ASCII";
+        break;
+    }
+    case FORMAT_JSON: {
+        msg.payload.node_version = "  Format: JSON";
+        break;
+    }
+    case FORMAT_FRAMES: {
+        msg.payload.node_version = "  Format: Framed";
+        break;
+    }
+    default: {
+        ret = -EFAULT;
+        break;
+    }
+    }
+
+    if (ret == 0) {
+        ret = comms_write_msg(comms, &msg);
+    }
+
+    return ret;
+}

@@ -20,6 +20,7 @@
 #define BELUGA_RANGING_H
 
 #include <deca_regs.h>
+#include <serial/comms.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -131,34 +132,36 @@ enum uwb_sfd {
  * @brief Prints the TX power in a non-standard (human readable) format
  * @param[in] tx_power The current TX power
  */
-void print_tx_power(uint32_t tx_power);
+void print_tx_power(const struct comms *comms, uint32_t tx_power);
 
 /**
  * @brief Prints the UWB data rate in a non-standard (human readable) format
  * @param[in] rate The current data rate
  * @return The data rate that was just printed
  */
-enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate);
+enum uwb_datarate print_uwb_datarate(const struct comms *comms,
+                                     enum uwb_datarate rate);
 
 /**
  * @brief Prints the pulse rate in a non-standard (human readable) format
  * @param[in] rate The current pulse rate
  * @return The pulse rate
  */
-enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate);
+enum uwb_pulse_rate print_pulse_rate(const struct comms *comms,
+                                     enum uwb_pulse_rate rate);
 
 /**
  * @brief Prints the PAC size in a non-standard (human readable) format
  * @param[in] pac The PAC size
  * @return The PAC size
  */
-int32_t print_pac_size(int32_t pac);
+int32_t print_pac_size(const struct comms *comms, int32_t pac);
 
 /**
  * @brief Prints the current PAN ID in a non-standard (human readable) format
  * @param[in] pan_id The PAN ID to print
  */
-void print_pan_id(uint32_t pan_id);
+void print_pan_id(const struct comms *comms, uint32_t pan_id);
 
 /**
  * @brief Sets the PHR mode for the DW1000

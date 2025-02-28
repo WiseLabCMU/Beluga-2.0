@@ -134,6 +134,7 @@ void __printflike(2, 3)
     at_msg_fmt(const struct comms *comms, const char *msg, ...);
 
 int set_format(const struct comms *comms, enum comms_out_format_mode mode);
+int print_format(const struct comms *comms);
 int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg);
 void comms_flush_out(const struct comms *comms, int ret);
 
