@@ -302,7 +302,7 @@ AT_CMD_DEFINE(RATE) {
     int32_t rate;
     bool success = strtoint32(argv[1], &rate);
 
-    if (rate < 0 || rate > 500 || !success) {
+    if (rate < 0 || rate > (int32_t)CONFIG_MAX_POLLING_RATE || !success) {
         ERROR(comms, "Invalid rate parameter");
     }
 
