@@ -123,6 +123,7 @@ static bool evict_nodes(const struct comms *comms) {
 
                 comms_write_msg(comms, &msg);
                 removed = true;
+                seen_list[x].UUID = 0;
             }
         }
     }
