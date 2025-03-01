@@ -44,8 +44,8 @@ struct at_command_static_entry {
 };
 
 #define AT_CMD_DEFINE(_command)                                                \
-    static int at_##_command(const struct comms *comms, size_t argc,           \
-                             char const *const *argv)
+    __attribute__((unused)) static int at_##_command(                          \
+        const struct comms *comms, size_t argc, char const *const *argv)
 #define AT_CMD_REGISTER(_command)                                              \
     static const struct at_command_static_entry UTIL_CAT(_comms_,              \
                                                          _command) = {         \
