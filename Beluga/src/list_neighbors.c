@@ -60,14 +60,6 @@ void set_stream_mode(bool value) { stream_mode = value; }
 bool get_stream_mode(void) { return stream_mode; }
 
 /**
- * @brief Custom print function for printing the format setting
- * @param[in] format The format saved in settings
- */
-void print_output_format(int32_t format) {
-    printf("Output Format: %s ", (format == 1) ? "JSON" : "CSV");
-}
-
-/**
  * @brief Task to print out visible nodes information.
  *
  * This function runs as a task to periodically print out the neighbor nodes
@@ -80,7 +72,8 @@ NO_RETURN static void list_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p3);
     const struct comms *comms = comms_backend_uart_get_ptr();
     struct beluga_msg msg = {.type = NEIGHBOR_UPDATES,
-                             .payload.neighbor_list = seen_list};
+                             .payload.neighbor_list = seen_list,
+                             .payload.stream = stream_mode};
 
     while (true) {
         k_sleep(K_MSEC(50));

@@ -401,22 +401,34 @@ int set_format(const struct comms *comms, enum comms_out_format_mode mode) {
         comms_write(_comms, header, header_len);                               \
     } while (0)
 
+#if defined(CONFIG_UWB_LOGIC_CLK)
+#define HEADER        "ID,RSSI,RANGE,TIMESTAMP,EXCHANGE\r\n"
+#define ASCII_FMT_STR "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 ",%" PRIu32 "\r\n"
+#define JSON_FMT_STR                                                           \
+    "{ID:%" PRIu16 ",RSSI:%" PRId8 ",RANGE:%f,TIMESTAMP:%" PRId64              \
+    ",EXCHANGE:%" PRIu32 "}\r\n"
+#define FMT_PARAMS(_i)                                                         \
+    list[(_i)].UUID, list[(_i)].RSSI, (double)list[(_i)].range,                \
+        list[(_i)].time_stamp, list[(_i)].exchange_id
+#else
+#define HEADER        "ID,RSSI,RANGE,TIMESTAMP\r\n"
+#define ASCII_FMT_STR "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 "\r\n"
+#define JSON_FMT_STR                                                           \
+    "{ID:%" PRIu16 ",RSSI:%" PRId8 ",RANGE:%f,TIMESTAMP:%" PRId64 "}\r\n"
+#define FMT_PARAMS(_i)                                                         \
+    list[(_i)].UUID, list[(_i)].RSSI, (double)list[(_i)].range,                \
+        list[(_i)].time_stamp
+#endif
+
 static int s_write_neighbors(const struct comms *comms,
                              const struct beluga_msg *msg) {
     __ASSERT_NO_MSG(comms && msg);
     bool stream = msg->payload.stream;
+    bool header_printed = comms->ctx->format != FORMAT_ASCII;
     const struct node *list = msg->payload.neighbor_list;
 
     if (!list) {
         return -EINVAL;
-    }
-
-    if (comms->ctx->format == FORMAT_ASCII) {
-#if defined(CONFIG_UWB_LOGIC_CLK)
-        HEADER_GEN(comms, "ID,RSSI,RANGE,TIMESTAMP,EXCHANGE\r\n");
-#else
-        HEADER_GEN(comms, "ID,RSSI,RANGE,TIMESTAMP\r\n");
-#endif
     }
 
     for (size_t i = 0; i < MAX_ANCHOR_COUNT; i++) {
@@ -424,33 +436,13 @@ static int s_write_neighbors(const struct comms *comms,
             char s[256];
             size_t len;
             if (comms->ctx->format == FORMAT_ASCII) {
-#if defined(CONFIG_UWB_LOGIC_CLK)
-                len = snprintf(
-                    s, sizeof(s) - 1,
-                    "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 ",%" PRIu32 "\r\n",
-                    list[i].UUID, list[i].RSSI, (double)list[i].range,
-                    list[i].time_stamp, list[i].exchange_id);
-#else
-                len = snprintf(s, sizeof(s) - 1,
-                               "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 "\r\n",
-                               list[i].UUID, list[i].RSSI,
-                               (double)list[i].range, list[i].time_stamp);
-#endif
+                if (!header_printed) {
+                    HEADER_GEN(comms, HEADER);
+                    header_printed = true;
+                }
+                len = snprintf(s, sizeof(s) - 1, ASCII_FMT_STR, FMT_PARAMS(i));
             } else {
-#if defined(CONFIG_UWB_LOGIC_CLK)
-                len = snprintf(
-                    s, sizeof(s) - 1,
-                    "{ID:%" PRIu16 ",RSSI:%" PRId8
-                    ",RANGE:%f,TIMESTAMP:%" PRId64 ",EXCHANGE:%" PRIu32 "}\r\n",
-                    list[i].UUID, list[i].RSSI, (double)list[i].range,
-                    list[i].time_stamp, list[i].exchange_id);
-#else
-                len = snprintf(s, sizeof(s) - 1,
-                               "{ID:%" PRIu16 ",RSSI:%" PRId8
-                               ",RANGE:%f,TIMESTAMP:%" PRId64 "}\r\n",
-                               list[i].UUID, list[i].RSSI,
-                               (double)list[i].range, list[i].time_stamp);
-#endif
+                len = snprintf(s, sizeof(s) - 1, JSON_FMT_STR, FMT_PARAMS(i));
             }
             comms_write(comms, s, len);
         }
