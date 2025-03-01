@@ -88,4 +88,8 @@ config UWB_ENABLE_PA
     bool "Allow the UWB external to be toggled on"
     default y
 
+config MAX_POLLING_RATE
+    int "Maximum Polling Rate (ms)"
+    default 500
+
 endmenu
