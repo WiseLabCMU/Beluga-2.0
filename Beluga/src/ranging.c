@@ -194,7 +194,8 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 /**
  * The watchdog timer instance for the ranging.
  */
-static struct task_wdt_attr watchdogAttr = {.period = 2000};
+static struct task_wdt_attr watchdogAttr = {.period =
+                                                2 * CONFIG_MAX_POLLING_RATE};
 
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
@@ -626,7 +627,7 @@ void set_twr_mode(bool value) { twr_mode = value; }
  * @return -EINVAL if rate is an invalid value
  */
 int set_rate(uint32_t rate) {
-    if (IN_RANGE(rate, INT32_C(0), (int32_t)INT32_MAX)) {
+    if (!IN_RANGE(rate, INT32_C(0), (int32_t)INT32_MAX)) {
         return -EINVAL;
     }
     initiator_freq = (int32_t)rate;
@@ -700,7 +701,7 @@ static void initiate_ranging(void) {
     double range;
     uint32_t exchange;
 
-    k_msleep(initiator_freq);
+    k_sleep(K_MSEC(initiator_freq));
 
     if (drop) {
         uint16_t delay = get_rand_num_exp_collision(initiator_freq);
@@ -815,10 +816,10 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     while (true) {
         watchdog_red_rocket(&watchdogAttr);
 
-        if (initiator_freq != 0) {
+        if (initiator_freq > 0) {
             initiate_ranging();
         } else {
-            k_msleep(1000);
+            k_sleep(K_SECONDS(1));
         }
 
         update_poll_count();
