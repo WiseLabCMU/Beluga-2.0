@@ -157,6 +157,13 @@ static void load_bootmode(const struct comms *comms) {
  */
 static void load_poll_rate(const struct comms *comms) {
     int32_t rate = retrieveSetting(BELUGA_POLL_RATE);
+
+    // Account for new versions of the FW
+    if (rate > (int32_t)CONFIG_MAX_POLLING_RATE) {
+        rate = CONFIG_MAX_POLLING_RATE;
+        updateSetting(BELUGA_POLL_RATE, rate);
+    }
+
     set_rate(rate);
     advertising_reconfig(rate != 0);
     SETTINGS_PRINT(comms, "UWB Polling Rate: %d", rate);
