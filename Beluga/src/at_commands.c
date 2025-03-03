@@ -190,7 +190,7 @@ AT_CMD_DEFINE(STARTBLE) {
     LOG_INF("Running STARTBLE) command");
     if (get_NODE_UUID() == 0) {
         ERROR(comms, "Cannot start BLE: Node ID is not set");
-    } else if (get_ble_led_state() == LED_UWB_ON) {
+    } else if (get_ble_led_state() == LED_BLE_ON) {
         ERROR(comms, "BLE is already on");
     }
     k_sem_give(&print_list_sem);
@@ -214,7 +214,7 @@ AT_CMD_REGISTER(STARTBLE);
  */
 AT_CMD_DEFINE(STOPBLE) {
     LOG_INF("Running STOPBLE command");
-    if (get_ble_led_state() == LED_UWB_OFF) {
+    if (get_ble_led_state() == LED_BLE_OFF) {
         ERROR(comms, "BLE is already off");
     }
     int err = disable_bluetooth();
