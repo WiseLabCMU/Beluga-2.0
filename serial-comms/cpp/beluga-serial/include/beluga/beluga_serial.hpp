@@ -106,7 +106,7 @@ class BelugaSerial {
     bool _usbRemainsOpen = false;
     uint16_t _id{};
 
-    // Private because we don't want to get 9/11ed by the user
+    // Private because we don't want to get car-bombed by the user
     std::string format(const std::string &mode = "");
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
