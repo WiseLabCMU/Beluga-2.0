@@ -26,7 +26,8 @@
 #endif
 #define NEIGHBOR_UPDATE_CB nullptr
 #else
-#define NEIGHBOR_UPDATE_CB std::bind(&Beluga::publish_neighbor_list, this, std::placeholders::_1)
+#define NEIGHBOR_UPDATE_CB                                                     \
+    std::bind(&Beluga::publish_neighbor_list, this, std::placeholders::_1)
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_NEIGHBOR_PUBLISHER)
 
 #if defined(TIMED_PUBLISHERS) || defined(TIMED_RANGES_PUBLISHER)
@@ -35,7 +36,8 @@
 #endif
 #define RANGE_UPDATE_CB nullptr
 #else
-#define RANGE_UPDATE_CB std::bind(&Beluga::publish_ranges, this, std::placeholders::_1)
+#define RANGE_UPDATE_CB                                                        \
+    std::bind(&Beluga::publish_ranges, this, std::placeholders::_1)
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_RANGES_PUBLISHER)
 
 #if defined(TIMED_PUBLISHERS) || defined(TIMED_RANGE_EVENTS_PUBLISHER)
@@ -44,7 +46,8 @@
 #endif
 #define RANGE_EVENT_UPDATE_CB nullptr
 #else
-#define RANGE_EVENT_UPDATE_CB std::bind(&Beluga::publish_exchange, this, std::placeholders::_1)
+#define RANGE_EVENT_UPDATE_CB                                                  \
+    std::bind(&Beluga::publish_exchange, this, std::placeholders::_1)
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_RANGE_EVENTS_PUBLISHER)
 
 using namespace std::chrono_literals;
@@ -53,13 +56,10 @@ class Beluga : public rclcpp::Node {
   public:
     Beluga()
         : Node("beluga"),
-          _serial(
-              "", BAUD_115200, 2s, 100ms,
-              NEIGHBOR_UPDATE_CB,
-              RANGE_UPDATE_CB,
-              RANGE_EVENT_UPDATE_CB,
-              std::bind(&Beluga::serial_logger, this, std::placeholders::_1,
-                        std::placeholders::_2)) {
+          _serial("", BAUD_115200, 2s, 100ms, NEIGHBOR_UPDATE_CB,
+                  RANGE_UPDATE_CB, RANGE_EVENT_UPDATE_CB,
+                  std::bind(&Beluga::serial_logger, this, std::placeholders::_1,
+                            std::placeholders::_2)) {
 
         this->declare_parameter("neighbors_name", "neighbor_list");
         this->declare_parameter("ranges_name", "range_updates");
@@ -95,16 +95,23 @@ class Beluga : public rclcpp::Node {
             300s, std::bind(&Beluga::__time_sync, this));
 
 #if defined(TIMED_NEIGHBOR_PUBLISHER)
-        int64_t neighbor_period = this->get_parameter("neighbor_period").as_int();
-        neighbor_timer = this->create_wall_timer(std::chrono::milliseconds(neighbor_period), std::bind(&Beluga::timer_callback_neighbors, this));
+        int64_t neighbor_period =
+            this->get_parameter("neighbor_period").as_int();
+        neighbor_timer = this->create_wall_timer(
+            std::chrono::milliseconds(neighbor_period),
+            std::bind(&Beluga::timer_callback_neighbors, this));
 #endif // defined(TIMED_NEIGHBOR_PUBLISHER)
 #if defined(TIMED_RANGES_PUBLISHER)
         int64_t ranges_period = this->get_parameter("ranging_period").as_int();
-        ranges_timer = this->create_wall_timer(std::chrono::milliseconds(ranges_period), std::bind(&Beluga::timer_callback_ranges, this));
+        ranges_timer = this->create_wall_timer(
+            std::chrono::milliseconds(ranges_period),
+            std::bind(&Beluga::timer_callback_ranges, this));
 #endif // defined(TIMED_RANGES_PUBLISHER)
 #if defined(TIMED_RANGE_EVENTS_PUBLISHER)
         int64_t events_period = this->get_parameter("events_period").as_int();
-        range_events_timer = this->create_wall_timer(std::chrono::milliseconds(events_period), std::bind(&Beluga::timer_callback_range_events, this));
+        range_events_timer = this->create_wall_timer(
+            std::chrono::milliseconds(events_period),
+            std::bind(&Beluga::timer_callback_range_events, this));
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
     }
 
