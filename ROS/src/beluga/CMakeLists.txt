@@ -14,6 +14,10 @@ add_definitions(
         # -DLOG_RANGES    # Log range reports
         # -DLOG_NEIGHBORS # Log neighbor updates
         # -DLOG_EXCHANGES # Log exchanges
+        # -DTIMED_PUBLISHERS # All publishers are triggered by a timer
+        # -DTIMED_NEIGHBOR_PUBLISHER # Publish neighbor updates on a timer
+        # -DTIMED_RANGES_PUBLISHER # Publish range updates on a timer
+        # -DTIMED_RANGE_EVENTS_PUBLISHER # Publish ranging events on a timer
 )
 
 include_directories(include)

@@ -479,3 +479,34 @@ int Beluga::serial_logger(const char *msg, va_list args) {
 
     return len;
 }
+
+#if defined(TIMED_NEIGHBOR_PUBLISHER)
+void Beluga::timer_callback_neighbors() {
+    std::vector<BelugaSerial::BelugaNeighbor> list;
+    bool updated = _serial.get_neighbors(list);
+
+    if (updated) {
+        publish_neighbor_list(list);
+    }
+}
+#endif // defined(TIMED_NEIGHBOR_PUBLISHER)
+
+#if defined(TIMED_RANGES_PUBLISHER)
+void Beluga::timer_callback_ranges() {
+    std::vector<BelugaSerial::BelugaNeighbor> list;
+    _serial.get_ranges(list);
+
+    if (!list.empty()) {
+        publish_ranges(list);
+    }
+}
+#endif // defined(TIMED_RANGES_PUBLISHER)
+
+#if defined(TIMED_RANGE_EVENTS_PUBLISHER)
+void Beluga::timer_callback_range_events() {
+    BelugaSerial::RangeEvent event = _serial.get_range_event();
+    if (event.ID != 0) {
+        publish_exchange(event);
+    }
+}
+#endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
