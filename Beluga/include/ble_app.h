@@ -25,8 +25,8 @@ struct node {
     int8_t RSSI;        /* node RSSI value */
     int64_t time_stamp; /* Last timestamp updated ranging value */
     float range;        /* Last updated ranging value */
-    bool update_flag;  /* Flag to indicate the ranging value is updated or not, 1
-                         if the node get updated */
+    bool update_flag; /* Flag to indicate the ranging value is updated or not, 1
+                        if the node get updated */
     bool polling_flag; /* Flag to indicate the node is passive or not, 1 if the
                          node will init uwb signal*/
     int64_t
