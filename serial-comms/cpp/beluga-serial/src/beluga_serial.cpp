@@ -41,20 +41,19 @@ BelugaSerial::BelugaSerial() { _initialize(); }
 BelugaSerial::BelugaSerial(
     const std::string &port, BaudRate baud,
     const std::chrono::milliseconds &timeout,
-    const std::chrono::milliseconds &serial_timeout, uint32_t max_lines_read,
+    const std::chrono::milliseconds &serial_timeout,
     std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
     std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
     std::function<void(const RangeEvent &)> range_event_cb,
     std::function<int(const char *, va_list)> logger_cb) {
-    _initialize(baud, timeout, serial_timeout, max_lines_read, port,
+    _initialize(baud, timeout, serial_timeout, port,
                 std::move(neighbor_update_cb), std::move(range_updates_cb),
                 std::move(range_event_cb), std::move(logger_cb));
 }
 
 void BelugaSerial::_initialize(
     BaudRate baud, const std::chrono::milliseconds &timeout,
-    const std::chrono::milliseconds &serial_timeout, uint32_t max_lines_read,
-    const std::string &port,
+    const std::chrono::milliseconds &serial_timeout, const std::string &port,
     std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
     std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
     std::function<void(const RangeEvent &)> range_event_cb,
@@ -108,7 +107,6 @@ void BelugaSerial::_initialize(
         _serial.open();
     }
 
-    _read_max_lines = max_lines_read;
     _timeout = timeout;
 
     _neighbor_cb = std::move(neighbor_update_cb);
@@ -501,6 +499,9 @@ void BelugaSerial::start() {
     _processing_task.thread = std::thread(std::move(_processing_task.task));
     _rx_task.task = std::packaged_task<void()>([this] { _read_serial(); });
     _rx_task.thread = std::thread(std::move(_rx_task.task));
+    // Ensure that we are in the correct format mode otherwise this program will
+    // crash like the Hindenburg
+    format("2");
     std::string id_ = id();
     _id = _extract_id(id_);
 }

@@ -50,7 +50,6 @@ class BelugaSerial {
             std::chrono::milliseconds(2000),
         const std::chrono::milliseconds &serial_timeout =
             std::chrono::milliseconds(100),
-        uint32_t max_lines_read = 16,
         std::function<void(const std::vector<BelugaNeighbor> &)>
             neighbor_update_cb = nullptr,
         std::function<void(const std::vector<BelugaNeighbor> &)>
@@ -82,7 +81,6 @@ class BelugaSerial {
     std::string pwramp(const std::string &mode = "");
     std::string antenna(const std::string &antenna = "");
     std::string time();
-    std::string format(const std::string &mode = "");
     std::string deepsleep();
     std::string datarate(const std::string &rate_ = "");
     std::string preamble(const std::string &preamble = "");
@@ -103,11 +101,13 @@ class BelugaSerial {
   private:
     std::function<int(const char *, va_list)> _logger_cb = nullptr;
     Serial::Serial _serial;
-    uint32_t _read_max_lines = 16;
     std::chrono::milliseconds _timeout{};
     BelugaNeighborList _neighbors;
     bool _usbRemainsOpen = false;
     uint16_t _id{};
+
+    // Private because we don't want to get 9/11ed by the user
+    std::string format(const std::string &mode = "");
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
     std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
@@ -126,7 +126,7 @@ class BelugaSerial {
             std::chrono::milliseconds(2000),
         const std::chrono::milliseconds &serial_timeout =
             std::chrono::milliseconds(100),
-        uint32_t max_lines_read = 16, const std::string &port = "",
+        const std::string &port = "",
         std::function<void(const std::vector<BelugaNeighbor> &)>
             neighbor_update_cb = nullptr,
         std::function<void(const std::vector<BelugaNeighbor> &)>

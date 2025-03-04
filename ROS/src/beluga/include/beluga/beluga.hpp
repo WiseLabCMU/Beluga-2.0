@@ -54,7 +54,7 @@ class Beluga : public rclcpp::Node {
     Beluga()
         : Node("beluga"),
           _serial(
-              "", BAUD_115200, 2s, 100ms, 16,
+              "", BAUD_115200, 2s, 100ms,
               NEIGHBOR_UPDATE_CB,
               RANGE_UPDATE_CB,
               RANGE_EVENT_UPDATE_CB,
