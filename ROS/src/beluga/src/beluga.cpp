@@ -8,6 +8,7 @@
  * @author tom
  */
 
+#include <algorithm>
 #include <beluga/beluga.hpp>
 #include <beluga_messages/srv/beluga_at_command.hpp>
 #include <cinttypes>
@@ -371,6 +372,12 @@ constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{
     {"pulserate", 1},
 }};
 
+constexpr std::array<const char *, 18> settingPriorities = {
+    "id",         "bootmode", "rate",    "channel", "timeout",  "txpower",
+    "streammode", "twrmode",  "ledmode", "pwramp",  "datarate", "preamble",
+    "pulserate",  "antenna",  "phr",     "pac",     "sfd",      "panid",
+};
+
 void Beluga::_setup() {
     std::map<std::string, int64_t> configs;
     for (const auto &[key, value] : DEFAULT_CONFIGS) {
@@ -405,29 +412,40 @@ void Beluga::_setup() {
             CALLBACK_DEF(sfd),        CALLBACK_DEF(panid),
         };
 
-    // Tel beluga to shut up
+    // Tell beluga to shut up
     _serial.stop_ble();
     _serial.stop_uwb();
 
     std::string response;
 
-    for (const auto &[key, value] : configs) {
-        // Get the setting
+    for (const auto &key : settingPriorities) {
         std::string setting = callbacks[key]("");
-        RCLCPP_INFO(this->get_logger(), "Current %s setting: %s", key.c_str(),
+        RCLCPP_INFO(this->get_logger(), "Current %s setting: %s", key,
                     setting.c_str());
         int64_t int_setting;
         try {
             int_setting = extract_number(setting);
-        } catch (const ValueError &exc) {
+        } catch (ValueError &exc) {
             int_setting = -1;
         }
 
-        if (int_setting != value) {
+        if (configs.find(key) == configs.end()) {
+            continue;
+        }
+
+        if (setting == "Invalid AT command") {
+            std::string key_ = key;
+            std::transform(key_.begin(), key_.end(), key_.begin(), ::toupper);
+            RCLCPP_INFO(this->get_logger(), "AT+%s is disabled int firmware",
+                        key_.c_str());
+            continue;
+        }
+
+        if (int_setting != configs[key]) {
             RCLCPP_INFO(this->get_logger(),
                         "Difference in %s setting. Now setting %s to %" PRId64,
-                        key.c_str(), key.c_str(), value);
-            response = callbacks[key](std::to_string(value));
+                        key, key, configs[key]);
+            response = callbacks[key](std::to_string(configs[key]));
             if (!response.ends_with("OK")) {
                 std::stringstream oss;
                 oss << "Tried setting bad configurations: " << int_setting
