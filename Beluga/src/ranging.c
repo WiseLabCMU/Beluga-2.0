@@ -692,6 +692,8 @@ static void resp_reconfig() {
  * @brief Find a node in the neighbors list and range to that node
  */
 static void initiate_ranging(void) {
+    // Time left to sleep in ms
+    static int32_t time_left = CONFIG_POLLING_REFRESH_PERIOD;
     // Flag to see if last ranging measurement was dropped
     static bool drop = false;
     // The neighbor currently being ranged to
@@ -700,8 +702,15 @@ static void initiate_ranging(void) {
     bool search_broken = false;
     double range;
     uint32_t exchange;
+    int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD) ? time_left : CONFIG_POLLING_REFRESH_PERIOD;
 
-    k_sleep(K_MSEC(initiator_freq));
+    k_sleep(K_MSEC(sleep_for));
+    time_left -= sleep_for;
+
+    if (time_left > 0) {
+        return;
+    }
+    time_left = initiator_freq;
 
     if (drop) {
         uint16_t delay = get_rand_num_exp_collision(initiator_freq);

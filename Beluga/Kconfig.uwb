@@ -92,4 +92,22 @@ config MAX_POLLING_RATE
     int "Maximum Polling Rate (ms)"
     default 500
 
+config POLLING_REFRESH
+    int "Refresh Period while Polling"
+    default 100
+    help
+        This determines the maximum amount of ms the ranging task can sleep for; However,
+        it is important to note that this is different than the polling rate. The polling
+        rate is what determines how often the system should poll the distances for other
+        nodes while this parameter indicates the maximum amount of time the polling thread
+        can sleep for, thus allowing for the ranging thread to update the count for polling
+        neighbors and suspending/releasing the responder task independently from the polling
+        rate.
+
+config POLLING_REFRESH_PERIOD
+    int
+    default 100 if POLLING_REFRESH < 100
+    default 500 if POLLING_REFRESH > 500
+    default POLLING_REFRESH
+
 endmenu
