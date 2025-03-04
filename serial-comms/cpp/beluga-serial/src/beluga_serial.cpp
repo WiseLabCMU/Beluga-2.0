@@ -628,6 +628,13 @@ uint16_t BelugaSerial::_extract_id(const std::string &s) {
     }
     tokens.push_back(s.substr(start));
 
+    for (auto &it : tokens) {
+        it.erase(
+            std::remove_if(it.begin(), it.end(),
+                           [](unsigned char c) { return !std::isprint(c); }),
+            it.end());
+    }
+
     std::string id_str;
     for (const auto &it : tokens) {
         bool pure_number = true;
