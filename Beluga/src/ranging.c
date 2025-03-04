@@ -751,7 +751,7 @@ static void initiate_ranging(void) {
         }
 
         if (!drop && RANGE_CONDITION(range)) {
-            seen_list[current_neighbor].update_flag = 1;
+            seen_list[current_neighbor].update_flag = true;
             seen_list[current_neighbor].range = (float)range;
             seen_list[current_neighbor].time_stamp = k_uptime_get();
 #if defined(CONFIG_UWB_LOGIC_CLK)
@@ -778,7 +778,7 @@ void update_poll_count(void) {
     bool neighbors_polling = false;
 
     for (size_t x = 0; x < MAX_ANCHOR_COUNT; x++) {
-        if (seen_list[x].UUID != 0 && seen_list[x].polling_flag != 0) {
+        if (seen_list[x].UUID != 0 && seen_list[x].polling_flag) {
             neighbors_polling = true;
             break;
         }
