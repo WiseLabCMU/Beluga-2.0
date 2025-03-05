@@ -9,7 +9,7 @@
 #include "ble_app.h"
 #include <app_leds.h>
 #include <app_version.h>
-#include <at_commands.h>
+#include <beluga_message.h>
 #include <debug.h>
 #include <initiator.h>
 #include <led_config.h>
@@ -18,10 +18,10 @@
 #include <range_extension.h>
 #include <ranging.h>
 #include <responder.h>
+#include <serial/comms.h>
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>
-#include <uart.h>
 #include <unistd.h>
 #include <utils.h>
 #include <voltage_regulator.h>
@@ -31,67 +31,95 @@
 
 LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 
-#if defined(CONFIG_BELUGA_FRAMES)
-#include <beluga_message.h>
-
-#define INIT_MSG(...)                   (void)0
-#define CUSTOM_INIT_MSG(callback_, ...) callback_(__VA_ARGS__)
-#define NODE_VERSION_BANNER()           (void)0
-#define FW_CONFIG_BANNER()              (void)0
-#define SETTINGS_BREAK()                                                       \
+#define SETTINGS_HEADER(_comms)                                                \
+    do {                                                                       \
+        if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
+            struct beluga_msg msg = {.type = START_EVENT,                      \
+                                     .payload.node_version =                   \
+                                         "Node On: " APP_VERSION_STRING};      \
+            comms_write_msg(_comms, &msg);                                     \
+        }                                                                      \
+    } while (0)
+#define _SETTINGS_PRINT_FMT(_comms, _str, ...)                                 \
+    do {                                                                       \
+        struct beluga_msg msg = {.type = START_EVENT};                         \
+        char s[256];                                                           \
+        snprintf(s, sizeof(s) - 1, "  " _str, __VA_ARGS__);                    \
+        msg.payload.node_version = s;                                          \
+        comms_write_msg(_comms, &msg);                                         \
+    } while (0)
+#define __SETTINGS_PRINT(_comms, _str)                                         \
     do {                                                                       \
         struct beluga_msg msg = {.type = START_EVENT,                          \
-                                 .payload.node_version = APP_VERSION_STRING};  \
-        (void)write_message_frame(&msg);                                       \
+                                 .payload.node_version = ("  " _str)};         \
+        comms_write_msg(_comms, &msg);                                         \
     } while (0)
-
-#else
-
-#define _INIT_MSG(str)           printf("  " str "\n")
-#define _INIT_MSG_ARGS(str, ...) printf("  " str "\n", __VA_ARGS__)
-#define INIT_MSG(format_str, ...)                                              \
-    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (_INIT_MSG(format_str)),                \
-                (_INIT_MSG_ARGS(format_str, __VA_ARGS__)))
-#define CUSTOM_INIT_MSG(callback_, ...)                                        \
+#define _SETTINGS_PRINT(_comms, _str, ...)                                     \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__), (__SETTINGS_PRINT(_comms, _str)),       \
+                (_SETTINGS_PRINT_FMT(_comms, _str, __VA_ARGS__)))
+#define SETTINGS_PRINT(_comms, _str, ...)                                      \
     do {                                                                       \
-        printf("  ");                                                          \
-        callback_(__VA_ARGS__);                                                \
-        printf("\n");                                                          \
+        if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
+            _SETTINGS_PRINT(_comms, _str, __VA_ARGS__);                        \
+        }                                                                      \
     } while (0)
 
-#define NODE_VERSION_BANNER() printf("Node On: " APP_VERSION_STRING "\n")
-#define FW_CONFIG_BANNER()    printf("Flash Configuration: \n");
-#define SETTINGS_BREAK()      printf("\n")
-#endif
+#define SETTINGS_BREAK(_comms)                                                 \
+    do {                                                                       \
+        if ((_comms)->ctx->format == FORMAT_FRAMES) {                          \
+            struct beluga_msg msg = {.type = START_EVENT,                      \
+                                     .payload.node_version =                   \
+                                         APP_VERSION_STRING};                  \
+            comms_write_msg(_comms, &msg);                                     \
+        } else {                                                               \
+            struct beluga_msg msg = {.type = START_EVENT,                      \
+                                     .payload.node_version = "\n"};            \
+            comms_write_msg(_comms, &msg);                                     \
+        }                                                                      \
+    } while (0)
+
+#define _CUSTOM_INIT_MSG_ARGS(_comms, callback, ...)                           \
+    callback(_comms, __VA_ARGS__)
+#define _CUSTOM_INIT_MSG_NOARGS(_comms, callback) callback(_comms)
+#define _CUSTOM_INIT_MSG(_comms, callback, ...)                                \
+    COND_CODE_1(IS_EMPTY(__VA_ARGS__),                                         \
+                (_CUSTOM_INIT_MSG_NOARGS(_comms, callback)),                   \
+                (_CUSTOM_INIT_MSG_ARGS(_comms, callback, __VA_ARGS__)))
+#define CUSTOM_INIT_MSG(_comms, callback, ...)                                 \
+    do {                                                                       \
+        if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
+            _CUSTOM_INIT_MSG(_comms, callback, __VA_ARGS__);                   \
+        }                                                                      \
+    } while (0)
 
 /**
  * Load the LED mode from the settings and display the current state
  */
-static void load_led_mode(void) {
+static void load_led_mode(const struct comms *comms) {
     int32_t led_mode = retrieveSetting(BELUGA_LEDMODE);
 
     if (led_mode == 1) {
         all_leds_off();
     }
     update_led_state(LED_POWER_ON);
-    INIT_MSG("LED Mode: %d", led_mode);
+    SETTINGS_PRINT(comms, "LED Mode: %d", led_mode);
 }
 
 /**
  * Load the node ID from settings and display it
  */
-static void load_id(void) {
+static void load_id(const struct comms *comms) {
     int32_t nodeID = retrieveSetting(BELUGA_ID);
 
     if (nodeID != DEFAULT_ID_SETTING) {
         update_node_id((uint16_t)nodeID);
         set_initiator_id((uint16_t)nodeID);
         set_responder_id((uint16_t)nodeID);
-        INIT_MSG("Node ID: %d", nodeID);
+        SETTINGS_PRINT(comms, "Node ID: %d", nodeID);
     } else {
-        INIT_MSG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        INIT_MSG("!Warning! Please setup node ID!");
-        INIT_MSG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        SETTINGS_PRINT(comms, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        SETTINGS_PRINT(comms, "!Warning! Please setup node ID!");
+        SETTINGS_PRINT(comms, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     }
 }
 
@@ -99,7 +127,7 @@ static void load_id(void) {
  * Load the mode the node should boot in, update the states for the node, and
  * display the boot mode
  */
-static void load_bootmode(void) {
+static void load_bootmode(const struct comms *comms) {
     int32_t bootMode = retrieveSetting(BELUGA_BOOTMODE);
 
     switch (bootMode) {
@@ -118,138 +146,143 @@ static void load_bootmode(void) {
     case 0:
         break;
     default:
-        INIT_MSG("Boot Mode: Unknown");
+        SETTINGS_PRINT(comms, "Boot Mode: Unknown");
         break;
     }
-    INIT_MSG("Boot Mode: %d", bootMode);
+    SETTINGS_PRINT(comms, "Boot Mode: %d", bootMode);
 }
 
 /**
  * Retrieve the polling rate, set it, and display what it is
  */
-static void load_poll_rate(void) {
+static void load_poll_rate(const struct comms *comms) {
     int32_t rate = retrieveSetting(BELUGA_POLL_RATE);
+
+    // Account for new versions of the FW
+    if (rate > (int32_t)CONFIG_MAX_POLLING_RATE) {
+        rate = CONFIG_MAX_POLLING_RATE;
+        updateSetting(BELUGA_POLL_RATE, rate);
+    }
+
     set_rate(rate);
     advertising_reconfig(rate != 0);
-    INIT_MSG("UWB Polling Rate: %d", rate);
+    SETTINGS_PRINT(comms, "UWB Polling Rate: %d", rate);
 }
 
 /**
  * Retrieve the UWB channel, set it, and display what it is
  */
-static void load_channel(void) {
+static void load_channel(const struct comms *comms) {
     int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
     set_uwb_channel(channel);
-    INIT_MSG("UWB Channel: %d", channel);
+    SETTINGS_PRINT(comms, "UWB Channel: %d", channel);
 }
 
 /**
  * Retrieve the node timeout, set it, and display what it is
  */
-static void load_timeout(void) {
+static void load_timeout(const struct comms *comms) {
     int32_t timeout = retrieveSetting(BELUGA_BLE_TIMEOUT);
     set_node_timeout(timeout);
-    INIT_MSG("BLE Timeout: %d", timeout);
+    SETTINGS_PRINT(comms, "BLE Timeout: %d", timeout);
 }
 
 /**
  * Retrieve the UWB TX power, set it, and display what it is
  */
-static void load_tx_power(void) {
+static void load_tx_power(const struct comms *comms) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
     set_tx_power((uint32_t)tx_power);
-    CUSTOM_INIT_MSG(print_tx_power, (uint32_t)tx_power);
+    CUSTOM_INIT_MSG(comms, print_tx_power, (uint32_t)tx_power);
 }
 
 /**
  * Retrieve the neighbor streaming mode, set it, and display the current mode
  */
-static void load_stream_mode(void) {
+static void load_stream_mode(const struct comms *comms) {
     int32_t stream_mode = retrieveSetting(BELUGA_STREAMMODE);
     set_stream_mode(stream_mode != 0);
-    INIT_MSG("Stream Mode: %d", stream_mode);
+    SETTINGS_PRINT(comms, "Stream Mode: %d", stream_mode);
 }
 
 /**
  * Retrieve the two-way ranging mode, set it, and display what it is
  */
-static void load_twr_mode(void) {
+static void load_twr_mode(const struct comms *comms) {
     int32_t twr = retrieveSetting(BELUGA_TWR);
     set_twr_mode(twr != 0);
-    INIT_MSG("Ranging Mode: %d", twr);
+    SETTINGS_PRINT(comms, "Ranging Mode: %d", twr);
 }
 
 /**
  * Retrieve the output format mode, set it, and display what it is
  */
-static void load_out_format(void) {
-    int32_t format = retrieveSetting(BELUGA_OUT_FORMAT);
-    set_format_mode(format == 1);
-    CUSTOM_INIT_MSG(print_output_format, format);
+static void load_out_format(const struct comms *comms) {
+    CUSTOM_INIT_MSG(comms, print_format);
 }
 
 /**
  * Retrieve the UWB PHR mode, set it, and display what it is
  */
-static void load_phr_mode(void) {
+static void load_phr_mode(const struct comms *comms) {
     int32_t mode = retrieveSetting(BELUGA_UWB_PHR);
-    INIT_MSG("UWB PHR Mode: %" PRId32, mode);
+    SETTINGS_PRINT(comms, "UWB PHR Mode: %" PRId32, mode);
     uwb_set_phr_mode((enum uwb_phr_mode)mode);
 }
 
 /**
  * Retrieve the UWB data rate, set it, and display what it is
  */
-static void load_data_rate(void) {
+static void load_data_rate(const struct comms *comms) {
     enum uwb_datarate rate =
         (enum uwb_datarate)retrieveSetting(BELUGA_UWB_DATA_RATE);
-    CUSTOM_INIT_MSG(rate = print_uwb_datarate, rate);
+    CUSTOM_INIT_MSG(comms, rate = print_uwb_datarate, rate);
     uwb_set_datarate(rate);
 }
 
 /**
  * Retrieve the UWB pulse repetition rate, set it, and display what it is
  */
-static void load_pulse_rate(void) {
+static void load_pulse_rate(const struct comms *comms) {
     enum uwb_pulse_rate rate =
         (enum uwb_pulse_rate)retrieveSetting(BELUGA_UWB_PULSE_RATE);
-    CUSTOM_INIT_MSG(rate = print_pulse_rate, rate);
+    CUSTOM_INIT_MSG(comms, rate = print_pulse_rate, rate);
     uwb_set_pulse_rate((enum uwb_pulse_rate)rate);
 }
 
 /**
  * Retrieve the UWB preamble length, set it, and display what it is
  */
-static void load_preamble_length(void) {
+static void load_preamble_length(const struct comms *comms) {
     int32_t length = retrieveSetting(BELUGA_UWB_PREAMBLE);
-    INIT_MSG("UWB Preamble Length: %" PRId32, length);
+    SETTINGS_PRINT(comms, "UWB Preamble Length: %" PRId32, length);
     uwb_set_preamble((enum uwb_preamble_length)length);
 }
 
 /**
  * Retrieve the UWB PAC size, set it, and display what it is
  */
-static void load_pac_size(void) {
+static void load_pac_size(const struct comms *comms) {
     int32_t pac = retrieveSetting(BELUGA_UWB_PAC);
-    CUSTOM_INIT_MSG(pac = print_pac_size, pac);
+    CUSTOM_INIT_MSG(comms, pac = print_pac_size, pac);
     set_pac_size((enum uwb_pac)pac);
 }
 
 /**
  * Retrieve the SFD mode, set it, and display what it is
  */
-static void load_sfd_mode(void) {
+static void load_sfd_mode(const struct comms *comms) {
     int32_t mode = retrieveSetting(BELUGA_UWB_NSSFD);
-    INIT_MSG("UWB Nonstandard SFD Length: %" PRId32, mode);
+    SETTINGS_PRINT(comms, "UWB Nonstandard SFD Length: %" PRId32, mode);
     set_sfd_mode((enum uwb_sfd)mode);
 }
 
 /**
  * Retrieve the UWB PAN ID, set it, and display what it is
  */
-static void load_pan_id(void) {
+static void load_pan_id(const struct comms *comms) {
     int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
-    CUSTOM_INIT_MSG(print_pan_id, pan_id);
+    CUSTOM_INIT_MSG(comms, print_pan_id, pan_id);
     set_initiator_pan_id((uint16_t)pan_id);
     set_responder_pan_id((uint16_t)pan_id);
 }
@@ -257,7 +290,7 @@ static void load_pan_id(void) {
 /**
  * Retrieve the power amplifier state, set it, and display what it is
  */
-UNUSED static void load_power_amplifiers(void) {
+UNUSED static void load_power_amplifiers(const struct comms *comms) {
     int ret;
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
@@ -275,48 +308,55 @@ UNUSED static void load_power_amplifiers(void) {
         update_led_state(LED_PWRAMP_ON);
     }
 
-    INIT_MSG("Range Extension: %d", pwramp);
+    SETTINGS_PRINT(comms, "Range Extension: %d", pwramp);
+}
+
+static void load_format_no_msg(const struct comms *comms) {
+    int32_t format = retrieveSetting(BELUGA_OUT_FORMAT);
+    set_format(comms, (enum comms_out_format_mode)format);
 }
 
 /**
  * Load all the settings, initialize all the states, and display what the
  * settings are
  */
-static void load_settings(void) {
-    NODE_VERSION_BANNER();
-    FW_CONFIG_BANNER();
+static void load_settings(const struct comms *comms) {
+    load_format_no_msg(comms);
 
-    load_led_mode();
-    load_id();
-    load_bootmode();
+    SETTINGS_HEADER(comms);
+    SETTINGS_PRINT(comms, "Flash Configuration:");
+
+    load_led_mode(comms);
+    load_id(comms);
+    load_bootmode(comms);
 
     // Disable UWB LED since setters check LED if UWB is active or not
     enum led_state uwb_state = get_uwb_led_state();
     update_led_state(LED_UWB_OFF);
 
     // Load UWB settings since ranging task has not started yet
-    load_poll_rate();
-    load_channel();
-    load_phr_mode();
-    load_data_rate();
-    load_pulse_rate();
-    load_preamble_length();
-    load_pac_size();
-    load_sfd_mode();
-    load_pan_id();
+    load_poll_rate(comms);
+    load_channel(comms);
+    load_phr_mode(comms);
+    load_data_rate(comms);
+    load_pulse_rate(comms);
+    load_preamble_length(comms);
+    load_pac_size(comms);
+    load_sfd_mode(comms);
+    load_pan_id(comms);
 
     // Restore UWB state in the LEDs
     update_led_state(uwb_state);
 
-    load_timeout();
-    load_tx_power();
-    load_stream_mode();
-    load_twr_mode();
-    load_out_format();
+    load_timeout(comms);
+    load_tx_power(comms);
+    load_stream_mode(comms);
+    load_twr_mode(comms);
+    load_out_format(comms);
     if (IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION)) {
-        load_power_amplifiers();
+        load_power_amplifiers(comms);
     }
-    SETTINGS_BREAK();
+    SETTINGS_BREAK(comms);
 }
 
 /**
@@ -324,6 +364,7 @@ static void load_settings(void) {
  * @return 1 on error
  */
 int main(void) {
+    const struct comms *comms = comms_backend_uart_get_ptr();
     RESET_CAUSE();
 
     memset(seen_list, 0, sizeof(seen_list));
@@ -344,11 +385,6 @@ int main(void) {
         return 1;
     }
 
-    if (uart_init() < 0) {
-        printk("Failed to init uart\n");
-        return 1;
-    }
-
     if (init_spi1() < 0) {
         printk("Failed to initialize SPI 1\n");
         return 1;
@@ -366,6 +402,8 @@ int main(void) {
         return 1;
     }
 
+    wait_comms_ready(comms);
+
     struct task_wdt_attr task_watchdog = {.period = 2000};
 
     if (spawn_task_watchdog(&task_watchdog) != 0) {
@@ -375,12 +413,11 @@ int main(void) {
 
     init_uwb();
 
-    load_settings();
+    load_settings(comms);
 
     kill_task_watchdog(&task_watchdog);
 
     init_responder_thread();
-    init_commands_thread();
     init_print_list_task();
     init_ranging_thread();
     init_monitor_thread();

@@ -35,11 +35,6 @@ config UWB_LOGIC_CLK
     bool "UWB ranging exchange IDs"
     default n
 
-config BELUGA_FRAMES
-    bool "Use frames for serial communication (Required if using ROS node)"
-    default n
-    select JSON_LIBRARY
-
 config BELUGA_GATT
     bool "Beluga GATT service [EXPERIMENTAL]"
     default n
@@ -50,6 +45,8 @@ rsource "./Kconfig.beluga_debug"
 config WDT_MAX_WINDOW
     int "Maximum window of the watchdog timer"
     default 2000
+
+rsource "./Kconfig.comms"
 
 endmenu
 

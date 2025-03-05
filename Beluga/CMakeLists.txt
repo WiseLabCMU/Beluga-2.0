@@ -9,12 +9,20 @@ project(Beluga)
 
 # NORDIC SDK APP START
 file(GLOB SOURCE "src/*.c")
+set(SERIAL_SRC
+        src/serial/comms.c
+        src/serial/comms_uart.c)
 file(GLOB DECAWAVE_SRC "DecaDriver/src/*.c")
 
 include_directories(include DecaDriver/include)
 
 target_sources(app PRIVATE
-  ${SOURCE}
-  ${DECAWAVE_SRC}
+    ${SOURCE}
+    ${SERIAL_SRC}
+    ${DECAWAVE_SRC}
+)
+target_sources_ifdef(CONFIG_MCUMGR_TRANSPORT_COMMS app PRIVATE
+        src/serial/smp_comms.c
+        src/serial/serial_util.c
 )
 # NORDIC SDK APP END

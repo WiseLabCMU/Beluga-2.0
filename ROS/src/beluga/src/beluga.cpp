@@ -8,6 +8,7 @@
  * @author tom
  */
 
+#include <algorithm>
 #include <beluga/beluga.hpp>
 #include <beluga_messages/srv/beluga_at_command.hpp>
 #include <cinttypes>
@@ -211,6 +212,7 @@ void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
 }
 
 void Beluga::_time_sync(bool first) {
+    std::unique_lock<std::mutex> lock(_timestamp_sync, std::defer_lock);
     int retries = 5;
     while (retries > 0) {
         auto [t1_, req1, resp1] = _time_sync_get_measurement();
@@ -234,7 +236,7 @@ void Beluga::_time_sync(bool first) {
                 throw ZeroDivisionError();
             }
 
-            _timestamp_sync.lock();
+            lock.lock();
             this->_ns_per_timestamp_unit +=
                 (double)map_diff.nanoseconds() / (double)t_diff;
 
@@ -275,7 +277,7 @@ void Beluga::_time_sync(bool first) {
                     std::get<int64_t>(_last_mapping["beluga"]),
                     std::get<rclcpp::Time>(_last_mapping["ros"]).seconds(),
                     _ns_per_timestamp_unit);
-        _timestamp_sync.unlock();
+        lock.unlock();
         retries = -1;
     }
 }
@@ -317,12 +319,11 @@ int64_t Beluga::extract_number(const std::string &s) {
 }
 
 rclcpp::Time Beluga::_beluga_to_ros_time(int64_t t) {
-    _timestamp_sync.lock();
+    std::lock_guard<std::mutex> lock(_timestamp_sync);
     int64_t delta =
         (int64_t)((double)(t - std::get<int64_t>(_last_mapping["beluga"])) *
                   _ns_per_timestamp_unit);
     auto ros_time = std::get<rclcpp::Time>(_last_mapping["ros"]);
-    _timestamp_sync.unlock();
     return ros_time + rclcpp::Duration(std::chrono::nanoseconds(delta));
 }
 
@@ -371,6 +372,12 @@ constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{
     {"pulserate", 1},
 }};
 
+constexpr std::array<const char *, 18> settingPriorities = {
+    "id",         "bootmode", "rate",    "channel", "timeout",  "txpower",
+    "streammode", "twrmode",  "ledmode", "pwramp",  "datarate", "preamble",
+    "pulserate",  "antenna",  "phr",     "pac",     "sfd",      "panid",
+};
+
 void Beluga::_setup() {
     std::map<std::string, int64_t> configs;
     for (const auto &[key, value] : DEFAULT_CONFIGS) {
@@ -405,29 +412,40 @@ void Beluga::_setup() {
             CALLBACK_DEF(sfd),        CALLBACK_DEF(panid),
         };
 
-    // Tel beluga to shut up
+    // Tell beluga to shut up
     _serial.stop_ble();
     _serial.stop_uwb();
 
     std::string response;
 
-    for (const auto &[key, value] : configs) {
-        // Get the setting
+    for (const auto &key : settingPriorities) {
         std::string setting = callbacks[key]("");
-        RCLCPP_INFO(this->get_logger(), "Current %s setting: %s", key.c_str(),
+        RCLCPP_INFO(this->get_logger(), "Current %s setting: %s", key,
                     setting.c_str());
         int64_t int_setting;
         try {
             int_setting = extract_number(setting);
-        } catch (const ValueError &exc) {
+        } catch (ValueError &exc) {
             int_setting = -1;
         }
 
-        if (int_setting != value) {
+        if (configs.find(key) == configs.end()) {
+            continue;
+        }
+
+        if (setting == "Invalid AT command") {
+            std::string key_ = key;
+            std::transform(key_.begin(), key_.end(), key_.begin(), ::toupper);
+            RCLCPP_INFO(this->get_logger(), "AT+%s is disabled int firmware",
+                        key_.c_str());
+            continue;
+        }
+
+        if (int_setting != configs[key]) {
             RCLCPP_INFO(this->get_logger(),
                         "Difference in %s setting. Now setting %s to %" PRId64,
-                        key.c_str(), key.c_str(), value);
-            response = callbacks[key](std::to_string(value));
+                        key, key, configs[key]);
+            response = callbacks[key](std::to_string(configs[key]));
             if (!response.ends_with("OK")) {
                 std::stringstream oss;
                 oss << "Tried setting bad configurations: " << int_setting
@@ -479,3 +497,34 @@ int Beluga::serial_logger(const char *msg, va_list args) {
 
     return len;
 }
+
+#if defined(TIMED_NEIGHBOR_PUBLISHER)
+void Beluga::timer_callback_neighbors() {
+    std::vector<BelugaSerial::BelugaNeighbor> list;
+    bool updated = _serial.get_neighbors(list);
+
+    if (updated) {
+        publish_neighbor_list(list);
+    }
+}
+#endif // defined(TIMED_NEIGHBOR_PUBLISHER)
+
+#if defined(TIMED_RANGES_PUBLISHER)
+void Beluga::timer_callback_ranges() {
+    std::vector<BelugaSerial::BelugaNeighbor> list;
+    _serial.get_ranges(list);
+
+    if (!list.empty()) {
+        publish_ranges(list);
+    }
+}
+#endif // defined(TIMED_RANGES_PUBLISHER)
+
+#if defined(TIMED_RANGE_EVENTS_PUBLISHER)
+void Beluga::timer_callback_range_events() {
+    BelugaSerial::RangeEvent event = _serial.get_range_event();
+    if (event.ID != 0) {
+        publish_exchange(event);
+    }
+}
+#endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)

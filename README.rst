@@ -176,16 +176,31 @@ decawave_dwm1000_dev
 * **Optimization level:** Os (Optimize for size)
 * **Sysbuild:** No sysbuild
 
+.. note::
+
+    This board can theoretically be built with sysbuild, however, due to memory constraints, it will fail
+    because the program memory is split into 2 sections, each section being 200 kB of flash. Since the current
+    firmware requires more than 200 kB of flash, sysbuild with McuMgr is not used. Additionally, McuMgr is not
+    necessary since this board comes with a built in J-Link debuggger.
+
 Beluga
 ^^^^^^
 See `Adding Board Roots <#adding-board-roots>`_ for finding custom boards.
 
 * **Board Target:** Beluga
 * **Base configuration file:** prj.conf
-* **Extra Kconfig fragments:** config/beluga.conf and config/usb.conf
+* **Extra Kconfig fragments:** config/beluga.conf, config/usb.conf, and config/mcumgr.conf
 * **Base Device tree overlay:** overlay/beluga.overlay
+* **Extra Device tree overlays:** overlay/extra/usb.overlay
 * **Optimization level:** Anything works
-* **Sysbuild:** No sysbuild
+* **Sysbuild:** Use sysbuild
+
+.. note::
+
+    If a larger program section is desired for Beluga, then that leaves 2 options. The first option is to compile
+    without McuMgr (Exclude config/mcumgr.conf and overlay/extra/usb.overlay and build with the No sysbuild flag), or
+    to build the hardware with the external flash (See `Using DFU with External Flash <#using-dfu-with-external-flash>`_
+    for more information).
 
 Building and Flashing
 ---------------------
@@ -589,6 +604,11 @@ This setting is saved in flash.
 |             | Removed neighbors are       |
 |             | indicated by ``rm "ID"``    |
 +-------------+-----------------------------+
+| 2           | Frame Format                |
+|             | See Beluga-Message.pdf in   |
+|             | Documentation/Beluga for    |
+|             | more information            |
++-------------+-----------------------------+
 
 DEEPSLEEP
 ---------
@@ -795,3 +815,111 @@ environment:
 See `VS Code Extension - west flash fails from missing python dependencies`_ for more details.
 
 .. _VS Code Extension - west flash fails from missing python dependencies: https://devzone.nordicsemi.com/f/nordic-q-a/100164/vs-code-extension---west-flash-fails-from-missing-python-dependencies/496078
+
+Using DFU with External Flash
+-----------------------------
+If the firmware image is too large to fit into a single code partition in the internal flash, the hardware can be
+assembled with external flash. The external flash can be used for a few things, including but not limited to saving
+configurations and being used to store firmware images. To use the external flash as an image partition for larger
+firmware images, additional configurations have to be added to the application, MCUBoot, and sysbuild.
+
+Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+To configure the application, all you need to do is add the following files to the existing build configuration:
+
+* **Extra Kconfig fragments:** config/flash.conf
+* **Extra Device tree overlays:** overlay/extra/flash.overlay
+
+MCUBoot Configuration
+^^^^^^^^^^^^^^^^^^^^^
+Configuring MCUBoot is not as strait forward as the application. Instead of adding files to a build configuration, you
+want to add the following (or uncomment) to sysbuild/mcuboot.conf:
+
+.. code-block:: Kconfig
+
+    CONFIG_NORDIC_QSPI_NOR=y
+    CONFIG_BOOT_MAX_IMG_SECTORS=256
+
+Additionally, you want to add the following (or uncomment) to sysbuild/mcuboot.overlay:
+
+.. code-block:: devicetree
+
+    &mx25r64 {
+	    status = "okay";
+    };
+
+    / {
+	    chosen {
+		    nordic,pm-ext-flash = &mx25r64;
+	    };
+    };
+
+Sysbuild Configuration
+^^^^^^^^^^^^^^^^^^^^^^
+The last step towards configuring external flash is modifying the sysbuild configuration. Again, this is not as strait
+forward as the application configuration, but it is very similar to the MCUBoot configuration. Add the following line
+(or uncomment) to sysbuild.conf:
+
+.. code-block:: Kconfig
+
+    SB_CONFIG_PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY=y
+
+Generating and Using Custom Keys with DFU
+-----------------------------------------
+When building for MCUboot, a default key is used to ease development. However, using the default key for production
+is not very secure and it is important to use your own key instead. If the default key is used, then anyone will be able
+to upload and run an image on the custom Beluga hardware. Follow the steps below to generate a custom key and use it in
+the firmware.
+
+Environment Setup
+^^^^^^^^^^^^^^^^^
+Before generating the custom key, the environment to do so must be set up. First, create a new directory (anywhere
+on your computer) and create a python3 environment. Then install `imgtool`_.
+
+.. code-block:: bash
+
+    mkdir -p keys && cd keys
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install imgtool
+
+
+Before proceeding, ensure the tool got installed correctly by running ``imgtool --help``. If it shows usage
+information, then it got installed correctly. However, if it gives a similar looking error message:
+``ModuleNotFoundError: No module named '<module name>'``, then you need to make sure all the dependencies are installed
+(See `install_requires in setup.py`_):
+
+.. code-block:: bash
+
+    pip install <package name>
+
+Run ``imgtool --help`` again to see if it installed correctly. If not, install the packages specified
+
+.. _imgtool: https://pypi.org/project/imgtool/
+.. _install_requires in setup.py: https://github.com/mcu-tools/mcuboot/blob/main/scripts/setup.py
+
+Generate the Key
+^^^^^^^^^^^^^^^^
+Once the environment is set up, a new key can be generated by running one of the following commands.
+
+.. code-block:: bash
+
+    imgtool keygen -t ecdsa-p256 -k private_key.pem
+    imgtool keygen -t rsa-2048 -k private_key.pem
+    imgtool keygen -t rsa-3072 -k private_key.pem
+    imgtool keygen -t ed25519 -k private_key.pem
+
+Remember which algorithm was used to generate the key as it will be important for the firmware. Additionally, backup the
+kay somewhere safe. It is not uncommon to lose the key and thus be unable to ever do DFU on the device again (until the
+device is flashed again over JTAG).
+
+Incorporating the Key Into Firmware
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Once the key is generated, it needs to be incorporated into firmware. This is relatively easy as it requires you to
+update sysbuild.conf. For example, if an ecdsa-p256 key was generated in Beluga/keys, the the following lines would
+have to be added to sysbuild.conf:
+
+.. code-block:: Kconfig
+
+    SB_CONFIG_BOOT_SIGNATURE_KEY_FILE="\${APP_DIR}/keys/private_key.pem"
+    SB_CONFIG_BOOT_SIGNATURE_TYPE_ECDSA_P256=y

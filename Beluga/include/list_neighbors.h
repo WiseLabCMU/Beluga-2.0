@@ -18,12 +18,6 @@
 #include <zephyr/kernel.h>
 
 /**
- * @brief Custom print function for printing the format setting
- * @param[in] format The format saved in settings
- */
-void print_output_format(int32_t format);
-
-/**
  * @brief Sets the stream mode for neighbor printing.
  *
  * This function sets whether the program should print the entire list of
@@ -44,25 +38,6 @@ void set_stream_mode(bool value);
  * @return `false` if the entire list is printed
  */
 bool get_stream_mode(void);
-
-/**
- * @brief Sets the format mode for printing neighbors.
- *
- * This function allows switching between JSON and CSV output formats.
- *
- * @param[in] json If true, sets the format to JSON. If false, sets it to CSV.
- */
-void set_format_mode(bool json);
-
-/**
- * @brief Gets the current format mode.
- *
- * This function returns the current output format, either JSON or CSV.
- *
- * @return `true` if the format is JSON
- * @return `false` if it is CSV
- */
-bool get_format_mode(void);
 
 /**
  * @brief Initializes the task that prints the neighbor list.

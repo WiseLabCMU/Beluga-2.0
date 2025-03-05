@@ -27,10 +27,10 @@
 #include <random.h>
 #include <ranging.h>
 #include <responder.h>
+#include <serial/comms.h>
 #include <spi.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <uart.h>
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
@@ -151,23 +151,6 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
         k_sem_give(&k_sus_resp);                                               \
     } while (0)
 
-#define _RANGE_EVENT_REPORT(ret_, id, exchange)                                \
-    do {                                                                       \
-        if ((ret_) == 0) {                                                     \
-            struct ranging_event evt = {                                       \
-                .id = (id),                                                    \
-                .exchange_id = (exchange),                                     \
-                .timestamp = k_uptime_get(),                                   \
-            };                                                                 \
-            struct beluga_msg msg = {.type = RANGING_EVENT,                    \
-                                     .payload.event = &evt};                   \
-            (void)write_message_frame(&msg);                                   \
-        }                                                                      \
-    } while (0)
-
-#define RANGE_EVENT_REPORT(ret_, id, exchange)                                 \
-    IF_ENABLED(CONFIG_BELUGA_FRAMES, (_RANGE_EVENT_REPORT(ret_, id, exchange)))
-
 /**
  * The number of milliseconds between initiator runs
  */
@@ -211,14 +194,21 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 /**
  * The watchdog timer instance for the ranging.
  */
-static struct task_wdt_attr watchdogAttr = {.period = 2000};
+static struct task_wdt_attr watchdogAttr = {.period =
+                                                2 * CONFIG_MAX_POLLING_RATE};
 
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
  * @param[in] tx_power The current TX power
  */
-void print_tx_power(uint32_t tx_power) {
-    printf("TX Power: 0x%08" PRIX32 " ", tx_power);
+void print_tx_power(const struct comms *comms, uint32_t tx_power) {
+    struct beluga_msg msg = {
+        .type = START_EVENT,
+    };
+    char s[32];
+    snprintf(s, sizeof(s) - 1, "  TX Power: 0x%08" PRIX32, tx_power);
+    msg.payload.node_version = s;
+    comms_write_msg(comms, &msg);
 }
 
 /**
@@ -226,20 +216,27 @@ void print_tx_power(uint32_t tx_power) {
  * @param[in] rate The current data rate
  * @return The data rate that was just printed
  */
-enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate) {
+enum uwb_datarate print_uwb_datarate(const struct comms *comms,
+                                     enum uwb_datarate rate) {
+    struct beluga_msg msg = {
+        .type = START_EVENT,
+    };
     switch (rate) {
     case UWB_DR_850K:
-        printf("Data Rate: 850 kHz ");
+        msg.payload.node_version = "  Data Rate: 850 kHz";
         break;
     case UWB_DR_110K:
-        printf("Data Rate: 110 kHz ");
+        msg.payload.node_version = "  Data Rate: 110 kHz";
         break;
     case UWB_DR_6M8:
     default:
-        printf("Data Rate: 6.8MHz ");
+        msg.payload.node_version = "  Data Rate: 6.8MHz";
         rate = UWB_DR_6M8;
         break;
     }
+
+    comms_write_msg(comms, &msg);
+
     return rate;
 }
 
@@ -248,17 +245,24 @@ enum uwb_datarate print_uwb_datarate(enum uwb_datarate rate) {
  * @param[in] rate The current pulse rate
  * @return The pulse rate
  */
-enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate) {
+enum uwb_pulse_rate print_pulse_rate(const struct comms *comms,
+                                     enum uwb_pulse_rate rate) {
+    struct beluga_msg msg = {
+        .type = START_EVENT,
+    };
     switch (rate) {
     case UWB_PR_16M:
-        printf("Pulse Rate: 16MHz ");
+        msg.payload.node_version = "  Pulse Rate: 16MHz";
         break;
     case UWB_PR_64M:
     default:
-        printf("Pulse Rate: 64MHz ");
+        msg.payload.node_version = "  Pulse Rate: 64MHz";
         rate = UWB_PR_64M;
         break;
     }
+
+    comms_write_msg(comms, &msg);
+
     return rate;
 }
 
@@ -267,25 +271,29 @@ enum uwb_pulse_rate print_pulse_rate(enum uwb_pulse_rate rate) {
  * @param[in] pac The PAC size
  * @return The PAC size
  */
-int32_t print_pac_size(int32_t pac) {
+int32_t print_pac_size(const struct comms *comms, int32_t pac) {
+    struct beluga_msg msg = {
+        .type = START_EVENT,
+    };
     switch ((enum uwb_pac)pac) {
-    case UWB_PAC8:
-        printf("PAC Size: 8 ");
-        break;
     case UWB_PAC16:
-        printf("PAC Size: 16 ");
+        msg.payload.node_version = "  PAC Size: 16";
         break;
     case UWB_PAC32:
-        printf("PAC Size: 32 ");
+        msg.payload.node_version = "  PAC Size: 32";
         break;
     case UWB_PAC64:
-        printf("PAC Size: 16 ");
+        msg.payload.node_version = "  PAC Size: 16";
         break;
+    case UWB_PAC8:
     default:
-        printf("PAC Size: 8 ");
+        msg.payload.node_version = "  PAC Size: 8";
         pac = (int32_t)UWB_PAC8;
         break;
     }
+
+    comms_write_msg(comms, &msg);
+
     return pac;
 }
 
@@ -293,8 +301,15 @@ int32_t print_pac_size(int32_t pac) {
  * @brief Prints the current PAN ID in a non-standard (human readable) format
  * @param[in] pan_id The PAN ID to print
  */
-void print_pan_id(uint32_t pan_id) {
-    printf("UWB PAN ID: 0x%04" PRIX16 " ", (uint16_t)pan_id);
+void print_pan_id(const struct comms *comms, uint32_t pan_id) {
+    struct beluga_msg msg = {
+        .type = START_EVENT,
+    };
+    char s[64];
+    snprintf(s, sizeof(s) - 1, "  UWB PAN ID: 0x%04" PRIX16 " ",
+             (uint16_t)pan_id);
+    msg.payload.node_version = s;
+    comms_write_msg(comms, &msg);
 }
 
 /**
@@ -612,7 +627,7 @@ void set_twr_mode(bool value) { twr_mode = value; }
  * @return -EINVAL if rate is an invalid value
  */
 int set_rate(uint32_t rate) {
-    if (IN_RANGE(rate, INT32_C(0), (int32_t)INT32_MAX)) {
+    if (!IN_RANGE(rate, INT32_C(0), (int32_t)INT32_MAX)) {
         return -EINVAL;
     }
     initiator_freq = (int32_t)rate;
@@ -677,6 +692,8 @@ static void resp_reconfig() {
  * @brief Find a node in the neighbors list and range to that node
  */
 static void initiate_ranging(void) {
+    // Time left to sleep in ms
+    static int32_t time_left = CONFIG_POLLING_REFRESH_PERIOD;
     // Flag to see if last ranging measurement was dropped
     static bool drop = false;
     // The neighbor currently being ranged to
@@ -685,8 +702,17 @@ static void initiate_ranging(void) {
     bool search_broken = false;
     double range;
     uint32_t exchange;
+    int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD)
+                            ? time_left
+                            : CONFIG_POLLING_REFRESH_PERIOD;
 
-    k_msleep(initiator_freq);
+    k_sleep(K_MSEC(sleep_for));
+    time_left -= sleep_for;
+
+    if (time_left > 0) {
+        return;
+    }
+    time_left = initiator_freq;
 
     if (drop) {
         uint16_t delay = get_rand_num_exp_collision(initiator_freq);
@@ -727,7 +753,7 @@ static void initiate_ranging(void) {
         }
 
         if (!drop && RANGE_CONDITION(range)) {
-            seen_list[current_neighbor].update_flag = 1;
+            seen_list[current_neighbor].update_flag = true;
             seen_list[current_neighbor].range = (float)range;
             seen_list[current_neighbor].time_stamp = k_uptime_get();
 #if defined(CONFIG_UWB_LOGIC_CLK)
@@ -754,7 +780,7 @@ void update_poll_count(void) {
     bool neighbors_polling = false;
 
     for (size_t x = 0; x < MAX_ANCHOR_COUNT; x++) {
-        if (seen_list[x].UUID != 0 && seen_list[x].polling_flag != 0) {
+        if (seen_list[x].UUID != 0 && seen_list[x].polling_flag) {
             neighbors_polling = true;
             break;
         }
@@ -801,10 +827,10 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     while (true) {
         watchdog_red_rocket(&watchdogAttr);
 
-        if (initiator_freq != 0) {
+        if (initiator_freq > 0) {
             initiate_ranging();
         } else {
-            k_msleep(1000);
+            k_sleep(K_SECONDS(1));
         }
 
         update_poll_count();
@@ -827,6 +853,8 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     uint16_t id;
     uint32_t exchange;
     int ret;
+    const struct comms *comms = comms_backend_uart_get_ptr();
+    struct beluga_msg msg = {.type = RANGING_EVENT};
 
     if (are_leds_on()) {
         dwt_setleds(DWT_LEDS_ENABLE);
@@ -849,7 +877,13 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
         } else {
             ret = -EBUSY;
         }
-        RANGE_EVENT_REPORT(ret, id, exchange);
+
+        if (ret == 0) {
+            struct ranging_event event = {
+                .exchange_id = exchange, .id = id, .timestamp = k_uptime_get()};
+            msg.payload.event = &event;
+            comms_write_msg(comms, &msg);
+        }
     }
 }
 

@@ -20,7 +20,7 @@
 namespace BelugaSerial {
 
 struct RangeEvent {
-    uint16_t ID;
+    uint16_t ID = 0;
     uint32_t EXCHANGE;
     int64_t TIMESTAMP;
 };

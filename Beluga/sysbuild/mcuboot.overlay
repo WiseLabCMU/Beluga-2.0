@@ -1,0 +1,21 @@
+/ {
+	chosen {
+		zephyr,uart-mcumgr = &cdc_acm_uart0;
+	};
+};
+
+&zephyr_udc0 {
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
+
+//&mx25r64 {
+//	status = "okay";
+//};
+//
+/// {
+//	chosen {
+//		nordic,pm-ext-flash = &mx25r64;
+//	};
+//};

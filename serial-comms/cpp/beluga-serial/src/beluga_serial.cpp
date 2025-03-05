@@ -27,6 +27,8 @@ static const target_pair segger_jlink = {"SEGGER", "J-Link"};
 
 static const std::vector<target_pair> TARGETS = {cmu_beluga, segger_jlink};
 
+constexpr auto open_delay = 500ms;
+
 static const std::map<target_pair, bool> USB_STILL_ALIVE = {
     {cmu_beluga, false}, {segger_jlink, true}};
 
@@ -39,20 +41,19 @@ BelugaSerial::BelugaSerial() { _initialize(); }
 BelugaSerial::BelugaSerial(
     const std::string &port, BaudRate baud,
     const std::chrono::milliseconds &timeout,
-    const std::chrono::milliseconds &serial_timeout, uint32_t max_lines_read,
+    const std::chrono::milliseconds &serial_timeout,
     std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
     std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
     std::function<void(const RangeEvent &)> range_event_cb,
     std::function<int(const char *, va_list)> logger_cb) {
-    _initialize(baud, timeout, serial_timeout, max_lines_read, port,
+    _initialize(baud, timeout, serial_timeout, port,
                 std::move(neighbor_update_cb), std::move(range_updates_cb),
                 std::move(range_event_cb), std::move(logger_cb));
 }
 
 void BelugaSerial::_initialize(
     BaudRate baud, const std::chrono::milliseconds &timeout,
-    const std::chrono::milliseconds &serial_timeout, uint32_t max_lines_read,
-    const std::string &port,
+    const std::chrono::milliseconds &serial_timeout, const std::string &port,
     std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
     std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
     std::function<void(const RangeEvent &)> range_event_cb,
@@ -82,6 +83,7 @@ void BelugaSerial::_initialize(
                     _log(oss.str().c_str());
                     _serial.port(port_);
                     _serial.open();
+                    std::this_thread::sleep_for(open_delay);
                     auto iterator = USB_STILL_ALIVE.find(target);
                     if (iterator == USB_STILL_ALIVE.end()) {
                         throw std::runtime_error("Unable to determine if port "
@@ -105,7 +107,6 @@ void BelugaSerial::_initialize(
         _serial.open();
     }
 
-    _read_max_lines = max_lines_read;
     _timeout = timeout;
 
     _neighbor_cb = std::move(neighbor_update_cb);
@@ -229,12 +230,14 @@ void BelugaSerial::__process_frames() {
 }
 
 void BelugaSerial::_process_frames() {
-    try {
-        __process_frames();
-    } catch (const std::exception &exc) {
-        _log("An uncaught exception occurred in processing thread. %s",
-             exc.what());
-        std::abort();
+    while (_tasks_running) {
+        try {
+            __process_frames();
+        } catch (const std::exception &exc) {
+            _log("An uncaught exception occurred in processing thread. %s",
+                 exc.what());
+            std::abort();
+        }
     }
 }
 
@@ -257,15 +260,16 @@ void BelugaSerial::_process_rx_buffer(std::vector<uint8_t> &buf) {
 
 void BelugaSerial::__read_serial() {
     std::vector<uint8_t> rx;
+    std::unique_lock<std::recursive_mutex> lock(_serial_lock, std::defer_lock);
 
     while (_tasks_running) {
-        _serial_lock.lock();
+        lock.lock();
         if (_serial.in_waiting() > 0) {
             std::vector<uint8_t> buf;
             _serial.read_all(buf);
             rx.insert(rx.end(), buf.begin(), buf.end());
         }
-        _serial_lock.unlock();
+        lock.unlock();
         _process_rx_buffer(rx);
     }
 }
@@ -274,15 +278,21 @@ void BelugaSerial::_read_serial() {
     while (_tasks_running) {
         try {
             __read_serial();
-        } catch (const Serial::SerialException &serial_exception) {
+        } catch (const Serial::SerialException &) {
             _serial.close();
-            if (serial_exception.code() == -ENODEV) {
-                // Disconnected. Need to reconnect
-                std::this_thread::sleep_for(100ms);
+            // Probably rebooted. Need to attempt reconnection
+            std::this_thread::sleep_for(open_delay);
+            try {
+                _log("Reconnect called from read serial");
                 _reconnect();
+                if (_time_resync) {
+                    std::thread t_(_time_resync);
+                    t_.detach();
+                }
+            } catch (const std::runtime_error &exc) {
+                _log(exc.what());
+                std::abort();
             }
-            _log(serial_exception.what());
-            std::abort();
         } catch (const std::exception &exc) {
             _log("An uncaught exception occurred in reading thread. %s",
                  exc.what());
@@ -395,6 +405,7 @@ void BelugaSerial::_reboot() {
     _serial.write(tx_data);
     _serial.flush();
     _serial.close();
+    _log("Called reconnect from reboot");
     _reconnect();
 }
 
@@ -488,6 +499,9 @@ void BelugaSerial::start() {
     _processing_task.thread = std::thread(std::move(_processing_task.task));
     _rx_task.task = std::packaged_task<void()>([this] { _read_serial(); });
     _rx_task.thread = std::thread(std::move(_rx_task.task));
+    // Ensure that we are in the correct format mode otherwise this program will
+    // crash like the Hindenburg
+    format("2");
     std::string id_ = id();
     _id = _extract_id(id_);
 }
@@ -614,6 +628,13 @@ uint16_t BelugaSerial::_extract_id(const std::string &s) {
     }
     tokens.push_back(s.substr(start));
 
+    for (auto &it : tokens) {
+        it.erase(
+            std::remove_if(it.begin(), it.end(),
+                           [](unsigned char c) { return !std::isprint(c); }),
+            it.end());
+    }
+
     std::string id_str;
     for (const auto &it : tokens) {
         bool pure_number = true;
@@ -643,25 +664,26 @@ uint16_t BelugaSerial::_extract_id(const std::string &s) {
     throw std::overflow_error("Unable to convert ID to `uint16_t`");
 }
 
-std::string
-BelugaSerial::_find_port_candidate(std::vector<std::string> &skip_list) {
+std::vector<std::string>
+BelugaSerial::_find_port_candidates(const std::vector<std::string> &skip_list) {
     std::map<target_pair, std::vector<std::string>> avail_ports;
-    BelugaSerial::BelugaSerial::_find_ports(TARGETS, avail_ports);
-    if (avail_ports.empty()) {
-        return "";
-    }
+    std::vector<std::string> candidates;
+    BelugaSerial::_find_ports(TARGETS, avail_ports);
+
     for (const auto &target : TARGETS) {
         if (avail_ports.find(target) == avail_ports.end()) {
             continue;
         }
         for (const auto &port_ : avail_ports[target]) {
-            if (std::find(skip_list.begin(), skip_list.end(), port_) ==
+            if (std::find(skip_list.begin(), skip_list.end(), port_) !=
                 skip_list.end()) {
-                return port_;
+                continue;
             }
+            candidates.push_back(port_);
         }
     }
-    return "";
+
+    return candidates;
 }
 
 bool BelugaSerial::_open_port(std::string &port) {
@@ -673,6 +695,7 @@ bool BelugaSerial::_open_port(std::string &port) {
         _log(oss.str().c_str());
         _serial.port(port);
         _serial.open();
+        std::this_thread::sleep_for(open_delay);
     } catch (const Serial::SerialException &exc) {
         _serial.close();
         oss.clear();
@@ -725,34 +748,26 @@ std::string BelugaSerial::_get_id_from_device() {
 void BelugaSerial::__reconnect() {
     enum ReconnectStates state = RECONNECT_FIND;
     std::vector<std::string> skips;
+    std::vector<std::string> ports;
     std::string port, id_resp;
+    std::vector<std::string>::iterator it;
 
     while (state != RECONNECT_DONE) {
         switch (state) {
         case RECONNECT_FIND: {
-            port = _find_port_candidate(skips);
-            state = (port.empty()) ? RECONNECT_SLEEP : RECONNECT_CONNECT;
-            break;
-        }
-        case RECONNECT_SLEEP: {
-            std::this_thread::sleep_for(1s);
-            state = RECONNECT_FIND;
+            ports = _find_port_candidates(skips);
+            it = ports.begin();
+            state = (ports.empty()) ? RECONNECT_SLEEP : RECONNECT_CONNECT;
             break;
         }
         case RECONNECT_CONNECT: {
-            bool opened = _open_port(port);
+            bool opened = _open_port(*it);
             state = opened ? RECONNECT_GET_ID : RECONNECT_SLEEP;
-            break;
-        }
-        case RECONNECT_UPDATE_SKIPS: {
-            _serial.close();
-            skips.push_back(port);
-            state = RECONNECT_FIND;
             break;
         }
         case RECONNECT_GET_ID: {
             id_resp = _get_id_from_device();
-            state = id_resp.empty() ? RECONNECT_SLEEP : RECONNECT_CHECK_ID;
+            state = id_resp.empty() ? RECONNECT_NEXT : RECONNECT_CHECK_ID;
             break;
         }
         case RECONNECT_CHECK_ID: {
@@ -760,14 +775,29 @@ void BelugaSerial::__reconnect() {
             state = (id_ == _id) ? RECONNECT_DONE : RECONNECT_UPDATE_SKIPS;
             break;
         }
-        case RECONNECT_DONE:
+        case RECONNECT_SLEEP: {
+            std::this_thread::sleep_for(open_delay);
+            state = RECONNECT_FIND;
             break;
+        }
+        case RECONNECT_UPDATE_SKIPS: {
+            _serial.close();
+            skips.push_back(*it);
+            state = RECONNECT_NEXT;
+            break;
+        }
+        case RECONNECT_NEXT: {
+            it++;
+            state = (it == ports.end()) ? RECONNECT_SLEEP : RECONNECT_CONNECT;
+            break;
+        }
         default:
-            _log("Reached invalid connection state");
+            _log("reached invalid connection state");
             abort();
             break;
         }
     }
+    _log("Connected to %s", it->c_str());
 }
 
 void BelugaSerial::_reconnect() {
