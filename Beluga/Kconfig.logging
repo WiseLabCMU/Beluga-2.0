@@ -98,4 +98,10 @@ module-str = Comms module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
+menu "Comms Backend"
+module = COMMS_SERIAL
+module-str = Comms Backend module
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 endmenu
