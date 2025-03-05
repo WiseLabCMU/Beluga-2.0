@@ -2,6 +2,20 @@ menu "Logger configurations"
 
 comment "All of these configurations depend on LOG"
 
+menu "Serial"
+menu "Serial Comms"
+module = COMMS
+module-str = Comms module
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
+menu "Comms Backend"
+module = COMMS_SERIAL
+module-str = Comms Backend module
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+endmenu
+
 menu "App LEDs"
 module = APP_LEDS
 module-str = App LEDs
@@ -14,9 +28,27 @@ module-str = AT commands
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
+menu "Beluga Message"
+module = BELUGA_MESSAGE
+module-str = Beluga message
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 menu "BLE Application"
 module = BLE_APP
 module-str = BLE application
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
+menu "Debug"
+module = BELUGA_DEBUG
+module-str = Beluga debugging
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
+menu "Initiator"
+module = INITIATOR
+module-str = Initiator
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
@@ -56,6 +88,18 @@ module-str = ranging module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
+menu "Responder"
+module = RESPONDER
+module-str = Responder
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
+menu "Serial LEDs"
+module = SERIAL_LED
+module-str = Serial LEDs
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 menu "Settings"
 module = SETTINGS_MODULE
 module-str = settings
@@ -68,18 +112,6 @@ module-str = SPI module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
-menu "Serial"
-module = SERIAL_MODULE
-module-str = serial module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Serial LEDs"
-module = SERIAL_LED
-module-str = serial LEDs
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
 menu "Voltage Regulator"
 module = VOLTAGE_REG_MODULE
 module-str = Voltage regulator module
@@ -89,24 +121,6 @@ endmenu
 menu "Watchdog"
 module = WATCHDOG_MODULE
 module-str = watchdog module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Serial Comms"
-module = COMMS
-module-str = Comms module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Comms Backend"
-module = COMMS_SERIAL
-module-str = Comms Backend module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Debug"
-module = BELUGA_DEBUG
-module-str = Beluga debugging
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
