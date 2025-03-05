@@ -29,7 +29,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(main_app, CONFIG_BELUGA_MAIN_LOG_LEVEL);
+LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 
 #define SETTINGS_HEADER(_comms)                                                \
     do {                                                                       \
@@ -372,42 +372,46 @@ int main(void) {
     INIT_CLOCKS();
 
     if (init_voltage_regulator() != 0) {
-        printk("Failed to initialize voltage regulator\n");
+        LOG_ERR("Failed to initialize voltage regulator");
         return 1;
     }
 
     if (init_bt_stack() != 0) {
-        printk("Failed to init bluetooth stack\n");
+        LOG_ERR("Failed to init bluetooth stack");
+        return 1;
     }
 
     if (initBelugaSettings() != 0) {
-        printk("Unable to init flash\n");
+        LOG_ERR("Unable to init flash");
         return 1;
     }
 
     if (init_spi1() < 0) {
-        printk("Failed to initialize SPI 1\n");
+        LOG_ERR("Failed to initialize SPI 1");
         return 1;
     }
 
     if (init_range_extension() != 0) {
-        printk("Failed to initialize range extension\n");
+        LOG_ERR("Failed to initialize range extension");
         return 1;
     }
 
     LED_INIT();
 
     if (configure_watchdog_timer() < 0) {
-        printk("Failed to configure watchdog timer\n");
+        LOG_ERR("Failed to configure watchdog timer");
         return 1;
     }
 
+    LOG_INF("Module initialization done. Waiting for DTR to be asserted");
     wait_comms_ready(comms);
 
     struct task_wdt_attr task_watchdog = {.period = 2000};
 
+    LOG_INF(
+        "Spawning a task watchdog timer for starting UWB and loading settings");
     if (spawn_task_watchdog(&task_watchdog) != 0) {
-        printk("Unable to start watchdog\n");
+        LOG_ERR("Unable to start watchdog");
         return 1;
     }
 
@@ -416,6 +420,7 @@ int main(void) {
     load_settings(comms);
 
     kill_task_watchdog(&task_watchdog);
+    LOG_INF("Killed task watchdog. Now running application");
 
     init_responder_thread();
     init_print_list_task();

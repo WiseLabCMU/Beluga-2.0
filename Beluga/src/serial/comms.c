@@ -16,13 +16,32 @@
 #include <utils.h>
 #include <watchdog.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/sys/cbprintf.h>
 
+// TODO
+LOG_MODULE_REGISTER(comms_logger);
+
+/**
+ * Private helper macro for calling API functions
+ *
+ * @param[in] _comms The comms object to fetch the API from
+ * @param[in] _func The API function to call
+ * @param[in] __VA_ARGS__ Additional arguments for the API function.
+ */
 #define _COMMS_API(_comms, _func, ...)                                         \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__),                                         \
                 (comms->iface->api->_func(_comms->iface)),                     \
                 (comms->iface->api->_func(_comms->iface, __VA_ARGS__)))
 
+/**
+ * Appends a byte to the receive buffer of the comms object
+ *
+ * @param[in] _comms The comms object to append the byte to
+ * @param[in] data The byte to append
+ *
+ * @todo Fix this
+ */
 #define _COMMS_BUF_APPEND(_comms, data)                                        \
     do {                                                                       \
         (_comms)->ctx->rx_buf.buf[(_comms)->ctx->rx_buf.len] = data;           \
@@ -31,10 +50,24 @@
         (_comms)->ctx->rx_buf.buf[(_comms)->ctx->rx_buf.len] = '\0';           \
     } while (0)
 
+/**
+ * The maximum amount of tokens an input string can be split into
+ */
 #define MAX_TOKENS CONFIG_COMMS_MAX_TOKENS
 
+/**
+ * Signature for a signal handler
+ */
 typedef void (*comms_signal_handler_t)(const struct comms *comms);
 
+/**
+ * @brief Generic signal handler that checks if the signal is set and runs
+ * the handler if it is.
+ *
+ * @param[in] comms The comms object
+ * @param[in] sig_idx The signal to check
+ * @param[in] handler The handler to call if the signal is set
+ */
 static void comms_signal_handle(const struct comms *comms,
                                 enum comms_signal sig_idx,
                                 comms_signal_handler_t handler) {
@@ -95,6 +128,11 @@ static size_t argparse(char *s, char **argv) {
     return argc;
 }
 
+/**
+ * @brief Retrieves a command entry given an index
+ * @param[in] id The index of the command entry
+ * @return The command entry
+ */
 static inline const union at_command_entry *root_cmd_get(uint32_t id) {
     const union at_command_entry *cmd;
 
@@ -103,6 +141,10 @@ static inline const union at_command_entry *root_cmd_get(uint32_t id) {
     return cmd;
 }
 
+/**
+ * @brief Retrieves the number of command entries in the commands section
+ * @return The number of command entries
+ */
 static inline size_t root_cmd_count(void) {
     size_t len;
 
@@ -111,10 +153,22 @@ static inline size_t root_cmd_count(void) {
     return len;
 }
 
+/**
+ * @brief Retrieve an AT command entry given an index
+ * @param[in] idx The index of the AT command to fetch
+ * @return The AT command entry if successful
+ * @return NULL if the index is outside the bounds of the commands section
+ */
 static inline const struct at_command_static_entry *at_cmd_get(size_t idx) {
     return (idx < root_cmd_count()) ? root_cmd_get(idx)->entry : NULL;
 }
 
+/**
+ * @brief Retrieves an AT command entry based on the command string
+ * @param[in] cmd_str The command string associated with the intended entry
+ * @return The command entry if found
+ * @return NULL if the command is not found
+ */
 static const struct at_command_static_entry *find_at_cmd(const char *cmd_str) {
     const struct at_command_static_entry *entry;
     size_t idx = 0;
@@ -128,6 +182,15 @@ static const struct at_command_static_entry *find_at_cmd(const char *cmd_str) {
     return NULL;
 }
 
+/**
+ * @brief Execute a command if an entry exists
+ * @param[in] comms The comms object for the serial interface
+ * @param[in] argc The number of tokens
+ * @param[in] argv The arguments for the AT command
+ * @param[in] entry The command entry
+ * @return The return value of the command
+ * @return -ENOTSUP if the command is not implemented
+ */
 static int execute_command(const struct comms *comms, size_t argc,
                            const char **argv,
                            const struct at_command_static_entry *entry) {
@@ -139,6 +202,13 @@ static int execute_command(const struct comms *comms, size_t argc,
     return entry->handler(comms, argc, argv);
 }
 
+/**
+ * @brief Processes the input buffer and responds appropriately
+ * @param[in] comms The comms object
+ * @return The return code of the command
+ * @return -ENOEXEC if command is not formatted correctly or does not exist
+ * @return -ENOTSUP if command exists, but is not implemented
+ */
 static int execute(const struct comms *comms) {
     char *argv[MAX_TOKENS + 1] = {0};
     size_t argc = 0;
@@ -171,6 +241,13 @@ static int execute(const struct comms *comms) {
     return execute_command(comms, argc, (const char **)argv, entry);
 }
 
+/**
+ * Thread for handling the communications
+ * @param[in] comms_handle The comms handle associated with the serial bus being
+ * used
+ * @param[in] p2 unused
+ * @param[in] p3 unused
+ */
 void comms_thread(void *comms_handle, void *p2, void *p3) {
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
@@ -183,7 +260,6 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
     }
 
     while (true) {
-        // k_sleep(K_MSEC(100));
         err = k_poll(comms->ctx->events, COMMS_SIGNAL_TXDONE, K_FOREVER);
 
         if (err != 0) {
@@ -203,6 +279,11 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
     __ASSERT_UNREACHABLE;
 }
 
+/**
+ * @brief Raises a transport event
+ * @param[in] evt_type The event to raise
+ * @param[in] ctx The pointer to the comms object
+ */
 static void transport_evt_handler(enum comms_transport_evt evt_type,
                                   void *ctx) {
     struct comms *comms = ctx;
@@ -214,6 +295,12 @@ static void transport_evt_handler(enum comms_transport_evt evt_type,
     k_poll_signal_raise(signal, 0);
 }
 
+/**
+ * @brief Initializes a comms instance
+ * @param[in] comms The comms instance to instantiate
+ * @param[in] transport_config Input parameter for the transport API init
+ * @return The result of the API init
+ */
 static int instance_init(const struct comms *comms,
                          const void *transport_config) {
     memset(comms->ctx, 0, sizeof(*comms->ctx));
@@ -230,6 +317,15 @@ static int instance_init(const struct comms *comms,
                       (void *)comms);
 }
 
+/**
+ * @brief Initializes a comms instance and the comms module
+ * @param[in] comms The comms instance to initialize
+ * @param[in] transport_config The transport configuration for the comms
+ * instance
+ * @return 0 upon success
+ * @return -EALREADY if already initialized
+ * @return error code from the transport initialization otherwise
+ */
 int comms_init(const struct comms *comms, const void *transport_config) {
     __ASSERT_NO_MSG(comms);
     __ASSERT_NO_MSG(comms->ctx && comms->iface);
@@ -255,6 +351,11 @@ int comms_init(const struct comms *comms, const void *transport_config) {
 
 static void at_respond(const struct comms *comms, bool ok);
 
+/**
+ * @brief Receive read data from the transport and executes the command when a
+ * line ending is detected
+ * @param[in] comms Pointer to a comms object.
+ */
 void comms_process(const struct comms *comms) {
     __ASSERT_NO_MSG(comms);
     __ASSERT_NO_MSG(comms->ctx);
@@ -292,6 +393,12 @@ void comms_process(const struct comms *comms) {
     }
 }
 
+/**
+ * @brief Writes data to the comms transport API
+ * @param[in] comms The comms object
+ * @param[in] data The data to write
+ * @param[in] length The number of bytes to write
+ */
 static void comms_write(const struct comms *comms, const void *data,
                         size_t length) {
     __ASSERT_NO_MSG(comms && data);
@@ -313,6 +420,11 @@ static void comms_write(const struct comms *comms, const void *data,
     k_mutex_unlock(&comms->ctx->wr_mtx);
 }
 
+/**
+ * @brief Appends a response ending to the TX buffer
+ * @param[in] comms The comms object
+ * @param[in] ok Indicator for successful command execution
+ */
 static void at_respond(const struct comms *comms, bool ok) {
     __ASSERT(comms->ctx->tx_buf.len <= (sizeof(comms->ctx->tx_buf.buf) - 5),
              "Not enough room in TX buffer");
@@ -339,6 +451,11 @@ static void at_respond(const struct comms *comms, bool ok) {
     comms_write_msg(comms, &msg);
 }
 
+/**
+ * @brief Writes an AT command response to the TX buffer
+ * @param[in] comms The comms object
+ * @param[in] msg A NULL terminated string to append to the TX buffer
+ */
 void at_msg(const struct comms *comms, const char *msg) {
     char *buf = comms->ctx->tx_buf.buf;
     size_t msg_len = comms->ctx->tx_buf.len;
@@ -361,6 +478,12 @@ void at_msg(const struct comms *comms, const char *msg) {
     comms->ctx->tx_buf.len = msg_len;
 }
 
+/**
+ * @brief Callback function for appending formatted strings
+ * @param[in] c The byte to append
+ * @param[in] ctx Additional context
+ * @return always 0
+ */
 static int out_func(int c, void *ctx) {
     const struct comms *comms = ctx;
     char c_str[2] = {(char)c, '\0'};
@@ -368,6 +491,11 @@ static int out_func(int c, void *ctx) {
     return 0;
 }
 
+/**
+ * @brief Append a formatted string to the AT response buffer
+ * @param[in] comms The comms object
+ * @param[in] msg The format string
+ */
 void at_msg_fmt(const struct comms *comms, const char *msg, ...) {
     va_list args;
     va_start(args, msg);
@@ -375,6 +503,12 @@ void at_msg_fmt(const struct comms *comms, const char *msg, ...) {
     va_end(args);
 }
 
+/**
+ * @brief Flushes the response buffer and blocks until everything has been
+ * written
+ * @param[in] comms The comms object
+ * @param[in] ret The return code of the command
+ */
 void comms_flush_out(const struct comms *comms, int ret) {
     int set;
     int res;
@@ -386,6 +520,13 @@ void comms_flush_out(const struct comms *comms, int ret) {
     k_poll_signal_check(sig, &set, &res);
 }
 
+/**
+ * @brief Sets the output format
+ * @param[in] comms The comms object
+ * @param[in] mode The new mode
+ * @return 0 upoin success
+ * @return -EINVAL on invalid input parameters
+ */
 int set_format(const struct comms *comms, enum comms_out_format_mode mode) {
     if (mode >= FORMAT_INVALID || comms == NULL) {
         return -EINVAL;
@@ -394,6 +535,12 @@ int set_format(const struct comms *comms, enum comms_out_format_mode mode) {
     return 0;
 }
 
+/**
+ * @brief Generates the header output for ASCII mode
+ *
+ * @param[in] _comms The comms object
+ * @param[in] _msg The header
+ */
 #define HEADER_GEN(_comms, _msg)                                               \
     do {                                                                       \
         const char *header = _msg;                                             \
@@ -402,24 +549,65 @@ int set_format(const struct comms *comms, enum comms_out_format_mode mode) {
     } while (0)
 
 #if defined(CONFIG_UWB_LOGIC_CLK)
-#define HEADER        "ID,RSSI,RANGE,TIMESTAMP,EXCHANGE\r\n"
+/**
+ * The header for ASCII mode
+ */
+#define HEADER "ID,RSSI,RANGE,TIMESTAMP,EXCHANGE\r\n"
+
+/**
+ * The format string for ascii mode
+ */
 #define ASCII_FMT_STR "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 ",%" PRIu32 "\r\n"
+
+/**
+ * The format string for JSON mode
+ */
 #define JSON_FMT_STR                                                           \
     "{ID:%" PRIu16 ",RSSI:%" PRId8 ",RANGE:%f,TIMESTAMP:%" PRId64              \
     ",EXCHANGE:%" PRIu32 "}\r\n"
+
+/**
+ * The format parameters
+ *
+ * @param[in] _i The neighbor list index
+ */
 #define FMT_PARAMS(_i)                                                         \
     list[(_i)].UUID, list[(_i)].RSSI, (double)list[(_i)].range,                \
         list[(_i)].time_stamp, list[(_i)].exchange_id
 #else
+/**
+ * The header for ASCII mode
+ */
 #define HEADER        "ID,RSSI,RANGE,TIMESTAMP\r\n"
+
+/**
+ * The format string for ascii mode
+ */
 #define ASCII_FMT_STR "%" PRIu16 ",%" PRId8 ",%f,%" PRId64 "\r\n"
+
+/**
+ * The format string for JSON mode
+ */
 #define JSON_FMT_STR                                                           \
     "{ID:%" PRIu16 ",RSSI:%" PRId8 ",RANGE:%f,TIMESTAMP:%" PRId64 "}\r\n"
+
+/**
+ * The format parameters
+ *
+ * @param[in] _i The neighbor list index
+ */
 #define FMT_PARAMS(_i)                                                         \
     list[(_i)].UUID, list[(_i)].RSSI, (double)list[(_i)].range,                \
         list[(_i)].time_stamp
 #endif
 
+/**
+ * @brief Formats and writes the neighbor list to the transport
+ * @param[in] comms The comms object
+ * @param[in] msg The beluga message to write
+ * @return 0 upon success
+ * @return -EINVAL if list is not present
+ */
 static int s_write_neighbors(const struct comms *comms,
                              const struct beluga_msg *msg) {
     __ASSERT_NO_MSG(comms && msg);
@@ -451,6 +639,13 @@ static int s_write_neighbors(const struct comms *comms,
     return 0;
 }
 
+/**
+ * @brief Writes a start event to the transport in ascii format
+ * @param[in] comms The comms object
+ * @param[in] msg The beluga message containing the start event
+ * @return -EINVAL if payload is empty
+ * @return 0 upon success
+ */
 static int ascii_write_start_event(const struct comms *comms,
                                    const struct beluga_msg *msg) {
     const char *ending = "\r\n";
@@ -468,6 +663,13 @@ static int ascii_write_start_event(const struct comms *comms,
     return 0;
 }
 
+/**
+ * @brief Writes a dropped neighbor message to the transport
+ * @param[in] comms The comms object
+ * @param[in] msg The beluga message indicating which neighbor was dropped
+ * @return 0 upon success
+ * @return -ENOTSUP if not in JSON mode
+ */
 static int json_write_dropped_neighbor(const struct comms *comms,
                                        const struct beluga_msg *msg) {
     if (comms->ctx->format != FORMAT_JSON) {
@@ -482,6 +684,14 @@ static int json_write_dropped_neighbor(const struct comms *comms,
     return 0;
 }
 
+/**
+ * @brief Write a message to the transport while in ASCII or JSON mode
+ * @param[in] comms The comms object
+ * @param[in] msg The message to format and write
+ * @return 0 upon success
+ * @return -ECANCELED if message type is not recognized
+ * @return negative error code otherwise
+ */
 static int comms_write_normal(const struct comms *comms,
                               const struct beluga_msg *msg) {
     __ASSERT_NO_MSG(comms && msg);
@@ -513,6 +723,14 @@ static int comms_write_normal(const struct comms *comms,
     return ret;
 }
 
+/**
+ * @brief Writes a framed message over the comms transport
+ * @param[in] comms The comms object
+ * @param[in] msg The message to be framed and sent
+ * @return 0 upon success
+ * @return -EINVAL if frame length is too small
+ * @return -ENOMEM if no dynamic memory is available
+ */
 static int comms_write_frame(const struct comms *comms,
                              const struct beluga_msg *msg) {
     __ASSERT_NO_MSG(comms && msg);
@@ -540,6 +758,15 @@ static int comms_write_frame(const struct comms *comms,
     return 0;
 }
 
+/**
+ * @brief Writes a message over the comms transport
+ * @param[in] comms The comms object
+ * @param[in] msg The message to write
+ * @return 0 upon success
+ * @return -EINVAL if parameters are invalid
+ * @return -EFAULT if format mode is invalid
+ * @return negative error code otherwise
+ */
 int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
     int ret;
     if (comms == NULL || msg == NULL) {
@@ -565,6 +792,14 @@ int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
     return ret;
 }
 
+/**
+ * @brief Writes the current format mode over the transport
+ * @param[in] comms The comms object
+ * @return 0 upon success
+ * @return -EINVAL if input parameters are incorrect
+ * @return -EFAULT if invalid format mode
+ * @return negative error code otherwise
+ */
 int print_format(const struct comms *comms) {
     struct beluga_msg msg = {.type = START_EVENT};
     int ret = 0;
@@ -599,8 +834,15 @@ int print_format(const struct comms *comms) {
     return ret;
 }
 
+/**
+ * @brief Stalls the thread until the comms transport is ready
+ * @param[in] comms The comms object
+ * @return 0 upon success
+ * @return -EINVAL if input is invalid
+ * @return -ENOTSUP if transport does not have flow control
+ */
 int wait_comms_ready(const struct comms *comms) {
-    if (comms == NULL || comms->ctx == NULL || comms->iface == NULL || comms->iface->api == NULL) {
+    if (comms == NULL || comms->iface == NULL || comms->iface->api == NULL) {
         return -EINVAL;
     }
     if (comms->iface->api->wait_dtr == NULL) {
