@@ -16,7 +16,7 @@
 /**
  * Logger for the debug module
  */
-LOG_MODULE_REGISTER(debug_module);
+LOG_MODULE_REGISTER(debug_module, CONFIG_BELUGA_DEBUG_LOG_LEVEL);
 
 #if defined(CONFIG_DEBUG_BELUGA_CLOCK)
 #include <zephyr/drivers/clock_control/nrf_clock_control.h>

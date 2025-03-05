@@ -64,6 +64,9 @@
     FUNC(UWB_NSSFD, 0)                                                         \
     FUNC(PAN_ID, 0xDECA)
 
+/**
+ * Helper for generating the enumerators for beluga settings
+ */
 #define GENERATE_ENUM(setting_, ...) BELUGA_##setting_,
 
 /**

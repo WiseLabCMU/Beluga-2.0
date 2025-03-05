@@ -104,4 +104,10 @@ module-str = Comms Backend module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
+menu "Debug"
+module = BELUGA_DEBUG
+module-str = Beluga debugging
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 endmenu
