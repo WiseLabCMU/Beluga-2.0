@@ -320,8 +320,7 @@ static void load_format_no_msg(const struct comms *comms) {
  * Load all the settings, initialize all the states, and display what the
  * settings are
  */
-static void load_settings(void) {
-    const struct comms *comms = comms_backend_uart_get_ptr();
+static void load_settings(const struct comms *comms) {
     load_format_no_msg(comms);
 
     SETTINGS_HEADER(comms);
@@ -365,6 +364,7 @@ static void load_settings(void) {
  * @return 1 on error
  */
 int main(void) {
+    const struct comms *comms = comms_backend_uart_get_ptr();
     RESET_CAUSE();
 
     memset(seen_list, 0, sizeof(seen_list));
@@ -402,6 +402,8 @@ int main(void) {
         return 1;
     }
 
+    wait_comms_ready(comms);
+
     struct task_wdt_attr task_watchdog = {.period = 2000};
 
     if (spawn_task_watchdog(&task_watchdog) != 0) {
@@ -411,7 +413,7 @@ int main(void) {
 
     init_uwb();
 
-    load_settings();
+    load_settings(comms);
 
     kill_task_watchdog(&task_watchdog);
 

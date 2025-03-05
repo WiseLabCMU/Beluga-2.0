@@ -74,6 +74,7 @@ struct comms_transport_api {
     int (*read)(const struct comms_transport *transport, void *data,
                 size_t length, size_t *cnt);
     void (*update)(const struct comms_transport *transport);
+    void (*wait_dtr)(const struct comms_transport *transport);
 };
 
 struct comms_transport {
@@ -137,6 +138,7 @@ int set_format(const struct comms *comms, enum comms_out_format_mode mode);
 int print_format(const struct comms *comms);
 int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg);
 void comms_flush_out(const struct comms *comms, int ret);
+int wait_comms_ready(const struct comms *comms);
 
 #define Z_OK_MSG_NOARGS(_comms, _msg)                                          \
     do {                                                                       \

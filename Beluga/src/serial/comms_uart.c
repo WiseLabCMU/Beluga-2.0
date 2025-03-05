@@ -500,6 +500,17 @@ static void update(const struct comms_transport *transport) {
 }
 #endif
 
+#ifdef CONFIG_USB_DEVICE_STACK
+void wait_dtr(const struct comms_transport *transport) {
+    const struct comms_uart_common *comms = (struct comms_uart_common *)transport->ctx;
+    uint32_t dtr = 0;
+    while (!dtr) {
+        uart_line_ctrl_get(comms->dev, UART_LINE_CTRL_DTR, &dtr);
+        k_sleep(K_MSEC(100));
+    }
+}
+#endif
+
 const struct comms_transport_api comms_uart_transport_api = {
     .init = init,
     .uninit = uninit,
@@ -508,6 +519,9 @@ const struct comms_transport_api comms_uart_transport_api = {
     .read = read_uart,
 #ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
     .update = update,
+#endif
+#ifdef CONFIG_USB_DEVICE_STACK
+    .wait_dtr = wait_dtr,
 #endif
 };
 
@@ -541,14 +555,6 @@ static int enable_comms_uart(void) {
         smp_comms_init();
     }
     comms_init(&comms_uart, dev);
-
-    if (IS_ENABLED(CONFIG_USB_DEVICE_STACK)) {
-        uint32_t dtr = 0;
-        while (!dtr) {
-            uart_line_ctrl_get(dev, UART_LINE_CTRL_DTR, &dtr);
-            k_sleep(K_MSEC(100));
-        }
-    }
 
     return 0;
 }

@@ -598,3 +598,14 @@ int print_format(const struct comms *comms) {
 
     return ret;
 }
+
+int wait_comms_ready(const struct comms *comms) {
+    if (comms == NULL || comms->ctx == NULL || comms->iface == NULL || comms->iface->api == NULL) {
+        return -EINVAL;
+    }
+    if (comms->iface->api->wait_dtr == NULL) {
+        return -ENOTSUP;
+    }
+    _COMMS_API(comms, wait_dtr);
+    return 0;
+}
