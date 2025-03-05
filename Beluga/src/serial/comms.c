@@ -19,8 +19,10 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/cbprintf.h>
 
-// TODO
-LOG_MODULE_REGISTER(comms_logger);
+/**
+ * Logger for the comms module
+ */
+LOG_MODULE_REGISTER(comms_logger, CONFIG_COMMS_LOG_LEVEL);
 
 /**
  * Private helper macro for calling API functions
@@ -264,7 +266,7 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
 
         if (err != 0) {
             k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
-            // TODO: Report err
+            LOG_ERR("Comms thread error: %d", err);
             k_mutex_unlock(&comms->ctx->wr_mtx);
             return;
         }

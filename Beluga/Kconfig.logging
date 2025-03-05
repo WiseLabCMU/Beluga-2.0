@@ -92,4 +92,10 @@ module-str = watchdog module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
+menu "Serial Comms"
+module = COMMS
+module-str = Comms module
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 endmenu
