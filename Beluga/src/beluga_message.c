@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/data/json.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(beluga_message_logger, CONFIG_BELUGA_MESSAGE_LOG_LEVEL);
 
 #define MSG_HEADER_OFFSET  0
 #define MSG_LEN_OFFSET     (MSG_HEADER_OFFSET + BELUGA_MSG_HEADER_OVERHEAD)
@@ -109,6 +112,7 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
     int err;
 
     if (msg->payload.neighbor_list == NULL) {
+        LOG_ERR("Invalid neighbor list");
         return -EINVAL;
     }
 
@@ -124,6 +128,7 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
     }
 
     if (neighbors.neighbors_len < 1) {
+        LOG_ERR("Neighbor list empty");
         return -EAGAIN;
     }
 
@@ -136,6 +141,7 @@ static ssize_t encode_neighbor_list(const struct beluga_msg *msg,
     err = json_arr_encode_buf(json_neighbor_list, &neighbors, buffer, len);
 
     if (err != 0) {
+        LOG_ERR("Unable to encode JSON payload (%d)", err);
         return (ssize_t)err;
     }
 
@@ -149,6 +155,7 @@ static ssize_t encode_ranging_event(const struct beluga_msg *msg,
     int err;
 
     if (msg->payload.event == NULL) {
+        LOG_ERR("Invalid event");
         return -EINVAL;
     }
 
@@ -164,6 +171,7 @@ static ssize_t encode_ranging_event(const struct beluga_msg *msg,
                             msg->payload.event, buffer, len);
 
     if (err != 0) {
+        LOG_ERR("Unable to encode JSON payload (%d)", err);
         return (ssize_t)err;
     }
 
@@ -176,13 +184,16 @@ static ssize_t encode_ranging_event(const struct beluga_msg *msg,
 int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
                     size_t len) {
     ssize_t msgLen;
+    int ret;
     if (msg == NULL || buffer == NULL) {
+        LOG_ERR("Invalid intput parameters (%p) (%p)", msg, buffer);
         return -EINVAL;
     }
 
     switch (msg->type) {
     case COMMAND_RESPONSE: {
         if (msg->payload.response == NULL) {
+            LOG_ERR("Invalid response");
             return -EINVAL;
         }
         msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD, "%s",
@@ -204,6 +215,7 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
     }
     case START_EVENT: {
         if (msg->payload.node_version == NULL) {
+            LOG_ERR("Invalid start event");
             return -EINVAL;
         }
         msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD, "%s",
@@ -221,19 +233,26 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
         return msgLen;
     }
 
-    return message_size(msgLen);
+    ret = message_size(msgLen);
+
+    LOG_INF("Frame size: %d", ret);
+    LOG_HEXDUMP_DBG(buffer, ret, "Frame: ");
+
+    return ret;
 }
 
 int frame_length(const struct beluga_msg *msg) {
     ssize_t msgLen;
 
     if (msg == NULL) {
+        LOG_ERR("Invalid message pointer");
         return -EINVAL;
     }
 
     switch (msg->type) {
     case COMMAND_RESPONSE: {
         if (msg->payload.response == NULL) {
+            LOG_ERR("Invalid response");
             return -EINVAL;
         }
         msgLen = (ssize_t)strlen(msg->payload.response) + 1;
@@ -252,6 +271,7 @@ int frame_length(const struct beluga_msg *msg) {
     }
     case START_EVENT: {
         if (msg->payload.node_version == NULL) {
+            LOG_ERR("Invalid start event");
             return -EINVAL;
         }
         msgLen = (ssize_t)strlen(msg->payload.node_version) + 1;
