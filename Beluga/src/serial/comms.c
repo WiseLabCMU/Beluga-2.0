@@ -41,15 +41,13 @@ LOG_MODULE_REGISTER(comms_logger, CONFIG_COMMS_LOG_LEVEL);
  *
  * @param[in] _comms The comms object to append the byte to
  * @param[in] data The byte to append
- *
- * @todo Fix this
  */
 #define _COMMS_BUF_APPEND(_comms, data)                                        \
     do {                                                                       \
         (_comms)->ctx->rx_buf.buf[(_comms)->ctx->rx_buf.len] = data;           \
-        BOUND_INCREMENT((_comms)->ctx->rx_buf.len,                             \
-                        ARRAY_SIZE((_comms)->ctx->rx_buf.buf));                \
+        (_comms)->ctx->rx_buf.len++;                                           \
         (_comms)->ctx->rx_buf.buf[(_comms)->ctx->rx_buf.len] = '\0';           \
+        (_comms)->ctx->rx_buf.len %= CONFIG_COMMS_RTX_BUF_SIZE;                \
     } while (0)
 
 /**
@@ -462,7 +460,7 @@ void at_msg(const struct comms *comms, const char *msg) {
     char *buf = comms->ctx->tx_buf.buf;
     size_t msg_len = comms->ctx->tx_buf.len;
     const size_t buf_size =
-        sizeof(comms->ctx->tx_buf.buf) - 5; // Leave room for " OK\r\n"
+        sizeof(comms->ctx->tx_buf.buf) - 6; // Leave room for " OK\r\n"
     const char *msg_ = msg;
 
     for (; msg_len < buf_size; msg_len++, msg_++) {

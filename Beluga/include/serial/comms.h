@@ -92,7 +92,7 @@ enum comms_out_format_mode {
 };
 
 struct comms_buf {
-    uint8_t buf[256];
+    uint8_t buf[CONFIG_COMMS_RTX_BUF_SIZE + 1];
     size_t len;
 };
 
