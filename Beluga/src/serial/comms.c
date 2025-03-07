@@ -1,7 +1,7 @@
 /**
  * @file comms.c
  *
- * @brief
+ * @brief Front end interface for communicating over a serial bus.
  *
  * @date 2/18/25
  *
@@ -318,13 +318,12 @@ static int instance_init(const struct comms *comms,
 }
 
 /**
- * @brief Initializes a comms instance and the comms module
- * @param[in] comms The comms instance to initialize
- * @param[in] transport_config The transport configuration for the comms
- * instance
- * @return 0 upon success
- * @return -EALREADY if already initialized
- * @return error code from the transport initialization otherwise
+ * @brief Function for initializing a transport layer and internal comms state.
+ *
+ * @param[in] sh		Pointer to comms instance.
+ * @param[in] transport_config	Transport configuration during initialization.
+ *
+ * @return Standard error code.
  */
 int comms_init(const struct comms *comms, const void *transport_config) {
     __ASSERT_NO_MSG(comms);
@@ -352,9 +351,10 @@ int comms_init(const struct comms *comms, const void *transport_config) {
 static void at_respond(const struct comms *comms, bool ok);
 
 /**
- * @brief Receive read data from the transport and executes the command when a
- * line ending is detected
- * @param[in] comms Pointer to a comms object.
+ * @brief Process function, which should be executed when data is ready in the
+ *	  transport interface.
+ *
+ * @param[in] sh Pointer to the comms instance.
  */
 void comms_process(const struct comms *comms) {
     __ASSERT_NO_MSG(comms);
@@ -452,9 +452,12 @@ static void at_respond(const struct comms *comms, bool ok) {
 }
 
 /**
- * @brief Writes an AT command response to the TX buffer
- * @param[in] comms The comms object
- * @param[in] msg A NULL terminated string to append to the TX buffer
+ * @brief Copy a command response into the output buffer.
+ *
+ * @param[in] comms Pointer to the comms instance.
+ * @param[in] msg The command response.
+ *
+ * @note This does not start the transmission of data.
  */
 void at_msg(const struct comms *comms, const char *msg) {
     char *buf = comms->ctx->tx_buf.buf;
@@ -492,9 +495,12 @@ static int out_func(int c, void *ctx) {
 }
 
 /**
- * @brief Append a formatted string to the AT response buffer
- * @param[in] comms The comms object
+ * @brief Copy a formatted command response into the output buffer.
+ * @param[in] comms Pointer to the comms instance
  * @param[in] msg The format string
+ * @param[in] ... List of parameters to print
+ *
+ * @note This does not start the transmission of data.
  */
 void at_msg_fmt(const struct comms *comms, const char *msg, ...) {
     va_list args;
@@ -505,7 +511,7 @@ void at_msg_fmt(const struct comms *comms, const char *msg, ...) {
 
 /**
  * @brief Flushes the response buffer and blocks until everything has been
- * written
+ * transmitted.
  * @param[in] comms The comms object
  * @param[in] ret The return code of the command
  */
@@ -835,7 +841,7 @@ int print_format(const struct comms *comms) {
 }
 
 /**
- * @brief Stalls the thread until the comms transport is ready
+ * @brief Sleeps the calling thread until the comms transport is ready
  * @param[in] comms The comms object
  * @return 0 upon success
  * @return -EINVAL if input is invalid
