@@ -11,19 +11,19 @@
 #include <zephyr/usb/usb_device.h>
 
 #define LOG_MODULE_NAME comms_uart
-LOG_MODULE_REGISTER(comms_uart);
+LOG_MODULE_REGISTER(comms_uart, CONFIG_COMMS_SERIAL_LOG_LEVEL);
 
 #if defined(CONFIG_COMMS_BACKEND_SERIAL_RX_POLL_PERIOD)
 #define RX_POLL_PERIOD K_MSEC(CONFIG_COMMS_BACKEND_SERIAL_RX_POLL_PERIOD)
 #else
 #define RX_POLL_PERIOD K_NO_WAIT
-#endif
+#endif // defined(CONFIG_COMMS_BACKEND_SERIAL_RX_POLL_PERIOD)
 
 #ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
 NET_BUF_POOL_DEFINE(smp_comms_rx_pool,
                     CONFIG_MCUMGR_TRANSPORT_COMMS_RX_BUF_COUNT,
                     SMP_SHELL_RX_BUF_SIZE, 0, NULL);
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 
 static void async_callback(const struct device *dev, struct uart_event *evt,
                            void *user_data) {
@@ -73,7 +73,7 @@ static void uart_rx_handle(const struct device *dev,
     bool new_data = false;
 #ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
     struct smp_comms_data *const smp = &sh_uart->common.smp;
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 
     do {
         len = ring_buf_put_claim(&sh_uart->rx_ringbuf, &data,
@@ -102,7 +102,7 @@ static void uart_rx_handle(const struct device *dev,
                     data[j] = data[i + j];
                 }
             }
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
             int err = ring_buf_put_finish(&sh_uart->rx_ringbuf, rd_len);
             (void)err;
             __ASSERT_NO_MSG(err == 0);
@@ -120,7 +120,7 @@ static void uart_rx_handle(const struct device *dev,
             if ((rd_len != 0) && (smp_comms_rx_bytes(smp, &dummy, 1) == 1)) {
                 new_data = true;
             }
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
         }
     } while (rd_len && (rd_len == len));
 
@@ -297,7 +297,7 @@ static int init(const struct comms_transport *transport, const void *config,
 #ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
     common->smp.buf_pool = &smp_comms_rx_pool;
     k_fifo_init(&common->smp.buf_ready);
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_ASYNC)) {
         async_init((struct comms_uart_async *)transport->ctx);
@@ -447,7 +447,7 @@ static int async_read(struct comms_uart_async *sh_uart, void *data,
 #else
     size_t sh_cnt = blen;
     memcpy(data, buf, blen);
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
     bool buf_available = uart_async_rx_data_consume(async_rx, sh_cnt);
     *cnt = sh_cnt;
 
@@ -498,18 +498,19 @@ static void update(const struct comms_transport *transport) {
 
     smp_comms_process(&sh_uart->smp);
 }
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 
 #ifdef CONFIG_USB_DEVICE_STACK
-void wait_dtr(const struct comms_transport *transport) {
-    const struct comms_uart_common *comms = (struct comms_uart_common *)transport->ctx;
+static void wait_dtr(const struct comms_transport *transport) {
+    const struct comms_uart_common *comms =
+        (struct comms_uart_common *)transport->ctx;
     uint32_t dtr = 0;
     while (!dtr) {
         uart_line_ctrl_get(comms->dev, UART_LINE_CTRL_DTR, &dtr);
         k_sleep(K_MSEC(100));
     }
 }
-#endif
+#endif // CONFIG_USB_DEVICE_STACK
 
 const struct comms_transport_api comms_uart_transport_api = {
     .init = init,
@@ -519,10 +520,10 @@ const struct comms_transport_api comms_uart_transport_api = {
     .read = read_uart,
 #ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
     .update = update,
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 #ifdef CONFIG_USB_DEVICE_STACK
     .wait_dtr = wait_dtr,
-#endif
+#endif // CONFIG_USB_DEVICE_STACK
 };
 
 COMMS_UART_DEFINE(comms_transport_uart);
@@ -535,7 +536,7 @@ struct smp_comms_data *comms_uart_smp_comms_data_get_ptr(void) {
 
     return &common->smp;
 }
-#endif
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 
 static int enable_comms_uart(void) {
     const struct device *const dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));

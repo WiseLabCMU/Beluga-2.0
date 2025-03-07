@@ -27,7 +27,7 @@
 /**
  * Logger for the responder
  */
-LOG_MODULE_REGISTER(responder_logger, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(responder_logger, CONFIG_RESPONDER_LOG_LEVEL);
 
 /**
  * Semaphore for suspending the responder

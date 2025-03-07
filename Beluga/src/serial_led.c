@@ -13,6 +13,12 @@
 
 #include <serial_led.h>
 #include <zephyr/device.h>
+#include <zephyr/logging/log.h>
+
+/**
+ * Logger for the serial LEDs
+ */
+LOG_MODULE_REGISTER(serial_led, CONFIG_SERIAL_LED_LOG_LEVEL);
 
 /**
  * The node defining the LEDs being used for serial communication
@@ -22,12 +28,6 @@
 #if defined(CONFIG_SERIAL_LEDS) && DT_NODE_EXISTS(SERIAL_LEDS_NODE)
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-
-/**
- * Logger for the serial LEDs
- */
-LOG_MODULE_REGISTER(serial_led, CONFIG_SERIAL_LED_LOG_LEVEL);
 
 /**
  * GPIO bank 0 device
@@ -226,7 +226,10 @@ int set_serial_led_master_state(bool enable) {
  * @return 0 upon success
  * @return negative error code otherwise
  */
-int serial_leds_init(void) { return 0; }
+int serial_leds_init(void) {
+    LOG_WRN("Not implemented");
+    return 0;
+}
 
 /**
  * @brief Updates the LED states based on the current serial communication state
@@ -239,6 +242,7 @@ int serial_leds_init(void) { return 0; }
  */
 int serial_leds_update_state(enum serial_led_state state) {
     ARG_UNUSED(state);
+    LOG_WRN("Not implemented");
     return 0;
 }
 
@@ -251,6 +255,7 @@ int serial_leds_update_state(enum serial_led_state state) {
  */
 int set_serial_led_master_state(bool enable) {
     ARG_UNUSED(enable);
+    LOG_WRN("Not implemented");
     return 0;
 }
 #endif // defined(CONFIG_SERIAL_LEDS) &&  DT_NODE_EXISTS(SERIAL_LEDS_NODE)
