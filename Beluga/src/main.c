@@ -29,8 +29,16 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+/**
+ * Logger for main
+ */
 LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
 
+/**
+ * Prints the settings header if not in frame mode
+ *
+ * @param[in] _comms Pointer to the comms instance
+ */
 #define SETTINGS_HEADER(_comms)                                                \
     do {                                                                       \
         if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
@@ -40,6 +48,14 @@ LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
             comms_write_msg(_comms, &msg);                                     \
         }                                                                      \
     } while (0)
+
+/**
+ * Prints a formatted settings string
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] _str The format string
+ * @param[in] ... List of parameters to print
+ */
 #define _SETTINGS_PRINT_FMT(_comms, _str, ...)                                 \
     do {                                                                       \
         struct beluga_msg msg = {.type = START_EVENT};                         \
@@ -48,15 +64,38 @@ LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
         msg.payload.node_version = s;                                          \
         comms_write_msg(_comms, &msg);                                         \
     } while (0)
+
+/**
+ * Prints a setting
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] _str The settings string
+ */
 #define __SETTINGS_PRINT(_comms, _str)                                         \
     do {                                                                       \
         struct beluga_msg msg = {.type = START_EVENT,                          \
                                  .payload.node_version = ("  " _str)};         \
         comms_write_msg(_comms, &msg);                                         \
     } while (0)
+
+/**
+ * Prints a setting
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] _str The setting string to print
+ * @param[in] ... Optional list of arguments to print
+ */
 #define _SETTINGS_PRINT(_comms, _str, ...)                                     \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (__SETTINGS_PRINT(_comms, _str)),       \
                 (_SETTINGS_PRINT_FMT(_comms, _str, __VA_ARGS__)))
+
+/**
+ * Prints a setting if not in frame mode
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] _str The setting string to print
+ * @param[in] ... Optional list of arguments to print
+ */
 #define SETTINGS_PRINT(_comms, _str, ...)                                      \
     do {                                                                       \
         if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
@@ -64,6 +103,12 @@ LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
         }                                                                      \
     } while (0)
 
+/**
+ * Print the node version if in framed mode, otherwise, prints a line break
+ * if not in framed mode.
+ *
+ * @param[in] _comms Pointer to the comms instance
+ */
 #define SETTINGS_BREAK(_comms)                                                 \
     do {                                                                       \
         if ((_comms)->ctx->format == FORMAT_FRAMES) {                          \
@@ -78,13 +123,43 @@ LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
         }                                                                      \
     } while (0)
 
+/**
+ * Runs a custom print setting routine with arguments
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] callback The custom print setting routine to run
+ * @param[in] ... Argument list
+ */
 #define _CUSTOM_INIT_MSG_ARGS(_comms, callback, ...)                           \
     callback(_comms, __VA_ARGS__)
+
+/**
+ * Runs a custom print setting routine without arguments
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] callback The custom print setting routine to run
+ */
 #define _CUSTOM_INIT_MSG_NOARGS(_comms, callback) callback(_comms)
+
+/**
+ * Runs a custom print setting routine
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] callback The custom print setting routine to run
+ * @param[in] ... Additional arguments for the routine
+ */
 #define _CUSTOM_INIT_MSG(_comms, callback, ...)                                \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__),                                         \
                 (_CUSTOM_INIT_MSG_NOARGS(_comms, callback)),                   \
                 (_CUSTOM_INIT_MSG_ARGS(_comms, callback, __VA_ARGS__)))
+
+/**
+ * Runs a custom print setting routine if not in framed mode
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] callback The custom print setting routine to run
+ * @param[in] ... Additional arguments for the routine
+ */
 #define CUSTOM_INIT_MSG(_comms, callback, ...)                                 \
     do {                                                                       \
         if ((_comms)->ctx->format != FORMAT_FRAMES) {                          \
