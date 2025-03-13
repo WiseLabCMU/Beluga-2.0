@@ -566,16 +566,29 @@ AT_CMD_DEFINE(PWRAMP) {
     bool success = strtoint32(argv[1], &pwramp);
     int err;
 
-    if (!success || pwramp < 0 || pwramp > 2) {
+    if (!success || pwramp < 0 || pwramp > 4) {
         ERROR(comms, "Power amp parameter input error");
     }
 
-    if (pwramp == 0) {
+    switch (pwramp) {
+    case 0:
         err = update_power_mode(POWER_MODE_BYPASS);
-    } else if (pwramp == 1) {
+        break;
+    case 1:
         err = update_power_mode(POWER_MODE_LOW);
-    } else {
+        break;
+    case 2:
         err = update_power_mode(POWER_MODE_HIGH);
+        break;
+    case 3:
+        err = update_power_mode(POWER_MODE_LOW_NO_UWB);
+        break;
+    case 4:
+        err = update_power_mode(POWER_MODE_HIGH_NO_UWB);
+        break;
+    default:
+        ERROR(comms, "Power amp parameter input error");
+        break;
     }
 
     if (err == 0 || err == -ENODEV) {

@@ -33,7 +33,7 @@ LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
  */
 #define SKY_GPIOS DT_NODELABEL(sky_fem_gpios)
 
-#if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS)
+#if !defined(CONFIG_BELUGA_RANGE_EXTENSION) && !DT_NODE_EXISTS(SKY_GPIOS)
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <zephyr/drivers/gpio.h>
@@ -288,6 +288,16 @@ int update_power_mode(enum ble_power_mode mode) {
         UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
         UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, high_power, ret);
         uwb_pa = 1;
+        break;
+    }
+    case POWER_MODE_LOW_NO_UWB: {
+        high_power = 0;
+        // Fallthrough to next case
+    }
+    case POWER_MODE_HIGH_NO_UWB: {
+        UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
+        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, high_power, ret);
+        uwb_pa = 0;
         break;
     }
     default:
