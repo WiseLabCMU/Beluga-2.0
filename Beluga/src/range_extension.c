@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <utils.h>
 
 /**
  * Logger for the range extension module
@@ -33,7 +34,7 @@ LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
  */
 #define SKY_GPIOS DT_NODELABEL(sky_fem_gpios)
 
-#if !defined(CONFIG_BELUGA_RANGE_EXTENSION) && !DT_NODE_EXISTS(SKY_GPIOS)
+#if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS)
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <zephyr/drivers/gpio.h>
@@ -237,6 +238,16 @@ int init_range_extension(void) {
                 (_UPDATE_FEM_PIN(container, attr, value, ret)),                \
                 (FEM_PIN_NOTSUP(ret)))
 
+#define _TOGGLE_UWB_PA(uwb_pa_)                                                \
+    do {                                                                       \
+        dwt_setlnapamode(0, uwb_pa_);                                          \
+        if (uwb_pa_) {                                                         \
+            dwt_setfinegraintxseq(false);                                      \
+        } else {                                                               \
+            dwt_setfinegraintxseq(true);                                       \
+        }                                                                      \
+    } while (0)
+
 /**
  * Generates the code to toggle on and off the external UWB amplifier. If the
  * UWB external amp is disabled in the config, then an empty statement is
@@ -245,7 +256,7 @@ int init_range_extension(void) {
  * @param[in] uwb_pa_ The external power amp setting for the DW1000
  */
 #define TOGGLE_UWB_AMP(uwb_pa_)                                                \
-    IF_ENABLED(IS_ENABLED(CONFIG_UWB_ENABLE_PA), (dwt_setlnapamode(0, uwb_pa_)))
+    IF_ENABLED(IS_ENABLED(CONFIG_UWB_ENABLE_PA), (_TOGGLE_UWB_PA(uwb_pa_)))
 
 /**
  * @brief Updates the power mode of the FEM and controls the external
@@ -282,7 +293,7 @@ int update_power_mode(enum ble_power_mode mode) {
     }
     case POWER_MODE_LOW: {
         high_power = 0;
-        // Fallthrough to next case
+        FALLTHROUGH;
     }
     case POWER_MODE_HIGH: {
         UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
@@ -292,7 +303,7 @@ int update_power_mode(enum ble_power_mode mode) {
     }
     case POWER_MODE_LOW_NO_UWB: {
         high_power = 0;
-        // Fallthrough to next case
+        FALLTHROUGH;
     }
     case POWER_MODE_HIGH_NO_UWB: {
         UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);

@@ -47,6 +47,12 @@
  */
 #define NO_RETURN __attribute__((noreturn))
 
+#if defined(__GNUC__) && __GNUC__ >= 7
+#define FALLTHROUGH __attribute__((fallthrough))
+#else
+#define FALLTHROUGH ((void)0)
+#endif // defined(__GNUC__) && __GNUC__ >= 7
+
 /**
  * Increments a variable and resets it back to 0 if it reaches the upper bound
  *
