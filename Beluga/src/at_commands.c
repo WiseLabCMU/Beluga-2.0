@@ -328,12 +328,18 @@ AT_CMD_REGISTER(RATE);
 AT_CMD_DEFINE(CHANNEL) {
     LOG_INF("Running CHANNEL command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_CHANNEL, "Channel");
-    int32_t channel;
+    int32_t channel, pwramp;
     int retVal;
     bool success = strtoint32(argv[1], &channel);
 
     if (!success) {
         ERROR(comms, "Channel parameter input error");
+    }
+
+    pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
+    if (pwramp > 2 && channel > 2) {
+        ERROR(comms, "UWB power amplifier is currently active and channels 1 "
+                     "and 2 can only be used with the amplifier");
     }
 
     retVal = set_uwb_channel(channel);
@@ -570,22 +576,34 @@ AT_CMD_DEFINE(PWRAMP) {
         ERROR(comms, "Power amp parameter input error");
     }
 
+    int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
+
     switch (pwramp) {
     case 0:
         err = update_power_mode(POWER_MODE_BYPASS);
         break;
     case 1:
-        err = update_power_mode(POWER_MODE_LOW);
-        break;
-    case 2:
-        err = update_power_mode(POWER_MODE_HIGH);
-        break;
-    case 3:
         err = update_power_mode(POWER_MODE_LOW_NO_UWB);
         break;
-    case 4:
+    case 2:
         err = update_power_mode(POWER_MODE_HIGH_NO_UWB);
         break;
+    case 3: {
+        if (!(channel > 2)) {
+            err = update_power_mode(POWER_MODE_LOW);
+        } else {
+            err = -EFAULT;
+        }
+        break;
+    }
+    case 4: {
+        if (!(channel > 2)) {
+            err = update_power_mode(POWER_MODE_HIGH);
+        } else {
+            err = -EFAULT;
+        }
+        break;
+    }
     default:
         ERROR(comms, "Power amp parameter input error");
         break;
@@ -608,6 +626,11 @@ AT_CMD_DEFINE(PWRAMP) {
         ERROR(comms, "Power mode not recognized");
     } else if (err == -ENOTSUP) {
         ERROR(comms, "Not implemented");
+    } else if (err == -EFAULT) {
+        ERROR(comms,
+              "Cannot turn on UWB amplifier. Must be on channel 1 or 2 "
+              "(currently on channel %" PRId32,
+              channel);
     } else {
         ERROR(comms, "Power amplifier error occurred: %d", err);
     }

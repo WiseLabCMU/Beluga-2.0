@@ -20,9 +20,9 @@
 #include <app_leds.h>
 #include <range_extension.h>
 #include <stdio.h>
+#include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <utils.h>
 
 /**
  * Logger for the range extension module
@@ -34,7 +34,7 @@ LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
  */
 #define SKY_GPIOS DT_NODELABEL(sky_fem_gpios)
 
-#if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS)
+#if (defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS)) || 1
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <zephyr/drivers/gpio.h>

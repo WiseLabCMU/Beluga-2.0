@@ -27,11 +27,12 @@
  * @brief Power modes for the BLE FEM
  */
 enum ble_power_mode {
-    POWER_MODE_BYPASS, ///< Bypass the PA and LNA
-    POWER_MODE_LOW,    ///< Amplify the BLE by 10 dB
-    POWER_MODE_HIGH,   ///< Tell FCC to fuck off and amplify the BLE by 22 dB
-    POWER_MODE_LOW_NO_UWB,
-    POWER_MODE_HIGH_NO_UWB,
+    POWER_MODE_BYPASS,      ///< Bypass the PA and LNA
+    POWER_MODE_LOW_NO_UWB,  ///< Amplify the BLE by 10 dB and do not amplify UWB
+    POWER_MODE_HIGH_NO_UWB, ///< Tell FCC to fuck off and amplify the BLE by 22
+                            ///< dB and do not amplify the UWB
+    POWER_MODE_LOW,  ///< Amplify the BLE by 10 dB and turn on the UWB amplifier
+    POWER_MODE_HIGH, ///< Tell FCC to fuck off and amplify everything by 20+ dB
 };
 
 /**
