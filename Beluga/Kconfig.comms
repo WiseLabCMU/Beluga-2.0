@@ -176,3 +176,7 @@ endif # COMMS_BACKENDS
 config COMMS_MAX_TOKENS
     int "Maximum argument tokens"
     default 20
+
+config COMMS_RTX_BUF_SIZE
+    int "Transmit and Receive Buffer Sizes"
+    default 256

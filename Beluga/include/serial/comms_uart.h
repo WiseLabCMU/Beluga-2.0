@@ -48,7 +48,9 @@ struct comms_uart_common {
     comms_transport_handler_t handler;
     void *context;
     bool blocking_tx;
+#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
     struct smp_comms_data smp;
+#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 };
 
 struct comms_uart_int_driven {
@@ -85,6 +87,9 @@ struct comms_uart_polling {
 #define COMMS_UART_STRUCT struct comms_uart_int_driven
 #endif
 
+/**
+ * @brief Macro for creating comms UART transport instance named @p _name
+ */
 #define COMMS_UART_DEFINE(_name)                                               \
     static COMMS_UART_STRUCT _name##_comms_uart;                               \
     struct comms_transport _name = {                                           \
@@ -92,8 +97,23 @@ struct comms_uart_polling {
         .ctx = (struct comms_telnet *)&_name##_comms_uart,                     \
     }
 
+/**
+ * @brief This function provides pointer to the comms UART backend instance.
+ *
+ * Function returns pointer to the comms UART instance. This instance can be
+ * next used with comms_write_msg function in order to print data outside of
+ * the comms thread.
+ *
+ * @returns Pointer to the shell instance.
+ */
 const struct comms *comms_backend_uart_get_ptr(void);
 
+/**
+ * @brief This function provides pointer to the smp comms data of the UART comms
+ * transport.
+ *
+ * @returns Pointer to the smp comms data.
+ */
 struct smp_comms_data *comms_uart_smp_comms_data_get_ptr(void);
 
 #if defined(__cplusplus)

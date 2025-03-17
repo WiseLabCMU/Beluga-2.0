@@ -478,7 +478,7 @@ std::string BelugaSerial::phr(const std::string &phr_) {
 
 std::string BelugaSerial::pac(const std::string &pac) {
     std::stringstream oss;
-    oss << "AT+PHR " << pac << "\r\n";
+    oss << "AT+PAC " << pac << "\r\n";
     return _send_command(oss.str());
 }
 

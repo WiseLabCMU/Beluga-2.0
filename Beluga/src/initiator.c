@@ -34,7 +34,7 @@
 /**
  * Logger for the initiator module
  */
-LOG_MODULE_REGISTER(initializer_logger, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(initializer_logger, CONFIG_INITIATOR_LOG_LEVEL);
 
 /**
  * Semaphore for suspending the initiator task
