@@ -75,6 +75,25 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
     } while (0)
 
 /**
+ * @brief Prints out the saved setting in hex format if the minimum amount of
+ * tokens have not been passed in
+ *
+ * @param[in] argc The amount of tokens parsed
+ * @param[in] required The amount of tokens required to do something other than
+ * "read the setting"
+ * @param[in] setting The enum that defines the setting
+ * @param[in] settingstr The string representation of the setting
+ * @param[in] callback An optional custom print function for the setting
+ */
+#define READ_SETTING_HEX(_comms, argc, required, setting, settingstr)          \
+    do {                                                                       \
+        if ((argc) < (required)) {                                             \
+            int32_t _setting = retrieveSetting(setting);                       \
+            OK(_comms, settingstr ": 0x%" PRIX32, (uint32_t)_setting);         \
+        }                                                                      \
+    } while (0)
+
+/**
  * Converts an integer into a boolean given that the integer is a valid value.
  *
  * @param[out] boolarg The boolean representation of the integer
@@ -410,7 +429,7 @@ AT_CMD_REGISTER(TIMEOUT);
  */
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
-    READ_SETTING(comms, argc, 2, BELUGA_TX_POWER, "TX Power");
+    READ_SETTING_HEX(comms, argc, 2, BELUGA_TX_POWER, "TX Power");
     int32_t arg1, coarse_control, fine_control;
     bool value, success = strtoint32(argv[1], &arg1);
     uint32_t power, mask = UINT8_MAX, new_setting;
@@ -929,7 +948,7 @@ AT_CMD_REGISTER(SFD);
  */
 AT_CMD_DEFINE(PANID) {
     LOG_INF("Running PANID command");
-    READ_SETTING(comms, argc, 2, BELUGA_PAN_ID, "PAN ID");
+    READ_SETTING_HEX(comms, argc, 2, BELUGA_PAN_ID, "PAN ID");
     int32_t pan_id;
     int retVal;
     bool success = strtoint32(argv[1], &pan_id);
