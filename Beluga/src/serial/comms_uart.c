@@ -502,7 +502,8 @@ static void update(const struct comms_transport *transport) {
 
 #ifdef CONFIG_USB_DEVICE_STACK
 void wait_dtr(const struct comms_transport *transport) {
-    const struct comms_uart_common *comms = (struct comms_uart_common *)transport->ctx;
+    const struct comms_uart_common *comms =
+        (struct comms_uart_common *)transport->ctx;
     uint32_t dtr = 0;
     while (!dtr) {
         uart_line_ctrl_get(comms->dev, UART_LINE_CTRL_DTR, &dtr);

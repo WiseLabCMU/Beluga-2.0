@@ -600,7 +600,8 @@ int print_format(const struct comms *comms) {
 }
 
 int wait_comms_ready(const struct comms *comms) {
-    if (comms == NULL || comms->ctx == NULL || comms->iface == NULL || comms->iface->api == NULL) {
+    if (comms == NULL || comms->ctx == NULL || comms->iface == NULL ||
+        comms->iface->api == NULL) {
         return -EINVAL;
     }
     if (comms->iface->api->wait_dtr == NULL) {
