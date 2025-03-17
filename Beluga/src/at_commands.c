@@ -84,12 +84,15 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
  * @param[in] setting The enum that defines the setting
  * @param[in] settingstr The string representation of the setting
  * @param[in] callback An optional custom print function for the setting
+ * @param[in] padding Format string padding for the hex number. For example,
+ * if it is desired to show at least 8 digits with leading zeros, this would
+ * be "08". If no zero padding is wanted, then use an empty string ("").
  */
-#define READ_SETTING_HEX(_comms, argc, required, setting, settingstr)          \
+#define READ_SETTING_HEX(_comms, argc, required, setting, settingstr, padding) \
     do {                                                                       \
         if ((argc) < (required)) {                                             \
             int32_t _setting = retrieveSetting(setting);                       \
-            OK(_comms, settingstr ": 0x%" PRIX32, (uint32_t)_setting);         \
+            OK(_comms, settingstr ": 0x%" padding PRIX32, (uint32_t)_setting); \
         }                                                                      \
     } while (0)
 
@@ -429,7 +432,7 @@ AT_CMD_REGISTER(TIMEOUT);
  */
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
-    READ_SETTING_HEX(comms, argc, 2, BELUGA_TX_POWER, "TX Power");
+    READ_SETTING_HEX(comms, argc, 2, BELUGA_TX_POWER, "TX Power", "08");
     int32_t arg1, coarse_control, fine_control;
     bool value, success = strtoint32(argv[1], &arg1);
     uint32_t power, mask = UINT8_MAX, new_setting;
@@ -948,7 +951,7 @@ AT_CMD_REGISTER(SFD);
  */
 AT_CMD_DEFINE(PANID) {
     LOG_INF("Running PANID command");
-    READ_SETTING_HEX(comms, argc, 2, BELUGA_PAN_ID, "PAN ID");
+    READ_SETTING_HEX(comms, argc, 2, BELUGA_PAN_ID, "PAN ID", "04");
     int32_t pan_id;
     int retVal;
     bool success = strtoint32(argv[1], &pan_id);
