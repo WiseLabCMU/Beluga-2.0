@@ -114,9 +114,9 @@ def upload_image(port: str, build_dir: Union[Path, str], application: str, slot:
     asyncio.run(_upload_image(port, build_dir, application, slot, update_status, retries))
 
 
-async def _reset_mcu(port: str):
+async def _reset_mcu(port: str, force: bool):
     async with SMPClient(SMPSerialTransport(), port) as client:
-        response = await client.request(ResetWrite(), timeout_s=2.5)
+        response = await client.request(ResetWrite(force), timeout_s=2.5)
         if error_v1(response):
             if response.rc != smperror.MGMT_ERR.EOK:
                 raise ImageManagerException("Response is not OK")
@@ -125,8 +125,8 @@ async def _reset_mcu(port: str):
                 raise ImageManagerException("Response is not OK")
 
 
-def reset_mcu(port: str):
-    asyncio.run(_reset_mcu(port))
+def reset_mcu(port: str, force: bool = False):
+    asyncio.run(_reset_mcu(port, force))
 
 
 async def _confirm_image(port: str) -> None:
