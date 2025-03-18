@@ -129,22 +129,26 @@ def reset_mcu(port: str, force: bool = False):
     asyncio.run(_reset_mcu(port, force))
 
 
-async def _confirm_image(port: str) -> None:
+async def _confirm_image(port: str, slot: int, force: bool) -> None:
     images: List[ImageState] = await _read_image_states(port)
-    image = images[0]
+
+    if slot < 0 or slot >= len(images):
+        raise ImageManagerException("Invalid slot")
+
+    image = images[slot]
     if not image.active or not image.bootable or image.confirmed:
-        if not image.active:
+        if not image.active and not force:
             raise ImageManagerException("Cannot confirm image that is not active")
         if not image.bootable:
             raise ImageManagerException("Cannot confirm image that is not bootable")
-        if image.confirmed:
+        if image.confirmed and not force:
             raise ImageManagerException("Cannot confirm image that has been confirmed already")
     async with SMPClient(SMPSerialTransport(), port) as client:
         await client.request(ImageStatesWrite(hash=image.hash, confirm=True), timeout_s=2.5)
 
 
-def confirm_image(port: str) -> None:
-    asyncio.run(_confirm_image(port))
+def confirm_image(port: str, slot: int = 0, force: bool = False) -> None:
+    asyncio.run(_confirm_image(port, slot, force))
 
 
 async def _mark_slot_pending(port: str, slot: int):
