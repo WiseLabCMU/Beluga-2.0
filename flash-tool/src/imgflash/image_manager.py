@@ -116,7 +116,7 @@ def upload_image(port: str, build_dir: Union[Path, str], application: str, slot:
 
 async def _reset_mcu(port: str, force: bool):
     async with SMPClient(SMPSerialTransport(), port) as client:
-        response = await client.request(ResetWrite(force), timeout_s=2.5)
+        response = await client.request(ResetWrite(force=force), timeout_s=2.5)
         if error_v1(response):
             if response.rc != smperror.MGMT_ERR.EOK:
                 raise ImageManagerException("Response is not OK")
@@ -145,6 +145,18 @@ async def _confirm_image(port: str) -> None:
 
 def confirm_image(port: str) -> None:
     asyncio.run(_confirm_image(port))
+
+
+async def _mark_slot_pending(port: str, slot: int):
+    images: List[ImageState] = await _read_image_states(port)
+    if slot >= len(images):
+        raise ImageManagerException("Cannot mark image as pending since it doesn't exist")
+    async with SMPClient(SMPSerialTransport(), port) as client:
+        await client.request(ImageStatesWrite(hash=images[1].hash))
+
+
+def mark_slot_pending(port: str, slot: int = 1):
+    asyncio.run(_mark_slot_pending(port, slot))
 
 
 if __name__ == "__main__":
