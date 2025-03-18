@@ -29,14 +29,18 @@ Project Structure
     │   ├── config
     │   ├── DecaDriver
     │   ├── dts
-    │   ├── images
     │   ├── include
+    │   │   └── serial
     │   ├── overlay
     │   │   └── extra
-    │   └── src
+    │   ├── src
+    │   │   └── serial
+    │   └── sysbuild
     ├── Documentation
     │   ├── Beluga
     │   └── DW1000_docs
+    ├── flash-tool
+    │   └── src
     ├── Hardware
     ├── JLink
     ├── ROS
@@ -50,8 +54,6 @@ Project Structure
         │   └── beluga-serial
         └── python
             └── beluga_serial
-
-
 
 Setup and Building
 ==================
@@ -542,13 +544,29 @@ This setting is saved in flash.
 | 0 (Default) | External amplifiers are     |
 |             | inactive                    |
 +-------------+-----------------------------+
-| 1           | External amplifiers are     |
-|             | active. The BLE amplifier   |
-|             | is amplifying by 10 dB      |
+| 1           | BLE amplifier is turned on  |
+|             | and is amplifying by 10 dB. |
+|             | The UWB amplifier is turned |
+|             | off.                        |
 +-------------+-----------------------------+
-| 2           | External amplifiers are     |
-|             | active. The BLE amplifier   |
-|             | is amplifying by 22 dB      |
+| 2           | BLE amplifier is turned on  |
+|             | and is amplifying by 20 dB. |
+|             | The UWB amplifier is turned |
+|             | off.                        |
++-------------+-----------------------------+
+| 3           | BLE amplifier is turned     |
+|             | off. The UWB amplifier is   |
+|             | turned on.                  |
++-------------+-----------------------------+
+| 4           | Both external amplifiers    |
+|             | are active. The BLE         |
+|             | amplifier is amplifying by  |
+|             | 10 dB.                      |
++-------------+-----------------------------+
+| 5           | Both external amplifiers    |
+|             | are active. The BLE         |
+|             | amplifier is amplifying by  |
+|             | 22 dB.                      |
 +-------------+-----------------------------+
 
 .. note::
