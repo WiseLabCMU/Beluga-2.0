@@ -369,13 +369,7 @@ UNUSED static void load_power_amplifiers(const struct comms *comms) {
     int ret;
     int32_t pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
 
-    if (pwramp == 0) {
-        update_power_mode(POWER_MODE_BYPASS);
-    } else if (pwramp == 1) {
-        ret = update_power_mode(POWER_MODE_LOW);
-    } else {
-        ret = update_power_mode(POWER_MODE_HIGH);
-    }
+    ret = update_power_mode((enum power_mode)pwramp);
 
     if (pwramp == 0 || ret != 0) {
         update_led_state(LED_PWRAMP_OFF);

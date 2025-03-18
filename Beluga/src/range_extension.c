@@ -34,7 +34,7 @@ LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
  */
 #define SKY_GPIOS DT_NODELABEL(sky_fem_gpios)
 
-#if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS)
+#if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS) || true
 #include <ble_app.h>
 #include <deca_device_api.h>
 #include <zephyr/drivers/gpio.h>
@@ -281,34 +281,26 @@ int init_range_extension(void) {
  * @return -EINVAL if the power mode is not recognized
  * @return negative error code otherwise
  */
-int update_power_mode(enum ble_power_mode mode) {
-    int ret = 0, uwb_pa = 0, high_power = 1;
+int update_power_mode(enum power_mode mode) {
+    int ret = 0, uwb_pa = ((uint8_t)mode) & UINT8_C(1);
     bool ble_state = save_and_disable_bluetooth();
 
     switch (mode) {
+    case POWER_MODE_EXTERNAL_AMPS_OFF:
     case POWER_MODE_BYPASS: {
         UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 1, ret);
-        uwb_pa = 0;
         break;
     }
+    case POWER_MODE_LOW_NO_UWB:
     case POWER_MODE_LOW: {
-        high_power = 0;
-        FALLTHROUGH;
+        UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
+        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, 0, ret);
+        break;
     }
+    case POWER_MODE_HIGH_NO_UWB:
     case POWER_MODE_HIGH: {
         UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
-        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, high_power, ret);
-        uwb_pa = 1;
-        break;
-    }
-    case POWER_MODE_LOW_NO_UWB: {
-        high_power = 0;
-        FALLTHROUGH;
-    }
-    case POWER_MODE_HIGH_NO_UWB: {
-        UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
-        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, high_power, ret);
-        uwb_pa = 0;
+        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, 1, ret);
         break;
     }
     default:

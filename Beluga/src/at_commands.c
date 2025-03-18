@@ -168,11 +168,9 @@ AT_CMD_DEFINE(STARTUWB) {
     if (get_uwb_led_state() == LED_UWB_ON) {
         ERROR(comms, "UWB is already on");
     }
-    if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
-        update_power_mode(POWER_MODE_HIGH);
-    } else {
-        update_power_mode(POWER_MODE_BYPASS);
-    }
+    enum power_mode pwramp =
+        (enum power_mode)retrieveSetting(BELUGA_RANGE_EXTEND);
+    update_power_mode(pwramp);
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
     update_led_state(LED_UWB_ON);
@@ -359,9 +357,9 @@ AT_CMD_DEFINE(CHANNEL) {
     }
 
     pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
-    if (pwramp > 2 && channel > 2) {
-        ERROR(comms, "UWB power amplifier is currently active and channels 1 "
-                     "and 2 can only be used with the amplifier");
+    if (IS_UWB_AMP_ON(pwramp) && !UWB_AMP_CHANNEL(channel)) {
+        ERROR(comms, "UWB power amplifier is currently active and channels 2, "
+                     "3, and 4 can only be used with the amplifier");
     }
 
     retVal = set_uwb_channel(channel);
@@ -594,24 +592,36 @@ AT_CMD_DEFINE(PWRAMP) {
     bool success = strtoint32(argv[1], &pwramp);
     int err;
 
-    if (!success || pwramp < 0 || pwramp > 4) {
+    if (!success || pwramp < 0 || pwramp > 5) {
         ERROR(comms, "Power amp parameter input error");
     }
+
+    //    enum led_state uwb_state = get_uwb_led_state();
+    //    if (uwb_state == LED_UWB_ON) {
+    //        ERROR(comms, "UWB is currently active");
+    //    }
 
     int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
 
     switch (pwramp) {
-    case 0:
-        err = update_power_mode(POWER_MODE_BYPASS);
+    case 0: {
+        err = update_power_mode(POWER_MODE_EXTERNAL_AMPS_OFF);
         break;
-    case 1:
+    }
+    case 1: {
+        if (UWB_AMP_CHANNEL(channel)) {
+            err = update_power_mode(POWER_MODE_BYPASS);
+        } else {
+            err = -EFAULT;
+        }
+        break;
+    }
+    case 2: {
         err = update_power_mode(POWER_MODE_LOW_NO_UWB);
         break;
-    case 2:
-        err = update_power_mode(POWER_MODE_HIGH_NO_UWB);
-        break;
+    }
     case 3: {
-        if (!(channel > 2)) {
+        if (UWB_AMP_CHANNEL(channel)) {
             err = update_power_mode(POWER_MODE_LOW);
         } else {
             err = -EFAULT;
@@ -619,16 +629,21 @@ AT_CMD_DEFINE(PWRAMP) {
         break;
     }
     case 4: {
-        if (!(channel > 2)) {
+        err = update_power_mode(POWER_MODE_HIGH_NO_UWB);
+        break;
+    }
+    case 5: {
+        if (UWB_AMP_CHANNEL(channel)) {
             err = update_power_mode(POWER_MODE_HIGH);
         } else {
             err = -EFAULT;
         }
         break;
     }
-    default:
+    default: {
         ERROR(comms, "Power amp parameter input error");
         break;
+    }
     }
 
     if (err == 0 || err == -ENODEV) {
