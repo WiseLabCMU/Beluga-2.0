@@ -416,7 +416,7 @@ int init_range_extension(void) {
  * @return -EINVAL if the power mode is not recognized
  * @return negative error code otherwise
  */
-int update_power_mode(enum ble_power_mode mode) {
+int update_power_mode(enum power_mode mode) {
     if (mode == POWER_MODE_BYPASS) {
         return 0;
     }

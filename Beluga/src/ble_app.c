@@ -64,10 +64,21 @@
 
 LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
+/**
+ * Mutex for the UUID
+ */
 K_MUTEX_DEFINE(UUID_mutex);
+
+/**
+ * Semaphore for locking and unlocking the BLE on/off state
+ */
 K_SEM_DEFINE(ble_state, 1, 1);
 
-/**@brief Macro to unpack 16bit unsigned UUID from an octet stream.
+/**
+ * @brief Macro to unpack 16bit unsigned UUID from an octet stream.
+ *
+ * @param[out] DST Pointer to location where the UUID is stored
+ * @param[in] SRC Array that holds the UUID
  */
 #define UUID16_EXTRACT(DST, SRC)                                               \
     do {                                                                       \
@@ -76,23 +87,54 @@ K_SEM_DEFINE(ble_state, 1, 1);
         (*(DST)) |= (SRC)[0];                                                  \
     } while (0)
 
+/**
+ * The service UUID that Beluga uses
+ */
 #define BELUGA_SERVICE_UUID BT_UUID_HRS_VAL
 
-#define NAME_LEN            30
-#define UUID_INDEX          4
-#define MANF_INDEX          3
-#define POLLING_FLAG_INDEX  2
+/**
+ * The maximum length needed for the advertising name
+ */
+#define NAME_LEN 30
 
+/**
+ * The index the UUID is stored at in the advertising data
+ */
+#define UUID_INDEX 4
+
+/**
+ * The index the manufacturer data is stored at in the advertising data
+ */
+#define MANF_INDEX 3
+
+/**
+ * The index the polling flag is stored at in the manufacturer data
+ */
+#define POLLING_FLAG_INDEX 2
+
+/**
+ * The different advertising modes Beluga can be in
+ */
 enum adv_mode {
-    ADVERTISING_CONNECTABLE,
-    ADVERTISING_NONCONNECTABLE,
-    ADVERTISING_OFF
+    ADVERTISING_CONNECTABLE,    ///< Advertising as a connectable node
+    ADVERTISING_NONCONNECTABLE, ///< Advertising as a node that cannot be
+                                ///< connected to
+    ADVERTISING_OFF             ///< Advertising is turned off
 };
 
+/**
+ * The node identifier
+ */
 static uint16_t NODE_UUID = 0;
 
+/**
+ * Prefix for the node advertising name
+ */
 static char const m_target_peripheral_name[] = "BN ";
 
+/**
+ * The BLE advertising data
+ */
 static struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE,
                   (CONFIG_BT_DEVICE_APPEARANCE >> 0) & 0xff,
@@ -105,33 +147,76 @@ static struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(0x1234)),
 };
 
+/**
+ * The BLE scan response data
+ */
 static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
+/**
+ * Bluetooth data for indicating that the node is not polling the UWB
+ */
 static const struct bt_data polling_0 =
     BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30");
+
+/**
+ * Bluetooth data for indicating that the node is polling the UWB
+ */
 static const struct bt_data polling_1 =
     BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
 
+/**
+ * Flag indicating that the bluetooth is on
+ */
 static bool bluetooth_on = false;
+
+/**
+ * Bluetooth connection data
+ */
 static struct bt_conn *central_conn;
 
+/**
+ * Index indicating the last inserted item
+ */
 static int32_t last_seen_index = 0;
+
+/**
+ * The neighbor list
+ */
 struct node seen_list[MAX_ANCHOR_COUNT];
+
+/**
+ * The current BLE advertising mode
+ */
 static enum adv_mode currentAdvMode = ADVERTISING_OFF;
 
+/**
+ * Beluga scan data
+ */
 struct ble_data {
-    uint16_t uuid;
-    uint8_t manufacturerData[NAME_LEN];
-    bool beluga_node;
+    uint16_t uuid;                      ///< The node ID
+    uint8_t manufacturerData[NAME_LEN]; ///< The manufacturer data for the node
+    bool beluga_node; ///< Flag indicating that the scanned device is a Beluga
+                      ///< node
 };
 
+/**
+ * Sets the node ID
+ * @param[in] uuid The new node ID
+ */
 ALWAYS_INLINE static void set_NODE_UUID(uint16_t uuid) {
     k_mutex_lock(&UUID_mutex, K_FOREVER);
     NODE_UUID = uuid;
     k_mutex_unlock(&UUID_mutex);
 }
 
+/**
+ * Callback function for assisting with scan data parsing
+ * @param[in] data The bt data that got parsed by the OS
+ * @param[in,out] user_data Pointer to a ble_data struct that stores the parsed
+ * data
+ * @return true always
+ */
 static bool data_cb(struct bt_data *data, void *user_data) {
     struct ble_data *_data = user_data;
     uint16_t uuid = 0;
@@ -156,6 +241,12 @@ static bool data_cb(struct bt_data *data, void *user_data) {
     return true;
 }
 
+/**
+ * Fetches the neighbor list index where a neighbor node data is stored
+ * @param[in] uuid The neighbor node ID
+ * @return The index to the neighbor node
+ * @return -1 if the neighbor is not present in the list
+ */
 static int32_t get_seen_list_index(uint16_t uuid) {
     for (uint32_t i = 0; i < (uint32_t)MAX_ANCHOR_COUNT; i++) {
         if (seen_list[i].UUID == uuid) {
@@ -165,20 +256,27 @@ static int32_t get_seen_list_index(uint16_t uuid) {
     return INT32_C(-1);
 }
 
+/**
+ * Checks if specified neighbor is in the neighbor list
+ * @param[in] uuid The neighbor node ID
+ * @return true if in neighbor list
+ * @return false if not in neighbor list
+ */
 STATIC_INLINE bool in_seen_list(uint16_t uuid) {
     return get_seen_list_index(uuid) != INT32_C(-1);
 }
 
+/**
+ * Inserts a new neighbor into the neighbor list
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
 static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
-    int32_t index = get_seen_list_index(0);
-    if (index < 0) {
-        // List is full
-        index = MAX_ANCHOR_COUNT - 1;
-    }
+    // TODO: Evict a node based on a configuration
     seen_list[last_seen_index].UUID = data->uuid;
     seen_list[last_seen_index].RSSI = rssi;
     if (IS_ENABLED(CONFIG_BELUGA_EVAL_BLE_STRENGTH)) {
-        seen_list[index].update_flag = true;
+        seen_list[last_seen_index].update_flag = true;
     }
     seen_list[last_seen_index].ble_time_stamp = k_uptime_get();
     if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
@@ -186,11 +284,15 @@ static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
     } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {
         seen_list[last_seen_index].polling_flag = true;
     }
-
-    last_seen_index = (last_seen_index + 1) % MAX_ANCHOR_COUNT;
+    BOUND_INCREMENT(last_seen_index, MAX_ANCHOR_COUNT);
     node_added();
 }
 
+/**
+ * Update a neighbor in the neighbor list
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
 static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
     int32_t index = get_seen_list_index(data->uuid);
     seen_list[index].RSSI = rssi;
@@ -200,12 +302,17 @@ static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
     seen_list[index].ble_time_stamp = k_uptime_get();
 
     if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
-        seen_list[last_seen_index].polling_flag = false;
+        seen_list[index].polling_flag = false;
     } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {
-        seen_list[last_seen_index].polling_flag = true;
+        seen_list[index].polling_flag = true;
     }
 }
 
+/**
+ * Updates the neighbor list by either, updating or inserting the scanned node
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
 static void update_seen_list(struct ble_data *data, int8_t rssi) {
     if (data->uuid == NODE_UUID) {
         return;
@@ -218,16 +325,19 @@ static void update_seen_list(struct ble_data *data, int8_t rssi) {
     }
 }
 
-static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
+/**
+ * Callback function that is called if a scanned device is found. It will
+ * determine if the scanned device is a Beluga node and update the neighbor
+ * list if it is
+ * @param[in] addr Bluetooth LE device address (unused)
+ * @param[in] rssi The RSSI of the scanned device
+ * @param[in] type The device type
+ * @param[in] adv_info Advertising information for the device
+ */
+static void device_found_callback(UNUSED const bt_addr_le_t *addr, int8_t rssi,
                                   UNUSED uint8_t type,
                                   struct net_buf_simple *adv_info) {
-    char addr_str[BT_ADDR_LE_STR_LEN];
-    struct ble_data _data;
-
-    memset(&_data, 0, sizeof(_data));
-
-    bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
-
+    struct ble_data _data = {};
     bt_data_parse(adv_info, data_cb, &_data);
 
     if (_data.beluga_node) {
@@ -235,6 +345,12 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
     }
 }
 
+/**
+ * Starts BLE passive scan. Used for starting scanning after a connection error
+ * or after a disconnection.
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 static int32_t scan_start(void) {
     BLE_LED_OFF(CENTRAL_SCANNING_LED);
 
@@ -246,6 +362,12 @@ static int32_t scan_start(void) {
     return err;
 }
 
+/**
+ * Starts advertising as a connectable device and starts active scanning for
+ * other nodes
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 static int32_t adv_scan_start(void) {
     int32_t err;
 
@@ -258,7 +380,7 @@ static int32_t adv_scan_start(void) {
         LOG_ERR("Advertising failed to start (err %d)", err);
         BLE_LED_OFF(CENTRAL_SCANNING_LED);
         currentAdvMode = ADVERTISING_OFF;
-        return 1;
+        return err;
     }
     currentAdvMode = ADVERTISING_CONNECTABLE;
 
@@ -266,14 +388,19 @@ static int32_t adv_scan_start(void) {
 
     if (err != 0) {
         LOG_ERR("Scanning failed to start (err %d)", err);
-        return 1;
+        return err;
     }
     return 0;
 }
 
-static void adv_no_connect_start(void) {
+/**
+ * Starts advertising as a non-connectable device
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
+static int adv_no_connect_start(void) {
     if (bluetooth_on) {
-        int32_t err;
+        int err;
 
         BLE_LED_ON(CENTRAL_SCANNING_LED);
 
@@ -284,11 +411,18 @@ static void adv_no_connect_start(void) {
             LOG_ERR("Advertising failed to start (err %d)", err);
             BLE_LED_OFF(CENTRAL_SCANNING_LED);
             currentAdvMode = ADVERTISING_OFF;
+            return err;
         }
         currentAdvMode = ADVERTISING_CONNECTABLE;
     }
+    return 0;
 }
 
+/**
+ * Callback indicating that GATT discovery was completed
+ * @param[in] dm GATT discovery manager
+ * @param[in] context Additional context
+ */
 static void discovery_completed_cb(struct bt_gatt_dm *dm,
                                    UNUSED void *context) {
     bt_gatt_dm_data_print(dm);
@@ -298,22 +432,42 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm,
     bt_gatt_dm_data_release(dm);
 }
 
+/**
+ * Callback for handling service not found problems
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] context Additional context
+ */
 static void discovery_not_found_cb(UNUSED struct bt_conn *conn,
                                    UNUSED void *context) {
     LOG_WRN("Heart Rate Service could not be found during the discovery");
 }
 
-static void discovery_error_found_cb(UNUSED struct bt_conn *conn, int err,
-                                     UNUSED void *context) {
+/**
+ * Callback for handling GATT discovery errors
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] err The error code
+ * @param[in] context Additional context
+ */
+static void discovery_error_found_cb(UNUSED struct bt_conn *conn,
+                                     UNUSED int err, UNUSED void *context) {
     LOG_ERR("The discovery procedure failed with %d", err);
 }
 
+/**
+ * GATT discovery manager callbacks
+ */
 static const struct bt_gatt_dm_cb discovery_cb = {
     .completed = discovery_completed_cb,
     .service_not_found = discovery_not_found_cb,
     .error_found = discovery_error_found_cb};
 
-static void gatt_discover(struct bt_conn *conn) {
+/**
+ * Starts the GATT discovery process
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
+static int gatt_discover(struct bt_conn *conn) {
     int err;
 
     err = bt_gatt_dm_start(conn, BT_UUID_GAP, &discovery_cb, NULL);
@@ -322,9 +476,17 @@ static void gatt_discover(struct bt_conn *conn) {
         LOG_ERR("Could not start the discovery procedure, error "
                 "code: %d",
                 err);
+        return err;
     }
+    return 0;
 }
 
+/**
+ * Callback for the MTU exchange interaction
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] err The error code
+ * @param[in] params Pointer to the GATT exchange MTU parameters
+ */
 static void exchange_func(struct bt_conn *conn, uint8_t err,
                           struct bt_gatt_exchange_params *params) {
     if (!err) {
@@ -334,6 +496,11 @@ static void exchange_func(struct bt_conn *conn, uint8_t err,
     }
 }
 
+/**
+ * Callback function for a bluetooth connection event
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] conn_err Connection error code
+ */
 static void connected(struct bt_conn *conn, uint8_t conn_err) {
     int err;
     struct bt_conn_info info;
@@ -381,6 +548,12 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
     }
 }
 
+/**
+ * Callback function for a Bluetooth disconnection event
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] reason Code indicating the reason why the disconnection
+ * event occurred
+ */
 static void disconnected(struct bt_conn *conn, uint8_t reason) {
     char addr[BT_ADDR_LE_STR_LEN];
 
@@ -402,6 +575,12 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
     }
 }
 
+/**
+ * Callback function indicating the security level changed
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] level The new security level
+ * @param[in] err Security error
+ */
 static void security_changed(struct bt_conn *conn, bt_security_t level,
                              enum bt_security_err err) {
     char addr[BT_ADDR_LE_STR_LEN];
@@ -419,10 +598,20 @@ static void security_changed(struct bt_conn *conn, bt_security_t level,
     }
 }
 
+/**
+ * Bluetooth connection event callbacks
+ */
 BT_CONN_CB_DEFINE(conn_callbacks) = {.connected = connected,
                                      .disconnected = disconnected,
                                      .security_changed = security_changed};
 
+/**
+ * Callback function if a scan filter matched
+ * @param[in] device_info Pointer to scanned device data
+ * @param[in] filter_match Pointer to filter match data
+ * @param[in] connectable Flag indicating that the scanned device is
+ * connectable
+ */
 static void scan_filter_match(struct bt_scan_device_info *device_info,
                               struct bt_scan_filter_match *filter_match,
                               bool connectable) {
@@ -433,19 +622,36 @@ static void scan_filter_match(struct bt_scan_device_info *device_info,
     LOG_INF("Filters matched. Address: %s connectable: %d", addr, connectable);
 }
 
+/**
+ * Callback for scanned device connection errors
+ * @param[in] device_info Pointer to scanned device data
+ */
 static void scan_connecting_error(struct bt_scan_device_info *device_info) {
     LOG_INF("Connecting failed");
 }
 
+/**
+ * Callback for scanned devices connecting
+ * @param[in] device_info Pointer to scanned device data
+ * @param[in] conn Pointer to Bluetooth connection data
+ */
 static void scan_connecting(struct bt_scan_device_info *device_info,
                             struct bt_conn *conn) {
     central_conn = bt_conn_ref(conn);
 }
 
+/**
+ * Scan callbacks
+ */
 BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL, scan_connecting_error,
                 scan_connecting);
 
-static int32_t scan_init(void) {
+/**
+ * Initializes the Bluetooth scanning
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
+static int scan_init(void) {
     int err;
 
     struct bt_scan_init_param param = {.scan_param = NULL,
@@ -458,47 +664,71 @@ static int32_t scan_init(void) {
     err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_HRS);
     if (err) {
         LOG_ERR("Scanning filters cannot be set (err %d)", err);
-        return 1;
+        return err;
     }
 
     err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
     if (err) {
         LOG_ERR("Filters cannot be turned on (err %d)", err);
-        return 1;
+        return err;
     }
     return 0;
 }
 
-int32_t init_bt_stack(void) {
+/**
+ * Initializes the Bluetooth stack
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
+int init_bt_stack(void) {
     int32_t err;
 
     err = bt_enable(NULL);
     if (err) {
-        return 1;
+        return err;
     }
     LOG_INF("Bluetooth stack loaded");
 
     return scan_init();
 }
 
-int32_t deinit_bt_stack(void) {
+/**
+ * Stops Bluetooth scanning and advertising and unloads the bluetooth stack
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
+int deinit_bt_stack(void) {
     bt_le_adv_stop();
     bt_le_scan_stop();
 
     return bt_disable();
 }
 
-static int32_t _enable_bluetooth(void) {
-    if (adv_scan_start() != 0) {
-        return 1;
+/**
+ * Starts Bluetooth advertising and scanning and marks the Bluetooth as active
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
+static int _enable_bluetooth(void) {
+    int err = adv_scan_start();
+    if (err != 0) {
+        return err;
     }
     bluetooth_on = true;
 
     return 0;
 }
 
-int32_t enable_bluetooth(void) {
-    int32_t retVal = 1;
+/**
+ * Starts the Bluetooth FEM (if applicable) and starts Bluetooth
+ * scanning/advertising
+ * @return 0 upon success
+ * @return 1 if already on
+ * @return -EFAULT if unable to start the FEM
+ * @return negative error code otherwise
+ */
+int enable_bluetooth(void) {
+    int retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
     if (!bluetooth_on) {
         if (update_fem_shutdown_state(false) != 0) {
@@ -511,7 +741,12 @@ int32_t enable_bluetooth(void) {
     return retVal;
 }
 
-static int32_t _disable_bluetooth(void) {
+/**
+ * Stops Bluetooth scanning and advertising
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
+static int _disable_bluetooth(void) {
     int err;
     if ((err = bt_le_adv_stop()) != 0) {
         LOG_ERR("Unable to stop advertising (err: %d)", err);
@@ -528,8 +763,15 @@ static int32_t _disable_bluetooth(void) {
     return 0;
 }
 
-int32_t disable_bluetooth(void) {
-    int32_t retVal = 1;
+/**
+ * Stops Bluetooth advertising/scanning and powers down the Bluetooth FEM
+ * @return 0 upon success
+ * @return 1 if Bluetooth is already off
+ * @return -EFAULT if unable to power down the Bluetooth FEM
+ * @return negative error code otherwise
+ */
+int disable_bluetooth(void) {
+    int retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
         retVal = _disable_bluetooth();
@@ -541,6 +783,11 @@ int32_t disable_bluetooth(void) {
     return retVal;
 }
 
+/**
+ * Updates the node ID and publishes the update to the Bluetooth advertising
+ * data
+ * @param[in] uuid The new node ID
+ */
 void update_node_id(uint16_t uuid) {
     static uint8_t uuid_encoded[2];
     static uint8_t advName[NAME_LEN];
@@ -577,6 +824,10 @@ void update_node_id(uint16_t uuid) {
     }
 }
 
+/**
+ * Retrieves the current node ID
+ * @return The current node ID
+ */
 uint16_t get_NODE_UUID(void) {
     uint16_t retVal;
     k_mutex_lock(&UUID_mutex, K_FOREVER);
@@ -585,6 +836,11 @@ uint16_t get_NODE_UUID(void) {
     return retVal;
 }
 
+/**
+ * Update the advertising data to indicate that the node is polling UWB or not
+ * @param[in] change If 0, updates the advertising data to indicate that the
+ * node has stopped polling; otherwise, indicates that the node is polling UWB
+ */
 void advertising_reconfig(int32_t change) {
     bt_le_adv_stop();
 
@@ -610,6 +866,11 @@ void advertising_reconfig(int32_t change) {
     }
 }
 
+/**
+ * Checks if Bluetooth is currently advertising/scanning
+ * @return `true` if advertising/scanning
+ * @return `false` otherwise
+ */
 bool check_ble_enabled(void) { return bluetooth_on; }
 
 #if IS_ENABLED(CONFIG_BELUGA_GATT)
@@ -642,6 +903,12 @@ void update_ble_service(uint16_t uuid, float range) {
 }
 #endif
 
+/**
+ * Returns the current Bluetooth state and disables scanning/advertising.
+ * Additionally, blocks other threads from enabling Bluetooth until the state is
+ * restored. See `restore_bluetooth()`
+ * @return The current Bluetooth state
+ */
 bool save_and_disable_bluetooth(void) {
     bool retVal;
     k_sem_take(&ble_state, K_FOREVER);
@@ -652,6 +919,12 @@ bool save_and_disable_bluetooth(void) {
     return retVal;
 }
 
+/**
+ * Restores the Bluetooth state to its original setting. Additionally, releases
+ * the Bluetooth lock to allow other threads to update the Bluetooth state. See
+ * `save_and_disable-bluetooth()`
+ * @param[in] state The saved Bluetooth state
+ */
 void restore_bluetooth(bool state) {
     if (state) {
         _enable_bluetooth();
