@@ -544,29 +544,29 @@ This setting is saved in flash.
 | 0 (Default) | External amplifiers are     |
 |             | inactive                    |
 +-------------+-----------------------------+
-| 1           | BLE amplifier is turned on  |
+| 1           | BLE amplifier is turned     |
+|             | off. The UWB amplifier is   |
+|             | turned on.                  |
++-------------+-----------------------------+
+| 2           | BLE amplifier is turned on  |
 |             | and is amplifying by 10 dB. |
 |             | The UWB amplifier is turned |
 |             | off.                        |
 +-------------+-----------------------------+
-| 2           | BLE amplifier is turned on  |
-|             | and is amplifying by 20 dB. |
-|             | The UWB amplifier is turned |
-|             | off.                        |
-+-------------+-----------------------------+
-| 3           | BLE amplifier is turned     |
-|             | off. The UWB amplifier is   |
-|             | turned on.                  |
-+-------------+-----------------------------+
-| 4           | Both external amplifiers    |
+| 3           | Both external amplifiers    |
 |             | are active. The BLE         |
 |             | amplifier is amplifying by  |
 |             | 10 dB.                      |
 +-------------+-----------------------------+
+| 4           | BLE amplifier is turned on  |
+|             | and is amplifying by 20 dB. |
+|             | The UWB amplifier is turned |
+|             | off.                        |
++-------------+-----------------------------+
 | 5           | Both external amplifiers    |
 |             | are active. The BLE         |
 |             | amplifier is amplifying by  |
-|             | 22 dB.                      |
+|             | 20 dB.                      |
 +-------------+-----------------------------+
 
 .. note::

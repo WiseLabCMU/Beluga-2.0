@@ -41,9 +41,20 @@ enum power_mode {
                          ///< 20+ dB
 };
 
+/**
+ * Macro to check if the UWB amplifier is turned on based on the power mode.
+ *
+ * @param[in] power_mode The current power mode that we are in
+ */
 #define IS_UWB_AMP_ON(power_mode)                                              \
     ((power_mode) == POWER_MODE_BYPASS || (power_mode) == POWER_MODE_LOW ||    \
      (power_mode) == POWER_MODE_HIGH)
+
+/**
+ * Macro that checks if the given channel can be amplified by the UWB amplifier
+ *
+ * @param[in] channel The channel to check
+ */
 #define UWB_AMP_CHANNEL(channel) IN_RANGE(channel, 2, 4)
 
 /**
