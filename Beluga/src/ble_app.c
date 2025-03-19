@@ -467,9 +467,7 @@ void set_node_eviction_policy(enum node_eviction_policy new_policy) {
 static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
     int32_t index = get_seen_list_index(data->uuid);
     seen_list[index].RSSI = rssi;
-    if (IS_ENABLED(CONFIG_BELUGA_EVAL_BLE_STRENGTH)) {
-        seen_list[index].update_flag = true;
-    }
+    EVAL_STRENGTH();
     seen_list[index].ble_time_stamp = k_uptime_get();
 
     if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
