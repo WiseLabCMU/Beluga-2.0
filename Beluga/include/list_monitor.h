@@ -18,6 +18,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <zephyr/kernel.h>
 
 /**
  * @brief Set the timeout value for node eviction.
@@ -49,5 +50,7 @@ bool check_node_added(void);
  * @brief Initializes and starts the list monitor thread
  */
 void init_monitor_thread(void);
+
+extern struct k_msgq evicted_nodes;
 
 #endif // BELUGA_LIST_MONITOR_H

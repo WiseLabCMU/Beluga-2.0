@@ -48,6 +48,14 @@ struct node {
 extern struct node seen_list[MAX_ANCHOR_COUNT];
 
 /**
+ * Checks if specified neighbor is in the neighbor list
+ * @param[in] uuid The neighbor node ID
+ * @return true if in neighbor list
+ * @return false if not in neighbor list
+ */
+bool in_seen_list(uint16_t uuid);
+
+/**
  * Initializes the Bluetooth stack
  * @return 0 upon success
  * @return negative error code otherwise

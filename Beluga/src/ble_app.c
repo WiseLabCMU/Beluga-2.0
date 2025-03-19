@@ -247,13 +247,13 @@ static bool data_cb(struct bt_data *data, void *user_data) {
  * @return The index to the neighbor node
  * @return -1 if the neighbor is not present in the list
  */
-static int32_t get_seen_list_index(uint16_t uuid) {
-    for (uint32_t i = 0; i < (uint32_t)MAX_ANCHOR_COUNT; i++) {
+static ssize_t get_seen_list_index(uint16_t uuid) {
+    for (ssize_t i = 0; i < (ssize_t)MAX_ANCHOR_COUNT; i++) {
         if (seen_list[i].UUID == uuid) {
-            return (int32_t)i;
+            return i;
         }
     }
-    return INT32_C(-1);
+    return -1;
 }
 
 /**
@@ -262,8 +262,8 @@ static int32_t get_seen_list_index(uint16_t uuid) {
  * @return true if in neighbor list
  * @return false if not in neighbor list
  */
-STATIC_INLINE bool in_seen_list(uint16_t uuid) {
-    return get_seen_list_index(uuid) != INT32_C(-1);
+bool in_seen_list(uint16_t uuid) {
+    return get_seen_list_index(uuid) != -1;
 }
 
 /**
