@@ -6,7 +6,7 @@ config BELUGA_NETWORK_SIZE
 
 choice
     prompt "Eviction Scheme"
-    default BELUGA_EVICT_RR
+    default BELUGA_EVICT_RSSI
 
 config BELUGA_EVICT_RR
     bool "Round Robin"
