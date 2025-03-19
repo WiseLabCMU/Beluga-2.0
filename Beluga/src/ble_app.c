@@ -306,6 +306,38 @@ static void RR_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 }
 #endif
 
+#if (IS_ENABLED(CONFIG_BELUGA_EVICT_RSSI) ||                                   \
+     IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT))
+#if IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+#define RSSI_FUNC_NAME insert_seen_list_rssi
+#else
+#define RSSI_FUNC_NAME insert_into_seen_list
+#endif
+
+static ssize_t find_smallest_rssi(int8_t rssi) {
+    ssize_t evict_index = -1;
+    int8_t lowest_rssi = rssi;
+
+    for (ssize_t index = MAX_ANCHOR_COUNT - 1; index >= 0; index--) {
+        if (seen_list[index].RSSI < lowest_rssi) {
+            lowest_rssi = seen_list[index].RSSI;
+            evict_index = index;
+        }
+    }
+
+    return evict_index;
+}
+
+/**
+ * Inserts a new neighbor into the neighbor list
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
+static void RSSI_FUNC_NAME(struct ble_data *data, int8_t rssi) {
+    INSERT_NODE(find_smallest_rssi(rssi));
+}
+#endif
+
 /**
  * Update a neighbor in the neighbor list
  * @param[in] data The BLE scan data
