@@ -107,10 +107,8 @@ bool check_node_added(void) {
  * @param[in] uuid The node that got evicted
  */
 static void evict_node(const struct comms *comms, uint16_t uuid) {
-    struct beluga_msg msg = {
-            .type = NEIGHBOR_DROP,
-            .payload.dropped_neighbor = uuid
-    };
+    struct beluga_msg msg = {.type = NEIGHBOR_DROP,
+                             .payload.dropped_neighbor = uuid};
     comms_write_msg(comms, &msg);
 }
 
@@ -166,7 +164,8 @@ static void sort_nodes(void) {
 K_MSGQ_DEFINE(evicted_nodes, sizeof(uint16_t), 2 * MAX_ANCHOR_COUNT, 1);
 
 /**
- * Retrieves items from the evicted nodes message queue and indicates that they have been evicted
+ * Retrieves items from the evicted nodes message queue and indicates that they
+ * have been evicted
  * @param[in] comms Pointer to the comms instance
  * @return `true` if any nodes were evicted by the scan event
  * @return `false` otherwise

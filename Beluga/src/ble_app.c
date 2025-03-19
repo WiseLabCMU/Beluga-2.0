@@ -59,6 +59,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <list_monitor.h>
 #include <range_extension.h>
 #include <zephyr/logging/log.h>
 
@@ -176,11 +177,6 @@ static bool bluetooth_on = false;
 static struct bt_conn *central_conn;
 
 /**
- * Index indicating the last inserted item
- */
-static int32_t last_seen_index = 0;
-
-/**
  * The neighbor list
  */
 struct node seen_list[MAX_ANCHOR_COUNT];
@@ -262,31 +258,53 @@ static ssize_t get_seen_list_index(uint16_t uuid) {
  * @return true if in neighbor list
  * @return false if not in neighbor list
  */
-bool in_seen_list(uint16_t uuid) {
-    return get_seen_list_index(uuid) != -1;
-}
+bool in_seen_list(uint16_t uuid) { return get_seen_list_index(uuid) != -1; }
+
+#define EVAL_STRENGTH()                                                        \
+    COND_CODE_1(IS_ENABLED(CONFIG_BELUGA_EVAL_BLE_STRENGTH),                   \
+                (seen_list[index].update_flag = true), ((void)0))
+#define INSERT_NODE(evict_call)                                                \
+    do {                                                                       \
+        ssize_t index = get_seen_list_index(0);                                \
+        if (index < 0) {                                                       \
+            index = evict_call;                                                \
+            if (index < 0) {                                                   \
+                return;                                                        \
+            }                                                                  \
+            (void)k_msgq_put(&evicted_nodes, &seen_list[index].UUID,           \
+                             K_NO_WAIT);                                       \
+        }                                                                      \
+        seen_list[index].UUID = data->uuid;                                    \
+        seen_list[index].RSSI = rssi;                                          \
+        EVAL_STRENGTH();                                                       \
+        seen_list[index].ble_time_stamp = k_uptime_get();                      \
+        if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {               \
+            seen_list[index].polling_flag = false;                             \
+        } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {        \
+            seen_list[index].polling_flag = true;                              \
+        }                                                                      \
+        node_added();                                                          \
+    } while (0)
+
+#if (IS_ENABLED(CONFIG_BELUGA_EVICT_RR) ||                                     \
+     IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT))
+#if IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+#define RR_FUNC_NAME insert_seen_list_rr
+#else
+#define RR_FUNC_NAME insert_into_seen_list
+#endif
 
 /**
  * Inserts a new neighbor into the neighbor list
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
-    // TODO: Evict a node based on a configuration
-    seen_list[last_seen_index].UUID = data->uuid;
-    seen_list[last_seen_index].RSSI = rssi;
-    if (IS_ENABLED(CONFIG_BELUGA_EVAL_BLE_STRENGTH)) {
-        seen_list[last_seen_index].update_flag = true;
-    }
-    seen_list[last_seen_index].ble_time_stamp = k_uptime_get();
-    if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
-        seen_list[last_seen_index].polling_flag = false;
-    } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {
-        seen_list[last_seen_index].polling_flag = true;
-    }
+static void RR_FUNC_NAME(struct ble_data *data, int8_t rssi) {
+    static ssize_t last_seen_index = 0;
+    INSERT_NODE(last_seen_index);
     BOUND_INCREMENT(last_seen_index, MAX_ANCHOR_COUNT);
-    node_added();
 }
+#endif
 
 /**
  * Update a neighbor in the neighbor list

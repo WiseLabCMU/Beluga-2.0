@@ -17,6 +17,15 @@
 
 #include "deca_device_api.h"
 
+enum node_eviction_policy {
+    EVICT_POLICY_RR,
+    EVICT_POLICY_RSSI,
+    EVICT_POLICY_RANGE,
+    EVICT_POLICY_BLE_TS,
+    EVICT_POLICY_RANGE_TS,
+    EVICT_POLICY_INVALID
+};
+
 /**
  * BLE neighbor node structure
  */
@@ -136,5 +145,11 @@ void update_ble_service(uint16_t uuid, float range);
 #else
 #define update_ble_service(x, y) (void)0
 #endif // defined(CONFIG_BELUGA_GATT)
+
+#if defined(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+void set_node_eviction_policy(enum node_eviction_policy new_policy);
+#else
+#define set_node_eviction_policy(...) (void)0
+#endif
 
 #endif
