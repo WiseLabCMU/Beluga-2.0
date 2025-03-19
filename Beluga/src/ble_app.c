@@ -372,6 +372,33 @@ static void RANGE_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 }
 #endif
 
+#if (IS_ENABLED(CONFIG_BELUGA_EVICT_BLE_TS) ||                                 \
+     IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT))
+#if IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+#define BLE_TS_FUNC_NAME insert_seen_list_ble_ts
+#else
+#define BLE_TS_FUNC_NAME insert_into_seen_list
+#endif
+
+static ssize_t find_oldest_ble_ts(void) {
+    ssize_t evict_index = -1;
+    int64_t timestamp = k_uptime_get();
+
+    for (ssize_t index = 0; index < MAX_ANCHOR_COUNT; index++) {
+        if (seen_list[index].ble_time_stamp < timestamp) {
+            timestamp = seen_list[index].ble_time_stamp;
+            evict_index = index;
+        }
+    }
+
+    return evict_index;
+}
+
+void BLE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi) {
+    INSERT_NODE(find_oldest_ble_ts());
+}
+#endif
+
 /**
  * Update a neighbor in the neighbor list
  * @param[in] data The BLE scan data
