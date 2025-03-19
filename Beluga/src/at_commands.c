@@ -75,6 +75,28 @@ LOG_MODULE_REGISTER(at_commands, CONFIG_AT_COMMANDS_LOG_LEVEL);
     } while (0)
 
 /**
+ * @brief Prints out the saved setting in hex format if the minimum amount of
+ * tokens have not been passed in
+ *
+ * @param[in] argc The amount of tokens parsed
+ * @param[in] required The amount of tokens required to do something other than
+ * "read the setting"
+ * @param[in] setting The enum that defines the setting
+ * @param[in] settingstr The string representation of the setting
+ * @param[in] callback An optional custom print function for the setting
+ * @param[in] padding Format string padding for the hex number. For example,
+ * if it is desired to show at least 8 digits with leading zeros, this would
+ * be "08". If no zero padding is wanted, then use an empty string ("").
+ */
+#define READ_SETTING_HEX(_comms, argc, required, setting, settingstr, padding) \
+    do {                                                                       \
+        if ((argc) < (required)) {                                             \
+            int32_t _setting = retrieveSetting(setting);                       \
+            OK(_comms, settingstr ": 0x%" padding PRIX32, (uint32_t)_setting); \
+        }                                                                      \
+    } while (0)
+
+/**
  * Converts an integer into a boolean given that the integer is a valid value.
  *
  * @param[out] boolarg The boolean representation of the integer
@@ -146,11 +168,9 @@ AT_CMD_DEFINE(STARTUWB) {
     if (get_uwb_led_state() == LED_UWB_ON) {
         ERROR(comms, "UWB is already on");
     }
-    if (retrieveSetting(BELUGA_RANGE_EXTEND) == 1) {
-        update_power_mode(POWER_MODE_HIGH);
-    } else {
-        update_power_mode(POWER_MODE_BYPASS);
-    }
+    enum power_mode pwramp =
+        (enum power_mode)retrieveSetting(BELUGA_RANGE_EXTEND);
+    update_power_mode(pwramp);
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
     update_led_state(LED_UWB_ON);
@@ -328,12 +348,18 @@ AT_CMD_REGISTER(RATE);
 AT_CMD_DEFINE(CHANNEL) {
     LOG_INF("Running CHANNEL command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_CHANNEL, "Channel");
-    int32_t channel;
+    int32_t channel, pwramp;
     int retVal;
     bool success = strtoint32(argv[1], &channel);
 
     if (!success) {
         ERROR(comms, "Channel parameter input error");
+    }
+
+    pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
+    if (IS_UWB_AMP_ON(pwramp) && !UWB_AMP_CHANNEL(channel)) {
+        ERROR(comms, "UWB power amplifier is currently active and channels 2, "
+                     "3, and 4 can only be used with the amplifier");
     }
 
     retVal = set_uwb_channel(channel);
@@ -404,7 +430,7 @@ AT_CMD_REGISTER(TIMEOUT);
  */
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
-    READ_SETTING(comms, argc, 2, BELUGA_TX_POWER, "TX Power");
+    READ_SETTING_HEX(comms, argc, 2, BELUGA_TX_POWER, "TX Power", "08");
     int32_t arg1, coarse_control, fine_control;
     bool value, success = strtoint32(argv[1], &arg1);
     uint32_t power, mask = UINT8_MAX, new_setting;
@@ -566,16 +592,58 @@ AT_CMD_DEFINE(PWRAMP) {
     bool success = strtoint32(argv[1], &pwramp);
     int err;
 
-    if (!success || pwramp < 0 || pwramp > 2) {
+    if (!success || pwramp < 0 || pwramp > 5) {
         ERROR(comms, "Power amp parameter input error");
     }
 
-    if (pwramp == 0) {
-        err = update_power_mode(POWER_MODE_BYPASS);
-    } else if (pwramp == 1) {
-        err = update_power_mode(POWER_MODE_LOW);
-    } else {
-        err = update_power_mode(POWER_MODE_HIGH);
+    //    enum led_state uwb_state = get_uwb_led_state();
+    //    if (uwb_state == LED_UWB_ON) {
+    //        ERROR(comms, "UWB is currently active");
+    //    }
+
+    int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
+
+    switch (pwramp) {
+    case 0: {
+        err = update_power_mode(POWER_MODE_EXTERNAL_AMPS_OFF);
+        break;
+    }
+    case 1: {
+        if (UWB_AMP_CHANNEL(channel)) {
+            err = update_power_mode(POWER_MODE_BYPASS);
+        } else {
+            err = -EFAULT;
+        }
+        break;
+    }
+    case 2: {
+        err = update_power_mode(POWER_MODE_LOW_NO_UWB);
+        break;
+    }
+    case 3: {
+        if (UWB_AMP_CHANNEL(channel)) {
+            err = update_power_mode(POWER_MODE_LOW);
+        } else {
+            err = -EFAULT;
+        }
+        break;
+    }
+    case 4: {
+        err = update_power_mode(POWER_MODE_HIGH_NO_UWB);
+        break;
+    }
+    case 5: {
+        if (UWB_AMP_CHANNEL(channel)) {
+            err = update_power_mode(POWER_MODE_HIGH);
+        } else {
+            err = -EFAULT;
+        }
+        break;
+    }
+    default: {
+        ERROR(comms, "Power amp parameter input error");
+        break;
+    }
     }
 
     if (err == 0 || err == -ENODEV) {
@@ -595,6 +663,11 @@ AT_CMD_DEFINE(PWRAMP) {
         ERROR(comms, "Power mode not recognized");
     } else if (err == -ENOTSUP) {
         ERROR(comms, "Not implemented");
+    } else if (err == -EFAULT) {
+        ERROR(comms,
+              "Cannot turn on UWB amplifier. Must be on channel 1 or 2 "
+              "(currently on channel %" PRId32,
+              channel);
     } else {
         ERROR(comms, "Power amplifier error occurred: %d", err);
     }
@@ -893,7 +966,7 @@ AT_CMD_REGISTER(SFD);
  */
 AT_CMD_DEFINE(PANID) {
     LOG_INF("Running PANID command");
-    READ_SETTING(comms, argc, 2, BELUGA_PAN_ID, "PAN ID");
+    READ_SETTING_HEX(comms, argc, 2, BELUGA_PAN_ID, "PAN ID", "04");
     int32_t pan_id;
     int retVal;
     bool success = strtoint32(argv[1], &pan_id);

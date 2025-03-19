@@ -20,6 +20,7 @@
 #include <app_leds.h>
 #include <range_extension.h>
 #include <stdio.h>
+#include <utils.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -237,6 +238,16 @@ int init_range_extension(void) {
                 (_UPDATE_FEM_PIN(container, attr, value, ret)),                \
                 (FEM_PIN_NOTSUP(ret)))
 
+#define _TOGGLE_UWB_PA(uwb_pa_)                                                \
+    do {                                                                       \
+        dwt_setlnapamode(0, uwb_pa_);                                          \
+        if (uwb_pa_) {                                                         \
+            dwt_setfinegraintxseq(false);                                      \
+        } else {                                                               \
+            dwt_setfinegraintxseq(true);                                       \
+        }                                                                      \
+    } while (0)
+
 /**
  * Generates the code to toggle on and off the external UWB amplifier. If the
  * UWB external amp is disabled in the config, then an empty statement is
@@ -245,7 +256,7 @@ int init_range_extension(void) {
  * @param[in] uwb_pa_ The external power amp setting for the DW1000
  */
 #define TOGGLE_UWB_AMP(uwb_pa_)                                                \
-    IF_ENABLED(IS_ENABLED(CONFIG_UWB_ENABLE_PA), (dwt_setlnapamode(0, uwb_pa_)))
+    IF_ENABLED(IS_ENABLED(CONFIG_UWB_ENABLE_PA), (_TOGGLE_UWB_PA(uwb_pa_)))
 
 /**
  * @brief Updates the power mode of the FEM and controls the external
@@ -270,24 +281,26 @@ int init_range_extension(void) {
  * @return -EINVAL if the power mode is not recognized
  * @return negative error code otherwise
  */
-int update_power_mode(enum ble_power_mode mode) {
-    int ret = 0, uwb_pa = 0, high_power = 1;
+int update_power_mode(enum power_mode mode) {
+    int ret = 0, uwb_pa = ((uint8_t)mode) & UINT8_C(1);
     bool ble_state = save_and_disable_bluetooth();
 
     switch (mode) {
+    case POWER_MODE_EXTERNAL_AMPS_OFF:
     case POWER_MODE_BYPASS: {
         UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 1, ret);
-        uwb_pa = 0;
         break;
     }
+    case POWER_MODE_LOW_NO_UWB:
     case POWER_MODE_LOW: {
-        high_power = 0;
-        // Fallthrough to next case
+        UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
+        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, 0, ret);
+        break;
     }
+    case POWER_MODE_HIGH_NO_UWB:
     case POWER_MODE_HIGH: {
         UPDATE_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, 0, ret);
-        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, high_power, ret);
-        uwb_pa = 1;
+        UPDATE_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, 1, ret);
         break;
     }
     default:
@@ -403,7 +416,7 @@ int init_range_extension(void) {
  * @return -EINVAL if the power mode is not recognized
  * @return negative error code otherwise
  */
-int update_power_mode(enum ble_power_mode mode) {
+int update_power_mode(enum power_mode mode) {
     if (mode == POWER_MODE_BYPASS) {
         return 0;
     }

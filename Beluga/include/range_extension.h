@@ -24,13 +24,38 @@
 #include <stdint.h>
 
 /**
- * @brief Power modes for the BLE FEM
+ * @brief Power modes for the BLE FEM and UWB amplifier
  */
-enum ble_power_mode {
-    POWER_MODE_BYPASS, ///< Bypass the PA and LNA
-    POWER_MODE_LOW,    ///< Amplify the BLE by 10 dB
-    POWER_MODE_HIGH    ///< Tell FCC to fuck off and amplify the BLE by 22 dB
+enum power_mode {
+    POWER_MODE_EXTERNAL_AMPS_OFF = 0, ///< All external amplifiers are turned
+                                      ///< off. In other words, use this mode
+                                      ///< when the FCC is inspecting...
+    POWER_MODE_BYPASS = 1,     ///< Bypass the PA and LNA, but turn on the UWB
+    POWER_MODE_LOW_NO_UWB = 2, ///< Amplify the BLE by 10 dB and do not
+                               ///< amplify UWB
+    POWER_MODE_LOW = 3,        ///< Amplify the BLE by 10 dB and turn on the UWB
+                               ///< amplifier
+    POWER_MODE_HIGH_NO_UWB = 4, ///< Tell FCC to fuck off and amplify the BLE by
+                                ///< 22 dB and do not amplify the UWB
+    POWER_MODE_HIGH = 5, ///< Tell FCC to fuck off and amplify everything by
+                         ///< 20+ dB
 };
+
+/**
+ * Macro to check if the UWB amplifier is turned on based on the power mode.
+ *
+ * @param[in] power_mode The current power mode that we are in
+ */
+#define IS_UWB_AMP_ON(power_mode)                                              \
+    ((power_mode) == POWER_MODE_BYPASS || (power_mode) == POWER_MODE_LOW ||    \
+     (power_mode) == POWER_MODE_HIGH)
+
+/**
+ * Macro that checks if the given channel can be amplified by the UWB amplifier
+ *
+ * @param[in] channel The channel to check
+ */
+#define UWB_AMP_CHANNEL(channel) IN_RANGE(channel, 2, 4)
 
 /**
  * @brief Initializes the BLE FEM (Front-End Module) pins that are not
@@ -69,7 +94,7 @@ int init_range_extension(void);
  * @return -EINVAL if the power mode is not recognized
  * @return negative error code otherwise
  */
-int update_power_mode(enum ble_power_mode mode);
+int update_power_mode(enum power_mode mode);
 
 /**
  * @brief Selects the active antenna

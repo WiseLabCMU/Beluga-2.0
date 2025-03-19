@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imgflash"
+version = "0.0.0"
+authors = [{name = "Tom Schmitz", email = "thomas.schmitz98@outlook.com"}]
+description = "Tool that runs an SMP client for communicating with a microcontroller(s) that is running an SMP server"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows"
+]
+requires-python = ">=3.9"
+dependencies = [
+    "wheel",
+    "typer",
+    "smpclient",
+    "PyInquirer",
+    "rich",
+    "setuptools",
+    "packaging"
+]
+
+[project.scripts]
+imgflash = "imgflash.app.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = [
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "W",   # pycodestyle warnings
+]
+ignore = [
+    "UP027", # deprecated pyupgrade rule
+]
