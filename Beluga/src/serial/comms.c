@@ -848,7 +848,8 @@ int print_format(const struct comms *comms) {
  * @return -ENOTSUP if transport does not have flow control
  */
 int wait_comms_ready(const struct comms *comms) {
-    if (comms == NULL || comms->iface == NULL || comms->iface->api == NULL) {
+    if (comms == NULL || comms->ctx == NULL || comms->iface == NULL ||
+        comms->iface->api == NULL) {
         return -EINVAL;
     }
     if (comms->iface->api->wait_dtr == NULL) {

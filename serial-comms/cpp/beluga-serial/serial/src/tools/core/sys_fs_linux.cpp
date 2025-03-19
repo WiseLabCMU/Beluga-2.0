@@ -136,23 +136,26 @@ static std::vector<std::string> _glob(const char *pattern) {
 #define APPEND_VECTOR(_destination, _source)                                   \
     (_destination)                                                             \
         .insert((_destination).end(), (_source).begin(), (_source).end())
-#define UPDATE_VECTOR(_destination, _source, _pattern)                         \
+#define UPDATE_VECTOR(attr, _destination, _source, _pattern)                   \
     do {                                                                       \
-        _source = _glob(_pattern);                                             \
-        APPEND_VECTOR(_destination, _source);                                  \
+        if (attr) {                                                            \
+            _source = _glob(_pattern);                                         \
+            APPEND_VECTOR(_destination, _source);                              \
+        }                                                                      \
     } while (false)
 
-std::vector<SysFsLinux> comports() {
+std::vector<SysFsLinux> comports(const SysFsLinuxScanAttr &attr) {
     std::vector<std::string> devices, results;
     std::vector<SysFsLinux> ret;
-    UPDATE_VECTOR(devices, results, "/dev/ttyS*");
-    UPDATE_VECTOR(devices, results, "/dev/ttyUSB*");
-    UPDATE_VECTOR(devices, results, "/dev/ttyXRUSB*");
-    UPDATE_VECTOR(devices, results, "/dev/ttyACM**");
-    UPDATE_VECTOR(devices, results, "/dev/ttyAMA*");
-    UPDATE_VECTOR(devices, results, "/dev/rfcomm*");
-    UPDATE_VECTOR(devices, results, "/dev/ttyAP*");
-    UPDATE_VECTOR(devices, results, "/dev/ttyGS*");
+
+    UPDATE_VECTOR(attr.ttyS, devices, results, "/dev/ttyS*");
+    UPDATE_VECTOR(attr.ttyUSB, devices, results, "/dev/ttyUSB*");
+    UPDATE_VECTOR(attr.ttyXRUSB, devices, results, "/dev/ttyXRUSB*");
+    UPDATE_VECTOR(attr.ttyACM, devices, results, "/dev/ttyACM**");
+    UPDATE_VECTOR(attr.ttyAMA, devices, results, "/dev/ttyAMA*");
+    UPDATE_VECTOR(attr.rfcomm, devices, results, "/dev/rfcomm*");
+    UPDATE_VECTOR(attr.ttyAP, devices, results, "/dev/ttyAP*");
+    UPDATE_VECTOR(attr.ttyGS, devices, results, "/dev/ttyGS*");
 
     for (size_t i = 0; i < devices.size(); i++) {
         SysFsLinux dev(devices[i]);

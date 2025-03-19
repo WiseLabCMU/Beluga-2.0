@@ -183,7 +183,14 @@ void BelugaSerial::_process_reboot(const std::string &) {
 void BelugaSerial::_find_ports(
     const std::vector<target_pair> &valid,
     std::map<target_pair, std::vector<std::string>> &avail_ports) {
-    std::vector<SerialTools::SysFS> ports = SerialTools::comports();
+    SerialTools::SysFsScanAttr attr = {
+        .ttyXRUSB = false,
+        .ttyAMA = false,
+        .rfcomm = false,
+        .ttyAP = false,
+        .ttyGS = false,
+    };
+    std::vector<SerialTools::SysFS> ports = SerialTools::comports(attr);
 
     avail_ports.clear();
 

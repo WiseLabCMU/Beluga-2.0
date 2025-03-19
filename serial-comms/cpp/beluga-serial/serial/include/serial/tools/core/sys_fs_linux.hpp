@@ -15,6 +15,18 @@
 #include <vector>
 
 namespace SerialToolsInternal {
+
+struct SysFsLinuxScanAttr {
+    bool ttyS = true;
+    bool ttyUSB = true;
+    bool ttyXRUSB = true;
+    bool ttyACM = true;
+    bool ttyAMA = true;
+    bool rfcomm = true;
+    bool ttyAP = true;
+    bool ttyGS = true;
+};
+
 class SysFsLinux : public SysFsBase {
   public:
     explicit SysFsLinux(const fs::path &dev);
@@ -36,7 +48,8 @@ class SysFsLinux : public SysFsBase {
                                   const std::string &file);
 };
 
-std::vector<SysFsLinux> comports();
+std::vector<SysFsLinux>
+comports(const SysFsLinuxScanAttr &attr = SysFsLinuxScanAttr{});
 } // namespace SerialToolsInternal
 
 #endif // BELUGA_FRAME_SYS_FS_LINUX_HPP

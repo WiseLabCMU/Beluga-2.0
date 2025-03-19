@@ -12,5 +12,7 @@
 #include <vector>
 
 namespace SerialTools {
-std::vector<SysFS> comports() { return SerialToolsInternal::comports(); }
+std::vector<SysFS> comports(const SysFsScanAttr &attr) {
+    return SerialToolsInternal::comports(attr);
+}
 } // namespace SerialTools

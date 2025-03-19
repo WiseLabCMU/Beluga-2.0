@@ -22,9 +22,10 @@
 namespace SerialTools {
 #if defined(__linux__)
 using SysFS = SerialToolsInternal::SysFsLinux;
+using SysFsScanAttr = SerialToolsInternal::SysFsLinuxScanAttr;
 #endif
 
-std::vector<SysFS> comports();
+std::vector<SysFS> comports(const SysFsScanAttr &attr = SysFsScanAttr{});
 } // namespace SerialTools
 
 #endif // BELUGA_FRAME_LIST_PORTS_HPP
