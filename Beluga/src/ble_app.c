@@ -338,6 +338,40 @@ static void RSSI_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 }
 #endif
 
+#if (IS_ENABLED(CONFIG_BELUGA_EVICT_RANGE) ||                                  \
+     IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT))
+
+#if IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+#define RANGE_FUNC_NAME insert_seen_list_range
+#else
+#define RANGE_FUNC_NAME insert_into_seen_list
+#endif
+
+#include <math.h>
+static ssize_t find_largest_range(void) {
+    ssize_t evict_index = -1;
+    float largest_range = -1.0f;
+
+    for (ssize_t index = 0; index < MAX_ANCHOR_COUNT; index++) {
+        if (isgreater(seen_list[index].range, largest_range)) {
+            largest_range = seen_list[index].range;
+            evict_index = index;
+        }
+    }
+
+    return evict_index;
+}
+
+/**
+ * Inserts a new neighbor into the neighbor list
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
+static void RANGE_FUNC_NAME(struct ble_data *data, int8_t rssi) {
+    INSERT_NODE(find_largest_range());
+}
+#endif
+
 /**
  * Update a neighbor in the neighbor list
  * @param[in] data The BLE scan data
