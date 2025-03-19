@@ -426,6 +426,39 @@ void RANGE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 }
 #endif
 
+#if IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+static enum node_eviction_policy policy = EVICT_POLICY_RR;
+
+static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
+    switch (policy) {
+    case EVICT_POLICY_RR:
+        insert_seen_list_rr(data, rssi);
+        break;
+    case EVICT_POLICY_RSSI:
+        insert_seen_list_rssi(data, rssi);
+        break;
+    case EVICT_POLICY_RANGE:
+        insert_seen_list_range(data, rssi);
+        break;
+    case EVICT_POLICY_BLE_TS:
+        insert_seen_list_ble_ts(data, rssi);
+        break;
+    case EVICT_POLICY_RANGE_TS:
+        insert_seen_list_range_ts(data, rssi);
+        break;
+    default:
+        break;
+    }
+}
+
+void set_node_eviction_policy(enum node_eviction_policy new_policy) {
+    if (new_policy >= EVICT_POLICY_INVALID) {
+        return;
+    }
+    policy = new_policy;
+}
+#endif
+
 /**
  * Update a neighbor in the neighbor list
  * @param[in] data The BLE scan data
