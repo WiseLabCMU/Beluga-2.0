@@ -124,7 +124,7 @@ bool save_and_disable_bluetooth(void);
 void restore_bluetooth(bool state);
 
 #if defined(CONFIG_BELUGA_GATT)
-void update_ble_service(uint16_t uuid, float range)
+void update_ble_service(uint16_t uuid, float range);
 #else
 #define update_ble_service(x, y) (void)0
 #endif // defined(CONFIG_BELUGA_GATT)
