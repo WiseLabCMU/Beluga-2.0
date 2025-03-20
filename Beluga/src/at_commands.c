@@ -985,3 +985,27 @@ AT_CMD_DEFINE(PANID) {
     OK(comms);
 }
 AT_CMD_REGISTER(PANID);
+
+/**
+ * The EVICT AT command
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ * @return 1 upon error
+ */
+AT_CMD_DEFINE(EVICT) {
+    LOG_INF("Running EVICTION command");
+    READ_SETTING(comms, argc, 2, BELUGA_EVICTION_SCHEME, "Eviction Scheme");
+    int32_t scheme;
+    bool success = strtoint32(argv[1], &scheme);
+
+    if (!success || scheme < INT32_C(0) || scheme >= (int32_t)EVICT_POLICY_INVALID) {
+        ERROR(comms, "Invalid eviction scheme");
+    }
+
+    set_node_eviction_policy(scheme);
+    updateSetting(BELUGA_EVICTION_SCHEME, scheme);
+    OK(comms);
+}
+AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT), EVICT);

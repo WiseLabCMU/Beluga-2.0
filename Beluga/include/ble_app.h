@@ -18,11 +18,11 @@
 #include "deca_device_api.h"
 
 enum node_eviction_policy {
-    EVICT_POLICY_RR,
-    EVICT_POLICY_RSSI,
-    EVICT_POLICY_RANGE,
-    EVICT_POLICY_BLE_TS,
-    EVICT_POLICY_RANGE_TS,
+    EVICT_POLICY_RR = 0,
+    EVICT_POLICY_RSSI = 1,
+    EVICT_POLICY_RANGE = 2,
+    EVICT_POLICY_BLE_TS = 3,
+    EVICT_POLICY_RANGE_TS = 4,
     EVICT_POLICY_INVALID
 };
 
