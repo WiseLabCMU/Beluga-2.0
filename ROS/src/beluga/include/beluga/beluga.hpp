@@ -53,14 +53,15 @@
 using namespace std::chrono_literals;
 
 class Beluga : public rclcpp::Node {
-  public:
-    Beluga()
-        : Node("beluga"),
-          _serial("", BAUD_115200, 2s, 100ms, NEIGHBOR_UPDATE_CB,
-                  RANGE_UPDATE_CB, RANGE_EVENT_UPDATE_CB,
-                  std::bind(&Beluga::serial_logger, this, std::placeholders::_1,
-                            std::placeholders::_2)) {
+    const BelugaSerial::BelugaSerialAttributes attr = {
+        .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
+        .range_updates_cb = RANGE_UPDATE_CB,
+        .range_event_cb = RANGE_EVENT_UPDATE_CB,
+        .logger_cb = std::bind(&Beluga::serial_logger, this,
+                               std::placeholders::_1, std::placeholders::_2)};
 
+  public:
+    Beluga() : Node("beluga"), _serial(attr) {
         this->declare_parameter("neighbors_name", "neighbor_list");
         this->declare_parameter("ranges_name", "range_updates");
         this->declare_parameter("exchange_name", "range_exchanges");

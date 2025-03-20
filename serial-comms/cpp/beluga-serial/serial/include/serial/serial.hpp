@@ -17,24 +17,14 @@ namespace Serial {
 
 using SerialInternal::milliseconds;
 using SerialInternal::PortNotOpenError;
+using SerialInternal::SerialAttributes;
 using SerialInternal::SerialException;
 using SerialInternal::SerialTimeoutException;
 
 class Serial : public SerialInternal::SerialPosix {
   public:
-    explicit Serial(const std::string &port = "",
-                    enum BaudRate baudrate = BAUD_115200,
-                    enum ByteSize bytesize = SIZE_8,
-                    enum Parity parity = PARITY_NONE,
-                    enum StopBits stopbits = STOPBITS_1,
-                    const milliseconds &timeout = milliseconds::max(),
-                    bool xonxoff = false, bool rtscts = false,
-                    const milliseconds &write_timeout = milliseconds::max(),
-                    bool dsrdtr = false, int32_t inter_byte_timeout = -1,
-                    bool exclusive = false)
-        : SerialInternal::SerialPosix(
-              port, baudrate, bytesize, parity, stopbits, timeout, xonxoff,
-              rtscts, write_timeout, dsrdtr, inter_byte_timeout, exclusive) {}
+    explicit Serial(const SerialAttributes &attr = SerialAttributes{})
+        : SerialInternal::SerialPosix(attr) {}
     ~Serial() override = default;
 
     Serial(const Serial &other) = delete;

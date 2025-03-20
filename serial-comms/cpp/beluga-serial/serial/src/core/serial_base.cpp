@@ -69,25 +69,20 @@ std::chrono::milliseconds Timeout::duration() const noexcept {
     return _duration;
 }
 
-SerialBase::SerialBase(const std::string &port, enum BaudRate baudrate,
-                       enum ByteSize bytesize, enum Parity parity,
-                       enum StopBits stopbits, const milliseconds &timeout,
-                       bool xonxoff, bool rtscts,
-                       const milliseconds &write_timeout, bool dsrdtr,
-                       int32_t inter_byte_timeout, bool exclusive) {
+SerialBase::SerialBase(const SerialAttributes &attr) {
     _is_open = false;
-    _port = port;
-    _baudrate = baudrate;
-    _bytesize = bytesize;
-    _parity = parity;
-    _stopbits = stopbits;
-    _timeout = timeout;
-    _write_timeout = write_timeout;
-    _xonxoff = xonxoff;
-    _rtscts = rtscts;
-    _dsrdtr = dsrdtr;
-    _inter_byte_timeout = inter_byte_timeout;
-    _exclusive = exclusive;
+    _port = attr.port;
+    _baudrate = attr.baudrate;
+    _bytesize = attr.bytesize;
+    _parity = attr.parity;
+    _stopbits = attr.stopbits;
+    _timeout = attr.timeout;
+    _write_timeout = attr.write_timeout;
+    _xonxoff = attr.xonxoff;
+    _rtscts = attr.rtscts;
+    _dsrdtr = attr.dsrdtr;
+    _inter_byte_timeout = attr.inter_byte_timeout;
+    _exclusive = attr.exclusive;
     _rts_state = true;
     _dtr_state = true;
 }

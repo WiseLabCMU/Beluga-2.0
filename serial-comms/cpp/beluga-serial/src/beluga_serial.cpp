@@ -38,33 +38,18 @@ const char *FileNotFoundError::what() const noexcept { return _msg.c_str(); }
 
 BelugaSerial::BelugaSerial() { _initialize(); }
 
-BelugaSerial::BelugaSerial(
-    const std::string &port, BaudRate baud,
-    const std::chrono::milliseconds &timeout,
-    const std::chrono::milliseconds &serial_timeout,
-    std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
-    std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
-    std::function<void(const RangeEvent &)> range_event_cb,
-    std::function<int(const char *, va_list)> logger_cb) {
-    _initialize(baud, timeout, serial_timeout, port,
-                std::move(neighbor_update_cb), std::move(range_updates_cb),
-                std::move(range_event_cb), std::move(logger_cb));
+BelugaSerial::BelugaSerial(const BelugaSerialAttributes &attr) {
+    _initialize(attr);
 }
 
-void BelugaSerial::_initialize(
-    BaudRate baud, const std::chrono::milliseconds &timeout,
-    const std::chrono::milliseconds &serial_timeout, const std::string &port,
-    std::function<void(const std::vector<BelugaNeighbor> &)> neighbor_update_cb,
-    std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb,
-    std::function<void(const RangeEvent &)> range_event_cb,
-    std::function<int(const char *, va_list)> logger_cb) {
-    _logger_cb = std::move(logger_cb);
+void BelugaSerial::_initialize(const BelugaSerialAttributes &attr) {
+    _logger_cb = attr.logger_cb;
 
-    _serial.baudrate(baud);
-    _serial.timeout(serial_timeout);
+    _serial.baudrate(attr.baud);
+    _serial.timeout(attr.serial_timeout);
     _serial.exclusive(true);
 
-    if (port.empty()) {
+    if (attr.port.empty()) {
         std::map<target_pair, std::vector<std::string>> avail_ports;
         _find_ports(TARGETS, avail_ports);
         if (avail_ports.empty()) {
@@ -103,15 +88,15 @@ void BelugaSerial::_initialize(
             throw FileNotFoundError("Unable to open a target");
         }
     } else {
-        _serial.port(port);
+        _serial.port(attr.port);
         _serial.open();
     }
 
-    _timeout = timeout;
+    _timeout = attr.timeout;
 
-    _neighbor_cb = std::move(neighbor_update_cb);
-    _range_cb = std::move(range_updates_cb);
-    _range_event_cb = std::move(range_event_cb);
+    _neighbor_cb = attr.neighbor_update_cb;
+    _range_cb = attr.range_updates_cb;
+    _range_event_cb = attr.range_event_cb;
 }
 
 BelugaSerial::~BelugaSerial() { this->close(); }
