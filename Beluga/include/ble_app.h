@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <zephyr/kernel.h>
 
-#include "deca_device_api.h"
+#include <deca_device_api.h>
 
 enum node_eviction_policy {
     EVICT_POLICY_RR = 0,

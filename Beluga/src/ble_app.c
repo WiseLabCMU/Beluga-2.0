@@ -457,6 +457,50 @@ void set_node_eviction_policy(enum node_eviction_policy new_policy) {
     }
     policy = new_policy;
 }
+
+int print_eviction_scheme(const struct comms *comms) {
+    struct beluga_msg msg = {.type = START_EVENT};
+    int ret = 0;
+
+    if (comms == NULL || comms->ctx == NULL) {
+        return -EINVAL;
+    }
+
+    switch (policy) {
+    case EVICT_POLICY_RR: {
+        msg.payload.node_version = "  Eviction Scheme: Index Round Robin";
+        break;
+    }
+    case EVICT_POLICY_RSSI: {
+        msg.payload.node_version = "  Eviction Scheme: Lowest RSSI";
+        break;
+    }
+    case EVICT_POLICY_RANGE: {
+        msg.payload.node_version = "  Eviction Scheme: Longest Range";
+        break;
+    }
+    case EVICT_POLICY_BLE_TS: {
+        msg.payload.node_version =
+            "  Eviction Scheme: Least Recent BLE Timestamp";
+        break;
+    }
+    case EVICT_POLICY_RANGE_TS: {
+        msg.payload.node_version =
+            "  Eviction Scheme: Least Recent Range Timestamp";
+        break;
+    }
+    default: {
+        ret = -EFAULT;
+        break;
+    }
+    }
+
+    if (ret == 0) {
+        ret = comms_write_msg(comms, &msg);
+    }
+
+    return ret;
+}
 #endif
 
 /**

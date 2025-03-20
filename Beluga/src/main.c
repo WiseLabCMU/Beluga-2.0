@@ -6,10 +6,12 @@
  * @author Tom Schmitz
  */
 
-#include "ble_app.h"
+#include <beluga_message.h>
+#include <serial/comms.h>
+
 #include <app_leds.h>
 #include <app_version.h>
-#include <beluga_message.h>
+#include <ble_app.h>
 #include <debug.h>
 #include <initiator.h>
 #include <led_config.h>
@@ -18,7 +20,6 @@
 #include <range_extension.h>
 #include <ranging.h>
 #include <responder.h>
-#include <serial/comms.h>
 #include <settings.h>
 #include <spi.h>
 #include <stdio.h>
@@ -385,6 +386,13 @@ static void load_format_no_msg(const struct comms *comms) {
     set_format(comms, (enum comms_out_format_mode)format);
 }
 
+// UNUSED static void load_eviction_scheme(const struct comms *comms) {
+//     int32_t scheme = retrieveSetting(BELUGA_EVICTION_SCHEME);
+//
+//     set_node_eviction_policy(scheme);
+//     CUSTOM_INIT_MSG(comms, print_eviction_scheme);
+// }
+
 /**
  * Load all the settings, initialize all the states, and display what the
  * settings are
@@ -424,6 +432,9 @@ static void load_settings(const struct comms *comms) {
     load_out_format(comms);
     if (IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION)) {
         load_power_amplifiers(comms);
+    }
+    if (IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)) {
+        load_eviction_scheme(comms);
     }
     SETTINGS_BREAK(comms);
 }

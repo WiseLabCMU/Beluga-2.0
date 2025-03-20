@@ -15,7 +15,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 
-#include "deca_types.h"
+#include <deca_types.h>
 #include <initiator.h>
 #include <responder.h>
 
@@ -1000,7 +1000,8 @@ AT_CMD_DEFINE(EVICT) {
     int32_t scheme;
     bool success = strtoint32(argv[1], &scheme);
 
-    if (!success || scheme < INT32_C(0) || scheme >= (int32_t)EVICT_POLICY_INVALID) {
+    if (!success || scheme < INT32_C(0) ||
+        scheme >= (int32_t)EVICT_POLICY_INVALID) {
         ERROR(comms, "Invalid eviction scheme");
     }
 
