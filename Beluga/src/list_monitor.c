@@ -102,6 +102,17 @@ bool check_node_added(void) {
 }
 
 /**
+ * @brief Sends an eviction message
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] uuid The node that got evicted
+ */
+static void evict_node(const struct comms *comms, uint16_t uuid) {
+    struct beluga_msg msg = {.type = NEIGHBOR_DROP,
+                             .payload.dropped_neighbor = uuid};
+    comms_write_msg(comms, &msg);
+}
+
+/**
  * @brief Evict expired neighbor nodes from the list.
  *
  * Checks each neighbor in the list and removes any neighbors that have not been
@@ -117,11 +128,7 @@ static bool evict_nodes(const struct comms *comms) {
         if (seen_list[x].UUID != 0) {
             if ((k_uptime_get() - seen_list[x].ble_time_stamp) >= timeout) {
                 LOG_INF("Removing node %" PRId16, seen_list[x].UUID);
-                struct beluga_msg msg = {.type = NEIGHBOR_DROP,
-                                         .payload.dropped_neighbor =
-                                             seen_list[x].UUID};
-
-                comms_write_msg(comms, &msg);
+                evict_node(comms, seen_list[x].UUID);
                 removed = true;
                 seen_list[x].UUID = 0;
             }
@@ -149,6 +156,34 @@ static void sort_nodes(void) {
 
     reset_node_added();
     RESUME_NEIGHBOR_SCANNING();
+}
+
+/**
+ * Message queue for nodes that have been evicted during the scanning routine
+ */
+K_MSGQ_DEFINE(evicted_nodes, sizeof(uint16_t), 2 * MAX_ANCHOR_COUNT, 1);
+
+/**
+ * Retrieves items from the evicted nodes message queue and indicates that they
+ * have been evicted
+ * @param[in] comms Pointer to the comms instance
+ * @return `true` if any nodes were evicted by the scan event
+ * @return `false` otherwise
+ */
+static bool notify_msgq_nodes(const struct comms *comms) {
+    uint16_t uuid;
+    int err = k_msgq_get(&evicted_nodes, &uuid, K_NO_WAIT);
+    bool ret = false;
+
+    while (err == 0) {
+        // Check if node got re-inserted
+        if (!in_seen_list(uuid)) {
+            ret = true;
+            evict_node(comms, uuid);
+        }
+        err = k_msgq_get(&evicted_nodes, &uuid, K_NO_WAIT);
+    }
+    return ret;
 }
 
 /**
@@ -182,16 +217,18 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
     }
 
     while (1) {
-        k_msleep(LIST_MONITOR_PERIOD_MS);
+        k_sleep(K_MSEC(LIST_MONITOR_PERIOD_MS));
 
         watchdog_red_rocket(&watchdogAttr);
+
+        removed = notify_msgq_nodes(comms);
 
         if (k_sem_take(&k_sus_init, K_NO_WAIT) < 0) {
             continue;
         }
         BOUND_INCREMENT(count, LIST_SORT_PERIOD_S);
 
-        removed = evict_nodes(comms);
+        removed = evict_nodes(comms) || removed;
 
         if (removed || check_node_added() || count == 0) {
             LOG_INF("Sorting list");

@@ -1,0 +1,31 @@
+menu "Neighbor List Settings"
+
+config BELUGA_NETWORK_SIZE
+    int "The number of nodes in the network"
+    default 12
+
+choice
+    prompt "Eviction Scheme"
+    default BELUGA_EVICT_RSSI
+
+config BELUGA_EVICT_RR
+    bool "Round Robin"
+
+config BELUGA_EVICT_RSSI
+    bool "RSSI"
+
+config BELUGA_EVICT_RANGE
+    bool "Range"
+
+config BELUGA_EVICT_BLE_TS
+    bool "BLE Timestamp"
+
+config BELUGA_EVICT_RANGE_TS
+    bool "Range Timestamp"
+
+config BELUGA_EVICT_RUNTIME_SELECT
+    bool "Select at runtime"
+
+endchoice
+
+endmenu

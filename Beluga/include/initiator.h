@@ -25,7 +25,7 @@
 #ifndef BELUGA_INITIATOR_H
 #define BELUGA_INITIATOR_H
 
-#include "deca_types.h"
+#include <deca_types.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
