@@ -20,21 +20,8 @@
 namespace SerialInternal {
 class SerialPosix : public SerialBase {
   public:
-    explicit SerialPosix(const std::string &port = "",
-                         enum BaudRate baudrate = BAUD_115200,
-                         enum ByteSize bytesize = SIZE_8,
-                         enum Parity parity = PARITY_NONE,
-                         enum StopBits stopbits = STOPBITS_1,
-                         const std::chrono::milliseconds &timeout =
-                             std::chrono::milliseconds::max(),
-                         bool xonxoff = false, bool rtscts = false,
-                         const std::chrono::milliseconds &write_timeout =
-                             std::chrono::milliseconds::max(),
-                         bool dsrdtr = false, int32_t inter_byte_timeout = -1,
-                         bool exclusive = false)
-        : SerialBase(port, baudrate, bytesize, parity, stopbits, timeout,
-                     xonxoff, rtscts, write_timeout, dsrdtr, inter_byte_timeout,
-                     exclusive) {
+    explicit SerialPosix(const SerialAttributes &attr = SerialAttributes{})
+        : SerialBase(attr) {
         if (!_port.empty()) {
             open();
         }
