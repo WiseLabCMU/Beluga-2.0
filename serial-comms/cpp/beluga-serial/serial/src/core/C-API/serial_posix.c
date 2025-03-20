@@ -1,11 +1,11 @@
 /**
  * @file posix_serial.c
  *
- * @brief
+ * @brief The C-API implementation for serial on POSIX systems.
  *
  * @date 1/28/25
  *
- * @author tom
+ * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
 #include <errno.h>
@@ -16,6 +16,13 @@
 #include <termios.h>
 #include <unistd.h>
 
+/**
+ * Opens a serial port in non-blocking mode with no terminal control.
+ *
+ * @param[in] port The path to the serial port device (e.g., "/dev/ttyUSB0")
+ * @return File descriptor on success
+ * @return -1 on error with errno set
+ */
 int open_port(const char *port) {
     return open(port, O_RDWR | O_NOCTTY | O_NONBLOCK);
 }
@@ -247,6 +254,13 @@ static int set_ic_timeout(struct termios *tty, int32_t timeout) {
     return 0;
 }
 
+/**
+ * @brief Configures the serial port with the given attributes.
+ * @param[in] config The configuration attributes for the serial port.
+ * @return 0 on success
+ * @return -EINVAL if config is NULL
+ * @return negative error code on failure
+ */
 int configure_port(struct serial_posix_config *config) {
     struct termios tty;
     int ret;
@@ -303,6 +317,16 @@ int configure_port(struct serial_posix_config *config) {
     return 0;
 }
 
+/**
+ * @Brief Reads data from a serial port with a timeout.
+ * @param[in] fd The file descriptor of the serial port.
+ * @param[in,out] buf The buffer to store the read data.
+ * @param[in] nbytes The number of bytes to read.
+ * @param[in] time_left The amount of time read should block waiting for the
+ * file descriptor to become ready. If NULL, read will block indefinitely.
+ * @return Number of bytes read on success
+ * @return -1 with errno set on failure
+ */
 ssize_t read_port(int fd, uint8_t *buf, size_t nbytes,
                   struct timeval *time_left) {
     fd_set read_set;
@@ -319,12 +343,32 @@ ssize_t read_port(int fd, uint8_t *buf, size_t nbytes,
     return read(fd, buf, nbytes);
 }
 
+/**
+ * @brief Writes data to a serial port.
+ * @param[in] fd The file descriptor of the serial port.
+ * @param[in] buf The buffer containing the data to write.
+ * @param[in] nbytes The number of bytes to write.
+ * @return The number of bytes written on success
+ * @return -1 with errno set on failure
+ */
 ssize_t write_port(int fd, const uint8_t *buf, size_t nbytes) {
     return write(fd, buf, nbytes);
 }
 
+/**
+ * @brief Closes a serial port.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 0 on success
+ * @return -1 with errno set on failure
+ */
 int close_port(int fd) { return close(fd); }
 
+/**
+ * @brief Gets the number of bytes available to read from a serial port.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return The number of bytes available to read on success
+ * @return -1 with errno set on failure
+ */
 ssize_t port_in_waiting(int fd) {
     ssize_t waiting = 0;
     if (ioctl(fd, TIOCINQ, &waiting) < 0) {
@@ -333,6 +377,15 @@ ssize_t port_in_waiting(int fd) {
     return waiting;
 }
 
+/**
+ * @brief Blocks until the file descriptor is ready for writing.
+ * @param[in] fd The file descriptor of the serial port.
+ * @param[in] timeout The amount of time to wait for the file descriptor to
+ * become ready. If NULL, wait indefinitely.
+ * @return 1 if all the bytes have been written
+ * @return 0 if the timeout expired
+ * @return -1 on error with errno set
+ */
 int select_write_port(int fd, struct timeval *timeout) {
     fd_set write_set;
     FD_ZERO(&write_set);
@@ -340,12 +393,37 @@ int select_write_port(int fd, struct timeval *timeout) {
     return select(fd + 1, NULL, &write_set, NULL, timeout);
 }
 
+/**
+ * @brief Flushes the output buffer of a serial port.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 0 on success
+ * @return -1 with errno set on failure
+ */
 int port_flush(int fd) { return tcdrain(fd); }
 
+/**
+ * @brief Clears the input buffer of a serial port.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 0 on success
+ * @return -1 with errno set on failure
+ */
 int port_reset_input(int fd) { return tcflush(fd, TCIFLUSH); }
 
+/**
+ * @brief Clears the output buffer of a serial port.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 0 on success
+ * @return -1 with errno set on failure
+ */
 int port_reset_output(int fd) { return tcflush(fd, TCOFLUSH); }
 
+/**
+ * @brief Checks if the Clear To Send (CTS) signal is active.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 1 if CTS is active
+ * @return 0 if CTS is inactive
+ * @return -1 on error with errno set
+ */
 int port_cts(int fd) {
     unsigned int status = 0;
     int ret = ioctl(fd, TIOCMGET, &status);
@@ -355,6 +433,13 @@ int port_cts(int fd) {
     return (status & TIOCM_CTS) != 0;
 }
 
+/**
+ * @brief Checks if the Data Set Ready (DSR) signal is active.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 1 if DSR is active
+ * @return 0 if DSR is inactive
+ * @return -1 on error with errno set
+ */
 int port_dsr(int fd) {
     unsigned int status = 0;
     int ret = ioctl(fd, TIOCMGET, &status);
@@ -364,6 +449,13 @@ int port_dsr(int fd) {
     return (status & TIOCM_DSR) != 0;
 }
 
+/**
+ * @brief Checks if the Ring Indicator (RI) signal is active.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 1 if RI is active
+ * @return 0 if RI is inactive
+ * @return -1 on error with errno set
+ */
 int port_ri(int fd) {
     unsigned int status = 0;
     int ret = ioctl(fd, TIOCMGET, &status);
@@ -373,6 +465,13 @@ int port_ri(int fd) {
     return (status & TIOCM_RI) != 0;
 }
 
+/**
+ * @brief Checks if the Carrier Detect (CD) signal is active.
+ * @param[in] fd The file descriptor of the serial port.
+ * @return 1 if CD is active
+ * @return 0 if CD is inactive
+ * @return -1 on error with errno set
+ */
 int port_cd(int fd) {
     unsigned int status = 0;
     int ret = ioctl(fd, TIOCMGET, &status);
@@ -382,6 +481,14 @@ int port_cd(int fd) {
     return (status & TIOCM_CD) != 0;
 }
 
+/**
+ * @brief Sets the Request To Send (RTS) signal to the specified state.
+ * @param[in] fd The file descriptor of the serial port.
+ * @param[in] state The state to set the RTS signal to (true for high, false for
+ * low).
+ * @return 0 on success
+ * @return -1 on error with errno set
+ */
 int port_set_rts_state(int fd, bool state) {
     unsigned int status = TIOCM_RTS;
     int ret;
@@ -393,6 +500,14 @@ int port_set_rts_state(int fd, bool state) {
     return ret;
 }
 
+/**
+ * @brief Sets the Data Terminal Ready (DTR) signal to the specified state.
+ * @param[in] fd The file descriptor of the serial port.
+ * @param[in] state The state to set the DTR signal to (true for high, false for
+ * low).
+ * @return 0 on success
+ * @return -1 on error with errno set
+ */
 int port_set_dtr_state(int fd, bool state) {
     unsigned int status = TIOCM_DTR;
     int ret;
