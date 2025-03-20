@@ -41,7 +41,7 @@ class FileNotFoundError : std::exception {
 };
 
 struct BelugaSerialAttributes {
-    std::string port;
+    std::string port = ""; // NOLINT(*-redundant-string-init)
     BaudRate baud = BAUD_115200;
     std::chrono::milliseconds timeout = std::chrono::milliseconds(2000);
     std::chrono::milliseconds serial_timeout = std::chrono::milliseconds(100);

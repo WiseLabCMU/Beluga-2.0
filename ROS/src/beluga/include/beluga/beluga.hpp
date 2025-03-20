@@ -54,10 +54,6 @@ using namespace std::chrono_literals;
 
 class Beluga : public rclcpp::Node {
     const BelugaSerial::BelugaSerialAttributes attr = {
-        .port = "",
-        .baud = BAUD_115200,
-        .timeout = 2s,
-        .serial_timeout = 100ms,
         .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
         .range_updates_cb = RANGE_UPDATE_CB,
         .range_event_cb = RANGE_EVENT_UPDATE_CB,
