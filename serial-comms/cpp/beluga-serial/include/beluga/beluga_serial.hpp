@@ -40,22 +40,24 @@ class FileNotFoundError : std::exception {
     std::string _msg;
 };
 
+struct BelugaSerialAttributes {
+    std::string port;
+    BaudRate baud = BAUD_115200;
+    std::chrono::milliseconds timeout = std::chrono::milliseconds(2000);
+    std::chrono::milliseconds serial_timeout = std::chrono::milliseconds(100);
+    std::function<void(const std::vector<BelugaNeighbor> &)>
+        neighbor_update_cb = nullptr;
+    std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb =
+        nullptr;
+    std::function<void(const RangeEvent &)> range_event_cb = nullptr;
+    std::function<int(const char *, va_list)> logger_cb = nullptr;
+};
+
 class BelugaSerial {
   public:
     BelugaSerial();
 
-    explicit BelugaSerial(
-        const std::string &port, BaudRate baud = BAUD_115200,
-        const std::chrono::milliseconds &timeout =
-            std::chrono::milliseconds(2000),
-        const std::chrono::milliseconds &serial_timeout =
-            std::chrono::milliseconds(100),
-        std::function<void(const std::vector<BelugaNeighbor> &)>
-            neighbor_update_cb = nullptr,
-        std::function<void(const std::vector<BelugaNeighbor> &)>
-            range_updates_cb = nullptr,
-        std::function<void(const RangeEvent &)> range_event_cb = nullptr,
-        std::function<int(const char *, va_list)> logger_cb = nullptr);
+    explicit BelugaSerial(const BelugaSerialAttributes &attr);
     ~BelugaSerial();
 
     void register_resync_cb(std::function<void()> cb);
@@ -120,19 +122,8 @@ class BelugaSerial {
     BelugaQueue<RangeEvent, 1, true> _range_event_queue;
     std::function<void(const RangeEvent &)> _range_event_cb = nullptr;
 
-    void _initialize(
-        BaudRate baud = BAUD_115200,
-        const std::chrono::milliseconds &timeout =
-            std::chrono::milliseconds(2000),
-        const std::chrono::milliseconds &serial_timeout =
-            std::chrono::milliseconds(100),
-        const std::string &port = "",
-        std::function<void(const std::vector<BelugaNeighbor> &)>
-            neighbor_update_cb = nullptr,
-        std::function<void(const std::vector<BelugaNeighbor> &)>
-            range_updates_cb = nullptr,
-        std::function<void(const RangeEvent &)> range_event_cb = nullptr,
-        std::function<int(const char *, va_list)> logger = nullptr);
+    void
+    _initialize(const BelugaSerialAttributes &attr = BelugaSerialAttributes{});
 
     void _log(const char *msg, ...);
 
