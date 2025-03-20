@@ -260,9 +260,19 @@ static ssize_t get_seen_list_index(uint16_t uuid) {
  */
 bool in_seen_list(uint16_t uuid) { return get_seen_list_index(uuid) != -1; }
 
+/**
+ * Marks a node as updated when evaluating BLE signal strength
+ */
 #define EVAL_STRENGTH()                                                        \
     COND_CODE_1(IS_ENABLED(CONFIG_BELUGA_EVAL_BLE_STRENGTH),                   \
                 (seen_list[index].update_flag = true), ((void)0))
+
+/**
+ * Generic code for inserting a node into the neighbor list
+ *
+ * @param[in] evict_call A variable or function return value to set index to
+ * when evicting a node
+ */
 #define INSERT_NODE(evict_call)                                                \
     do {                                                                       \
         ssize_t index = get_seen_list_index(0);                                \
@@ -295,7 +305,8 @@ bool in_seen_list(uint16_t uuid) { return get_seen_list_index(uuid) != -1; }
 #endif
 
 /**
- * Inserts a new neighbor into the neighbor list
+ * Inserts a new neighbor into the neighbor list using the index round-robin
+ * method
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
@@ -314,6 +325,12 @@ static void RR_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 #define RSSI_FUNC_NAME insert_into_seen_list
 #endif
 
+/**
+ * Searches the neighbor list for the neighbor with the smallest RSSI
+ * @param[in] rssi The RSSI of the scanned node
+ * @return index of the smallest RSSI
+ * @return -1 if all the RSSI values are larger than the input RSSI value
+ */
 static ssize_t find_smallest_rssi(int8_t rssi) {
     ssize_t evict_index = -1;
     int8_t lowest_rssi = rssi;
@@ -329,7 +346,7 @@ static ssize_t find_smallest_rssi(int8_t rssi) {
 }
 
 /**
- * Inserts a new neighbor into the neighbor list
+ * Inserts a new neighbor into the neighbor list and evicts based on RSSI
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
@@ -348,6 +365,11 @@ static void RSSI_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 #endif
 
 #include <math.h>
+
+/**
+ * Finds the node with the longest range
+ * @return index of the node with the longest range
+ */
 static ssize_t find_largest_range(void) {
     ssize_t evict_index = -1;
     float largest_range = -1.0f;
@@ -363,7 +385,7 @@ static ssize_t find_largest_range(void) {
 }
 
 /**
- * Inserts a new neighbor into the neighbor list
+ * Inserts a new neighbor into the neighbor list and evicts based on range
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
@@ -380,6 +402,10 @@ static void RANGE_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 #define BLE_TS_FUNC_NAME insert_into_seen_list
 #endif
 
+/**
+ * Finds the least recently scanned node
+ * @return index of the least recently scanned node
+ */
 static ssize_t find_oldest_ble_ts(void) {
     ssize_t evict_index = -1;
     int64_t timestamp = k_uptime_get();
@@ -394,6 +420,12 @@ static ssize_t find_oldest_ble_ts(void) {
     return evict_index;
 }
 
+/**
+ * Inserts a new neighbor into the neighbor list and evicts based on BLE
+ * timestamp
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
 void BLE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi) {
     INSERT_NODE(find_oldest_ble_ts());
 }
@@ -407,6 +439,10 @@ void BLE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi) {
 #define RANGE_TS_FUNC_NAME insert_into_seen_list
 #endif
 
+/**
+ * Finds the node that has the oldest range value
+ * @return index of the node with the oldest range value
+ */
 static ssize_t find_oldest_range_ts(void) {
     ssize_t evict_index = -1;
     int64_t timestamp = k_uptime_get();
@@ -421,14 +457,30 @@ static ssize_t find_oldest_range_ts(void) {
     return evict_index;
 }
 
+/**
+ * Inserts a new neighbor into the neighbor list and evicts based on range
+ * timestamp
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
 void RANGE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi) {
     INSERT_NODE(find_oldest_range_ts());
 }
 #endif
 
 #if IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+
+/**
+ * The current node eviction policy
+ */
 static enum node_eviction_policy policy = EVICT_POLICY_RR;
 
+/**
+ * Inserts a new neighbor into the neighbor list and evicts based on the current
+ * eviction policy
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
 static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
     switch (policy) {
     case EVICT_POLICY_RR:
@@ -451,6 +503,10 @@ static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
     }
 }
 
+/**
+ * Updates the eviction policy
+ * @param[in] policy The new policy
+ */
 void set_node_eviction_policy(enum node_eviction_policy new_policy) {
     if (new_policy >= EVICT_POLICY_INVALID) {
         return;
@@ -458,6 +514,15 @@ void set_node_eviction_policy(enum node_eviction_policy new_policy) {
     policy = new_policy;
 }
 
+/**
+ * Prints the eviction policy in human readable text
+ * @param[in] comms Pointer to the comms instance
+ * @return 0 upon success
+ * @return -EINVAL if input parameters are invalid
+ * @return -EFAULT if the current eviction policy is unknown
+ * @return -ENOTSUP if disabled
+ * @return negative error code otherwise
+ */
 int print_eviction_scheme(const struct comms *comms) {
     struct beluga_msg msg = {.type = START_EVENT};
     int ret = 0;

@@ -381,17 +381,35 @@ UNUSED static void load_power_amplifiers(const struct comms *comms) {
     SETTINGS_PRINT(comms, "Range Extension: %d", pwramp);
 }
 
+/**
+ * Load the format without printing the format value
+ * @param[in] comms Pointer to the comms instance
+ */
 static void load_format_no_msg(const struct comms *comms) {
     int32_t format = retrieveSetting(BELUGA_OUT_FORMAT);
     set_format(comms, (enum comms_out_format_mode)format);
 }
 
-// UNUSED static void load_eviction_scheme(const struct comms *comms) {
-//     int32_t scheme = retrieveSetting(BELUGA_EVICTION_SCHEME);
-//
-//     set_node_eviction_policy(scheme);
-//     CUSTOM_INIT_MSG(comms, print_eviction_scheme);
-// }
+#if IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
+/**
+ * Loads the eviction scheme setting and prints what eviction policy is
+ * in use.
+ * @param[in] comms Pointer to the comms instance
+ */
+UNUSED static void load_eviction_scheme(const struct comms *comms) {
+    int32_t scheme = retrieveSetting(BELUGA_EVICTION_SCHEME);
+
+    set_node_eviction_policy(scheme);
+    CUSTOM_INIT_MSG(comms, print_eviction_scheme);
+}
+#else
+/**
+ * Loads the eviction scheme setting and prints what eviction policy is
+ * in use.
+ * @param[in] comms Pointer to the comms instance
+ */
+#define load_eviction_scheme(...) (void)0
+#endif
 
 /**
  * Load all the settings, initialize all the states, and display what the
@@ -433,9 +451,8 @@ static void load_settings(const struct comms *comms) {
     if (IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION)) {
         load_power_amplifiers(comms);
     }
-    if (IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)) {
-        load_eviction_scheme(comms);
-    }
+    load_eviction_scheme(comms);
+
     SETTINGS_BREAK(comms);
 }
 
