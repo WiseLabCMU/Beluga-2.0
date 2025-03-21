@@ -404,7 +404,8 @@ class SerialBase {
      * @return The number of bytes read
      * @throws PortNotOpenError if the port is not open
      */
-    size_t read_until(std::vector<uint8_t> &b, const std::vector<uint8_t> &expected = {'\n'},
+    size_t read_until(std::vector<uint8_t> &b,
+                      const std::vector<uint8_t> &expected = {'\n'},
                       size_t len = 0);
 
     /**

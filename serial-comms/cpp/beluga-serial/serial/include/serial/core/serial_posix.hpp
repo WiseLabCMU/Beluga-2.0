@@ -18,6 +18,11 @@
 #include <string>
 
 namespace SerialInternal {
+
+/**
+ * Serial port class POSIX implementation. Serial port configuration is done
+ * with termios and fcntl. Runs on Linux and many other Un*x like systems.
+ */
 class SerialPosix : public SerialBase {
   public:
     explicit SerialPosix(const SerialAttributes &attr = SerialAttributes{})

@@ -194,7 +194,9 @@ size_t SerialBase::read_all(std::vector<uint8_t> &b) {
     return read(b, in_waiting());
 }
 
-size_t SerialBase::read_until(std::vector<uint8_t> &b, const std::vector<uint8_t> &expected, size_t len) {
+size_t SerialBase::read_until(std::vector<uint8_t> &b,
+                              const std::vector<uint8_t> &expected,
+                              size_t len) {
     size_t byte_read;
     size_t bytes_read = 0;
     std::vector<uint8_t> temp;
@@ -206,7 +208,8 @@ size_t SerialBase::read_until(std::vector<uint8_t> &b, const std::vector<uint8_t
             b.push_back(temp[0]);
             bytes_read++;
             if (bytes_read >= expected.size()) {
-                if (std::equal(expected.begin(), expected.end(), b.end() - expected.size())) {
+                if (std::equal(expected.begin(), expected.end(),
+                               b.end() - expected.size())) {
                     break;
                 }
             }
