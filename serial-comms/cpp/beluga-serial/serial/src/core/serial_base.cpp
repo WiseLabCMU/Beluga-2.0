@@ -194,20 +194,21 @@ size_t SerialBase::read_all(std::vector<uint8_t> &b) {
     return read(b, in_waiting());
 }
 
-size_t SerialBase::read_until(std::vector<uint8_t> &b, uint8_t c, size_t len) {
+size_t SerialBase::read_until(std::vector<uint8_t> &b, const std::vector<uint8_t> &expected, size_t len) {
     size_t byte_read;
-    uint8_t byte;
     size_t bytes_read = 0;
-
+    std::vector<uint8_t> temp;
     Timeout timeout(_timeout);
 
     while (true) {
-        byte_read = read_byte(&byte);
+        byte_read = read(temp, 1);
         if (byte_read > 0) {
-            b.push_back(byte);
+            b.push_back(temp[0]);
             bytes_read++;
-            if (byte == c) {
-                break;
+            if (bytes_read >= expected.size()) {
+                if (std::equal(expected.begin(), expected.end(), b.end() - expected.size())) {
+                    break;
+                }
             }
             if (len != 0 && bytes_read >= len) {
                 break;

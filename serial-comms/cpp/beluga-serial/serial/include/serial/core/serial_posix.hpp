@@ -33,8 +33,6 @@ class SerialPosix : public SerialBase {
     size_t in_waiting() override;
     size_t read(std::vector<uint8_t> &b, size_t n) override;
     size_t write(const std::vector<uint8_t> &b) override;
-    size_t read_byte(uint8_t *byte) override;
-    size_t write_byte(uint8_t byte) override;
     void flush() override;
     void reset_input_buffer() override;
     void reset_output_buffer() override;

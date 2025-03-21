@@ -399,12 +399,12 @@ class SerialBase {
      * Read until the expected sequence is found (line feed by default), the
      * size is exceeded or until a timeout occurs.
      * @param[in,out] b The buffer to read bytes into
-     * @param[in] c The expected sequence
+     * @param[in] expected The expected line ending sequence
      * @param[in] len The maximum number of bytes to read
      * @return The number of bytes read
      * @throws PortNotOpenError if the port is not open
      */
-    size_t read_until(std::vector<uint8_t> &b, uint8_t c = '\n',
+    size_t read_until(std::vector<uint8_t> &b, const std::vector<uint8_t> &expected = {'\n'},
                       size_t len = 0);
 
     /**
@@ -461,24 +461,6 @@ class SerialBase {
      * @throws SerialException if an error occurs
      */
     virtual size_t write(const std::vector<uint8_t> &b) = 0;
-
-    /**
-     * Read a single byte from the port.
-     * @param[in,out] byte Address to store the read byte
-     * @return Number of bytes read
-     * @throws PortNotOpenError if the port is not open
-     * @throws SerialException if an error occurs
-     */
-    virtual size_t read_byte(uint8_t *byte) = 0;
-
-    /**
-     * Write a single byte to the port.
-     * @param[in] byte The byte to write
-     * @return Number of bytes written
-     * @throws PortNotOpenError if the port is not open
-     * @throws SerialException if an error occurs
-     */
-    virtual size_t write_byte(uint8_t byte) = 0;
 
     /**
      * Flush the output buffer.
