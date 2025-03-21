@@ -422,22 +422,25 @@ class SerialBase {
      */
     [[nodiscard]] bool is_open() const noexcept;
 
-    // Platform defined functions
     /**
      * Open port with current settings.
-     * @throws SerialException if the port cannot be opened
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual void open() = 0;
 
     /**
      * Close the port.
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual void close() = 0;
 
     /**
      * Get the number of bytes in the input buffer.
      * @return The number of bytes available to read
-     * @throws SerialException if an error occurs
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual size_t in_waiting() = 0;
 
@@ -448,8 +451,8 @@ class SerialBase {
      * @param[in,out] b The buffer to read bytes into
      * @param[in] n The maximum number of bytes to read
      * @return Number of bytes read
-     * @throws PortNotOpenError if the port is not open
-     * @throws SerialException if an error occurs
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual size_t read(std::vector<uint8_t> &b, size_t n) = 0;
 
@@ -457,54 +460,61 @@ class SerialBase {
      * Output the given bytes over the serial port.
      * @param[in] b The bytes to transmit
      * @return The number of bytes written
-     * @throws PortNotOpenError if the port is not open
-     * @throws SerialTimeoutException if a write timeout occurs
-     * @throws SerialException if an error occurs
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual size_t write(const std::vector<uint8_t> &b) = 0;
 
     /**
      * Flush the output buffer.
-     * @throws PortNotOpenError if the port is not open
-     * @throws SerialException if an error occurs
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual void flush() = 0;
 
     /**
      * Reset the input buffer, discarding all data that is in the buffer.
-     * @throws PortNotOpenError if the port is not open
-     * @throws SerialException if an error occurs
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual void reset_input_buffer() = 0;
 
     /**
      * Reset the output buffer, discarding all data that is in the buffer.
-     * @throws PortNotOpenError if the port is not open
-     * @throws SerialException if an error occurs
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual void reset_output_buffer() = 0;
 
     /**
      * Read the terminal status line: Clear To Send (CTS)
      * @return `true` if CTS is enabled
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual bool cts() = 0;
 
     /**
      * Read the terminal status line: Data Set Ready (DSR)
      * @return `true` if DSR is enabled
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual bool dsr() = 0;
 
     /**
      * Read the terminal status line: Ring Indicator (RI)
      * @return `true` if RI is enabled
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual bool ri() = 0;
 
     /**
      * Read the terminal status line: Carrier Detect (CD)
      * @return `true` if CD is enabled
+     *
+     * @note This is required to be overridden by the derived class.
      */
     virtual bool cd() = 0;
 
