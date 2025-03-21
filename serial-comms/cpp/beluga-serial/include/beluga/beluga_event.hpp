@@ -1,11 +1,11 @@
 /**
  * @file beluga_event.hpp
  *
- * @brief
+ * @brief Event class for synchronization
  *
  * @date 1/30/25
  *
- * @author tom
+ * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
 #ifndef BELUGA_SERIAL_BELUGA_EVENT_HPP
@@ -15,13 +15,31 @@
 #include <mutex>
 
 namespace BelugaSerial {
+
+/// Event class for synchronization
 class Event {
   public:
     Event() = default;
 
+    /**
+     * Wait until the event is set
+     */
     void wait();
+
+    /**
+     * Set the event
+     */
     void set();
+
+    /**
+     * Clear the event
+     */
     void clear();
+
+    /**
+     * Check if the event is set
+     * @return `true` if the event is set, `false` otherwise
+     */
     bool is_set();
 
   private:
