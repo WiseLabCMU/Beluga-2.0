@@ -42,7 +42,6 @@ Project Structure
     ├── flash-tool
     │   └── src
     ├── Hardware
-    ├── JLink
     ├── ROS
     │   └── src
     │       ├── beluga
@@ -77,14 +76,6 @@ For additional help, refer to `Nordic's nRF Connect installation guide`_
 .. _VS Code: https://code.visualstudio.com/download
 .. _nRF Command Line Tools: https://www.nordicsemi.com/Products/Development-tools/nRF-Command-Line-Tools/Download?lang=en#infotabs
 .. _Nordic's nRF Connect installation guide: https://docs.nordicsemi.com/bundle/nrf-connect-desktop/page/index.html
-
-Option 2: Setup (Command line, Linux Only, Not recommended)
---------------------
-Run the following command:
-
-.. code-block:: bash
-
-    ./setup.sh
 
 Set up for ROS node dependencies (Tested on ROS Humble)
 -------------------------------------------------------
