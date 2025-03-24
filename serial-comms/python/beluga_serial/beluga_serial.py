@@ -161,3 +161,44 @@ class BelugaSerial:
         if self._command_sent.is_set():
             self._command_sent.clear()
             self._response_queue.put(response)
+
+    def _process_reboot(self, payload):
+        self._range_queue.clear()
+        self._neighbor_queue.clear()
+        self._range_event_queue.clear()
+        self._neighbors.clear()
+        if self._reboot_done.is_set():
+            self._log("Beluga rebooted unexpectedly")
+        else:
+            self._reboot_done.set()
+
+    def __process_frames(self):
+        # TODO: Tasks running variable
+        while True:
+            frame: BelugaFrame = self._batch_queue.get()
+
+            match frame.type:
+                case FrameType.UPDATES:
+                    self._neighbors.update(frame.payload)
+                case FrameType.EVENT:
+                    self._publish_range_event(frame.payload)
+                case FrameType.DROP:
+                    self._neighbors.remove_neighbor(frame.payload)
+                case FrameType.RESPONSE:
+                    self._publish_response(frame.payload)
+                case FrameType.START:
+                    self._process_reboot(frame.payload)
+                case _:
+                    self._log("Invalid frame type")
+
+            self._publish_neighbor_update()
+            self._publish_range_updates()
+
+    def _process_frames(self):
+        # TODO: Tasks running variable
+        while True:
+            try:
+                self.__process_frames()
+            except Exception as e:
+                self._log(f"Uncaught exception: {e}")
+                # TODO: Figure out a way to crash entire program
