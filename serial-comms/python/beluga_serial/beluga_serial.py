@@ -235,3 +235,163 @@ class BelugaSerial:
                 # Probably rebooted
                 # TODO: Figure out a way to signal program that node rebooted
                 pass
+
+    # noinspection PyTypeChecker
+    def _send_command(self, command: bytes) -> str:
+        not_open: bool = False
+        try:
+            self._serial_lock.acquire()
+            self._serial.write(command)
+        except serial.PortNotOpenError:
+            not_open = True
+        finally:
+            self._serial_lock.release()
+            if not_open:
+                return 'Response timed out'
+
+        try:
+            self._command_sent.set()
+            response: str = self._response_queue.get(timeout=self._timeout)
+        except queue.Empty:
+            response = "Response timed out"
+        return response
+
+    def start_uwb(self):
+        return self._send_command(b"AT+STARTUWB\r\n")
+
+    def stop_uwb(self):
+        return self._send_command(b"AT+STOPUWB\r\n")
+
+    def start_ble(self):
+        return self._send_command(b"AT+STARTBLE\r\n")
+
+    def stop_ble(self):
+        return self._send_command(b"AT+STOPBLE\r\n")
+
+    def _setting(func):
+        def inner(self, value: Optional[Union[int, str]] = None):
+            at_command = func.__name__.upper()
+            if value is not None:
+                command = f"AT+{at_command} {value}\r\n".encode()
+            else:
+                command = f"AT+{at_command}\r\n".encode()
+            response = self._send_command(command)
+            func(self, response)
+            return response
+        return inner
+
+    @_setting
+    def id(self, new_id: Optional[Union[int, str]] = None):
+        if new_id.startswith("ID:") and new_id.endswith("OK"):
+            self._id = self._extract_id(new_id)
+
+    @_setting
+    def bootmode(self, mode: Optional[int] = None):
+        pass
+
+    @_setting
+    def rate(self, rate: Optional[int] = None):
+        pass
+
+    @_setting
+    def channel(self, channel: Optional[int] = None):
+        pass
+
+    def reset(self):
+        return self._send_command(b"AT+RESET\r\n")
+
+    @_setting
+    def timeout(self, timeout: Optional[int] = None):
+        pass
+
+    @_setting
+    def txpower(self, power: Optional[str] = None):
+        pass
+
+    @_setting
+    def streammode(self, mode: Optional[int] = None):
+        pass
+
+    @_setting
+    def twrmode(self, mode: Optional[int] = None):
+        pass
+
+    @_setting
+    def ledmode(self, mode: Optional[int] = None):
+        pass
+
+    def reboot(self):
+        response = ""
+        if self._usb_remains_open:
+            self._reboot_done.clear()
+            response = self._send_command(b"AT+REBOOT\r\n")
+            self._reboot_done.wait()
+        else:
+            self._reboot()
+        return response
+
+    @_setting
+    def pwramp(self, mode: Optional[int] = None):
+        pass
+
+    @_setting
+    def antenna(self, antenna: Optional[int] = None):
+        pass
+
+    def time(self):
+        return self._send_command(b"AT+TIME\r\n")
+
+    def _format(self, mode):
+        if mode is not None:
+            command = f"AT+FORMAT {mode}\r\n".encode()
+        else:
+            command = b"AT+FORMAT\r\n"
+        return self._send_command(command)
+
+    def deepsleep(self):
+        return self._send_command(b"AT+DEEPSLEEP\r\n")
+
+    @_setting
+    def datarate(self, rate: Optional[int] = None):
+        pass
+
+    @_setting
+    def preamble(self, length: Optional[int] = None):
+        pass
+
+    @_setting
+    def pulserate(self, rate: Optional[int] = None):
+        pass
+
+    @_setting
+    def phr(self, mode: Optional[int] = None):
+        pass
+
+    @_setting
+    def pac(self, size: Optional[int] = None):
+        pass
+
+    @_setting
+    def sfd(self, mode: Optional[int] = None):
+        pass
+
+    @_setting
+    def panid(self, pan: Optional[int] = None):
+        pass
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def _extract_id(self, response) -> int:
+        pass
+
+    def _reboot(self):
+        pass
+
+
+if __name__ == "__main__":
+    s = BelugaSerial()
+    s.bootmode()
