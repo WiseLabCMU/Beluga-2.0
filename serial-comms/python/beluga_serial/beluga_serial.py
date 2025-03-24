@@ -4,7 +4,7 @@ import os
 import signal
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional, Union, TextIO, Callable, Any, Tuple
+from typing import List, Dict, Optional, Union, TextIO, Callable, Any, Tuple, SupportsIndex
 import multiprocessing as mp
 import queue
 import time
@@ -13,6 +13,9 @@ import enum
 from .beluga_frame import BelugaFrame, FrameType
 from .beluga_neighbor import BelugaNeighborList
 from .beluga_queue import BelugaQueue
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor
+import functools
 
 TARGETS = [
     'CMU Beluga',
@@ -72,8 +75,6 @@ class BelugaSerial:
     _command_sent = mp.Event()
     _reboot_done = mp.Event()
 
-    _serial_lock = mp.RLock()
-
     def __init__(self, attr: Optional[BelugaSerialAttr] = None):
         if attr is None:
             attr = BelugaSerialAttr()
@@ -97,13 +98,13 @@ class BelugaSerial:
         for target in TARGETS:
             if target not in available_ports.keys():
                 continue
-            opened = self._open_port(target, attr, available_ports[target])
+            opened = self.__open_port(target, attr, available_ports[target])
             if opened and isinstance(self._serial, serial.Serial):
                 if not self._serial.is_open:
                     raise FileNotFoundError("Unable to open target")
                 break
 
-    def _open_port(self, target: str, attr: BelugaSerialAttr, ports: List[str]) -> bool:
+    def __open_port(self, target: str, attr: BelugaSerialAttr, ports: List[str]) -> bool:
         ret = False
         for port in ports:
             try:
@@ -217,13 +218,9 @@ class BelugaSerial:
 
         # TODO: Tasks running variable
         while True:
-            try:
-                self._serial_lock.acquire()
-                if self._serial.in_waiting > 0:
-                    buf = self._serial.read_all()
-                    rx += buf
-            finally:
-                self._serial_lock.release()
+            if self._serial.in_waiting > 0:
+                buf = self._serial.read_all()
+                rx += buf
             rx = self._process_rx_buffer(rx)
 
     def _read_serial(self):
@@ -236,18 +233,12 @@ class BelugaSerial:
                 # TODO: Figure out a way to signal program that node rebooted
                 pass
 
-    # noinspection PyTypeChecker
     def _send_command(self, command: bytes) -> str:
         not_open: bool = False
         try:
-            self._serial_lock.acquire()
             self._serial.write(command)
         except serial.PortNotOpenError:
-            not_open = True
-        finally:
-            self._serial_lock.release()
-            if not_open:
-                return 'Response timed out'
+            return 'Response timed out'
 
         try:
             self._command_sent.set()
@@ -318,6 +309,9 @@ class BelugaSerial:
 
     @_setting
     def ledmode(self, mode: Optional[int] = None):
+        pass
+
+    def _reboot(self):
         pass
 
     def reboot(self):
@@ -411,11 +405,107 @@ class BelugaSerial:
         return ret
 
 
-    def _extract_id(self, response) -> int:
-        pass
+    @staticmethod
+    def _extract_id(response: str) -> int:
+        digit = "".join([x for x in response if x.isdigit()])
+        return int(digit)
 
-    def _reboot(self):
-        pass
+    def _find_port_candidates(self, skip: List[str]) -> List[str]:
+        available_ports = self._find_ports(TARGETS)
+        candidates = []
+
+        for target in TARGETS:
+            if target in available_ports.keys():
+                continue
+            for port in available_ports[target]:
+                if port in skip:
+                    continue
+                candidates.append(port)
+        return candidates
+
+    def _open_port(self, port) -> bool:
+        ret = True
+        try:
+            self._log(f"Trying to connect to {port}")
+            self._serial.close()
+            self._serial.port = port
+            self._serial.open()
+        except serial.SerialException as e:
+            self._serial.close()
+            self._log(e)
+            ret = False
+        return ret
+
+    def _get_id_from_device(self) -> str:
+        command = b"AT+ID\r\n"
+        time.sleep(OPEN_DELAY)
+        try:
+            self._serial.write(command)
+        except serial.SerialException as e:
+            if str(e).endswith("5"):
+                return ""
+            raise
+        time.sleep(OPEN_DELAY)
+        response = self._serial.read_all()
+
+        while True:
+            start, size, _ = BelugaFrame.frame_present(response)
+            if start < 0:
+                self._serial.close()
+                return ""
+
+            frame = BelugaFrame.extract_frame(response, start)
+            if frame.type == FrameType.RESPONSE:
+                if frame.payload.startswith("ID:"):
+                    return frame.payload
+            response = response[start + size:]
+
+    def __reconnect(self):
+        state = self.ReconnectionStates.RECONNECT_FIND
+        skip = []
+        index: SupportsIndex = 0
+        port: str = ""
+        id_resp: str = ""
+        ports = []
+
+        while state != self.ReconnectionStates.RECONNECT_DONE:
+            match state:
+                case self.ReconnectionStates.RECONNECT_FIND:
+                    ports = self._find_port_candidates(skip)
+                    index = 0
+                    port = ports[index]
+                    state = self.ReconnectionStates.RECONNECT_SLEEP if not ports else self.ReconnectionStates.RECONNECT_CONNECT
+                case self.ReconnectionStates.RECONNECT_CONNECT:
+                    opened = self._open_port(port)
+                    state = self.ReconnectionStates.RECONNECT_GET_ID if opened else self.ReconnectionStates.RECONNECT_NEXT
+                case self.ReconnectionStates.RECONNECT_GET_ID:
+                    id_resp = self._get_id_from_device()
+                    state = self.ReconnectionStates.RECONNECT_NEXT if not id_resp else self.ReconnectionStates.RECONNECT_CHECK_ID
+                case self.ReconnectionStates.RECONNECT_CHECK_ID:
+                    id_ = self._extract_id(id_resp)
+                    state = self.ReconnectionStates.RECONNECT_DONE if self._id == id_ else self.ReconnectionStates.RECONNECT_UPDATE_SKIPS
+                case self.ReconnectionStates.RECONNECT_SLEEP:
+                    time.sleep(OPEN_DELAY)
+                    state = self.ReconnectionStates.RECONNECT_FIND
+                case self.ReconnectionStates.RECONNECT_UPDATE_SKIPS:
+                    self._serial.close()
+                    skip.append(port)
+                    state = self.ReconnectionStates.RECONNECT_NEXT
+                case self.ReconnectionStates.RECONNECT_NEXT:
+                    index += 1
+                    state = self.ReconnectionStates.RECONNECT_SLEEP if index >= len(ports) else self.ReconnectionStates.RECONNECT_CONNECT
+                case _:
+                    self._log("Reached invalid connection state")
+                    assert False
+        self._log(f"Connected to {port}")
+
+    def _reconnect(self):
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(functools.partial(self.__reconnect))
+            try:
+                future.result(timeout=30.0)
+            except TimeoutError:
+                raise RuntimeError("Reconnection timed out")
 
 
 if __name__ == "__main__":
