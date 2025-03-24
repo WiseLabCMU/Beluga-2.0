@@ -1,11 +1,11 @@
 /**
  * @file beluga.hpp
  *
- * @brief
+ * @brief ROS2 Node for Beluga
  *
  * @date 1/17/25
  *
- * @author tom
+ * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
 #ifndef BELUGA_BELUGA_HPP
@@ -52,7 +52,11 @@
 
 using namespace std::chrono_literals;
 
+/// ROS2 Node for Beluga
 class Beluga : public rclcpp::Node {
+    /**
+     * Attributes for BelugaSerial
+     */
     const BelugaSerial::BelugaSerialAttributes attr = {
         .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
         .range_updates_cb = RANGE_UPDATE_CB,
@@ -61,16 +65,35 @@ class Beluga : public rclcpp::Node {
                                std::placeholders::_1, std::placeholders::_2)};
 
   public:
+    /**
+     * Constructor
+     */
     Beluga() : Node("beluga"), _serial(attr) {
+        // Neighbor list publisher name
         this->declare_parameter("neighbors_name", "neighbor_list");
+
+        // Range updates publisher name
         this->declare_parameter("ranges_name", "range_updates");
+
+        // Range events publisher name
         this->declare_parameter("exchange_name", "range_exchanges");
         this->declare_parameter("history_depth", 10);
+
+        // AT Command service topic name
         this->declare_parameter("service_topic", "at_command");
         this->declare_parameter("port", "");
         this->declare_parameter("config", "");
+
+        // Timer period for neighbor list publisher (if using the timed
+        // publisher)
         this->declare_parameter("neighbor_period", 100);
+
+        // Timer period for range updates publisher (if using the timed
+        // publisher)
         this->declare_parameter("ranging_period", 100);
+
+        // Timer period for range events publisher (if using the timed
+        // publisher)
         this->declare_parameter("events_period", 100);
 
         int64_t qos = this->get_parameter("history_depth").as_int();

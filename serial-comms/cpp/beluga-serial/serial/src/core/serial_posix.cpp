@@ -198,21 +198,6 @@ size_t SerialPosix::write(const std::vector<uint8_t> &b) {
     return b.size() - d.size();
 }
 
-size_t SerialPosix::read_byte(uint8_t *byte) {
-    if (!_is_open) {
-        throw PortNotOpenError();
-    }
-    struct timeval tv = {
-        .tv_sec = 0,
-        .tv_usec = 0,
-    };
-    return read_port(fd, byte, 1, &tv);
-}
-
-size_t SerialPosix::write_byte(uint8_t byte) {
-    return write_port(fd, &byte, 1);
-}
-
 void SerialPosix::flush() {
     if (!_is_open) {
         throw PortNotOpenError();

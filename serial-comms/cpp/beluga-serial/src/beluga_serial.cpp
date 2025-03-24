@@ -22,14 +22,15 @@ namespace fs = std::filesystem;
 
 namespace BelugaSerial {
 
-static const target_pair cmu_beluga = {"CMU", "Beluga"};
-static const target_pair segger_jlink = {"SEGGER", "J-Link"};
+static const BelugaSerial::target_pair cmu_beluga = {"CMU", "Beluga"};
+static const BelugaSerial::target_pair segger_jlink = {"SEGGER", "J-Link"};
 
-static const std::vector<target_pair> TARGETS = {cmu_beluga, segger_jlink};
+static const std::vector<BelugaSerial::target_pair> TARGETS = {cmu_beluga,
+                                                               segger_jlink};
 
 constexpr auto open_delay = 500ms;
 
-static const std::map<target_pair, bool> USB_STILL_ALIVE = {
+static const std::map<BelugaSerial::target_pair, bool> USB_STILL_ALIVE = {
     {cmu_beluga, false}, {segger_jlink, true}};
 
 FileNotFoundError::FileNotFoundError(const char *msg) { _msg = msg; }
@@ -50,7 +51,8 @@ void BelugaSerial::_initialize(const BelugaSerialAttributes &attr) {
     _serial.exclusive(true);
 
     if (attr.port.empty()) {
-        std::map<target_pair, std::vector<std::string>> avail_ports;
+        std::map<BelugaSerial::target_pair, std::vector<std::string>>
+            avail_ports;
         _find_ports(TARGETS, avail_ports);
         if (avail_ports.empty()) {
             throw FileNotFoundError("Unable to find a given target");
@@ -166,8 +168,9 @@ void BelugaSerial::_process_reboot(const std::string &) {
 }
 
 void BelugaSerial::_find_ports(
-    const std::vector<target_pair> &valid,
-    std::map<target_pair, std::vector<std::string>> &avail_ports) {
+    const std::vector<BelugaSerial::target_pair> &valid,
+    std::map<BelugaSerial::target_pair, std::vector<std::string>>
+        &avail_ports) {
     SerialTools::SysFsScanAttr attr = {
         .ttyXRUSB = false,
         .ttyAMA = false,
@@ -180,7 +183,8 @@ void BelugaSerial::_find_ports(
     avail_ports.clear();
 
     for (const auto &port : ports) {
-        target_pair target = {port.manufacturer(), port.product()};
+        BelugaSerial::target_pair target = {port.manufacturer(),
+                                            port.product()};
         for (const auto &valid_target : valid) {
             if (valid_target == target) {
                 avail_ports[target].push_back(port.device());
@@ -658,7 +662,7 @@ uint16_t BelugaSerial::_extract_id(const std::string &s) {
 
 std::vector<std::string>
 BelugaSerial::_find_port_candidates(const std::vector<std::string> &skip_list) {
-    std::map<target_pair, std::vector<std::string>> avail_ports;
+    std::map<BelugaSerial::target_pair, std::vector<std::string>> avail_ports;
     std::vector<std::string> candidates;
     BelugaSerial::_find_ports(TARGETS, avail_ports);
 

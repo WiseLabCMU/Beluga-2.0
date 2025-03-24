@@ -1,11 +1,11 @@
 /**
  * @file serial_common.h
  *
- * @brief
+ * @brief Common definitions for serial communication.
  *
  * @date 1/28/25
  *
- * @author tom
+ * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
 #ifndef BELUGA_FRAME_SERIAL_COMMON_H
@@ -15,67 +15,79 @@
 extern "C" {
 #endif
 
+/**
+ * Baud rate settings for serial communication.
+ */
 enum BaudRate {
-    BAUD_0,
-    BAUD_50,
-    BAUD_75,
-    BAUD_110,
-    BAUD_134,
-    BAUD_150,
-    BAUD_200,
-    BAUD_300,
-    BAUD_600,
-    BAUD_1200,
-    BAUD_1800,
-    BAUD_2400,
-    BAUD_4800,
-    BAUD_9600,
-    BAUD_19200,
-    BAUD_38400,
-    BAUD_57600,
-    BAUD_115200,
-    BAUD_230400,
-    BAUD_460800,
-    BAUD_500000,
-    BAUD_576000,
-    BAUD_921600,
-    BAUD_1000000,
-    BAUD_1152000,
-    BAUD_1500000,
-    BAUD_2000000,
-    BAUD_2500000,
-    BAUD_3000000,
-    BAUD_3500000,
-    BAUD_4000000,
-    BAUD_DEFAULT = BAUD_115200,
-    BAUD_INVALID,
+    BAUD_0,                     ///< Hangup
+    BAUD_50,                    ///< 50 baud
+    BAUD_75,                    ///< 75 baud
+    BAUD_110,                   ///< 110 baud
+    BAUD_134,                   ///< 134 baud
+    BAUD_150,                   ///< 150 baud
+    BAUD_200,                   ///< 200 baud
+    BAUD_300,                   ///< 300 baud
+    BAUD_600,                   ///< 600 baud
+    BAUD_1200,                  ///< 1200 baud
+    BAUD_1800,                  ///< 1800 baud
+    BAUD_2400,                  ///< 2400 baud
+    BAUD_4800,                  ///< 4800 baud
+    BAUD_9600,                  ///< 9600 baud
+    BAUD_19200,                 ///< 19200 baud
+    BAUD_38400,                 ///< 38400 baud
+    BAUD_57600,                 ///< 57600 baud
+    BAUD_115200,                ///< 115200 baud
+    BAUD_230400,                ///< 230400 baud
+    BAUD_460800,                ///< 460800 baud
+    BAUD_500000,                ///< 500000 baud
+    BAUD_576000,                ///< 576000 baud
+    BAUD_921600,                ///< 921600 baud
+    BAUD_1000000,               ///< 1000000 baud
+    BAUD_1152000,               ///< 1152000 baud
+    BAUD_1500000,               ///< 1500000 baud
+    BAUD_2000000,               ///< 2000000 baud
+    BAUD_2500000,               ///< 2500000 baud
+    BAUD_3000000,               ///< 3000000 baud
+    BAUD_3500000,               ///< 3500000 baud
+    BAUD_4000000,               ///< 4000000 baud
+    BAUD_DEFAULT = BAUD_115200, ///< Default baud rate (115200 baud)
+    BAUD_INVALID,               ///< Last enumerator
 };
 
+/**
+ * Parity settings for serial communication.
+ */
 enum Parity {
-    PARITY_NONE,
-    PARITY_EVEN,
-    PARITY_ODD,
-    PARITY_MARK,
-    PARITY_SPACE,
-    PARITY_DEFAULT = PARITY_NONE,
-    PARITY_INVALID,
+    PARITY_NONE,                  ///< No parity
+    PARITY_EVEN,                  ///< Even parity
+    PARITY_ODD,                   ///< Odd parity
+    PARITY_MARK,                  ///< Mark parity
+    PARITY_SPACE,                 ///< Space parity
+    PARITY_DEFAULT = PARITY_NONE, ///< Default parity (no parity)
+    PARITY_INVALID,               ///< Last enumerator
 };
 
+/**
+ * Byte size settings for serial communication.
+ */
 enum ByteSize {
-    SIZE_5,
-    SIZE_6,
-    SIZE_7,
-    SIZE_8,
-    SIZE_DEFAULT = SIZE_8,
-    SIZE_INVALID,
+    SIZE_5,                ///< 5 data bits
+    SIZE_6,                ///< 6 data bits
+    SIZE_7,                ///< 7 data bits
+    SIZE_8,                ///< 8 data bits
+    SIZE_DEFAULT = SIZE_8, ///< Default byte size (8 data bits)
+    SIZE_INVALID,          ///< Last enumerator
 };
 
+/**
+ * Number of stop bits settings for serial communication.
+ */
 enum StopBits {
-    STOPBITS_1,
-    STOPBITS_1P5,
-    STOPBITS_2,
-    STOPBITS_DEFAULT = STOPBITS_1,
-    STOPBITS_INVALID,
+    STOPBITS_1,                    ///< 1 stop bit
+    STOPBITS_1P5,                  ///< 1.5 stop bits
+    STOPBITS_2,                    ///< 2 stop bits
+    STOPBITS_DEFAULT = STOPBITS_1, ///< Default stop bits (1 stop bit)
+    STOPBITS_INVALID,              ///< Last enumerator
 };
 
 #if defined(__cplusplus)
