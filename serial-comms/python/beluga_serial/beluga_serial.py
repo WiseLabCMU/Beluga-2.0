@@ -134,3 +134,30 @@ class BelugaSerial:
     def _log(self, msg: Any):
         if self._logger_cb is not None:
             self._logger_cb(msg)
+
+    def _publish_neighbor_update(self):
+        if self._neighbors.neighbor_update:
+            updates = self._neighbors.get_neighbors()
+            if self._neighbor_cb is None:
+                self._neighbor_queue.put(updates, False)
+            else:
+                self._neighbor_cb(updates)
+
+    def _publish_range_updates(self):
+        if self._neighbors.range_update:
+            updates = self._neighbors.get_updates()
+            if self._range_cb is None:
+                self._range_queue.put(updates, False)
+            else:
+                self._range_cb(updates)
+
+    def _publish_range_event(self, event):
+        if self._range_event_cb is None:
+            self._range_event_queue.put(event, False)
+        else:
+            self._range_event_cb(event)
+
+    def _publish_response(self, response):
+        if self._command_sent.is_set():
+            self._command_sent.clear()
+            self._response_queue.put(response)
