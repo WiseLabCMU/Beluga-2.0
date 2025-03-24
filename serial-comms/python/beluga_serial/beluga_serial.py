@@ -385,6 +385,32 @@ class BelugaSerial:
     def stop(self):
         pass
 
+    def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
+        ret = True
+        list_ = {}
+        try:
+            list_ = self._neighbor_queue.get(False)
+        except queue.Empty:
+            ret = False
+        return ret, list_
+
+    def get_ranges(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        list_ = {}
+        try:
+            list_ = self._range_queue.get(False)
+        except queue.Empty:
+            pass
+        return list_
+
+    def get_range_event(self) -> Dict[int, Dict[str, int]]:
+        ret = {}
+        try:
+            ret = self._range_event_queue.get(False)
+        except queue.Empty:
+            pass
+        return ret
+
+
     def _extract_id(self, response) -> int:
         pass
 
