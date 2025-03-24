@@ -202,3 +202,36 @@ class BelugaSerial:
             except Exception as e:
                 self._log(f"Uncaught exception: {e}")
                 # TODO: Figure out a way to crash entire program
+
+    def _process_rx_buffer(self, buf) -> bytes:
+        while True:
+            start, size, _ = BelugaFrame.frame_present(buf)
+            if start < 0:
+                return buf
+            frame = BelugaFrame.extract_frame(buf, start)
+            self._batch_queue.put(frame, False)
+            buf = buf[start + size:]
+
+    def __read_serial(self):
+        rx = b""
+
+        # TODO: Tasks running variable
+        while True:
+            try:
+                self._serial_lock.acquire()
+                if self._serial.in_waiting > 0:
+                    buf = self._serial.read_all()
+                    rx += buf
+            finally:
+                self._serial_lock.release()
+            rx = self._process_rx_buffer(rx)
+
+    def _read_serial(self):
+        # TODO: Tasks running variable
+        while True:
+            try:
+                self.__read_serial()
+            except serial.SerialException:
+                # Probably rebooted
+                # TODO: Figure out a way to signal program that node rebooted
+                pass
