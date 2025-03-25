@@ -19,7 +19,7 @@ def serial_command(func):
 class BelugaTerminal(cmd2.Cmd):
     intro = "Welcome to The Beluga Terminal Interface. Type help or ? to list commands.\n"
     prompt = "> "
-    _serial = BelugaSerial(BelugaSerialAttr(auto_connect=False, logger_cb=print))
+    _serial = BelugaSerial(BelugaSerialAttr(auto_connect=False))
     _neighbors = {}
     _ranges = {}
     _last_exchange = {}
