@@ -96,6 +96,12 @@ class BelugaSerial:
 
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=3)
 
+        self._time_resync: Optional[Callable[[None], None]] = None
+
+    def __del__(self):
+        self.stop()
+        self._tasks.shutdown()
+        self._serial.close()
 
     def _auto_connect(self, attr: BelugaSerialAttr):
         available_ports = self._find_ports(TARGETS)
@@ -178,7 +184,8 @@ class BelugaSerial:
             self._range_event_q.clear()
         if self._reboot_done.is_set():
             self._log("Beluga rebooted unexpectedly")
-            # TODO: Time sync callback???
+            if self._time_resync is not None:
+                self._tasks.submit(self._time_resync)
         else:
             self._reboot_done.set()
 
@@ -240,7 +247,8 @@ class BelugaSerial:
                 try:
                     self._log("Reconnect called from read serial")
                     self._reconnect()
-                    # TODO: Time sync???
+                    if self._time_resync is not None:
+                        self._tasks.submit(self._time_resync)
                 except RuntimeError as e:
                     self._log(str(e))
                     os.abort()
@@ -446,7 +454,6 @@ class BelugaSerial:
             pass
         return ret
 
-
     @staticmethod
     def _extract_id(response: str) -> int:
         digit = "".join([x for x in response if x.isdigit()])
@@ -537,7 +544,8 @@ class BelugaSerial:
                         state = self.ReconnectionStates.RECONNECT_NEXT
                     case self.ReconnectionStates.RECONNECT_NEXT:
                         index += 1
-                        state = self.ReconnectionStates.RECONNECT_SLEEP if index >= len(ports) else self.ReconnectionStates.RECONNECT_CONNECT
+                        state = self.ReconnectionStates.RECONNECT_SLEEP if index >= len(
+                            ports) else self.ReconnectionStates.RECONNECT_CONNECT
                     case _:
                         self._log("Reached invalid connection state")
                         assert False
@@ -580,9 +588,13 @@ class BelugaSerial:
     def find_ports(self) -> Dict[str, List[str]]:
         return self._find_ports(TARGETS)
 
+    def register_resync_cb(self, callback: Optional[Callable[[None], None]]):
+        self._time_resync = callback
+
 
 if __name__ == "__main__":
     from timeit import default_timer as timer
+
     s = BelugaSerial()
     s.start()
 
