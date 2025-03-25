@@ -11,6 +11,7 @@ class FrameType(IntEnum):
     EVENT = 2,
     DROP = 3,
     START = 4,
+    NO_TYPE = 5,
 
     def __str__(self):
         return f"{self.name} ({self.value})"

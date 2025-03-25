@@ -1,14 +1,11 @@
-import multiprocessing.queues as mp_queues
-import multiprocessing as mp
 from typing import Optional
 import queue
-import itertools
 
 
-class BelugaQueue(mp_queues.Queue):
+class BelugaQueue(queue.Queue):
     def __init__(self, maxsize: int = 1, update_old_items: bool = True):
         self._update = update_old_items
-        super().__init__(maxsize=maxsize, ctx=mp.get_context())
+        super().__init__(maxsize=maxsize)
 
     def put(self, obj, block: bool = True, timeout: Optional[float] = None) -> None:
         try:
@@ -30,9 +27,8 @@ class BelugaQueue(mp_queues.Queue):
         return
 
     def clear(self):
-        for _ in itertools.repeat(None, self.qsize()):
+        while not super().empty():
             try:
                 self.get_nowait()
             except queue.Empty:
-                # Queue is now empty
-                break
+                pass
