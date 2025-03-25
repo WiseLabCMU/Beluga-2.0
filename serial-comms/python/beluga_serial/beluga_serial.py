@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 from threading import Event, RLock
 import functools
 import inspect
+import os
 
 TARGETS = [
     'CMU Beluga',
@@ -165,7 +166,17 @@ class BelugaSerial:
             self._response_q.put(response)
 
     def _process_reboot(self, payload):
-        pass
+        if self._range_q is not None:
+            self._range_q.clear()
+        if self._neighbor_q is not None:
+            self._neighbor_q.clear()
+        if self._range_event_q is not None:
+            self._range_event_q.clear()
+        if self._reboot_done.is_set():
+            self._log("Beluga rebooted unexpectedly")
+            # TODO: Time sync callback???
+        else:
+            self._reboot_done.set()
 
     def __process_frames(self):
         while self._task_running:
@@ -194,7 +205,7 @@ class BelugaSerial:
                 self.__process_frames()
             except Exception as e:
                 self._log(f"Uncaught exception: {e}")
-                # TODO: Figure out a way to crash entire program
+                os.abort()
 
     def _process_rx_buffer(self, buf) -> bytes:
         while True:
@@ -219,10 +230,21 @@ class BelugaSerial:
             try:
                 self.__read_serial()
             except serial.SerialException:
+                self._serial.close()
                 # Probably rebooted
-                # TODO: Figure out a way to signal program that node rebooted
-                pass
+                time.sleep(OPEN_DELAY)
+                try:
+                    self._log("Reconnect called from read serial")
+                    self._reconnect()
+                    # TODO: Time sync???
+                except RuntimeError as e:
+                    self._log(str(e))
+                    os.abort()
+            except Exception as e:
+                self._log(f"An uncaught exception occurred in reading thread: {e}")
+                os.abort()
 
+    # noinspection PyTypeChecker
     def _send_command(self, cmd: Optional[str] = None, value: Optional[Union[int, str]] = None) -> str:
         if cmd is None:
             if value is not None:
@@ -441,6 +463,7 @@ class BelugaSerial:
                 case self.ReconnectionStates.RECONNECT_FIND:
                     ports = self._find_port_candidates(skip)
                     index = 0
+                    # noinspection PyTypeChecker
                     port = ports[index]
                     state = self.ReconnectionStates.RECONNECT_SLEEP if not ports else self.ReconnectionStates.RECONNECT_CONNECT
                 case self.ReconnectionStates.RECONNECT_CONNECT:
