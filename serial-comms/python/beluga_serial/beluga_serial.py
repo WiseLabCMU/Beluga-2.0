@@ -92,6 +92,8 @@ class BelugaSerial:
 
         self._serial_lock: RLock = RLock()
 
+        self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=3)
+
 
     def _auto_connect(self, attr: BelugaSerialAttr):
         available_ports = self._find_ports(TARGETS)
@@ -286,6 +288,7 @@ class BelugaSerial:
         response = self._send_command(value=new_id)
         if new_id is not None and response.endswith("OK"):
             self._id = self._extract_id(new_id)
+        return response
 
     def bootmode(self, mode: Optional[int] = None):
         return self._send_command(value=mode)
@@ -364,10 +367,49 @@ class BelugaSerial:
         return self._send_command(value=pan)
 
     def start(self):
-        pass
+        if self._task_running or not self._serial.is_open:
+            raise RuntimeError("Stop before calling start again")
+
+        self._task_running = True
+
+        self._processing_task = self._tasks.submit(self._process_frames)
+        self._rx_task = self._tasks.submit(self._read_serial)
+
+        self._format("2")
+        id_ = self.id()
+        self._id = self._extract_id(id_)
 
     def stop(self):
-        pass
+        max_retries = 10
+        if not self._task_running:
+            return
+
+        self._task_running = False
+
+        while True:
+            try:
+                self._rx_task.result(timeout=0.01)
+            except TimeoutError:
+                pass
+            else:
+                break
+
+        retries = 0
+        while retries < max_retries:
+            attempts = 0
+            while attempts < max_retries:
+                try:
+                    self._processing_task.result(timeout=0.01)
+                except TimeoutError:
+                    attempts += 1
+                else:
+                    break
+            if attempts >= max_retries:
+                frame = BelugaFrame(FrameType.NO_TYPE, "")
+                self._batch_queue.put(frame)
+                retries += 1
+        if retries >= max_retries:
+            raise RuntimeError("The processing task task is still hanging...")
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
         ret = True
