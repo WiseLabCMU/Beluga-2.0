@@ -318,7 +318,12 @@ class BelugaSerial:
         return self._send_command(value=mode)
 
     def _reboot(self):
-        pass
+        with self._serial_lock:
+            self._serial.write(b"AT+REBOOT\r\n")
+            self._serial.flush()
+            self._serial.close()
+            self._log("Called reconnect from reboot")
+            self._reconnect()
 
     def reboot(self):
         response = ""
