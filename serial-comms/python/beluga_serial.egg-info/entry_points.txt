@@ -1,0 +1,2 @@
+[console_scripts]
+beluga-miniterm = beluga_serial.app.terminal:main
