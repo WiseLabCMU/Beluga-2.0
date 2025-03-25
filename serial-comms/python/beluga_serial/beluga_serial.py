@@ -5,10 +5,11 @@ import queue
 import time
 from dataclasses import dataclass
 import enum
-from .beluga_frame import BelugaFrame, FrameType
-from .beluga_neighbor import BelugaNeighborList
-from .beluga_queue import BelugaQueue
+from beluga_frame import BelugaFrame, FrameType
+from beluga_neighbor import BelugaNeighborList
+from beluga_queue import BelugaQueue
 from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from threading import Event, RLock
 import functools
 import inspect
@@ -131,9 +132,9 @@ class BelugaSerial:
             name = f'{port.manufacturer} {port.product}'
             if name in targets:
                 if name in ret.keys():
-                    ret[name].append(port.device())
+                    ret[name].append(port.device)
                 else:
-                    ret[name] = [port.device()]
+                    ret[name] = [port.device]
         return ret
 
     def _log(self, msg: Any):
@@ -164,8 +165,8 @@ class BelugaSerial:
 
     def _publish_response(self, response):
         if self._command_sent.is_set():
-            self._command_sent.clear()
             self._response_q.put(response)
+            self._command_sent.clear()
 
     def _process_reboot(self, payload):
         if self._range_q is not None:
@@ -394,7 +395,7 @@ class BelugaSerial:
         while True:
             try:
                 self._rx_task.result(timeout=0.01)
-            except TimeoutError:
+            except FutureTimeoutError:
                 pass
             else:
                 break
@@ -405,7 +406,7 @@ class BelugaSerial:
             while attempts < max_retries:
                 try:
                     self._processing_task.result(timeout=0.01)
-                except TimeoutError:
+                except FutureTimeoutError:
                     attempts += 1
                 else:
                     break
@@ -413,6 +414,8 @@ class BelugaSerial:
                 frame = BelugaFrame(FrameType.NO_TYPE, "")
                 self._batch_queue.put(frame)
                 retries += 1
+            else:
+                break
         if retries >= max_retries:
             raise RuntimeError("The processing task task is still hanging...")
 
@@ -543,10 +546,21 @@ class BelugaSerial:
                 future = executor.submit(functools.partial(self.__reconnect))
                 try:
                     future.result(timeout=30.0)
-                except TimeoutError:
+                except FutureTimeoutError:
                     raise RuntimeError("Reconnection timed out")
 
 
 if __name__ == "__main__":
+    from timeit import default_timer as timer
     s = BelugaSerial()
-    s.bootmode()
+    s.start()
+
+    start = timer()
+    s.id()
+    end = timer()
+
+    print(end - start)
+
+    print(s.id())
+    s.stop()
+    print("Done")
