@@ -412,6 +412,15 @@ UNUSED static void load_eviction_scheme(const struct comms *comms) {
 #endif
 
 /**
+ * Load the verbosity setting
+ * @param[in] comms Pointer to the comms object
+ */
+static void load_verbose(const struct comms *comms) {
+    int32_t verbose = retrieveSetting(BELUGA_VERBOSE);
+    set_verbosity(comms, verbose == 1);
+}
+
+/**
  * Load all the settings, initialize all the states, and display what the
  * settings are
  */
@@ -452,6 +461,7 @@ static void load_settings(const struct comms *comms) {
         load_power_amplifiers(comms);
     }
     load_eviction_scheme(comms);
+    load_verbose(comms);
 
     SETTINGS_BREAK(comms);
 }
