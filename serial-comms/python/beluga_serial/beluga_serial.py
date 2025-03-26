@@ -88,6 +88,7 @@ class BelugaSerial:
         beluga.stop()
         ```
     """
+
     class ReconnectionStates(enum.Enum):
         RECONNECT_FIND = enum.auto()
         RECONNECT_SLEEP = enum.auto()
@@ -614,18 +615,66 @@ class BelugaSerial:
         return self._send_command(value=rate)
 
     def phr(self, mode: Optional[int] = None):
+        """
+        Sets or gets the UWB PHR of the Beluga node.
+
+        :param mode: The UWB PHR to set:
+            * None: Retrieve the current PHR (Default)
+            * Any value: The new UWB PHR
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=mode)
 
     def pac(self, size: Optional[int] = None):
+        """
+        Sets or gets the UWB PAC size of the Beluga node.
+
+        :param size: The UWB PAC size to set:
+            * None: Retrieve the current PAC size (Default)
+            * Any value: The new UWB PAC size
+        :type size: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=size)
 
     def sfd(self, mode: Optional[int] = None):
+        """
+        Sets or gets the UWB SFD of the Beluga node.
+
+        :param mode: The UWB SFD to set:
+            * None: Retrieve the current SFD (Default)
+            * 0: The standard SFD
+            * 1: Decawave's proprietary SFD
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=mode)
 
     def panid(self, pan: Optional[int] = None):
+        """
+        Sets or gets the UWB PAN ID of the Beluga node.
+
+        :param pan: The UWB PAN ID to set:
+            * None: Retrieve the current PAN ID (Default)
+            * Any value: The new UWB PAN ID
+        :type pan: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=pan)
 
     def start(self):
+        """
+        Starts the processing and receive tasks, sets up the node to transmit
+        in the proper mode, and ties the node ID to the instance of BelugaSerial.
+
+        :raises RuntimeError: if tasks are already running or if there is no serial connection to a Beluga node
+        :return: None
+        """
         if self._task_running or not self._serial.is_open:
             raise RuntimeError("Stop before calling start again")
 
@@ -639,6 +688,11 @@ class BelugaSerial:
         self._id = self._extract_id(id_)
 
     def stop(self):
+        """
+        Stops the processing and receive tasks
+        :raises RuntimeError: if it is unable to stop the processing task
+        :return: None
+        """
         max_retries = 10
         if not self._task_running:
             return
@@ -673,6 +727,20 @@ class BelugaSerial:
             raise RuntimeError("The processing task task is still hanging...")
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
+        """
+        Retrieves the current neighbor list.
+
+        :return: True and a dictionary of neighbors if there was a neighbor list update. False and an empty dictionary
+        otherwise.
+        :rtype: Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]
+
+        :raises AttributeError: if neighbor updates cannot be received through this function
+        """
+
+        if self._neighbor_q is None:
+            raise AttributeError(
+                "Cannot get neighbor updates from `get_neighbors()`. Updates are submitted to the callback function")
+
         ret = True
         list_ = {}
         try:
@@ -682,6 +750,19 @@ class BelugaSerial:
         return ret, list_
 
     def get_ranges(self) -> Dict[int, Dict[str, Union[int, float]]]:
+        """
+        Retrieves the updated ranges of the list.
+
+        :return: The range updates of the neighbors
+        :rtype: Dict[int, Dict[str, Union[int, float]]]
+
+        :raises AttributeError: if range updates cannot be received through this function
+        """
+
+        if self._range_q is None:
+            raise AttributeError(
+                "Cannot get range updates from `get_ranges()`. Updates are submitted to the callback function")
+
         list_ = {}
         try:
             list_ = self._range_q.get(False)
@@ -690,6 +771,19 @@ class BelugaSerial:
         return list_
 
     def get_range_event(self) -> Dict[int, Dict[str, int]]:
+        """
+        Retrieve range exchange events.
+
+        :return: The range events
+        :rtype: Dict[int, Dict[str, int]]
+
+        :raises AttributeError: if range events cannot be received through this function
+        """
+
+        if self._range_event_q is None:
+            raise AttributeError(
+                "Cannot get range events from `get_range_event()`. Events are submitted to the callback function")
+
         ret = {}
         try:
             ret = self._range_event_q.get(False)
@@ -807,6 +901,15 @@ class BelugaSerial:
                     raise RuntimeError("Reconnection timed out")
 
     def open_target(self, port: str):
+        """
+        Opens the given port if the port is linked to a valid target. Additionally,
+        automatically starts the tasks if the port is successfully opened.
+
+        :param port: The serial port to open
+        :return: None
+
+        :raises FileNotFoundError: Port is not associated with a valid target
+        """
         target_ = None
         targets = self.find_ports()
         for target in targets:
@@ -825,13 +928,30 @@ class BelugaSerial:
         self.start()
 
     def close(self):
+        """
+        Stop the processing and receive tasks and close the serial port
+        :return: None
+        """
         self.stop()
         self._serial.close()
 
     def find_ports(self) -> Dict[str, List[str]]:
+        """
+        Find the ports associated with valid targets
+        :return: Valid targets
+        :rtype: Dict[str, List[str]]
+        """
         return self._find_ports(TARGETS)
 
     def register_resync_cb(self, callback: Optional[Callable[[None], None]]):
+        """
+        Registers a time resynchronization callback. This is called whenever the node reboots.
+
+        :param callback: The function entry for time resynchronization. If None, this unregisters the resynchronization method.
+
+        :type callback: Optional[Callable[[None], None]]
+        :return: None
+        """
         self._time_resync = callback
 
 
