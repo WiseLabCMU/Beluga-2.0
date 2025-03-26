@@ -523,6 +523,8 @@ class BelugaSerial:
             self._reboot_done.wait()
         else:
             self._reboot()
+        if self._time_resync is not None:
+            self._tasks.submit(self._time_resync)
         return response
 
     def pwramp(self, mode: Optional[int] = None):
