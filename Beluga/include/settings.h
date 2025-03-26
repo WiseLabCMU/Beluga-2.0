@@ -63,7 +63,8 @@
     FUNC(UWB_PAC, 0)                                                           \
     FUNC(UWB_NSSFD, 0)                                                         \
     FUNC(PAN_ID, 0xDECA)                                                       \
-    FUNC(EVICTION_SCHEME, 1)
+    FUNC(EVICTION_SCHEME, 1)                                                   \
+    FUNC(VERBOSE, 0)
 
 /**
  * Helper for generating the enumerators for beluga settings
