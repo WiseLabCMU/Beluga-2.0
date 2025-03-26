@@ -23,14 +23,6 @@ Callback Functions
 BelugaSerial allows the use of callback functions as an alternative to queues. However, keep in mind that callback
 functions should have limited execution time, as they are called directly from the processing task.
 
-.. warning::
-    BelugaSerial uses the multiprocessing library to reduce response and processing times. If the callback function
-    relies on something tied to the parent process, using a callback is not recommended.
-
-    For example, if you're using this in a ROS node that publishes ranges, and you pass a publisher method as a
-    callback, nothing will be published. This is because the task tries to publish ranges in a separate process,
-    and ROS expects all messages to be published in the same process that ROS and the publishers were initialized in.
-
 Installing
 ----------
 

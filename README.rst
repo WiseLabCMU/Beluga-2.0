@@ -56,10 +56,9 @@ Project Structure
 
 Setup and Building
 ==================
-It is recommended to use the nRF Connect extension in Visual Studio Code to build.
+It is recommended to use the nRF Connect extension in Visual Studio Code to build. If you do not wish to install the SDK
+using VS code, please refer to these `instructions`_.
 
-Option 1: Setup (VS code, All platforms)
----------------
 1. Download and install `nRF Connect for Desktop`_
 2. Download and install `VS Code`_
 3. Download and install `nRF Command Line Tools`_
@@ -76,6 +75,7 @@ For additional help, refer to `Nordic's nRF Connect installation guide`_
 .. _VS Code: https://code.visualstudio.com/download
 .. _nRF Command Line Tools: https://www.nordicsemi.com/Products/Development-tools/nRF-Command-Line-Tools/Download?lang=en#infotabs
 .. _Nordic's nRF Connect installation guide: https://docs.nordicsemi.com/bundle/nrf-connect-desktop/page/index.html
+.. _instructions: https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/installation/install_ncs.html
 
 Set up for ROS node dependencies (Tested on ROS Humble)
 -------------------------------------------------------

@@ -51,7 +51,7 @@ class FileNotFoundError : std::exception {
 };
 
 /**
- * Constructor Attributes for BelugaSerial
+ * Configuration attributes for BelugaSerial
  */
 struct BelugaSerialAttributes {
     /**
@@ -112,6 +112,7 @@ struct BelugaSerialAttributes {
     std::function<int(const char *, va_list)> logger_cb = nullptr;
 };
 
+/// Manager for serial communication with Beluga nodes
 class BelugaSerial {
   public:
     /**

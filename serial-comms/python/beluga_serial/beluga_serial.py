@@ -1,301 +1,255 @@
-from io import TextIOWrapper
-import sys
-import os
-import signal
+#!/user/bin/env python
+#
+# Abstraction for serial communications with Beluga nodes
+#
+# Author: Tom Schmitz \<tschmitz@andrew.cmu.edu\>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
+
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional, Union, TextIO, Callable, Any, Tuple
-import multiprocessing as mp
-import multiprocessing.queues as mp_queues
+from typing import List, Dict, Optional, Union, Callable, Any, Tuple, SupportsIndex
 import queue
 import time
-import itertools
+from dataclasses import dataclass
+import enum
 from .beluga_frame import BelugaFrame, FrameType
+from .beluga_neighbor import BelugaNeighborList
+from .beluga_queue import BelugaQueue
+from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import TimeoutError as FutureTimeoutError
+from threading import Event, RLock
+import functools
+import inspect
+import os
 
 TARGETS = [
     'CMU Beluga',
     'SEGGER J-Link'
 ]
+OPEN_DELAY = 0.5
+USB_STILL_ALIVE: Dict[str, bool] = {
+    'CMU Beluga': False,
+    'SEGGER J-Link': True,
+}
 
 
-class BelugaEntryError(Exception):
-    def __init__(self, msg: str, header: bool = False):
-        self.header = header
-        super().__init__(msg)
+@dataclass(init=True)
+class BelugaSerialAttr:
+    """
+    Attributes for configuring BelugaSerial
 
-
-class BelugaNeighbor:
-    def __init__(self, neighbor: dict):
-        self._id: int = neighbor["ID"]
-        self._range: float = 0.0
-        self._rssi: int = 0
-        self._time: int = 0
-        self._exchange_id: int = 0
-        self._updated = False
-        self.update(neighbor)
-
-    def __iter__(self):
-        return iter([("RANGE", self._range), ("RSSI", self._rssi), ("TIMESTAMP", self._time), ("EXCHANGE", self._exchange_id)])
-
-    @property
-    def id(self) -> int:
-        return self._id
-
-    @property
-    def range(self) -> float:
-        return self._range
-
-    @property
-    def rssi(self) -> int:
-        return self._rssi
-
-    @property
-    def time(self) -> int:
-        return self._time
-
-    @property
-    def exchange(self) -> int:
-        return self._exchange_id
-
-    @property
-    def updated(self) -> bool:
-        return self._updated
-
-    @updated.setter
-    def updated(self, update: bool):
-        self._updated = update
-
-    def update(self, neighbor: dict):
-        self._range = neighbor["RANGE"]
-        self._rssi = neighbor["RSSI"]
-        self._time = neighbor["TIMESTAMP"]
-        if "EXCHANGE" in neighbor.keys():
-            self._exchange_id = neighbor["EXCHANGE"]
-        self._updated = True
-
-
-class BelugaNeighborList:
-    def __init__(self):
-        self._list: Dict[int, BelugaNeighbor] = {}
-        self._neighbors_update: bool = False
-        self._range_update: bool = False
-        return
-
-    def update(self, updates: List[Dict[str, Union[int, float]]]):
-        for entry in updates:
-            if entry["ID"] not in self._list.keys():
-                self._list[entry["ID"]] = BelugaNeighbor(entry)
-                self._range_update = True
-                self._neighbors_update = True
-            else:
-                self._list[entry["ID"]].update(entry)
-                self._range_update = True
-
-    def remove_neighbor(self, neighbor_id: int):
-        if neighbor_id in self._list.keys():
-            del self._list[neighbor_id]
-            self._neighbors_update = True
-
-    def get_updates(self) -> Dict[int, Dict[str, Union[int, float]]]:
-        ret = {}
-        for x in self._list.values():
-            if x.updated:
-                ret[x.id] = dict(x)
-                x.updated = False
-        self._range_update = False
-        return ret
-
-    def get_neighbors(self) -> Dict[int, Dict[str, Union[int, float]]]:
-        ret = {}
-        for x in self._list.values():
-            ret[x.id] = dict(x)
-        self._neighbors_update = False
-        return ret
-
-    def clear(self):
-        if self._list:
-            self._list.clear()
-            self._neighbors_update = True
-            self._range_update = False
-
-    @property
-    def neighbor_update(self) -> bool:
-        return self._neighbors_update
-
-    @property
-    def range_update(self) -> bool:
-        return self._range_update
-
-
-
-class BelugaQueue(mp_queues.Queue):
-    def __init__(self, maxsize: int = 1, update_old_items: bool = True):
-        self._update = update_old_items
-        super().__init__(maxsize=maxsize, ctx=mp.get_context())
-
-    def put(self, obj, block: bool = True, timeout: Optional[float] = None) -> None:
-        try:
-            super().put(obj, block, timeout)
-        except queue.Full:
-            try:
-                item = self.get_nowait()
-            except queue.Empty:
-                # Queue item got removed between the put and the get operations. Place new item
-                pass
-            else:
-                if self._update:
-                    # This will update the existing keys, add new key-value pairs if not present, and keep keys that
-                    # are not present in the new obj unchanged
-                    item.update(obj)
-                    obj = item
-                # else drop the old item...
-            super().put(obj, block, timeout)
-        return
-
-    def clear(self):
-        for _ in itertools.repeat(None, self.qsize()):
-            try:
-                self.get_nowait()
-            except queue.Empty:
-                # Queue is now empty
-                break
+    Attributes:
+        port (Optional[str]): The serial port to connect to. Defaults to None.
+        baud (int): The baud rate for serial communication. Defaults to 115200.
+        timeout (float): The general timeout value in seconds for operations. Defaults to 2.0.
+        serial_timeout (float): The timeout for serial communication specifically, in seconds. Defaults to 0.1.
+        neighbor_update_cb (Optional[Callable[[dict], None]]): A callback function that gets called when a neighbor update occurs. Defaults to None.
+        range_update_cb (Optional[Callable[[dict], None]]): A callback function that gets called when a range update occurs. Defaults to None.
+        range_event_cb (Optional[Callable[[dict], None]]): A callback function that gets called when a range event occurs. Defaults to None.
+        logger_cb (Optional[Callable[[Any], None]]): A callback function for logging messages. Defaults to None.
+        auto_connect (bool): A flag indicating whether to automatically connect to the serial port. Defaults to True.
+    """
+    port: Optional[str] = None
+    baud: int = 115200
+    timeout: float = 2.0
+    serial_timeout: float = 0.1
+    neighbor_update_cb: Optional[Callable[[dict], None]] = None
+    range_update_cb: Optional[Callable[[dict], None]] = None
+    range_event_cb: Optional[Callable[[dict], None]] = None
+    logger_cb: Optional[Callable[[Any], None]] = None
+    auto_connect: bool = True
 
 
 class BelugaSerial:
-    # TODO: Discuss how we want to handle case where USB communication fails. Do we want to log the error and try to reconnect? Do we want to terminate the node?
-    def __init__(self,
-                 auto_connect: bool = True,
-                 baud: int = 115200,
-                 timeout: float = 2.0,
-                 serial_timeout: float = 0.1,
-                 max_lines_read: int = 16,
-                 port: Optional[str] = None,
-                 neighbor_update_func: Optional[Callable[[dict], None]] = None,
-                 range_update_func: Optional[Callable[[dict], None]] = None,
-                 range_event: Optional[Callable[[dict], None]] = None,
-                 logger_func: Optional[Callable[[Any], None]] = None):
+    """
+    A class for managing serial communication with Beluga nodes.
 
-        self._logger = logger_func
+    This class handles serial communication, device discovery, command sending,
+    and data processing for Beluga nodes. It supports automatic connection,
+    command management, and event handling through callbacks or queues.
 
-        if port is None and auto_connect:
-            targets = self._find_ports(TARGETS)
-            self._serial = None
-            if not targets:
-                raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
-            for target in TARGETS:
-                if target in targets.keys():
-                    for port in targets[target]:
-                        try:
-                            self._log(f"Trying to connect to {target}: {port}")
-                            self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout,
-                                                         exclusive=True)
-                            self._log(f'Connected to {target}: {port}')
-                            break
-                        except serial.SerialException:
-                            self._log(f'{port} is busy')
-                            pass
-                    break
-            if self._serial is None:
-                raise FileNotFoundError(f'Unable to find a given target. Valid targets: {TARGETS}')
+    The class manages multiple tasks for receiving and processing data frames,
+    handling neighbor updates, range updates, and range events.
+
+    Args:
+        attr (Optional[BelugaSerialAttr]): Configuration attributes for the serial connection.
+            If None, default attributes are used.
+
+    Raises:
+        FileNotFoundError: If no valid target device is found during auto-connect
+        RuntimeError: If tasks fail to start or stop properly
+
+    Example:
+        ```python
+        # Create a BelugaSerial instance with default settings
+        beluga = BelugaSerial()
+
+        # Start communication
+        beluga.start()
+
+        # Send commands
+        beluga.id()
+        beluga.channel(5)
+
+        # Stop communication
+        beluga.stop()
+        ```
+    """
+
+    class _ReconnectionStates(enum.Enum):
+        RECONNECT_FIND = enum.auto()
+        RECONNECT_SLEEP = enum.auto()
+        RECONNECT_CONNECT = enum.auto()
+        RECONNECT_UPDATE_SKIPS = enum.auto()
+        RECONNECT_NEXT = enum.auto()
+        RECONNECT_GET_ID = enum.auto()
+        RECONNECT_CHECK_ID = enum.auto()
+        RECONNECT_DONE = enum.auto()
+
+    def __init__(self, attr: Optional[BelugaSerialAttr] = None):
+        if attr is None:
+            attr = BelugaSerialAttr()
+
+        self._logger_cb = attr.logger_cb
+        self._serial: Optional[serial.Serial] = None
+
+        if attr.port is None and attr.auto_connect:
+            self._auto_connect(attr)
         else:
-            self._serial = serial.Serial(port=port, baudrate=baud, timeout=serial_timeout, exclusive=True)
+            self._serial = serial.Serial(attr.port, attr.baud, timeout=attr.serial_timeout, exclusive=True)
 
-        self._read_max_lines: int = max_lines_read
-        self._timeout: float = timeout
+        self._timeout = attr.timeout
+        self._neighbor_cb = attr.neighbor_update_cb
+        self._range_cb = attr.range_update_cb
+        self._range_event_cb = attr.range_event_cb
+
         self._neighbors = BelugaNeighborList()
+        self._usb_remains_open = False
+        self._id = 0
 
-        self._rx_task: Optional[mp.Process] = None
+        self._neighbor_q: Optional[BelugaQueue] = None
+        if self._neighbor_cb is None:
+            self._neighbor_q = BelugaQueue()
+        self._range_q: Optional[BelugaQueue] = None
+        if self._range_cb is None:
+            self._range_q = BelugaQueue()
+        self._range_event_q: Optional[BelugaQueue] = None
+        if self._range_event_cb is None:
+            self._range_event_q = BelugaQueue()
+
+        self._task_running: bool = False
+
+        self._rx_task: Optional[Future[None]] = None
         self._batch_queue: BelugaQueue = BelugaQueue(10, False)
 
-        self._processing_task: Optional[mp.Process] = None
+        self._processing_task: Optional[Future[None]] = None
         self._response_q: BelugaQueue = BelugaQueue(update_old_items=False)
-        self._command_sent: mp.Event = mp.Event()
-        # Used to block the reboot command until done rebooting
-        self._reboot_done: mp.Event = mp.Event()
 
-        if neighbor_update_func is None:
-            self._neighbors_queue: Optional[BelugaQueue] = BelugaQueue()
-            self._neighbors_callback = None
-        else:
-            self._neighbors_queue = None
-            self._neighbors_callback = neighbor_update_func
+        self._command_sent: Event = Event()
+        self._reboot_done: Event = Event()
 
-        if range_update_func is None:
-            self._ranges_queue: Optional[BelugaQueue] = BelugaQueue()
-            self._ranges_update_callback = None
-        else:
-            self._ranges_queue = None
-            self._ranges_update_callback = range_update_func
+        self._serial_lock: RLock = RLock()
 
-        if range_event is None:
-            self._range_event_queue: Optional[BelugaQueue] = BelugaQueue()
-            self._range_event_callback = None
-        else:
-            self._range_event_queue = None
-            self._range_event_callback = range_event
+        self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=3)
 
+        self._time_resync: Optional[Callable[[None], None]] = None
 
-    def _log(self, s):
-        if self._logger is not None:
-            self._logger(s)
+    def __del__(self):
+        self.stop()
+        self._tasks.shutdown()
+        self._serial.close()
 
-    def _publish_neighbor_update(self):
-        if self._neighbors.neighbor_update:
-            if self._neighbors_queue is not None:
-                self._neighbors_queue.put(self._neighbors.get_neighbors(), block=False)
-            else:
-                self._neighbors_callback(self._neighbors.get_neighbors())
+    def _auto_connect(self, attr: BelugaSerialAttr):
+        available_ports = self._find_ports(TARGETS)
+        if not available_ports:
+            raise FileNotFoundError("Unable to find a given target")
+        for target in TARGETS:
+            if target not in available_ports.keys():
+                continue
+            opened = self.__open_port(target, attr, available_ports[target])
+            if opened and isinstance(self._serial, serial.Serial):
+                if not self._serial.is_open:
+                    raise FileNotFoundError("Unable to open target")
+                break
 
-    def _publish_range_update(self):
-        if self._neighbors.range_update:
-            if self._ranges_queue is not None:
-                self._ranges_queue.put(self._neighbors.get_updates(), block=False)
-            else:
-                self._ranges_update_callback(self._neighbors.get_updates())
-
-    def _publish_range_event(self, event):
-        if self._range_event_queue is not None:
-            self._range_event_queue.put(event, block=False)
-        else:
-            self._range_event_callback(event)
-
-    def _publish_response(self, response):
-        if self._command_sent.is_set():
-            self._command_sent.clear()
-            self._response_q.put(response)
-
-    def _process_reboot(self, payload):
-        if self._ranges_queue is not None:
-            self._ranges_queue.clear()
-        if self._neighbors_queue is not None:
-            self._neighbors_queue.clear()
-        if self._range_event_queue is not None:
-            self._range_event_queue.clear()
-        self._neighbors.clear()
-        if self._reboot_done.is_set():
-            # Unexpected reboot
-            self._log("Beluga rebooted unexpectedly")
-            os.kill(os.getppid(), signal.SIGUSR1)
-        else:
-            self._reboot_done.set()
+    def __open_port(self, target: str, attr: BelugaSerialAttr, ports: List[str]) -> bool:
+        ret = False
+        for port in ports:
+            try:
+                self._log(f"Trying to connect to {target}: {port}")
+                self._serial = serial.Serial(port, attr.baud, timeout=attr.serial_timeout, exclusive=True)
+                time.sleep(OPEN_DELAY)
+                self._usb_remains_open = USB_STILL_ALIVE[target]
+                ret = True
+                break
+            except serial.SerialException as e:
+                self._log(e)
+        return ret
 
     @staticmethod
     def _find_ports(targets: List[str]) -> Dict[str, List[str]]:
-        ret: Dict[str, List[str]] = {}
         ports = list(list_ports.comports())
+        ret: Dict[str, List[str]] = {}
 
         for port in ports:
-            dev_name = f'{port.manufacturer} {port.product}'
-            if dev_name in targets:
-                if dev_name in ret.keys():
-                    ret[dev_name].append(port.device)
+            name = f'{port.manufacturer} {port.product}'
+            if name in targets:
+                if name in ret.keys():
+                    ret[name].append(port.device)
                 else:
-                    ret[dev_name] = [port.device]
+                    ret[name] = [port.device]
         return ret
 
-    def _process_frames(self):
-        while True:
+    def _log(self, msg: Any):
+        if self._logger_cb is not None:
+            self._logger_cb(msg)
+
+    def _publish_neighbor_update(self):
+        if self._neighbors.neighbor_update:
+            updates = self._neighbors.get_neighbors()
+            if self._neighbor_cb is None:
+                self._neighbor_q.put(updates, False)
+            else:
+                self._neighbor_cb(updates)
+
+    def _publish_range_updates(self):
+        if self._neighbors.range_update:
+            updates = self._neighbors.get_updates()
+            if self._range_cb is None:
+                self._range_q.put(updates, False)
+            else:
+                self._range_cb(updates)
+
+    def _publish_range_event(self, event):
+        if self._range_event_cb is None:
+            self._range_event_q.put(event, False)
+        else:
+            self._range_event_cb(event)
+
+    def _publish_response(self, response):
+        if self._command_sent.is_set():
+            self._response_q.put(response)
+            self._command_sent.clear()
+
+    def _process_reboot(self, payload):
+        if self._range_q is not None:
+            self._range_q.clear()
+        if self._neighbor_q is not None:
+            self._neighbor_q.clear()
+        if self._range_event_q is not None:
+            self._range_event_q.clear()
+        if self._reboot_done.is_set():
+            self._log("Beluga rebooted unexpectedly")
+            if self._time_resync is not None:
+                self._tasks.submit(self._time_resync)
+        else:
+            self._reboot_done.set()
+
+    def __process_frames(self):
+        while self._task_running:
             frame: BelugaFrame = self._batch_queue.get()
+
             match frame.type:
                 case FrameType.UPDATES:
                     self._neighbors.update(frame.payload)
@@ -309,309 +263,720 @@ class BelugaSerial:
                     self._process_reboot(frame.payload)
                 case _:
                     self._log("Invalid frame type")
+
             self._publish_neighbor_update()
-            self._publish_range_update()
+            self._publish_range_updates()
 
-    def _process_frames_entry(self):
-        try:
-            self._process_frames()
-        except KeyboardInterrupt:
-            pass # Shutting down
+    def _process_frames(self):
+        while self._task_running:
+            try:
+                self.__process_frames()
+            except Exception as e:
+                self._log(f"Uncaught exception: {e}")
+                os.abort()
 
-    def _process_rx_buffer(self, buf: bytearray) -> bytearray:
-        frame_start, frame_size, _ = BelugaFrame.frame_present(buf)
-        if frame_start < 0:
-            return buf
-
-        frame = BelugaFrame.extract_frame(buf, frame_start)
-        self._batch_queue.put(frame, block=False)
-        return buf[frame_start + frame_size:]
-
-    def _read_serial(self):
-        rx = b""
+    def _process_rx_buffer(self, buf) -> bytes:
         while True:
-            if self._serial.inWaiting() > 0:
-                rx += self._serial.read(self._serial.inWaiting())
+            start, size, _ = BelugaFrame.frame_present(buf)
+            if start < 0:
+                return buf
+            frame = BelugaFrame.extract_frame(buf, start)
+            self._batch_queue.put(frame, False)
+            buf = buf[start + size:]
+
+    def __read_serial(self):
+        rx = b""
+        while self._task_running:
+            if self._serial.in_waiting > 0:
+                with self._serial_lock:
+                    buf = self._serial.read_all()
+                rx += buf
             rx = self._process_rx_buffer(rx)
 
-    def _read_task_entry(self):
-        try:
-            self._read_serial()
-        except KeyboardInterrupt:
-            pass # Shutting down
+    def _read_serial(self):
+        while self._task_running:
+            try:
+                self.__read_serial()
+            except OSError:
+                self._serial.close()
+                # Probably rebooted
+                time.sleep(OPEN_DELAY)
+                try:
+                    self._log("Reconnect called from read serial")
+                    self._reconnect()
+                    if self._time_resync is not None:
+                        self._tasks.submit(self._time_resync)
+                except RuntimeError as e:
+                    self._log(str(e))
+                    os.abort()
+            except Exception as e:
+                self._log(f"An uncaught exception occurred in reading thread: {e}")
+                os.abort()
 
-    def _send_command(self, command: bytes) -> str:
-        self._serial.write(command)
+    # noinspection PyTypeChecker
+    def _send_command(self, cmd: Optional[str] = None, value: Optional[Union[int, str]] = None) -> str:
+        if cmd is None:
+            if value is not None:
+                command = f"AT+{inspect.stack()[1][3].upper()} {value}\r\n".encode()
+            else:
+                command = f"AT+{inspect.stack()[1][3].upper()}\r\n".encode()
+        else:
+            if value is not None:
+                command = f"AT+{cmd.upper()} {value}\r\n".encode()
+            else:
+                command = f"AT+{cmd.upper()}\r\n".encode()
+
+        with self._serial_lock:
+            try:
+                self._serial.write(command)
+            except serial.PortNotOpenError:
+                return 'Response timed out'
+
         try:
             self._command_sent.set()
-            ret = self._response_q.get(timeout=self._timeout)
+            response: str = self._response_q.get(timeout=self._timeout)
         except queue.Empty:
-            ret = 'Response timed out'
-        return ret
+            response = "Response timed out"
+        return response
 
-    def find_ports(self) -> Dict[str, List[str]]:
-        return self._find_ports(TARGETS)
+    def start_uwb(self):
+        """
+        Starts the UWB (Ultra-Wideband) radio on the Beluga node.
 
-    def open_target(self, port: str):
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
+        return self._send_command("startuwb")
+
+    def stop_uwb(self):
+        """
+        Stops the UWB (Ultra-Wideband) radio on the Beluga node.
+
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
+        return self._send_command("stopuwb")
+
+    def start_ble(self):
+        """
+        Starts the BLE (Bluetooth Low Energy) radio on the Beluga node.
+
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
+        return self._send_command("startble")
+
+    def stop_ble(self):
+        """
+        Stops the BLE (Bluetooth Low Energy) radio on the Beluga node.
+
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
+        return self._send_command("stopble")
+
+    def id(self, new_id: Optional[Union[int, str]] = None):
+        """
+        Sets or gets the boot mode of the Beluga node.
+
+        :param new_id: The boot mode to set:
+            * None: Retrieve the current ID (Default)
+            * Any value: The new node ID
+        :type new_id: Optional[Union[int, str]]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        response = self._send_command(value=new_id)
+        if new_id is not None and response.endswith("OK"):
+            self._id = self._extract_id(new_id)
+        return response
+
+    def bootmode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the boot mode of the Beluga node.
+
+        :param mode: The boot mode to set:
+            * None: Retrieve the current mode (Default)
+            * 0: Both radios off at boot (Reset Value)
+            * 1: BLE turned on at boot
+            * 2: Both radios turned on at boot
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
+
+    def rate(self, rate: Optional[int] = None):
+        """
+        Sets or gets the UWB polling rate of the Beluga node.
+
+        :param rate: The UWB polling rate to set:
+            * None: Retrieve the current rate (Default)
+            * Any value: The new UWB polling rate
+        :type rate: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=rate)
+
+    def channel(self, channel: Optional[int] = None):
+        """
+        Sets or gets the UWB channel of the Beluga node.
+
+        :param channel: The UWB channel to set:
+            * None: Retrieve the current channel (Default)
+            * Any value: The new UWB channel
+        :type channel: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=channel)
+
+    def reset(self):
+        """
+        Reset the node settings to their defaults
+
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
+    def timeout(self, timeout: Optional[int] = None):
+        """
+        Sets or gets the neighbor timeout (ms) of the Beluga node.
+
+        :param timeout: The timeout to set:
+            * None: Retrieve the current timeout (Default)
+            * Any value: The new timeout
+        :type timeout: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=timeout)
+
+    def txpower(self, power: Optional[str] = None):
+        """
+        Sets or gets the UWB transmission power of the Beluga node.
+
+        :param power: The UWB TX power to set:
+            * None: Retrieve the current power (Default)
+            * Any value: The new UWB power
+        :type power: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=power)
+
+    def streammode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the stream mode of the Beluga node.
+
+        :param mode: The stream mode to set:
+            * None: Retrieve the current channel (Default)
+            * 0: Stream mode turned off
+            * 1: Stream mode turned on
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
+
+    def twrmode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the Two-Way Ranging mode of the Beluga node.
+
+        :param mode: The UWB ranging to set:
+            * None: Retrieve the current mode (Default)
+            * 0: Single-sided ranging
+            * 1: Double-sided ranging
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
+
+    def ledmode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the LED mode of the Beluga node.
+
+        :param mode: The LED mode to set:
+            * None: Retrieve the current mode (Default)
+            * 0: LEDs on
+            * 1: LEDs off
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
+
+    def _reboot(self):
         self.stop()
+        self._serial.write(b"AT+REBOOT\r\n")
+        self._serial.flush()
         self._serial.close()
-        self._serial.port = port
-        try:
-            self._serial.open()
-        except serial.SerialException:
-            raise FileNotFoundError
+        self._log("Called reconnect from reboot")
+        self._reconnect()
         self.start()
 
-    def start_uwb(self) -> str:
-        ret = self._send_command(b'AT+STARTUWB\r\n')
-        return ret
-
-    def stop_uwb(self) -> str:
-        ret = self._send_command(b'AT+STOPUWB\r\n')
-        return ret
-
-    def start_ble(self) -> str:
-        ret = self._send_command(b'AT+STARTBLE\r\n')
-        return ret
-
-    def stop_ble(self) -> str:
-        ret = self._send_command(b'AT+STOPBLE\r\n')
-        return ret
-
-    def id(self, new_id: Optional[int] = None) -> str:
-        if new_id is not None:
-            command = f'AT+ID {new_id}\r\n'.encode()
+    def reboot(self):
+        """
+        Reboots the Beluga node
+        :return: The command response (or empty string depending on the device) or a timeout message
+        :rtype: str
+        """
+        response = ""
+        if self._usb_remains_open:
+            self._reboot_done.clear()
+            response = self._send_command()
+            self._reboot_done.wait()
         else:
-            command = b'AT+ID\r\n'
-        ret = self._send_command(command)
-        return ret
+            self._reboot()
+        if self._time_resync is not None:
+            self._tasks.submit(self._time_resync)
+        return response
 
-    def bootmode(self, boot_mode: Optional[int] = None) -> str:
-        if boot_mode is not None:
-            command = f'AT+BOOTMODE {int(boot_mode)}\r\n'.encode()
-        else:
-            command = b'AT+BOOTMODE\r\n'
-        ret = self._send_command(command)
-        return ret
+    def pwramp(self, mode: Optional[int] = None):
+        """
+        Sets or gets the radio power mode of the Beluga node.
 
-    def rate(self, rate: Optional[int] = None) -> str:
-        if rate is not None:
-            command = f'AT+RATE {rate}\r\n'.encode()
-        else:
-            command = b'AT+RATE\r\n'
-        ret = self._send_command(command)
-        return ret
+        :param mode: The power mode to set:
+            * None: Retrieve the current mode (Default)
+            * 0: Both external amplifiers OFF
+            * 1: BLE Amp OFF, UWB Amp ON
+            * 2: BLE Amp LOW, UWB Amp OFF
+            * 3: BLE Amp LOW, UWB Amp ON
+            * 4: BLE Amp HIGH, UWB Amp OFF
+            * 5: BLE Amp HIGH, UWB Amp ON
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
 
-    def channel(self, channel: Optional[int] = None) -> str:
-        if channel is not None:
-            command = f'AT+CHANNEL {channel}\r\n'.encode()
-        else:
-            command = b'AT+CHANNEL\r\n'
-        ret = self._send_command(command)
-        return ret
+    def antenna(self, antenna: Optional[int] = None):
+        """
+        Sets or gets the BLE antenna of the Beluga node.
 
-    def reset(self) -> str:
-        ret = self._send_command(b'AT+RESET\r\n')
-        return ret
+        :param antenna: The BLE antenna to select:
+            * None: Retrieve the current antenna (Default)
+            * Any value: The new antenna
+        :type antenna: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=antenna)
 
-    def timeout(self, timeout: Optional[int] = None) -> str:
-        if timeout is not None:
-            command = f'AT+TIMEOUT {timeout}\r\n'.encode()
-        else:
-            command = b'AT+TIMEOUT\r\n'
-        ret = self._send_command(command)
-        return ret
+    def time(self):
+        """
+        Retrieve the current Beluga node timestamp
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
 
-    def tx_power(self, max_power: Optional[int] = None) -> str:
-        if max_power is not None:
-            command = f'AT+TXPOWER {max_power}\r\n'.encode()
-        else:
-            command = b'AT+TXPOWER\r\n'
-        ret = self._send_command(command)
-        return ret
+    def _format(self, mode):
+        return self._send_command("format", mode)
 
-    def stream_mode(self, updates_only: Optional[int] = None) -> str:
-        if updates_only is not None:
-            command = f'AT+STREAMMODE {updates_only}\r\n'.encode()
-        else:
-            command = b'AT+STREAMMODE\r\n'
-        ret = self._send_command(command)
-        return ret
+    def deepsleep(self):
+        """
+        Place the Beluga node to sleep
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
 
-    def twr_mode(self, mode: Optional[int] = None) -> str:
-        if mode is not None:
-            command = f'AT+TWRMODE {mode}\r\n'.encode()
-        else:
-            command = b'AT+TWRMODE\r\n'
-        ret = self._send_command(command)
-        return ret
+    def datarate(self, rate: Optional[int] = None):
+        """
+        Sets or gets the UWB data rate of the Beluga node.
 
-    def led_mode(self, led_mode: Optional[int] = None) -> str:
-        if led_mode is not None:
-            command = f'AT+LEDMODE {led_mode}\r\n'.encode()
-        else:
-            command = b'AT+LEDMODE\r\n'
-        ret = self._send_command(command)
-        return ret
+        :param rate: The UWB data rate to set:
+            * None: Retrieve the current data rate (Default)
+            * Any value: The new UWB data rate
+        :type rate: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=rate)
 
-    def reboot(self) -> str:
-        self._reboot_done.clear()
-        ret = self._send_command(b'AT+REBOOT\r\n')
-        self._reboot_done.wait()
-        return ret
+    def preamble(self, length: Optional[int] = None):
+        """
+        Sets or gets the UWB preamble length of the Beluga node.
 
-    def pwr_amp(self, enable_pwr_amp: Optional[int] = None) -> str:
-        if enable_pwr_amp is not None:
-            command = f'AT+PWRAMP {enable_pwr_amp}\r\n'.encode()
-        else:
-            command = b'AT+PWRAMP\r\n'
-        ret = self._send_command(command)
-        return ret
+        :param length: The UWB preamble length to set:
+            * None: Retrieve the current length (Default)
+            * Any value: The new UWB preamble length
+        :type length: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=length)
 
-    def antenna(self, antenna: Optional[int] = None) -> str:
-        if antenna is not None:
-            command = f'AT+ANTENNA {antenna}\r\n'.encode()
-        else:
-            command = b'AT+ANTENNA\r\n'
-        ret = self._send_command(command)
-        return ret
+    def pulserate(self, rate: Optional[int] = None):
+        """
+        Sets or gets the UWB pulse rate of the Beluga node.
 
-    def time(self) -> str:
-        command = b'AT+TIME\r\n'
-        ret = self._send_command(command)
-        return ret
+        :param rate: The UWB pulse rate to set:
+            * None: Retrieve the current pulse rate (Default)
+            * Any value: The new UWB pulse rate
+        :type rate: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=rate)
 
-    def format(self, json_format: Optional[int] = None) -> str:
-        if json_format is not None:
-            command = f'AT+FORMAT {json_format}\r\n'.encode()
-        else:
-            command = b'AT+FORMAT\r\n'
-        ret = self._send_command(command)
-        return ret
+    def phr(self, mode: Optional[int] = None):
+        """
+        Sets or gets the UWB PHR of the Beluga node.
 
-    def deepsleep(self) -> str:
-        command = b'AT+DEEPSLEEP\r\n'
-        ret = self._send_command(command)
-        return ret
+        :param mode: The UWB PHR to set:
+            * None: Retrieve the current PHR (Default)
+            * Any value: The new UWB PHR
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
 
-    def datarate(self, rate: Optional[int] = None) -> str:
-        if rate is not None:
-            command = f'AT+DATARATE {rate}\r\n'.encode()
-        else:
-            command = b'AT+DATARATE\r\n'
-        ret = self._send_command(command)
-        return ret
+    def pac(self, size: Optional[int] = None):
+        """
+        Sets or gets the UWB PAC size of the Beluga node.
 
-    def preamble(self, length: Optional[int] = None) -> str:
-        if length is not None:
-            command = f'AT+PREAMBLE {length}\r\n'.encode()
-        else:
-            command = b'AT+PREAMBLE\r\n'
-        ret = self._send_command(command)
-        return ret
+        :param size: The UWB PAC size to set:
+            * None: Retrieve the current PAC size (Default)
+            * Any value: The new UWB PAC size
+        :type size: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=size)
 
-    def pulserate(self, rate: Optional[int] = None) -> str:
-        if rate is not None:
-            command = f'AT+PULSERATE {rate}\r\n'.encode()
-        else:
-            command = b'AT+PULSERATE\r\n'
-        ret = self._send_command(command)
-        return ret
+    def sfd(self, mode: Optional[int] = None):
+        """
+        Sets or gets the UWB SFD of the Beluga node.
+
+        :param mode: The UWB SFD to set:
+            * None: Retrieve the current SFD (Default)
+            * 0: The standard SFD
+            * 1: Decawave's proprietary SFD
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
+
+    def panid(self, pan: Optional[int] = None):
+        """
+        Sets or gets the UWB PAN ID of the Beluga node.
+
+        :param pan: The UWB PAN ID to set:
+            * None: Retrieve the current PAN ID (Default)
+            * Any value: The new UWB PAN ID
+        :type pan: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=pan)
 
     def start(self):
-        if self._rx_task is not None or self._processing_task is not None:
-            raise RuntimeError('Please stop before restarting')
-        self._processing_task = mp.Process(target=self._process_frames_entry)
-        self._rx_task = mp.Process(target=self._read_task_entry)
+        """
+        Starts the processing and receive tasks, sets up the node to transmit
+        in the proper mode, and ties the node ID to the instance of BelugaSerial.
 
-        self._processing_task.start()
-        self._rx_task.start()
+        :raises RuntimeError: if tasks are already running or if there is no serial connection to a Beluga node
+        :return: None
+        """
+        if self._task_running or not self._serial.is_open:
+            raise RuntimeError("Stop before calling start again")
+
+        self._task_running = True
+
+        self._processing_task = self._tasks.submit(self._process_frames)
+        self._rx_task = self._tasks.submit(self._read_serial)
+
+        self._format("2")
+        id_ = self.id()
+        self._id = self._extract_id(id_)
 
     def stop(self):
-        if self._rx_task is not None:
-            self._rx_task.kill()
-            while self._rx_task.is_alive():
-                time.sleep(0.1)
-            self._rx_task.close()
-        if self._processing_task is not None:
-            self._processing_task.kill()
-            while self._processing_task.is_alive():
-                time.sleep(0.1)
-            self._processing_task.close()
-        self._rx_task = None
-        self._processing_task = None
-        if self._ranges_queue is not None:
-            self._ranges_queue.clear()
-        if self._neighbors_queue is not None:
-            self._neighbors_queue.clear()
-        if self._range_event_queue is not None:
-            self._range_event_queue.clear()
-        self._neighbors.clear()
-        return
+        """
+        Stops the processing and receive tasks
+        :raises RuntimeError: if it is unable to stop the processing task
+        :return: None
+        """
+        max_retries = 10
+        if not self._task_running:
+            return
 
-    def close(self):
-        if self._serial.is_open:
-            self._serial.close()
+        self._task_running = False
+
+        while True:
+            try:
+                self._rx_task.result(timeout=0.01)
+            except FutureTimeoutError:
+                pass
+            else:
+                break
+
+        retries = 0
+        while retries < max_retries:
+            attempts = 0
+            while attempts < max_retries:
+                try:
+                    self._processing_task.result(timeout=0.01)
+                except FutureTimeoutError:
+                    attempts += 1
+                else:
+                    break
+            if attempts >= max_retries:
+                frame = BelugaFrame(FrameType.NO_TYPE, "")
+                self._batch_queue.put(frame)
+                retries += 1
+            else:
+                break
+        if retries >= max_retries:
+            raise RuntimeError("The processing task task is still hanging...")
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
-        # Needed to indicate if the queue is just empty or if the only neighbor got removed
-        if self._neighbors_queue is None:
-            raise ValueError("Reporting neighbor updates to a callback function")
-        update = True
-        ret = {}
+        """
+        Retrieves the current neighbor list.
+
+        :return: True and a dictionary of neighbors if there was a neighbor list update. False and an empty dictionary
+        otherwise.
+        :rtype: Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]
+
+        :raises AttributeError: if neighbor updates cannot be received through this function
+        """
+
+        if self._neighbor_q is None:
+            raise AttributeError(
+                "Cannot get neighbor updates from `get_neighbors()`. Updates are submitted to the callback function")
+
+        ret = True
+        list_ = {}
         try:
-            ret = self._neighbors_queue.get_nowait()
+            list_ = self._neighbor_q.get(False)
         except queue.Empty:
-            update = False
-        return update, ret
+            ret = False
+        return ret, list_
 
     def get_ranges(self) -> Dict[int, Dict[str, Union[int, float]]]:
-        if self._ranges_queue is None:
-            raise ValueError("Reporting range updates to a callback function")
-        ret = {}
+        """
+        Retrieves the updated ranges of the list.
+
+        :return: The range updates of the neighbors
+        :rtype: Dict[int, Dict[str, Union[int, float]]]
+
+        :raises AttributeError: if range updates cannot be received through this function
+        """
+
+        if self._range_q is None:
+            raise AttributeError(
+                "Cannot get range updates from `get_ranges()`. Updates are submitted to the callback function")
+
+        list_ = {}
         try:
-            ret = self._ranges_queue.get_nowait()
+            list_ = self._range_q.get(False)
         except queue.Empty:
             pass
-        return ret
+        return list_
 
     def get_range_event(self) -> Dict[int, Dict[str, int]]:
-        if self._range_event_queue is None:
-            raise ValueError("Reporting range events to a callback function")
+        """
+        Retrieve range exchange events.
+
+        :return: The range events
+        :rtype: Dict[int, Dict[str, int]]
+
+        :raises AttributeError: if range events cannot be received through this function
+        """
+
+        if self._range_event_q is None:
+            raise AttributeError(
+                "Cannot get range events from `get_range_event()`. Events are submitted to the callback function")
+
         ret = {}
         try:
-            ret = self._range_event_queue.get_nowait()
+            ret = self._range_event_q.get(False)
         except queue.Empty:
             pass
         return ret
 
+    @staticmethod
+    def _extract_id(response: str) -> int:
+        digit = "".join([x for x in response if x.isdigit()])
+        return int(digit)
 
-def main():
-    import datetime as dt
-    beluga = BelugaSerial()
-    beluga.start()
-    beluga.reboot()
-    beluga.stream_mode(True)
-    last_tr = dt.datetime.now()
+    def _find_port_candidates(self, skip: List[str]) -> List[str]:
+        available_ports = self._find_ports(TARGETS)
+        candidates = []
 
-    try:
+        for target in TARGETS:
+            if target not in available_ports.keys():
+                continue
+            for port in available_ports[target]:
+                if port in skip:
+                    continue
+                candidates.append(port)
+        return candidates
+
+    def _open_port(self, port) -> bool:
+        ret = True
+        try:
+            self._log(f"Trying to connect to {port}")
+            self._serial.close()
+            self._serial.port = port
+            self._serial.open()
+        except serial.SerialException as e:
+            self._serial.close()
+            self._log(e)
+            ret = False
+        return ret
+
+    def _get_id_from_device(self) -> str:
+        command = b"AT+ID\r\n"
+        time.sleep(OPEN_DELAY)
+        try:
+            self._serial.write(command)
+        except serial.SerialException as e:
+            if str(e).endswith("Input/output error"):
+                return ""
+            raise
+        time.sleep(OPEN_DELAY)
+        response = self._serial.read_all()
+
         while True:
-            ranges = beluga.get_ranges()
-            if ranges:
-                print(f'Ranges {ranges}')
-            update, neighbors = beluga.get_neighbors()
-            if update:
-                print(f'Neighbors: {neighbors}')
+            start, size, _ = BelugaFrame.frame_present(response)
+            if start < 0:
+                self._serial.close()
+                return ""
 
-            elapsed = dt.datetime.now() - last_tr
-            if elapsed.microseconds > 100000:
-                ret = beluga.time()
-                print(ret)
-                last_tr = dt.datetime.now()
-    except KeyboardInterrupt:
-        beluga.stop()
-        beluga.close()
+            frame = BelugaFrame.extract_frame(response, start)
+            if frame.type == FrameType.RESPONSE:
+                if frame.payload.startswith("ID:"):
+                    return frame.payload
+            response = response[start + size:]
+
+    def __reconnect(self):
+        state = self._ReconnectionStates.RECONNECT_FIND
+        skip = []
+        index: SupportsIndex = 0
+        port: str = ""
+        id_resp: str = ""
+        ports = []
+
+        while state != self._ReconnectionStates.RECONNECT_DONE:
+            try:
+                match state:
+                    case self._ReconnectionStates.RECONNECT_FIND:
+                        ports = self._find_port_candidates(skip)
+                        index = 0
+                        # noinspection PyTypeChecker
+                        port = ports[index]
+                        state = self._ReconnectionStates.RECONNECT_SLEEP if not ports else self._ReconnectionStates.RECONNECT_CONNECT
+                    case self._ReconnectionStates.RECONNECT_CONNECT:
+                        opened = self._open_port(port)
+                        state = self._ReconnectionStates.RECONNECT_GET_ID if opened else self._ReconnectionStates.RECONNECT_NEXT
+                    case self._ReconnectionStates.RECONNECT_GET_ID:
+                        id_resp = self._get_id_from_device()
+                        state = self._ReconnectionStates.RECONNECT_NEXT if not id_resp else self._ReconnectionStates.RECONNECT_CHECK_ID
+                    case self._ReconnectionStates.RECONNECT_CHECK_ID:
+                        id_ = self._extract_id(id_resp)
+                        state = self._ReconnectionStates.RECONNECT_DONE if self._id == id_ else self._ReconnectionStates.RECONNECT_UPDATE_SKIPS
+                    case self._ReconnectionStates.RECONNECT_SLEEP:
+                        time.sleep(OPEN_DELAY)
+                        state = self._ReconnectionStates.RECONNECT_FIND
+                    case self._ReconnectionStates.RECONNECT_UPDATE_SKIPS:
+                        self._serial.close()
+                        skip.append(port)
+                        state = self._ReconnectionStates.RECONNECT_NEXT
+                    case self._ReconnectionStates.RECONNECT_NEXT:
+                        index += 1
+                        state = self._ReconnectionStates.RECONNECT_SLEEP if index >= len(
+                            ports) else self._ReconnectionStates.RECONNECT_CONNECT
+                    case _:
+                        self._log("Reached invalid connection state")
+                        assert False
+            except IndexError:
+                # Just reset the state machine
+                state = self._ReconnectionStates.RECONNECT_FIND
+        self._log(f"Connected to {port}")
+
+    def _reconnect(self):
+        with self._serial_lock:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(functools.partial(self.__reconnect))
+                try:
+                    future.result(timeout=30.0)
+                except FutureTimeoutError:
+                    raise RuntimeError("Reconnection timed out")
+
+    def open_target(self, port: str):
+        """
+        Opens the given port if the port is linked to a valid target. Additionally,
+        automatically starts the tasks if the port is successfully opened.
+
+        :param port: The serial port to open
+        :return: None
+
+        :raises FileNotFoundError: Port is not associated with a valid target
+        """
+        target_ = None
+        targets = self.find_ports()
+        for target in targets:
+            if port in targets[target]:
+                target_ = target
+                break
+
+        if target_ is None:
+            raise FileNotFoundError("Port not found in valid targets")
+
+        self.stop()
+        self._serial.close()
+        self._usb_remains_open = USB_STILL_ALIVE[target_]
+        self._serial.port = port
+        self._serial.open()
+        self.start()
+
+    def close(self):
+        """
+        Stop the processing and receive tasks and close the serial port
+        :return: None
+        """
+        self.stop()
+        self._serial.close()
+
+    def find_ports(self) -> Dict[str, List[str]]:
+        """
+        Find the ports associated with valid targets
+        :return: Valid targets
+        :rtype: Dict[str, List[str]]
+        """
+        return self._find_ports(TARGETS)
+
+    def register_resync_cb(self, callback: Optional[Callable[[None], None]]):
+        """
+        Registers a time resynchronization callback. This is called whenever the node reboots.
+
+        :param callback: The function entry for time resynchronization. If None, this unregisters the resynchronization method.
+
+        :type callback: Optional[Callable[[None], None]]
+        :return: None
+        """
+        self._time_resync = callback
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    from timeit import default_timer as timer
+
+    s = BelugaSerial()
+    s.start()
+
+    start = timer()
+    s.id()
+    end = timer()
+
+    print(end - start)
+
+    print(s.id())
+    s.stop()
+    print("Done")

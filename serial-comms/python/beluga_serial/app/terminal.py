@@ -1,8 +1,7 @@
 import cmd2
-from beluga_serial import BelugaSerial
+from beluga_serial import BelugaSerial, BelugaSerialAttr
 from serial import PortNotOpenError
 import functools
-import signal
 
 
 def serial_command(func):
@@ -20,7 +19,7 @@ def serial_command(func):
 class BelugaTerminal(cmd2.Cmd):
     intro = "Welcome to The Beluga Terminal Interface. Type help or ? to list commands.\n"
     prompt = "> "
-    _serial = BelugaSerial(auto_connect=False)
+    _serial = BelugaSerial(BelugaSerialAttr(auto_connect=False))
     _neighbors = {}
     _ranges = {}
     _last_exchange = {}
@@ -38,10 +37,15 @@ class BelugaTerminal(cmd2.Cmd):
         if not targets:
             print("No targets found")
             exit(1)
-        for target in targets:
-            for port in targets[target]:
-                print(f"{target}: {port}")
-        port = input("Enter a port name: ")
+
+        options = sum(len(ports) for ports in targets.values())
+        if options > 1:
+            for target in targets:
+                for port in targets[target]:
+                    print(f"{target}: {port}")
+            port = input("Enter a port name: ")
+        else:
+            port = list(targets.values())[0][0]
         print(port)
         self._open(port)
 
@@ -156,7 +160,7 @@ class BelugaTerminal(cmd2.Cmd):
                 ⋮ : 0.5 dB Gain Steps
                 31: 15.5 dB Gain
         """
-        self._run_command(self._serial.tx_power, arg)
+        self._run_command(self._serial.txpower, arg)
 
     @serial_command
     def do_streammode(self, arg):
@@ -168,7 +172,7 @@ class BelugaTerminal(cmd2.Cmd):
             0: Displays all neighbors in list regardless of whether they have been updated or not.
             1: Displays only the updated neighbors
         """
-        self._run_command(self._serial.stream_mode, arg)
+        self._run_command(self._serial.streammode, arg)
 
     @serial_command
     def do_twrmode(self, arg):
@@ -180,7 +184,7 @@ class BelugaTerminal(cmd2.Cmd):
             0: SS+TWR
             1: DS+TWR
         """
-        self._run_command(self._serial.twr_mode, arg)
+        self._run_command(self._serial.twrmode, arg)
 
     @serial_command
     def do_ledmode(self, arg):
@@ -192,7 +196,7 @@ class BelugaTerminal(cmd2.Cmd):
             0: LEDs on
             1: LEDs off
         """
-        self._run_command(self._serial.led_mode, arg)
+        self._run_command(self._serial.ledmode, arg)
 
     @serial_command
     def do_reboot(self, arg):
@@ -209,7 +213,7 @@ class BelugaTerminal(cmd2.Cmd):
             0: External power amplifiers off
             1: External power amplifiers on
         """
-        self._run_command(self._serial.pwr_amp, arg)
+        self._run_command(self._serial.pwramp, arg)
 
     @serial_command
     def do_antenna(self, arg):
@@ -346,13 +350,10 @@ class BelugaTerminal(cmd2.Cmd):
         return True
 
     def postloop(self):
-        self._serial.stop()
         self._serial.close()
 
 
 def main():
-    # Ignore reboots
-    signal.signal(signal.SIGUSR1, signal.SIG_IGN)
     # Rename commands
     setattr(BelugaTerminal, 'do_stream-neighbors', BelugaTerminal.do_stream_neighbors)
     setattr(BelugaTerminal, 'do_stream-ranges', BelugaTerminal.do_stream_ranges)
