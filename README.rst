@@ -820,8 +820,9 @@ This setting is saved to flash.
 |             |                             | is not recommended.                         |
 +-------------+-----------------------------+---------------------------------------------+
 | 1 (Default) | Lowest RSSI                 | Evicts the node with the lowest RSSI. If    |
-|             |                             | there are no nodes with lower RSSIs, then   |
-|             |                             | the insertion does not take place.          |
+|             |                             | there are no nodes with a lower RSSI than   |
+|             |                             | the scanned node, then no neighbors are     |
+|             |                             | evicted.                                    |
 +-------------+-----------------------------+---------------------------------------------+
 | 2           | Longest Range               | Evict the node with the largest ranging     |
 |             |                             | value.                                      |
