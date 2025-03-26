@@ -28,6 +28,20 @@ USB_STILL_ALIVE: Dict[str, bool] = {
 
 @dataclass(init=True)
 class BelugaSerialAttr:
+    """
+    Attributes for configuring BelugaSerial
+
+    Attributes:
+        port (Optional[str]): The serial port to connect to. Defaults to None.
+        baud (int): The baud rate for serial communication. Defaults to 115200.
+        timeout (float): The general timeout value in seconds for operations. Defaults to 2.0.
+        serial_timeout (float): The timeout for serial communication specifically, in seconds. Defaults to 0.1.
+        neighbor_update_cb (Optional[Callable[[dict], None]]): A callback function that gets called when a neighbor update occurs. Defaults to None.
+        range_update_cb (Optional[Callable[[dict], None]]): A callback function that gets called when a range update occurs. Defaults to None.
+        range_event_cb (Optional[Callable[[dict], None]]): A callback function that gets called when a range event occurs. Defaults to None.
+        logger_cb (Optional[Callable[[Any], None]]): A callback function for logging messages. Defaults to None.
+        auto_connect (bool): A flag indicating whether to automatically connect to the serial port. Defaults to True.
+    """
     port: Optional[str] = None
     baud: int = 115200
     timeout: float = 2.0
@@ -40,6 +54,40 @@ class BelugaSerialAttr:
 
 
 class BelugaSerial:
+    """
+    A class for managing serial communication with Beluga nodes.
+
+    This class handles serial communication, device discovery, command sending,
+    and data processing for Beluga nodes. It supports automatic connection,
+    command management, and event handling through callbacks or queues.
+
+    The class manages multiple tasks for receiving and processing data frames,
+    handling neighbor updates, range updates, and range events.
+
+    Args:
+        attr (Optional[BelugaSerialAttr]): Configuration attributes for the serial connection.
+            If None, default attributes are used.
+
+    Raises:
+        FileNotFoundError: If no valid target device is found during auto-connect
+        RuntimeError: If tasks fail to start or stop properly
+
+    Example:
+        ```python
+        # Create a BelugaSerial instance with default settings
+        beluga = BelugaSerial()
+
+        # Start communication
+        beluga.start()
+
+        # Send commands
+        beluga.id()
+        beluga.channel(5)
+
+        # Stop communication
+        beluga.stop()
+        ```
+    """
     class ReconnectionStates(enum.Enum):
         RECONNECT_FIND = enum.auto()
         RECONNECT_SLEEP = enum.auto()
@@ -283,48 +331,173 @@ class BelugaSerial:
         return response
 
     def start_uwb(self):
+        """
+        Starts the UWB (Ultra-Wideband) radio on the Beluga node.
+
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
         return self._send_command("startuwb")
 
     def stop_uwb(self):
+        """
+        Stops the UWB (Ultra-Wideband) radio on the Beluga node.
+
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
         return self._send_command("stopuwb")
 
     def start_ble(self):
+        """
+        Starts the BLE (Bluetooth Low Energy) radio on the Beluga node.
+
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
         return self._send_command("startble")
 
     def stop_ble(self):
+        """
+        Stops the BLE (Bluetooth Low Energy) radio on the Beluga node.
+
+        Returns:
+            str: The command response or 'Response timed out' if the node did not respond
+        """
         return self._send_command("stopble")
 
     def id(self, new_id: Optional[Union[int, str]] = None):
+        """
+        Sets or gets the boot mode of the Beluga node.
+
+        :param new_id: The boot mode to set:
+            * None: Retrieve the current ID (Default)
+            * Any value: The new node ID
+        :type new_id: Optional[Union[int, str]]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         response = self._send_command(value=new_id)
         if new_id is not None and response.endswith("OK"):
             self._id = self._extract_id(new_id)
         return response
 
     def bootmode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the boot mode of the Beluga node.
+
+        :param mode: The boot mode to set:
+            * None: Retrieve the current mode (Default)
+            * 0: Both radios off at boot (Reset Value)
+            * 1: BLE turned on at boot
+            * 2: Both radios turned on at boot
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=mode)
 
     def rate(self, rate: Optional[int] = None):
+        """
+        Sets or gets the UWB polling rate of the Beluga node.
+
+        :param rate: The UWB polling rate to set:
+            * None: Retrieve the current rate (Default)
+            * Any value: The new UWB polling rate
+        :type rate: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=rate)
 
     def channel(self, channel: Optional[int] = None):
+        """
+        Sets or gets the UWB channel of the Beluga node.
+
+        :param channel: The UWB channel to set:
+            * None: Retrieve the current channel (Default)
+            * Any value: The new UWB channel
+        :type channel: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=channel)
 
     def reset(self):
+        """
+        Reset the node settings to their defaults
+
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command()
 
     def timeout(self, timeout: Optional[int] = None):
+        """
+        Sets or gets the neighbor timeout (ms) of the Beluga node.
+
+        :param timeout: The timeout to set:
+            * None: Retrieve the current timeout (Default)
+            * Any value: The new timeout
+        :type timeout: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=timeout)
 
     def txpower(self, power: Optional[str] = None):
+        """
+        Sets or gets the UWB transmission power of the Beluga node.
+
+        :param power: The UWB TX power to set:
+            * None: Retrieve the current power (Default)
+            * Any value: The new UWB power
+        :type power: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=power)
 
     def streammode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the stream mode of the Beluga node.
+
+        :param mode: The stream mode to set:
+            * None: Retrieve the current channel (Default)
+            * 0: Stream mode turned off
+            * 1: Stream mode turned on
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=mode)
 
     def twrmode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the Two-Way Ranging mode of the Beluga node.
+
+        :param mode: The UWB ranging to set:
+            * None: Retrieve the current mode (Default)
+            * 0: Single-sided ranging
+            * 1: Double-sided ranging
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=mode)
 
     def ledmode(self, mode: Optional[int] = None):
+        """
+        Sets or gets the LED mode of the Beluga node.
+
+        :param mode: The LED mode to set:
+            * None: Retrieve the current mode (Default)
+            * 0: LEDs on
+            * 1: LEDs off
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=mode)
 
     def _reboot(self):
@@ -337,6 +510,11 @@ class BelugaSerial:
         self.start()
 
     def reboot(self):
+        """
+        Reboots the Beluga node
+        :return: The command response (or empty string depending on the device) or a timeout message
+        :rtype: str
+        """
         response = ""
         if self._usb_remains_open:
             self._reboot_done.clear()
@@ -347,27 +525,92 @@ class BelugaSerial:
         return response
 
     def pwramp(self, mode: Optional[int] = None):
+        """
+        Sets or gets the radio power mode of the Beluga node.
+
+        :param mode: The power mode to set:
+            * None: Retrieve the current mode (Default)
+            * 0: Both external amplifiers OFF
+            * 1: BLE Amp OFF, UWB Amp ON
+            * 2: BLE Amp LOW, UWB Amp OFF
+            * 3: BLE Amp LOW, UWB Amp ON
+            * 4: BLE Amp HIGH, UWB Amp OFF
+            * 5: BLE Amp HIGH, UWB Amp ON
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=mode)
 
     def antenna(self, antenna: Optional[int] = None):
+        """
+        Sets or gets the BLE antenna of the Beluga node.
+
+        :param antenna: The BLE antenna to select:
+            * None: Retrieve the current antenna (Default)
+            * Any value: The new antenna
+        :type antenna: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=antenna)
 
     def time(self):
+        """
+        Retrieve the current Beluga node timestamp
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command()
 
     def _format(self, mode):
         return self._send_command("format", mode)
 
     def deepsleep(self):
+        """
+        Place the Beluga node to sleep
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command()
 
     def datarate(self, rate: Optional[int] = None):
+        """
+        Sets or gets the UWB data rate of the Beluga node.
+
+        :param rate: The UWB data rate to set:
+            * None: Retrieve the current data rate (Default)
+            * Any value: The new UWB data rate
+        :type rate: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=rate)
 
     def preamble(self, length: Optional[int] = None):
+        """
+        Sets or gets the UWB preamble length of the Beluga node.
+
+        :param length: The UWB preamble length to set:
+            * None: Retrieve the current length (Default)
+            * Any value: The new UWB preamble length
+        :type length: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=length)
 
     def pulserate(self, rate: Optional[int] = None):
+        """
+        Sets or gets the UWB pulse rate of the Beluga node.
+
+        :param rate: The UWB pulse rate to set:
+            * None: Retrieve the current pulse rate (Default)
+            * Any value: The new UWB pulse rate
+        :type rate: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
         return self._send_command(value=rate)
 
     def phr(self, mode: Optional[int] = None):
