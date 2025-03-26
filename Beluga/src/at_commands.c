@@ -174,7 +174,7 @@ AT_CMD_DEFINE(STARTUWB) {
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
     update_led_state(LED_UWB_ON);
-    OK(comms);
+    AT_OK(comms, "Started UWB");
 }
 AT_CMD_REGISTER(STARTUWB);
 
@@ -194,7 +194,7 @@ AT_CMD_DEFINE(STOPUWB) {
     k_sem_take(&k_sus_resp, K_FOREVER);
     k_sem_take(&k_sus_init, K_FOREVER);
     update_led_state(LED_UWB_OFF);
-    OK(comms);
+    AT_OK(comms, "Stopped UWB");
 }
 AT_CMD_REGISTER(STOPUWB);
 
@@ -220,7 +220,7 @@ AT_CMD_DEFINE(STARTBLE) {
         ERROR(comms, "Failed to start BLE (%d)", err);
     }
     update_led_state(LED_BLE_ON);
-    OK(comms);
+    AT_OK(comms, "Started BLE");
 }
 AT_CMD_REGISTER(STARTBLE);
 
@@ -243,7 +243,7 @@ AT_CMD_DEFINE(STOPBLE) {
     }
     k_sem_take(&print_list_sem, K_FOREVER);
     update_led_state(LED_BLE_OFF);
-    OK(comms);
+    AT_OK(comms, "Stopped BLE");
 }
 AT_CMD_REGISTER(STOPBLE);
 
@@ -274,7 +274,7 @@ AT_CMD_DEFINE(ID) {
     set_responder_id((uint16_t)newID);
     update_node_id((uint16_t)newID);
     updateSetting(BELUGA_ID, newID);
-    OK(comms);
+    AT_OK(comms, "ID: %d", newID);
 }
 AT_CMD_REGISTER(ID);
 
@@ -302,7 +302,7 @@ AT_CMD_DEFINE(BOOTMODE) {
     }
 
     updateSetting(BELUGA_BOOTMODE, mode);
-    OK(comms, "Bootmode: %d", mode);
+    AT_OK(comms, "Bootmode: %d", mode);
 }
 AT_CMD_REGISTER(BOOTMODE);
 
@@ -331,7 +331,7 @@ AT_CMD_DEFINE(RATE) {
 
     // reconfig ble data
     advertising_reconfig(rate != 0);
-    OK(comms, "Rate: %d", rate);
+    AT_OK(comms, "Rate: %d", rate);
 }
 AT_CMD_REGISTER(RATE);
 
@@ -370,7 +370,7 @@ AT_CMD_DEFINE(CHANNEL) {
     }
 
     updateSetting(BELUGA_UWB_CHANNEL, channel);
-    OK(comms);
+    AT_OK(comms, "Channel: %d", channel);
 }
 AT_CMD_REGISTER(CHANNEL);
 
@@ -414,7 +414,7 @@ AT_CMD_DEFINE(TIMEOUT) {
 
     updateSetting(BELUGA_BLE_TIMEOUT, timeout);
     set_node_timeout(timeout);
-    OK(comms);
+    AT_OK(comms, "Timeout: %d", timeout);
 }
 AT_CMD_REGISTER(TIMEOUT);
 
@@ -473,7 +473,7 @@ AT_CMD_DEFINE(TXPOWER) {
     }
 
     updateSetting(BELUGA_TX_POWER, (int32_t)power);
-    OK(comms);
+    AT_OK(comms, "TX Power: 0x%08X", power);
 }
 AT_CMD_REGISTER(TXPOWER);
 
@@ -496,10 +496,9 @@ AT_CMD_DEFINE(STREAMMODE) {
     if (success && int2bool(&value, mode)) {
         updateSetting(BELUGA_STREAMMODE, mode);
         set_stream_mode(value);
-        OK(comms);
-    } else {
-        ERROR(comms, "Stream mode parameter input error");
+        OK(comms, "Stream mode: %d", mode);
     }
+    ERROR(comms, "Stream mode parameter input error");
 }
 AT_CMD_REGISTER(STREAMMODE);
 
@@ -522,10 +521,9 @@ AT_CMD_DEFINE(TWRMODE) {
     if (success && int2bool(&value, twr)) {
         updateSetting(BELUGA_TWR, twr);
         set_twr_mode(value);
-        OK(comms);
-    } else {
-        ERROR(comms, "TWR mode parameter input error");
+        AT_OK(comms, "TWR: %d", twr);
     }
+    ERROR(comms, "TWR mode parameter input error");
 }
 AT_CMD_REGISTER(TWRMODE);
 
@@ -556,7 +554,7 @@ AT_CMD_DEFINE(LEDMODE) {
         restore_led_states();
     }
 
-    OK(comms);
+    AT_OK(comms, "LED mode: %d", mode);
 }
 AT_CMD_REGISTER(LEDMODE);
 
@@ -570,7 +568,7 @@ AT_CMD_REGISTER(LEDMODE);
  */
 AT_CMD_DEFINE(REBOOT) {
     LOG_INF("Running REBOOT command");
-    OK_NOW(comms);
+    AT_OK_NOW(comms, "Rebooting");
     disable_bluetooth();
     sys_reboot(SYS_REBOOT_COLD);
 }
@@ -595,11 +593,6 @@ AT_CMD_DEFINE(PWRAMP) {
     if (!success || pwramp < 0 || pwramp > 5) {
         ERROR(comms, "Power amp parameter input error");
     }
-
-    //    enum led_state uwb_state = get_uwb_led_state();
-    //    if (uwb_state == LED_UWB_ON) {
-    //        ERROR(comms, "UWB is currently active");
-    //    }
 
     int32_t channel = retrieveSetting(BELUGA_UWB_CHANNEL);
 
@@ -655,10 +648,10 @@ AT_CMD_DEFINE(PWRAMP) {
 
         updateSetting(BELUGA_RANGE_EXTEND, pwramp);
         if (err == -ENODEV) {
-            OK(comms, "BLE amplifier not supported. Only using UWB amplifier");
-        } else {
-            OK(comms);
+            at_msg(comms,
+                   "BLE amplifier not supported. Only using UWB amplifier ");
         }
+        AT_OK(comms, "Range Extension: %d", pwramp);
     } else if (err == -EINVAL) {
         ERROR(comms, "Power mode not recognized");
     } else if (err == -ENOTSUP) {
@@ -668,9 +661,8 @@ AT_CMD_DEFINE(PWRAMP) {
               "Cannot turn on UWB amplifier. Must be on channel 1 or 2 "
               "(currently on channel %" PRId32,
               channel);
-    } else {
-        ERROR(comms, "Power amplifier error occurred: %d", err);
     }
+    ERROR(comms, "Power amplifier error occurred: %d", err);
 }
 AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), PWRAMP);
 
@@ -696,7 +688,7 @@ AT_CMD_DEFINE(ANTENNA) {
     err = select_antenna(antenna);
 
     if (err == 0) {
-        OK(comms);
+        AT_OK(comms, "Antenna: %d", antenna);
     } else if (err == -EINVAL) {
         ERROR(comms, "Invalid antenna selection");
     } else if (err == -ENOTSUP) {
@@ -742,7 +734,7 @@ AT_CMD_DEFINE(FORMAT) {
 
     updateSetting(BELUGA_OUT_FORMAT, mode);
     set_format(comms, (enum comms_out_format_mode)mode);
-    OK(comms);
+    AT_OK(comms, "Format Mode: %d", mode);
 }
 AT_CMD_REGISTER(FORMAT);
 
@@ -756,7 +748,7 @@ AT_CMD_REGISTER(FORMAT);
  */
 AT_CMD_DEFINE(DEEPSLEEP) {
     LOG_INF("Running DEEPSLEEP command");
-    OK_NOW(comms);
+    AT_OK_NOW(comms, "Entering into deep sleep");
     enter_deep_sleep();
 }
 AT_CMD_REGISTER(DEEPSLEEP);
@@ -789,7 +781,7 @@ AT_CMD_DEFINE(PHR) {
     }
 
     updateSetting(BELUGA_UWB_PHR, phr);
-    OK();
+    AT_OK(comms, "UWB PHR mode %d", phr);
 }
 AT_CMD_REGISTER(PHR);
 
@@ -822,7 +814,7 @@ AT_CMD_DEFINE(DATARATE) {
     }
 
     updateSetting(BELUGA_UWB_DATA_RATE, rate);
-    OK(comms);
+    AT_OK(comms, "UWB data rate %d", rate);
 }
 AT_CMD_REGISTER(DATARATE);
 
@@ -854,7 +846,7 @@ AT_CMD_DEFINE(PULSERATE) {
     }
 
     updateSetting(BELUGA_UWB_PULSE_RATE, rate);
-    OK(comms);
+    AT_OK(comms, "Pulse rate: %d", rate);
 }
 AT_CMD_REGISTER(PULSERATE);
 
@@ -886,7 +878,7 @@ AT_CMD_DEFINE(PREAMBLE) {
     }
 
     updateSetting(BELUGA_UWB_PREAMBLE, preamble);
-    OK(comms);
+    AT_OK(comms, "Preamble length: %d", preamble);
 }
 AT_CMD_REGISTER(PREAMBLE);
 
@@ -919,7 +911,7 @@ AT_CMD_DEFINE(PAC) {
     }
 
     updateSetting(BELUGA_UWB_PAC, pac_size);
-    OK(comms);
+    AT_OK(comms, "PAC size: %d", pac_size);
 }
 AT_CMD_REGISTER(PAC);
 
@@ -951,7 +943,7 @@ AT_CMD_DEFINE(SFD) {
     }
 
     updateSetting(BELUGA_UWB_NSSFD, sfd);
-    OK(comms);
+    AT_OK(comms, "Nonstandard SFD: %d", sfd);
 }
 AT_CMD_REGISTER(SFD);
 
@@ -982,7 +974,7 @@ AT_CMD_DEFINE(PANID) {
     }
     set_responder_pan_id((uint16_t)pan_id);
     updateSetting(BELUGA_PAN_ID, pan_id);
-    OK(comms);
+    AT_OK(comms, "PAN ID: 0x%04X", (uint16_t)pan_id);
 }
 AT_CMD_REGISTER(PANID);
 
@@ -1007,6 +999,31 @@ AT_CMD_DEFINE(EVICT) {
 
     set_node_eviction_policy(scheme);
     updateSetting(BELUGA_EVICTION_SCHEME, scheme);
-    OK(comms);
+    AT_OK(comms, "Eviction scheme: %d", scheme);
 }
 AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT), EVICT);
+
+/**
+ * Sets the verbosity for the commands
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ * @return 1 upon error
+ */
+AT_CMD_DEFINE(VERBOSE) {
+    LOG_INF("Running VERBOSE command");
+    READ_SETTING(comms, argc, 2, BELUGA_VERBOSE, "Verbose");
+    int32_t mode;
+    bool success = strtoint32(argv[1], &mode);
+
+    if (!success || mode < 0 || mode > 1) {
+        ERROR(comms, "Invalid verbose mode");
+    }
+
+    set_verbosity(comms, mode == 1);
+    updateSetting(BELUGA_VERBOSE, mode);
+
+    AT_OK(comms, "Verbose: %d", mode);
+}
+AT_CMD_REGISTER(VERBOSE);

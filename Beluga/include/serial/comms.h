@@ -285,6 +285,7 @@ struct comms_ctx {
     struct k_mutex wr_mtx;             ///< Write lock
     k_tid_t tid;                       ///< Comms thread ID
     enum comms_out_format_mode format; ///< Output mode
+    bool verbose;                      ///< Verbose mode
 };
 
 /**
@@ -403,6 +404,16 @@ void comms_flush_out(const struct comms *comms, int ret);
 int wait_comms_ready(const struct comms *comms);
 
 /**
+ * @brief Determines if AT commands should respond with a simple OK or with
+ * additional context
+ * @param[in] comms The comms object
+ * @param[in] verbose Determines the verbosity of the responses
+ * @return 0 upon success
+ * @return -EINVAL if input is invalid
+ */
+int set_verbosity(const struct comms *comms, bool verbose);
+
+/**
  * @brief Helper that prints an AT command response and indicates that the
  * command executed correctly.
  *
@@ -446,11 +457,30 @@ int wait_comms_ready(const struct comms *comms);
  *
  * @param[in] _comms Pointer to the comms instance
  * @param[in] ... Optional message to print with an "OK" response
+ *
+ * @note If the command should change its response based on the verbosity
+ * flag, then use `AT_OK`
  */
 #define OK(_comms, ...)                                                        \
     COND_CODE_1(IS_EMPTY(__VA_ARGS__), (return 0),                             \
                 (Z_OK_MSG(_comms, GET_ARG_N(1, __VA_ARGS__),                   \
                           GET_ARGS_LESS_N(1, __VA_ARGS__))))
+
+/**
+ * @brief Macro that indicates that an AT command executed correctly.
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] msg_ The verbose message
+ * @param[in] ... Optional message format parameters
+ */
+#define AT_OK(_comms, msg_, ...)                                               \
+    do {                                                                       \
+        if ((_comms)->ctx->verbose) {                                          \
+            OK(_comms, msg_, __VA_ARGS__);                                     \
+        } else {                                                               \
+            OK(_comms);                                                        \
+        }                                                                      \
+    } while (0)
 
 /**
  * @brief Helper macro that inserts an AT command response into the transmit
@@ -503,10 +533,32 @@ int wait_comms_ready(const struct comms *comms);
  *
  * @param[in] _comms Pointer to the comms instance
  * @param[in] ... Optional message and list of parameters to print
+ *
+ * @note If the command should change its response based on the verbosity
+ * flag, then use `AT_OK_NOW`
  */
 #define OK_NOW(_comms, ...)                                                    \
     do {                                                                       \
         Z_INSERT_MSG_NOW(_comms, __VA_ARGS__) comms_flush_out(_comms, 0);      \
+    } while (0)
+
+/**
+ * @brief Macro that inserts an AT command response into the transmit
+ * buffer. Additionally, this macro will transmit the response before the
+ * command returns. This is best used in cases where the command will
+ * not return (for example, shutting down the device).
+ *
+ * @param[in] _comms Pointer to the comms instance
+ * @param[in] msg_ The verbose message
+ * @param[in] ... Optional message and list of parameters to print
+ */
+#define AT_OK_NOW(_comms, msg_, ...)                                           \
+    do {                                                                       \
+        if ((_comms)->ctx->verbose) {                                          \
+            OK_NOW(_comms, msg_, __VA_ARGS__);                                 \
+        } else {                                                               \
+            OK_NOW(_comms);                                                    \
+        }                                                                      \
     } while (0)
 
 /**

@@ -858,3 +858,19 @@ int wait_comms_ready(const struct comms *comms) {
     _COMMS_API(comms, wait_dtr);
     return 0;
 }
+
+/**
+ * @brief Determines if AT commands should respond with a simple OK or with
+ * additional context
+ * @param[in] comms The comms object
+ * @param[in] verbose Determines the verbosity of the responses
+ * @return 0 upon success
+ * @return -EINVAL if input is invalid
+ */
+int set_verbosity(const struct comms *comms, bool verbose) {
+    if (comms == NULL) {
+        return -EINVAL;
+    }
+    comms->ctx->verbose = verbose;
+    return 0;
+}
