@@ -236,6 +236,8 @@ Commands:
 24. `PREAMBLE <#preamble>`_
 25. `PAC <#pac>`_
 26. `SFD <#sfd>`_
+27. `EVICT <#evict>`_
+28. `VERBOSE <#verbose>`_
 
 ID
 --
@@ -793,6 +795,66 @@ This setting is saved in flash.
 +-----------+---------+---------+
 | id        | 0-65535 | 57034   |
 +-----------+---------+---------+
+
+EVICT
+-----
+.. code-block::
+
+    AT+EVICT <scheme>
+    AT+EVICT
+
+Determines which scheme to use when evicting nodes from the
+neighbor list. No argument will return the current scheme.
+This setting is saved to flash.
+
++-------------+-----------------------------+---------------------------------------------+
+| mode        | Short Description           | Long Description                            |
++=============+=============================+=============================================+
+| 0           | Index Round Robin           | Evict nodes uses a round-robin strategy via |
+|             |                             | index. This will evict node 0 first, then   |
+|             |                             | node 1 on the next insertion, then node 2   |
+|             |                             | on the following insertion. After evicting  |
+|             |                             | N - 1 nodes (N being the maximum number of  |
+|             |                             | nodes the neighbor list can hold), then     |
+|             |                             | node 0 will be evicted next. This strategy  |
+|             |                             | is not recommended.                         |
++-------------+-----------------------------+---------------------------------------------+
+| 1 (Default) | Lowest RSSI                 | Evicts the node with the lowest RSSI. If    |
+|             |                             | there are no nodes with lower RSSIs, then   |
+|             |                             | the insertion does not take place.          |
++-------------+-----------------------------+---------------------------------------------+
+| 2           | Longest Range               | Evict the node with the largest ranging     |
+|             |                             | value.                                      |
++-------------+-----------------------------+---------------------------------------------+
+| 3           | Least Recently Scanned Node | Evict the node that has not be scanned by   |
+|             |                             | the BLE in the longest amount of time.      |
++-------------+-----------------------------+---------------------------------------------+
+| 4           | Least Recently Ranged To    | Evict the node that has node been           |
+|             |                             | successfully ranged to in the longest       |
+|             |                             | amount of time.                             |
++-------------+-----------------------------+---------------------------------------------+
+
+.. note::
+    This command requires ``CONFIG_BELUGA_EVICT_RUNTIME_SELECT`` to be enabled.
+
+VERBOSE
+-------
+.. code-block::
+
+    AT+VERBOSE <mode>
+    AT+VERBOSE
+
+Determines if the command response are verbose or not.
+No argument will return the current setting.
+This setting is saved in flash.
+
++-------------+-----------------------------+
+| mode        | Description                 |
++=============+=============================+
+| 0 (Default) | Verbose mode turned off     |
++-------------+-----------------------------+
+| 1           | Verbose mode turned on      |
++-------------+-----------------------------+
 
 Appendix
 ========
