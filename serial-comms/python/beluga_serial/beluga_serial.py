@@ -97,7 +97,7 @@ class BelugaSerial:
         ```
     """
 
-    class ReconnectionStates(enum.Enum):
+    class _ReconnectionStates(enum.Enum):
         RECONNECT_FIND = enum.auto()
         RECONNECT_SLEEP = enum.auto()
         RECONNECT_CONNECT = enum.auto()
@@ -857,48 +857,48 @@ class BelugaSerial:
             response = response[start + size:]
 
     def __reconnect(self):
-        state = self.ReconnectionStates.RECONNECT_FIND
+        state = self._ReconnectionStates.RECONNECT_FIND
         skip = []
         index: SupportsIndex = 0
         port: str = ""
         id_resp: str = ""
         ports = []
 
-        while state != self.ReconnectionStates.RECONNECT_DONE:
+        while state != self._ReconnectionStates.RECONNECT_DONE:
             try:
                 match state:
-                    case self.ReconnectionStates.RECONNECT_FIND:
+                    case self._ReconnectionStates.RECONNECT_FIND:
                         ports = self._find_port_candidates(skip)
                         index = 0
                         # noinspection PyTypeChecker
                         port = ports[index]
-                        state = self.ReconnectionStates.RECONNECT_SLEEP if not ports else self.ReconnectionStates.RECONNECT_CONNECT
-                    case self.ReconnectionStates.RECONNECT_CONNECT:
+                        state = self._ReconnectionStates.RECONNECT_SLEEP if not ports else self._ReconnectionStates.RECONNECT_CONNECT
+                    case self._ReconnectionStates.RECONNECT_CONNECT:
                         opened = self._open_port(port)
-                        state = self.ReconnectionStates.RECONNECT_GET_ID if opened else self.ReconnectionStates.RECONNECT_NEXT
-                    case self.ReconnectionStates.RECONNECT_GET_ID:
+                        state = self._ReconnectionStates.RECONNECT_GET_ID if opened else self._ReconnectionStates.RECONNECT_NEXT
+                    case self._ReconnectionStates.RECONNECT_GET_ID:
                         id_resp = self._get_id_from_device()
-                        state = self.ReconnectionStates.RECONNECT_NEXT if not id_resp else self.ReconnectionStates.RECONNECT_CHECK_ID
-                    case self.ReconnectionStates.RECONNECT_CHECK_ID:
+                        state = self._ReconnectionStates.RECONNECT_NEXT if not id_resp else self._ReconnectionStates.RECONNECT_CHECK_ID
+                    case self._ReconnectionStates.RECONNECT_CHECK_ID:
                         id_ = self._extract_id(id_resp)
-                        state = self.ReconnectionStates.RECONNECT_DONE if self._id == id_ else self.ReconnectionStates.RECONNECT_UPDATE_SKIPS
-                    case self.ReconnectionStates.RECONNECT_SLEEP:
+                        state = self._ReconnectionStates.RECONNECT_DONE if self._id == id_ else self._ReconnectionStates.RECONNECT_UPDATE_SKIPS
+                    case self._ReconnectionStates.RECONNECT_SLEEP:
                         time.sleep(OPEN_DELAY)
-                        state = self.ReconnectionStates.RECONNECT_FIND
-                    case self.ReconnectionStates.RECONNECT_UPDATE_SKIPS:
+                        state = self._ReconnectionStates.RECONNECT_FIND
+                    case self._ReconnectionStates.RECONNECT_UPDATE_SKIPS:
                         self._serial.close()
                         skip.append(port)
-                        state = self.ReconnectionStates.RECONNECT_NEXT
-                    case self.ReconnectionStates.RECONNECT_NEXT:
+                        state = self._ReconnectionStates.RECONNECT_NEXT
+                    case self._ReconnectionStates.RECONNECT_NEXT:
                         index += 1
-                        state = self.ReconnectionStates.RECONNECT_SLEEP if index >= len(
-                            ports) else self.ReconnectionStates.RECONNECT_CONNECT
+                        state = self._ReconnectionStates.RECONNECT_SLEEP if index >= len(
+                            ports) else self._ReconnectionStates.RECONNECT_CONNECT
                     case _:
                         self._log("Reached invalid connection state")
                         assert False
             except IndexError:
                 # Just reset the state machine
-                state = self.ReconnectionStates.RECONNECT_FIND
+                state = self._ReconnectionStates.RECONNECT_FIND
         self._log(f"Connected to {port}")
 
     def _reconnect(self):
