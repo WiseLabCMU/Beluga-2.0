@@ -1,6 +1,14 @@
+#!/user/bin/env python
+#
+# Abstraction for serial communications with Beluga nodes
+#
+# Author: Tom Schmitz \<tschmitz@andrew.cmu.edu\>
+#
+# SPDX-License-Identifier:    BSD-3-Clause
+
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional, Union, TextIO, Callable, Any, Tuple, SupportsIndex
+from typing import List, Dict, Optional, Union, Callable, Any, Tuple, SupportsIndex
 import queue
 import time
 from dataclasses import dataclass
