@@ -1002,3 +1002,28 @@ AT_CMD_DEFINE(EVICT) {
     AT_OK(comms, "Eviction scheme: %d", scheme);
 }
 AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT), EVICT);
+
+/**
+ * Sets the verbosity for the commands
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ * @return 1 upon error
+ */
+AT_CMD_DEFINE(VERBOSE) {
+    LOG_INF("Running VERBOSE command");
+    READ_SETTING(comms, argc, 2, BELUGA_VERBOSE, "Verbose");
+    int32_t mode;
+    bool success = strtoint32(argv[1], &mode);
+
+    if (!success || mode < 0 || mode > 1) {
+        ERROR(comms, "Invalid verbose mode");
+    }
+
+    set_verbosity(comms, mode == 1);
+    updateSetting(BELUGA_VERBOSE, mode);
+
+    AT_OK(comms, "Verbose: %d", mode);
+}
+AT_CMD_REGISTER(VERBOSE);
