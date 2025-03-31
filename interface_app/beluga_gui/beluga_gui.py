@@ -345,6 +345,11 @@ class Ui_BelugaGUI(object):
         self.LedMode.setChecked(True)
         self.LedMode.setObjectName("LedMode")
         self.horizontalLayout_8.addWidget(self.LedMode)
+        self.checkBox = UwbSfdCheckBox(self.verticalLayoutWidget_2)
+        self.checkBox.setEnabled(False)
+        self.checkBox.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.checkBox.setObjectName("checkBox")
+        self.horizontalLayout_8.addWidget(self.checkBox)
         spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_8.addItem(spacerItem5)
         self.gridLayout.addLayout(self.horizontalLayout_8, 4, 0, 1, 1)
@@ -732,32 +737,8 @@ class Ui_BelugaGUI(object):
         self.retranslateUi(BelugaGUI)
         self.TerminalTab.setCurrentIndex(1)
         self.RangesTabs.setCurrentIndex(3)
+        self.BootModeMenu.buddy_update['bool'].connect(self.label_2.update_buddy_state) # type: ignore
         self.ConnectButton.pressed.connect(self.BootModeMenu.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbPollRate.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbChannel.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.NeighborTimeout.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.RangingMode.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.LedMode.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.AmplifierMode.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.AntennaUsage.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbDataRate.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbPulseRate.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbPHR.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbPreambleLength.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbPacSize.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbPanID.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.EvictionScheme.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbTxPowerSimple.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbTxPowerConfigMode.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostNormCoarseGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostNormFineGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostP500CoarseGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostP500FineGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostP250CoarseGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostP250FineGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostP125CoarseGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.BoostP125FineGain.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.ApplyPowerSettings.dev_connected) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(BelugaGUI)
 
     def retranslateUi(self, BelugaGUI):
@@ -835,6 +816,7 @@ class Ui_BelugaGUI(object):
         self.label_7.setText(_translate("BelugaGUI", "Timeout"))
         self.RangingMode.setText(_translate("BelugaGUI", "Double-Sided Ranging"))
         self.LedMode.setText(_translate("BelugaGUI", "LEDs On"))
+        self.checkBox.setText(_translate("BelugaGUI", "Proprietary SFD"))
         self.ApplyPowerSettings.setText(_translate("BelugaGUI", "Apply Power Setting"))
         self.label_22.setText(_translate("BelugaGUI", "UWB Transmit Power:"))
         self.UwbTxPowerLabel.setText(_translate("BelugaGUI", "41.5"))
@@ -927,7 +909,7 @@ class Ui_BelugaGUI(object):
         self.RangesTabs.setTabText(self.RangesTabs.indexOf(self.RssiGraph), _translate("BelugaGUI", "RSSI Graph"))
         self.RangesTabs.setTabText(self.RangesTabs.indexOf(self.RssiVsDistance), _translate("BelugaGUI", "RSSI vs Distance"))
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Ranges), _translate("BelugaGUI", "Ranges"))
-from beluga_config import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaCustomPowerLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, FineGainSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, TimeoutLineEdit, UwbButton, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPowerConfigCheckBox, UwbPowerLabel, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbTxPowerComboBox
+from beluga_config import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaCustomPowerLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, FineGainSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, TimeoutLineEdit, UwbButton, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPowerConfigCheckBox, UwbPowerLabel, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
 from device import ConnectStatusMsg, DeviceComboBox, DeviceConnectButton
 from log_files import FileSelectButton
 from neighbor_list import NeighborListTable, RemoveDroppedNeighbors
