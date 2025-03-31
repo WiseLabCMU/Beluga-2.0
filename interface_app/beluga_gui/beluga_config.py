@@ -5,30 +5,47 @@ from PyQt5 import QtCore
 from typing import Optional
 
 
-class AmplifierComboBox(QComboBox):
-    pass
+class AbstractBelugaWidget:
+    _connected = False
+    def dev_connected(self):
+        self._connected = not self._connected
+        self.update()
 
-class AntennaCheckBox(QCheckBox):
-    pass
 
-class ApplyPowerButton(QCheckBox):
-    pass
+class AmplifierComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
 
-class BleButton(QPushButton):
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class AntennaCheckBox(QCheckBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class ApplyPowerButton(QCheckBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class BleButton(QPushButton, AbstractBelugaWidget):
     class BleButtonSignalEmitter(QObject):
         bool_update = QtCore.pyqtSignal(bool)
 
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._connected = False
         self._uwb_running = False
         self._ble_running = False
         self._ble_emitter = self.BleButtonSignalEmitter()
         self.ble_updated = {"bool": self._ble_emitter.bool_update}
-
-    def dev_connected(self):
-        self._connected = not self._connected
-        self.update()
 
     def toggle_ble(self):
         self._ble_running = not self._ble_running
@@ -48,69 +65,109 @@ class BleButton(QPushButton):
             self.setText("Start BLE")
         self.setEnabled(enable)
 
-class BootModeComboBox(QComboBox):
-    pass
+class BootModeComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
 
-class ChannelComboBox(QComboBox):
-    pass
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
 
-class CoarseGainComboBox(QComboBox):
-    pass
+class ChannelComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
 
-class FineGainSpinBox(QDoubleSpinBox):
-    pass
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
 
-class LedCheckBox(QCheckBox):
-    pass
+class CoarseGainComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
 
-class NeighborEvictionSchemeComboBox(QComboBox):
-    pass
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
 
-class NodeIdLineEdit(QLineEdit):
+class FineGainSpinBox(QDoubleSpinBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class LedCheckBox(QCheckBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class NeighborEvictionSchemeComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class NodeIdLineEdit(QLineEdit, AbstractBelugaWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        self._device_connected = False
         self._uwb_active = False
-
-    def dev_connected(self):
-        self._device_connected = not self._device_connected
-        self.update()
 
     def uwb_update(self, state: bool):
         self._uwb_active = state
         self.update()
 
     def update(self):
-        enable = self._device_connected and not self._uwb_active
+        enable = self._connected and not self._uwb_active
         self.setEnabled(enable)
 
-class PollRateLineEdit(QLineEdit):
-    pass
+class PollRateLineEdit(QLineEdit, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
 
-class RangingCheckBox(QCheckBox):
-    pass
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
 
-class RebootButton(QPushButton):
-    pass
+class RangingCheckBox(QCheckBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
 
-class TimeoutLineEdit(QLineEdit):
-    pass
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
 
-class UwbButton(QPushButton):
+class RebootButton(QPushButton, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class TimeoutLineEdit(QLineEdit, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class UwbButton(QPushButton, AbstractBelugaWidget):
     class UwbButtonSignalEmitter(QObject):
         bool_update = QtCore.pyqtSignal(bool)
 
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._dev_connected = False
         self._uwb_active = False
         self._ble_active = False
         self._uwb_updated = self.UwbButtonSignalEmitter()
         self.uwb_updated = {'bool': self._uwb_updated.bool_update}
-
-    def dev_connected(self):
-        self._dev_connected = not self._dev_connected
-        self.update()
 
     def update_uwb(self):
         self._uwb_active = not self._uwb_active
@@ -122,7 +179,7 @@ class UwbButton(QPushButton):
         self.update()
 
     def update(self):
-        enable = self._dev_connected and self._ble_active
+        enable = self._connected and self._ble_active
         if self._uwb_active:
             self.setText("Stop UWB")
         else:
@@ -131,65 +188,90 @@ class UwbButton(QPushButton):
 
 
 
-class UwbDataRateComboBox(QComboBox):
-    pass
-
-class UwbPacSizeComboBox(QComboBox):
-    pass
-
-class UwbPanIdLineEdit(QLineEdit):
-    pass
-
-class UwbPhrCheckBox(QCheckBox):
-    pass
-
-class UwbPowerConfigCheckBox(QCheckBox):
-    pass
-
-class UwbPowerLabel(QLabel):
+class UwbDataRateComboBox(QComboBox, AbstractBelugaWidget):
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._dev_connected = False
-
-    def dev_connected(self):
-        self._dev_connected = not self._dev_connected
-        self.update()
 
     def update(self):
-        enable = self._dev_connected
+        enable = self._connected
         self.setEnabled(enable)
 
-class UwbPreambleLengthComboBox(QComboBox):
-    pass
-
-class UwbPulseRateComboBox(QComboBox):
-    pass
-
-class UwbTxPowerComboBox(QComboBox):
-    pass
-
-class BelugaCustomPowerLabel(QLabel):
+class UwbPacSizeComboBox(QComboBox, AbstractBelugaWidget):
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._dev_connected = False
-
-    def dev_connected(self):
-        self._dev_connected = not self._dev_connected
-        self.update()
 
     def update(self):
-        enable = self._dev_connected
+        enable = self._connected
         self.setEnabled(enable)
 
-class BelugaLabel(QLabel):
+class UwbPanIdLineEdit(QLineEdit, AbstractBelugaWidget):
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._dev_connected = False
-
-    def dev_connected(self):
-        self._dev_connected = not self._dev_connected
-        self.update()
 
     def update(self):
-        enable = self._dev_connected
+        enable = self._connected
+        self.setEnabled(enable)
+
+class UwbPhrCheckBox(QCheckBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class UwbPowerConfigCheckBox(QCheckBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class UwbPowerLabel(QLabel, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class UwbPreambleLengthComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class UwbPulseRateComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class UwbTxPowerComboBox(QComboBox, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class BelugaCustomPowerLabel(QLabel, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
+        self.setEnabled(enable)
+
+class BelugaLabel(QLabel, AbstractBelugaWidget):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+
+    def update(self):
+        enable = self._connected
         self.setEnabled(enable)

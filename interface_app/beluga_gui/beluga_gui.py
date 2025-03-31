@@ -437,7 +437,7 @@ class Ui_BelugaGUI(object):
         self.gridLayout.addLayout(self.horizontalLayout_15, 5, 1, 1, 1)
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.label_4 = BelugaLabel(self.verticalLayoutWidget_2)
+        self.label_4 = QtWidgets.QLabel(self.verticalLayoutWidget_2)
         self.label_4.setObjectName("label_4")
         self.horizontalLayout_5.addWidget(self.label_4)
         self.DeviceList = DeviceComboBox(self.verticalLayoutWidget_2)
@@ -732,33 +732,32 @@ class Ui_BelugaGUI(object):
         self.retranslateUi(BelugaGUI)
         self.TerminalTab.setCurrentIndex(1)
         self.RangesTabs.setCurrentIndex(3)
-        self.ConnectButton.pressed.connect(self.label_2.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_3.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_5.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_7.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_9.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_10.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_11.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_12.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_13.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_15.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_16.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_6.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_22.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_28.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.UwbTxPowerLabel.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_19.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_20.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_21.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_8.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_14.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_17.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_18.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_23.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_24.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_25.dev_connected) # type: ignore
-        self.ConnectButton.pressed.connect(self.label_26.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BootModeMenu.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbPollRate.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbChannel.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.NeighborTimeout.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.RangingMode.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.LedMode.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.AmplifierMode.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.AntennaUsage.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbDataRate.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbPulseRate.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbPHR.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbPreambleLength.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbPacSize.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbPanID.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.EvictionScheme.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbTxPowerSimple.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.UwbTxPowerConfigMode.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostNormCoarseGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostNormFineGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostP500CoarseGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostP500FineGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostP250CoarseGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostP250FineGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostP125CoarseGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.BoostP125FineGain.dev_connected) # type: ignore
+        self.ConnectButton.pressed.connect(self.ApplyPowerSettings.dev_connected) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(BelugaGUI)
 
     def retranslateUi(self, BelugaGUI):

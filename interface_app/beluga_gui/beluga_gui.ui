@@ -2086,76 +2086,121 @@
    <class>BootModeComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>PollRateLineEdit</class>
    <extends>QLineEdit</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>ChannelComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>TimeoutLineEdit</class>
    <extends>QLineEdit</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>RangingCheckBox</class>
    <extends>QCheckBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>LedCheckBox</class>
    <extends>QCheckBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>AmplifierComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>AntennaCheckBox</class>
    <extends>QCheckBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbDataRateComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbPulseRateComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbPhrCheckBox</class>
    <extends>QCheckBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbPreambleLengthComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbPacSizeComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbPanIdLineEdit</class>
    <extends>QLineEdit</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>NeighborEvictionSchemeComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>RebootButton</class>
@@ -2166,26 +2211,41 @@
    <class>UwbTxPowerComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbPowerConfigCheckBox</class>
    <extends>QCheckBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>CoarseGainComboBox</class>
    <extends>QComboBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>FineGainSpinBox</class>
    <extends>QDoubleSpinBox</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>ApplyPowerButton</class>
    <extends>QPushButton</extends>
    <header>beluga_config.h</header>
+   <slots>
+    <slot>dev_connected()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>UwbPowerLabel</class>
@@ -2237,415 +2297,143 @@
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_2</receiver>
+   <receiver>BootModeMenu</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>260</x>
-     <y>64</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>44</x>
-     <y>135</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>317</x>
-     <y>70</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>201</x>
-     <y>113</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_3</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>323</x>
-     <y>63</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>237</x>
-     <y>140</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_5</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>308</x>
+     <x>272</x>
      <y>65</y>
     </hint>
     <hint type="destinationlabel">
-     <x>404</x>
-     <y>141</y>
+     <x>186</x>
+     <y>137</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_7</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>313</x>
-     <y>71</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>57</x>
-     <y>171</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_9</receiver>
+   <receiver>UwbPollRate</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>299</x>
-     <y>67</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>130</x>
-     <y>211</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_10</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>276</x>
-     <y>61</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>71</x>
-     <y>232</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_11</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>262</x>
      <y>59</y>
     </hint>
     <hint type="destinationlabel">
-     <x>270</x>
-     <y>242</y>
+     <x>327</x>
+     <y>139</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_12</receiver>
+   <receiver>UwbChannel</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>295</x>
-     <y>59</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>130</x>
-     <y>270</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_13</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>263</x>
-     <y>58</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>336</x>
-     <y>283</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_15</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>269</x>
+     <x>286</x>
      <y>65</y>
     </hint>
     <hint type="destinationlabel">
-     <x>34</x>
-     <y>313</y>
+     <x>450</x>
+     <y>136</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_16</receiver>
+   <receiver>NeighborTimeout</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>281</x>
+     <x>250</x>
      <y>64</y>
     </hint>
     <hint type="destinationlabel">
-     <x>278</x>
-     <y>308</y>
+     <x>173</x>
+     <y>173</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_6</receiver>
+   <receiver>RangingMode</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>267</x>
-     <y>63</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>704</x>
-     <y>101</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_22</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>303</x>
-     <y>67</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>838</x>
-     <y>310</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_28</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>298</x>
-     <y>63</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1007</x>
-     <y>310</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>UwbTxPowerLabel</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>260</x>
+     <x>234</x>
      <y>68</y>
     </hint>
     <hint type="destinationlabel">
-     <x>988</x>
-     <y>308</y>
+     <x>279</x>
+     <y>178</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_19</receiver>
+   <receiver>LedMode</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>292</x>
+     <x>309</x>
      <y>58</y>
     </hint>
     <hint type="destinationlabel">
-     <x>678</x>
-     <y>138</y>
+     <x>409</x>
+     <y>169</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_20</receiver>
+   <receiver>AmplifierMode</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>275</x>
-     <y>70</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>886</x>
-     <y>138</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_21</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>263</x>
-     <y>60</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1020</x>
-     <y>142</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_8</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>288</x>
-     <y>72</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>666</x>
-     <y>174</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_14</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>328</x>
-     <y>77</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>653</x>
-     <y>205</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_17</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>257</x>
-     <y>67</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>665</x>
-     <y>242</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_18</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>274</x>
-     <y>63</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>646</x>
-     <y>276</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_23</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>282</x>
-     <y>77</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1169</x>
-     <y>168</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_24</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>245</x>
-     <y>70</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1168</x>
-     <y>210</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>ConnectButton</sender>
-   <signal>pressed()</signal>
-   <receiver>label_25</receiver>
-   <slot>dev_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>257</x>
+     <x>243</x>
      <y>71</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1168</x>
+     <x>261</x>
+     <y>216</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>AntennaUsage</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>238</x>
+     <y>63</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>480</x>
+     <y>212</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>UwbDataRate</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>236</x>
+     <y>76</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>154</x>
      <y>241</y>
     </hint>
    </hints>
@@ -2653,16 +2441,272 @@
   <connection>
    <sender>ConnectButton</sender>
    <signal>pressed()</signal>
-   <receiver>label_26</receiver>
+   <receiver>UwbPulseRate</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>237</x>
+     <y>61</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>370</x>
+     <y>233</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>UwbPHR</receiver>
    <slot>dev_connected()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>238</x>
+     <y>65</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>514</x>
+     <y>240</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>UwbPreambleLength</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>239</x>
+     <y>58</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>224</x>
+     <y>275</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>UwbPacSize</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>302</x>
+     <y>72</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>454</x>
+     <y>273</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>UwbPanID</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>253</x>
+     <y>70</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>166</x>
+     <y>302</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>EvictionScheme</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>240</x>
+     <y>59</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>451</x>
+     <y>308</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>UwbTxPowerSimple</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>284</x>
+     <y>60</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>863</x>
+     <y>103</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>UwbTxPowerConfigMode</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>274</x>
+     <y>65</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1050</x>
+     <y>108</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostNormCoarseGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>291</x>
+     <y>60</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>884</x>
+     <y>169</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostNormFineGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>315</x>
+     <y>72</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1087</x>
+     <y>178</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostP500CoarseGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>249</x>
+     <y>66</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>825</x>
+     <y>213</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostP500FineGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>257</x>
      <y>71</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1169</x>
+     <x>1024</x>
+     <y>210</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostP250CoarseGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>261</x>
+     <y>71</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>855</x>
+     <y>232</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostP250FineGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>236</x>
+     <y>63</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>238</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostP125CoarseGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>255</x>
+     <y>64</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>923</x>
      <y>276</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>BoostP125FineGain</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>309</x>
+     <y>71</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1035</x>
+     <y>273</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ConnectButton</sender>
+   <signal>pressed()</signal>
+   <receiver>ApplyPowerSettings</receiver>
+   <slot>dev_connected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>283</x>
+     <y>70</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>682</x>
+     <y>310</y>
     </hint>
    </hints>
   </connection>
