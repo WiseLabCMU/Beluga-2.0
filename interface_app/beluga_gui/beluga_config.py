@@ -147,7 +147,17 @@ class UwbPowerConfigCheckBox(QCheckBox):
     pass
 
 class UwbPowerLabel(QLabel):
-    pass
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+        self._dev_connected = False
+
+    def dev_connected(self):
+        self._dev_connected = not self._dev_connected
+        self.update()
+
+    def update(self):
+        enable = self._dev_connected
+        self.setEnabled(enable)
 
 class UwbPreambleLengthComboBox(QComboBox):
     pass
@@ -157,3 +167,29 @@ class UwbPulseRateComboBox(QComboBox):
 
 class UwbTxPowerComboBox(QComboBox):
     pass
+
+class BelugaCustomPowerLabel(QLabel):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+        self._dev_connected = False
+
+    def dev_connected(self):
+        self._dev_connected = not self._dev_connected
+        self.update()
+
+    def update(self):
+        enable = self._dev_connected
+        self.setEnabled(enable)
+
+class BelugaLabel(QLabel):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+        self._dev_connected = False
+
+    def dev_connected(self):
+        self._dev_connected = not self._dev_connected
+        self.update()
+
+    def update(self):
+        enable = self._dev_connected
+        self.setEnabled(enable)
