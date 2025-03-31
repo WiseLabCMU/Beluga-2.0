@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>1215</width>
-    <height>596</height>
+    <height>650</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -324,1302 +324,68 @@
      <attribute name="title">
       <string>Configuration</string>
      </attribute>
-     <widget class="QWidget" name="verticalLayoutWidget_2">
-      <property name="geometry">
-       <rect>
-        <x>9</x>
-        <y>0</y>
-        <width>1181</width>
-        <height>521</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Fixed</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>10</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="8" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_13">
-           <item>
-            <widget class="BelugaLabel" name="label_15">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>UWB PAN ID</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbPanID</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbPanIdLineEdit" name="UwbPanID">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label_16">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Neighbor Eviction Scheme</string>
-             </property>
-             <property name="buddy">
-              <cstring>EvictionScheme</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="NeighborEvictionSchemeComboBox" name="EvictionScheme">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>150</width>
-               <height>0</height>
-              </size>
-             </property>
-             <item>
-              <property name="text">
-               <string>Round Robin</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Lowest RSSI</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Furthest Away</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Least Recently Scanned</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Least Recently Ranged</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_10">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="7" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_17">
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_18">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>BOOSTP125</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="CoarseGainComboBox" name="BoostP125CoarseGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>Off (No Output)</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>0 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>7.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>10 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>12.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>15 dB</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="FineGainSpinBox" name="BoostP125FineGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="decimals">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <double>15.500000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.500000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_26">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>25</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>dB</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="5" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_9">
-           <item>
-            <widget class="BelugaLabel" name="label_9">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>External Power Amplifiers</string>
-             </property>
-             <property name="buddy">
-              <cstring>AmplifierMode</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="AmplifierComboBox" name="AmplifierMode">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>160</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>160</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <item>
-              <property name="text">
-               <string>Both Off</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>BLE Off, UWB On</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>BLE Low, UWB Off</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>BLE Low, UWB On</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>BLE High, UWB Off</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>BLE High, UWB On</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="AntennaCheckBox" name="AntennaUsage">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Secondary Antenna</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_8">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="1" column="1">
-          <widget class="Line" name="line_2">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>10</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="DeviceBar" name="widget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="BelugaLabel" name="label">
+           <property name="text">
+            <string>Devices</string>
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_16">
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_17">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>BOOSTP250</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="CoarseGainComboBox" name="BoostP250CoarseGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>Off (No Output)</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>0 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>7.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>10 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>12.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>15 dB</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="FineGainSpinBox" name="BoostP250FineGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="decimals">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <double>15.500000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.500000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_25">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>25</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>dB</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+         <item>
+          <widget class="DeviceComboBox" name="comboBox">
+           <property name="minimumSize">
+            <size>
+             <width>175</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
          </item>
-         <item row="6" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_11">
-           <item>
-            <widget class="BelugaLabel" name="label_10">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>UWB Data Rate</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbDataRate</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbDataRateComboBox" name="UwbDataRate">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>6.8 MHz</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>850 kHz</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>110 kHz</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label_11">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>UWB Pulse Rate</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbPulseRate</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbPulseRateComboBox" name="UwbPulseRate">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>64 MHz</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>16 MHz</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbPhrCheckBox" name="UwbPHR">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Proprietary PHR</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_11">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
+         <item>
+          <widget class="DeviceConnectButton" name="pushButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Connect</string>
+           </property>
+          </widget>
          </item>
-         <item row="4" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_14">
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_8">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>BOOSTNORM</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="CoarseGainComboBox" name="BoostNormCoarseGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>Off (No Output)</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>0 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>7.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>10 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>12.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>15 dB</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="FineGainSpinBox" name="BoostNormFineGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="decimals">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <double>15.500000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.500000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_23">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>25</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>dB</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Status</string>
+           </property>
+          </widget>
          </item>
-         <item row="4" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_8">
-           <item>
-            <widget class="BelugaLabel" name="label_7">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Timeout</string>
-             </property>
-             <property name="buddy">
-              <cstring>NeighborTimeout</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="TimeoutLineEdit" name="NeighborTimeout">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="RangingCheckBox" name="RangingMode">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Double-Sided Ranging</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="LedCheckBox" name="LedMode">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>LEDs On</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbSfdCheckBox" name="checkBox">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Proprietary SFD</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_7">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="8" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_19">
-           <item>
-            <widget class="ApplyPowerButton" name="ApplyPowerSettings">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>180</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Apply Power Setting</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label_22">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>UWB Transmit Power:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbPowerLabel" name="UwbTxPowerLabel">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>41.5</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label_28">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>dB</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_12">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="7" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_12">
-           <item>
-            <widget class="BelugaLabel" name="label_12">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>UWB Preamble Length</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbPreambleLength</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbPreambleLengthComboBox" name="UwbPreambleLength">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>110</width>
-               <height>0</height>
-              </size>
-             </property>
-             <item>
-              <property name="text">
-               <string>64 Symbols</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>128 Symbols</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>256 Symbols</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>512 Symbols</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>1024 Symbols</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>1536 Symbols</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2048 Symbols</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>4096 Symbols</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label_13">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>UWB PAC Size</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbPacSize</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbPacSizeComboBox" name="UwbPacSize">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>8 bytes</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>16 bytes</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>32 bytes</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>64 bytes</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_9">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="5" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_15">
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_14">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>BOOSTP500</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="CoarseGainComboBox" name="BoostP500CoarseGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>Off (No Output)</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>0 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>7.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>10 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>12.5 dB</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>15 dB</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="FineGainSpinBox" name="BoostP500FineGain">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="decimals">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <double>15.500000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.500000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaCustomPowerLabel" name="label_24">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>25</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>dB</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_5">
-           <item>
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Devices</string>
-             </property>
-             <property name="buddy">
-              <cstring>DeviceList</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="DeviceComboBox" name="DeviceList">
-             <property name="minimumSize">
-              <size>
-               <width>150</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>150</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="DeviceConnectButton" name="ConnectButton">
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Connect</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ConnectStatusMsg" name="ConnectStatus">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="inputMethodHints">
-              <set>Qt::ImhNone</set>
-             </property>
-             <property name="text">
-              <string>Status</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="3" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_18">
-             <item>
-              <widget class="BelugaCustomPowerLabel" name="label_19">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>Stage</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaCustomPowerLabel" name="label_20">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>Coarse Gain</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaCustomPowerLabel" name="label_21">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>Fine Gain</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeType">
-                <enum>QSizePolicy::Fixed</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>25</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </item>
-         <item row="2" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
-           <item>
-            <widget class="BelugaLabel" name="label_6">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>UWB Transmit Power</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbTxPowerSimple</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbTxPowerComboBox" name="UwbTxPowerSimple">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>150</width>
-               <height>0</height>
-              </size>
-             </property>
-             <item>
-              <property name="text">
-               <string>Default Power</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Maximum Power</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbPowerConfigCheckBox" name="UwbTxPowerConfigMode">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Simple Power Configuration</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="3" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <item>
-            <widget class="BelugaLabel" name="label_2">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Boot Mode</string>
-             </property>
-             <property name="buddy">
-              <cstring>BootModeMenu</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BootModeComboBox" name="BootModeMenu">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <item>
-              <property name="text">
-               <string>Radios Off</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>BLE Radio On</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Radios On</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label_3">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Rate</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbPollRate</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="PollRateLineEdit" name="UwbPollRate">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label_5">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Channel</string>
-             </property>
-             <property name="buddy">
-              <cstring>UwbChannel</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="ChannelComboBox" name="UwbChannel">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <item>
-              <property name="text">
-               <string>1</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>3</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>4</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>5</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>7</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="1">
-          <spacer name="horizontalSpacer_2">
+         <item>
+          <spacer name="horizontalSpacer">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -1631,192 +397,10 @@
            </property>
           </spacer>
          </item>
-         <item row="9" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_20">
-           <item>
-            <widget class="RebootButton" name="rebootButton">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>200</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Reboot</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_13">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="2" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
-           <item>
-            <widget class="BleButton" name="BleButton">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Start BLE</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="UwbButton" name="UwbButton">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Start UWB</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="BelugaLabel" name="label">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Node ID</string>
-             </property>
-             <property name="buddy">
-              <cstring>NodeID</cstring>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="NodeIdLineEdit" name="NodeID">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_6">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item row="1" column="0">
-          <widget class="Line" name="line">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
         </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_21">
-         <item>
-          <widget class="QLabel" name="label_42">
-           <property name="text">
-            <string>Log file:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="LogFilePath">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="FileSelectButton" name="FileSelectButton">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>25</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>...</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="LoggingCheckBox">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="text">
-            <string>Logging</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="AppendCheckBox">
-           <property name="text">
-            <string>Append</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::MinimumExpanding</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </widget>
+       </widget>
+      </item>
+     </layout>
     </widget>
     <widget class="QWidget" name="Ranges">
      <attribute name="title">
@@ -2058,241 +642,21 @@
    <class>DeviceComboBox</class>
    <extends>QComboBox</extends>
    <header>device.h</header>
+   <slots>
+    <signal>update_buddy(bool)</signal>
+    <slot>lock(bool)</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>DeviceConnectButton</class>
    <extends>QPushButton</extends>
    <header>device.h</header>
-  </customwidget>
-  <customwidget>
-   <class>BleButton</class>
-   <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
    <slots>
-    <signal>ble_updated(bool)</signal>
-    <slot>dev_connected()</slot>
-    <slot>toggle_ble()</slot>
-    <slot>update_uwb(bool)</slot>
+    <signal>connected(bool)</signal>
+    <signal>connected(QString)</signal>
+    <slot>update_port(QString)</slot>
+    <slot>update_connected()</slot>
    </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbButton</class>
-   <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>uwb_updated(bool)</signal>
-    <slot>update_uwb()</slot>
-    <slot>dev_connected()</slot>
-    <slot>update_ble(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>NodeIdLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-    <slot>update_uwb_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>BootModeComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>PollRateLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>ChannelComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>TimeoutLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>RangingCheckBox</class>
-   <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>LedCheckBox</class>
-   <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>AmplifierComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>AntennaCheckBox</class>
-   <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbDataRateComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-    <slot>update_uwb_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPulseRateComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-    <slot>update_uwb_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPhrCheckBox</class>
-   <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-    <slot>update_uwb_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPreambleLengthComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-    <slot>update_uwb_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPacSizeComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-    <slot>update_uwb_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPanIdLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-    <slot>update_uwb_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>NeighborEvictionSchemeComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>RebootButton</class>
-   <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
-  </customwidget>
-  <customwidget>
-   <class>UwbTxPowerComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPowerConfigCheckBox</class>
-   <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>CoarseGainComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>FineGainSpinBox</class>
-   <extends>QDoubleSpinBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>ApplyPowerButton</class>
-   <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPowerLabel</class>
-   <extends>QLabel</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>ConnectStatusMsg</class>
-   <extends>QLabel</extends>
-   <header>device.h</header>
   </customwidget>
   <customwidget>
    <class>RemoveDroppedNeighbors</class>
@@ -2305,11 +669,6 @@
    <header>neighbor_list.h</header>
   </customwidget>
   <customwidget>
-   <class>FileSelectButton</class>
-   <extends>QPushButton</extends>
-   <header>log_files.h</header>
-  </customwidget>
-  <customwidget>
    <class>BelugaLabel</class>
    <extends>QLabel</extends>
    <header>beluga_config.h</header>
@@ -2319,167 +678,111 @@
    </slots>
   </customwidget>
   <customwidget>
-   <class>BelugaCustomPowerLabel</class>
-   <extends>QLabel</extends>
-   <header>beluga_config.h</header>
+   <class>DeviceBar</class>
+   <extends>QWidget</extends>
+   <header>device.h</header>
+   <container>1</container>
    <slots>
-    <slot>dev_connected()</slot>
-    <slot>update_buddy_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbSfdCheckBox</class>
-   <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>update_uwb_state(bool)</slot>
-    <slot>dev_connected()</slot>
+    <signal>connected(bool)</signal>
+    <slot>device_connected(bool)</slot>
    </slots>
   </customwidget>
  </customwidgets>
  <resources/>
  <connections>
   <connection>
-   <sender>UwbTxPowerSimple</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_6</receiver>
+   <sender>comboBox</sender>
+   <signal>update_buddy(bool)</signal>
+   <receiver>label</receiver>
    <slot>update_buddy_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>843</x>
-     <y>110</y>
+     <x>107</x>
+     <y>327</y>
     </hint>
     <hint type="destinationlabel">
-     <x>708</x>
-     <y>107</y>
+     <x>37</x>
+     <y>322</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>BoostNormCoarseGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_8</receiver>
-   <slot>update_buddy_state(bool)</slot>
+   <sender>comboBox</sender>
+   <signal>currentTextChanged(QString)</signal>
+   <receiver>pushButton</receiver>
+   <slot>update_port(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>821</x>
-     <y>175</y>
+     <x>238</x>
+     <y>321</y>
     </hint>
     <hint type="destinationlabel">
-     <x>732</x>
-     <y>173</y>
+     <x>298</x>
+     <y>316</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>BoostP500CoarseGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_14</receiver>
-   <slot>update_buddy_state(bool)</slot>
+   <sender>pushButton</sender>
+   <signal>connected(bool)</signal>
+   <receiver>comboBox</receiver>
+   <slot>lock(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>850</x>
-     <y>210</y>
+     <x>281</x>
+     <y>330</y>
     </hint>
     <hint type="destinationlabel">
-     <x>674</x>
-     <y>206</y>
+     <x>232</x>
+     <y>328</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>BoostP250CoarseGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_17</receiver>
-   <slot>update_buddy_state(bool)</slot>
+   <sender>pushButton</sender>
+   <signal>connected(QString)</signal>
+   <receiver>label_2</receiver>
+   <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>905</x>
-     <y>244</y>
+     <x>346</x>
+     <y>321</y>
     </hint>
     <hint type="destinationlabel">
-     <x>727</x>
-     <y>240</y>
+     <x>408</x>
+     <y>324</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>BoostP125CoarseGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_18</receiver>
-   <slot>update_buddy_state(bool)</slot>
+   <sender>pushButton</sender>
+   <signal>pressed()</signal>
+   <receiver>pushButton</receiver>
+   <slot>update_connected()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>836</x>
-     <y>276</y>
+     <x>329</x>
+     <y>321</y>
     </hint>
     <hint type="destinationlabel">
-     <x>749</x>
-     <y>276</y>
+     <x>309</x>
+     <y>316</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>BoostNormFineGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_23</receiver>
-   <slot>update_buddy_state(bool)</slot>
+   <sender>pushButton</sender>
+   <signal>connected(bool)</signal>
+   <receiver>widget</receiver>
+   <slot>device_connected(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1146</x>
-     <y>173</y>
+     <x>340</x>
+     <y>323</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1187</x>
-     <y>176</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>BoostP500FineGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_24</receiver>
-   <slot>update_buddy_state(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1152</x>
-     <y>210</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1178</x>
-     <y>207</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>BoostP250FineGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_25</receiver>
-   <slot>update_buddy_state(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1115</x>
-     <y>240</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1182</x>
-     <y>241</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>BoostP125FineGain</sender>
-   <signal>buddy_update(bool)</signal>
-   <receiver>label_26</receiver>
-   <slot>update_buddy_state(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1109</x>
-     <y>276</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1177</x>
-     <y>276</y>
+     <x>581</x>
+     <y>223</y>
     </hint>
    </hints>
   </connection>

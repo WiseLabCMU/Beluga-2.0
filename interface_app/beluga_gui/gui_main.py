@@ -8,6 +8,7 @@ if __name__ == "__main__":
     window = QMainWindow()
     ui = Ui_BelugaGUI()
     ui.setupUi(window)
+    ui.comboBox.update_device_list(["test1", "test2"])
 
     window.show()
     sys.exit(app.exec_())
