@@ -52,3 +52,14 @@ class UwbPreambleLengthComboBox(UwbComboBoxBase):
 
 class UwbPacSizeComboBox(UwbComboBoxBase):
     pass
+
+
+class UwbTxPowerComboBox(BelugaComboBoxBase, BelugaWidgetBase):
+    def __init__(self, parent: Optional[QWidget]):
+        super().__init__(parent)
+        self._simple_power = True
+
+    def update_checkbox_state(self, state: bool):
+        self._simple_power = state
+        self.setEnabled(self._simple_power)
+        self._buddy_sig.bool_update.emit(self._simple_power)
