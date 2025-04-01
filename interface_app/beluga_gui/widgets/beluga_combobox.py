@@ -6,7 +6,7 @@ from typing import Optional, Callable
 class BelugaComboBoxBase(QComboBox):
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._handler: Optional[Callable[[None], int]] = None
+        self._handler: Optional[Callable[[int], None]] = None
         self.currentIndexChanged.connect(self.handle_index_changed)
 
     def set_current_mode(self, index: int):
