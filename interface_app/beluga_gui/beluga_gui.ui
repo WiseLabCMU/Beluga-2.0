@@ -410,7 +410,7 @@
       <item>
        <widget class="SettingsWidget" name="widget_2" native="true">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
@@ -418,14 +418,17 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
-              <widget class="BleButton" name="pushButton_2">
+              <widget class="BleButton" name="ble_button">
                <property name="text">
                 <string>Start BLE</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="UwbButton" name="pushButton_3">
+              <widget class="UwbButton" name="uwb_button">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="text">
                 <string>Start UWB</string>
                </property>
@@ -439,12 +442,21 @@
               </widget>
              </item>
              <item>
-              <widget class="NodeIdLineEdit" name="lineEdit">
+              <widget class="NodeIdLineEdit" name="node_id_line_edit">
                <property name="maximumSize">
                 <size>
                  <width>70</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="inputMask">
+                <string>90000</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="maxLength">
+                <number>5</number>
                </property>
               </widget>
              </item>
@@ -473,7 +485,7 @@
               </widget>
              </item>
              <item>
-              <widget class="BootModeComboBox" name="comboBox_3">
+              <widget class="BootModeComboBox" name="boot_mode_combobox">
                <property name="minimumSize">
                 <size>
                  <width>100</width>
@@ -505,12 +517,15 @@
               </widget>
              </item>
              <item>
-              <widget class="PollRateLineEdit" name="lineEdit_2">
+              <widget class="PollRateLineEdit" name="rate_line_edit">
                <property name="maximumSize">
                 <size>
                  <width>75</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="inputMask">
+                <string>90000</string>
                </property>
               </widget>
              </item>
@@ -522,7 +537,7 @@
               </widget>
              </item>
              <item>
-              <widget class="ChannelComboBox" name="comboBox_4">
+              <widget class="ChannelComboBox" name="channel_combobox">
                <property name="maximumSize">
                 <size>
                  <width>40</width>
@@ -586,17 +601,23 @@
               </widget>
              </item>
              <item>
-              <widget class="TimeoutLineEdit" name="lineEdit_3">
+              <widget class="TimeoutLineEdit" name="timeout_line_edit">
                <property name="maximumSize">
                 <size>
                  <width>100</width>
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="inputMask">
+                <string>90000</string>
+               </property>
+               <property name="placeholderText">
+                <string/>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="RangingCheckBox" name="checkBox_2">
+              <widget class="RangingCheckBox" name="ranging_checkbox">
                <property name="layoutDirection">
                 <enum>Qt::RightToLeft</enum>
                </property>
@@ -606,7 +627,7 @@
               </widget>
              </item>
              <item>
-              <widget class="LedCheckBox" name="checkBox_3">
+              <widget class="LedCheckBox" name="led_checkbox">
                <property name="layoutDirection">
                 <enum>Qt::RightToLeft</enum>
                </property>
@@ -616,7 +637,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbSfdCheckBox" name="checkBox_4">
+              <widget class="UwbSfdCheckBox" name="sfd_checkbox">
                <property name="layoutDirection">
                 <enum>Qt::RightToLeft</enum>
                </property>
@@ -650,7 +671,7 @@
               </widget>
              </item>
              <item>
-              <widget class="AmplifierComboBox" name="comboBox_5">
+              <widget class="AmplifierComboBox" name="extern_amp_combobox">
                <property name="minimumSize">
                 <size>
                  <width>175</width>
@@ -690,7 +711,7 @@
               </widget>
              </item>
              <item>
-              <widget class="AntennaCheckBox" name="checkBox_5">
+              <widget class="AntennaCheckBox" name="antenna_checkbox">
                <property name="layoutDirection">
                 <enum>Qt::RightToLeft</enum>
                </property>
@@ -724,7 +745,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbDataRateComboBox" name="comboBox_6">
+              <widget class="UwbDataRateComboBox" name="uwb_datarate_combobox">
                <item>
                 <property name="text">
                  <string>6.8 MHz</string>
@@ -750,7 +771,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPulseRateComboBox" name="comboBox_7">
+              <widget class="UwbPulseRateComboBox" name="uwb_pulserate_combobox">
                <item>
                 <property name="text">
                  <string>64 MHz</string>
@@ -764,7 +785,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPhrCheckBox" name="checkBox_6">
+              <widget class="UwbPhrCheckBox" name="phr_checkbox">
                <property name="layoutDirection">
                 <enum>Qt::RightToLeft</enum>
                </property>
@@ -798,7 +819,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPreambleLengthComboBox" name="comboBox_8">
+              <widget class="UwbPreambleLengthComboBox" name="uwb_preambl_combobox">
                <property name="minimumSize">
                 <size>
                  <width>125</width>
@@ -855,7 +876,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPacSizeComboBox" name="comboBox_9">
+              <widget class="UwbPacSizeComboBox" name="uwb_pac_combobox">
                <item>
                 <property name="text">
                  <string>8 bytes</string>
@@ -903,12 +924,18 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPanIdLineEdit" name="lineEdit_4">
+              <widget class="UwbPanIdLineEdit" name="pan_id_text_edit">
                <property name="maximumSize">
                 <size>
                  <width>80</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="inputMask">
+                <string>Hhhh</string>
+               </property>
+               <property name="placeholderText">
+                <string/>
                </property>
               </widget>
              </item>
@@ -1013,7 +1040,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbTxPowerComboBox" name="comboBox_2">
+              <widget class="UwbTxPowerComboBox" name="uwb_txpower_combobox">
                <property name="minimumSize">
                 <size>
                  <width>150</width>
@@ -1033,7 +1060,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPowerConfigCheckBox" name="checkBox">
+              <widget class="QCheckBox" name="checkBox">
                <property name="layoutDirection">
                 <enum>Qt::RightToLeft</enum>
                </property>
@@ -1525,6 +1552,9 @@
             <layout class="QHBoxLayout" name="horizontalLayout_13">
              <item>
               <widget class="ApplyPowerButton" name="pushButton_4">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
                <property name="minimumSize">
                 <size>
                  <width>170</width>
@@ -1892,7 +1922,7 @@
   <customwidget>
    <class>BleButton</class>
    <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_pushbutton.h</header>
    <slots>
     <signal>ble_update(bool)</signal>
     <slot>update_uwb_state(bool)</slot>
@@ -1901,16 +1931,16 @@
   <customwidget>
    <class>UwbButton</class>
    <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_pushbutton.h</header>
    <slots>
-    <signal>update_uwb(bool)</signal>
+    <signal>uwb_update(bool)</signal>
     <slot>update_ble_state(bool)</slot>
    </slots>
   </customwidget>
   <customwidget>
    <class>NodeIdLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_line_edit.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1920,7 +1950,7 @@
   <customwidget>
    <class>BootModeComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1929,7 +1959,7 @@
   <customwidget>
    <class>PollRateLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_line_edit.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1938,7 +1968,7 @@
   <customwidget>
    <class>ChannelComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>update_uwb_state(bool)</slot>
@@ -1947,7 +1977,7 @@
   <customwidget>
    <class>TimeoutLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_line_edit.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1956,7 +1986,7 @@
   <customwidget>
    <class>RangingCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_checkbox.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -1964,7 +1994,7 @@
   <customwidget>
    <class>LedCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_checkbox.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -1972,7 +2002,7 @@
   <customwidget>
    <class>AmplifierComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1981,7 +2011,7 @@
   <customwidget>
    <class>AntennaCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_checkbox.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -1989,7 +2019,7 @@
   <customwidget>
    <class>UwbDataRateComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1999,7 +2029,7 @@
   <customwidget>
    <class>UwbPulseRateComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2009,7 +2039,7 @@
   <customwidget>
    <class>UwbPhrCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_checkbox.h</header>
    <slots>
     <slot>dev_connected()</slot>
     <slot>update_uwb_state(bool)</slot>
@@ -2018,7 +2048,7 @@
   <customwidget>
    <class>UwbPreambleLengthComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2028,7 +2058,7 @@
   <customwidget>
    <class>UwbPacSizeComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2038,7 +2068,7 @@
   <customwidget>
    <class>UwbPanIdLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_line_edit.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2057,7 +2087,7 @@
   <customwidget>
    <class>RebootButton</class>
    <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_pushbutton.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -2065,20 +2095,11 @@
   <customwidget>
    <class>UwbTxPowerComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_combobox.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
     <slot>update_checkbox_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPowerConfigCheckBox</class>
-   <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -2102,7 +2123,7 @@
   <customwidget>
    <class>ApplyPowerButton</class>
    <extends>QPushButton</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_pushbutton.h</header>
    <slots>
     <slot>update_checkbox_state(bool)</slot>
    </slots>
@@ -2146,7 +2167,7 @@
   <customwidget>
    <class>UwbSfdCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets/beluga_checkbox.h</header>
    <slots>
     <slot>update_uwb_state(bool)</slot>
     <slot>dev_connected()</slot>
@@ -2296,9 +2317,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_2</sender>
+   <sender>ble_button</sender>
    <signal>ble_update(bool)</signal>
-   <receiver>pushButton_3</receiver>
+   <receiver>uwb_button</receiver>
    <slot>update_ble_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2312,9 +2333,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>pushButton_2</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>ble_button</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2328,7 +2349,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>lineEdit</sender>
+   <sender>node_id_line_edit</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_3</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2344,9 +2365,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>lineEdit</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>node_id_line_edit</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2360,7 +2381,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>comboBox_4</sender>
+   <sender>channel_combobox</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_7</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2376,9 +2397,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>comboBox_4</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>channel_combobox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2392,7 +2413,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>comboBox_7</sender>
+   <sender>uwb_pulserate_combobox</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_14</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2408,7 +2429,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>comboBox_6</sender>
+   <sender>uwb_datarate_combobox</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_13</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2424,7 +2445,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>comboBox_8</sender>
+   <sender>uwb_preambl_combobox</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_15</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2440,7 +2461,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>comboBox_9</sender>
+   <sender>uwb_pac_combobox</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_16</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2456,7 +2477,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>lineEdit_4</sender>
+   <sender>pan_id_text_edit</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_17</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2472,9 +2493,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>comboBox_6</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>uwb_datarate_combobox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2488,9 +2509,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>comboBox_7</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>uwb_pulserate_combobox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2504,9 +2525,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>comboBox_8</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>uwb_preambl_combobox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2520,9 +2541,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>comboBox_9</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>uwb_pac_combobox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2536,9 +2557,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>lineEdit_4</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>pan_id_text_edit</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2552,9 +2573,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>checkBox_4</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>sfd_checkbox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2568,9 +2589,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
-   <signal>update_uwb(bool)</signal>
-   <receiver>checkBox_6</receiver>
+   <sender>uwb_button</sender>
+   <signal>uwb_update(bool)</signal>
+   <receiver>phr_checkbox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2584,7 +2605,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>comboBox_2</sender>
+   <sender>uwb_txpower_combobox</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_4</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2602,7 +2623,7 @@
   <connection>
    <sender>checkBox</sender>
    <signal>toggled(bool)</signal>
-   <receiver>comboBox_2</receiver>
+   <receiver>uwb_txpower_combobox</receiver>
    <slot>update_checkbox_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2628,6 +2649,22 @@
     <hint type="destinationlabel">
      <x>1119</x>
      <y>167</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>pushButton_4</receiver>
+   <slot>update_checkbox_state(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1097</x>
+     <y>137</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>754</x>
+     <y>370</y>
     </hint>
    </hints>
   </connection>
