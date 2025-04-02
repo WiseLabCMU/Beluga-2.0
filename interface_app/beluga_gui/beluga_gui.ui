@@ -410,7 +410,7 @@
       <item>
        <widget class="SettingsWidget" name="widget_2" native="true">
         <property name="enabled">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
@@ -1060,7 +1060,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox">
+              <widget class="QCheckBox" name="uwb_tx_power_checkbox">
                <property name="layoutDirection">
                 <enum>Qt::RightToLeft</enum>
                </property>
@@ -1108,7 +1108,7 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_8">
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_28">
+                 <widget class="QLabel" name="label_28">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1124,7 +1124,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_30">
+                 <widget class="QLabel" name="label_30">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1140,7 +1140,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_29">
+                 <widget class="QLabel" name="label_29">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1176,7 +1176,7 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_9">
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_32">
+                 <widget class="QLabel" name="label_32">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1186,7 +1186,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="CoarseGainComboBox" name="BoostNormCoarseGain_2">
+                 <widget class="QComboBox" name="BoostNormCoarseGain_2">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1233,7 +1233,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="FineGainSpinBox" name="BoostNormFineGain_2">
+                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_2">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1249,7 +1249,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_31">
+                 <widget class="QLabel" name="label_31">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1269,7 +1269,7 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_10">
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_37">
+                 <widget class="QLabel" name="label_37">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1279,7 +1279,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="CoarseGainComboBox" name="BoostNormCoarseGain_3">
+                 <widget class="QComboBox" name="BoostNormCoarseGain_3">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1326,7 +1326,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="FineGainSpinBox" name="BoostNormFineGain_3">
+                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_3">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1342,7 +1342,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_33">
+                 <widget class="QLabel" name="label_33">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1362,7 +1362,7 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_11">
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_38">
+                 <widget class="QLabel" name="label_38">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1372,7 +1372,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="CoarseGainComboBox" name="BoostNormCoarseGain_4">
+                 <widget class="QComboBox" name="BoostNormCoarseGain_4">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1419,7 +1419,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="FineGainSpinBox" name="BoostNormFineGain_4">
+                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_4">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1435,7 +1435,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_34">
+                 <widget class="QLabel" name="label_34">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1455,7 +1455,7 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_12">
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_39">
+                 <widget class="QLabel" name="label_39">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1465,7 +1465,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="CoarseGainComboBox" name="BoostNormCoarseGain_5">
+                 <widget class="QComboBox" name="BoostNormCoarseGain_5">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1512,7 +1512,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="FineGainSpinBox" name="BoostNormFineGain_5">
+                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_5">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1528,7 +1528,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="BelugaCustomPowerLabel" name="label_35">
+                 <widget class="QLabel" name="label_35">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1574,7 +1574,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPowerLabel" name="label_9">
+              <widget class="QLabel" name="label_9">
                <property name="text">
                 <string>41.5</string>
                </property>
@@ -1922,7 +1922,7 @@
   <customwidget>
    <class>BleButton</class>
    <extends>QPushButton</extends>
-   <header>widgets/beluga_pushbutton.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>ble_update(bool)</signal>
     <slot>update_uwb_state(bool)</slot>
@@ -1931,7 +1931,7 @@
   <customwidget>
    <class>UwbButton</class>
    <extends>QPushButton</extends>
-   <header>widgets/beluga_pushbutton.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>uwb_update(bool)</signal>
     <slot>update_ble_state(bool)</slot>
@@ -1940,7 +1940,7 @@
   <customwidget>
    <class>NodeIdLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>widgets/beluga_line_edit.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1950,7 +1950,7 @@
   <customwidget>
    <class>BootModeComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1959,7 +1959,7 @@
   <customwidget>
    <class>PollRateLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>widgets/beluga_line_edit.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1968,7 +1968,7 @@
   <customwidget>
    <class>ChannelComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>update_uwb_state(bool)</slot>
@@ -1977,7 +1977,7 @@
   <customwidget>
    <class>TimeoutLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>widgets/beluga_line_edit.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -1986,7 +1986,7 @@
   <customwidget>
    <class>RangingCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>widgets/beluga_checkbox.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -1994,7 +1994,7 @@
   <customwidget>
    <class>LedCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>widgets/beluga_checkbox.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -2002,7 +2002,7 @@
   <customwidget>
    <class>AmplifierComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2011,7 +2011,7 @@
   <customwidget>
    <class>AntennaCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>widgets/beluga_checkbox.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -2019,7 +2019,7 @@
   <customwidget>
    <class>UwbDataRateComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2029,7 +2029,7 @@
   <customwidget>
    <class>UwbPulseRateComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2039,7 +2039,7 @@
   <customwidget>
    <class>UwbPhrCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>widgets/beluga_checkbox.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>dev_connected()</slot>
     <slot>update_uwb_state(bool)</slot>
@@ -2048,7 +2048,7 @@
   <customwidget>
    <class>UwbPreambleLengthComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2058,7 +2058,7 @@
   <customwidget>
    <class>UwbPacSizeComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2068,7 +2068,7 @@
   <customwidget>
    <class>UwbPanIdLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>widgets/beluga_line_edit.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2078,7 +2078,7 @@
   <customwidget>
    <class>NeighborEvictionSchemeComboBox</class>
    <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
@@ -2087,7 +2087,7 @@
   <customwidget>
    <class>RebootButton</class>
    <extends>QPushButton</extends>
-   <header>widgets/beluga_pushbutton.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>dev_connected()</slot>
    </slots>
@@ -2095,45 +2095,19 @@
   <customwidget>
    <class>UwbTxPowerComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/beluga_combobox.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>buddy_update(bool)</signal>
     <slot>dev_connected()</slot>
     <slot>update_checkbox_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>CoarseGainComboBox</class>
-   <extends>QComboBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>FineGainSpinBox</class>
-   <extends>QDoubleSpinBox</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <signal>buddy_update(bool)</signal>
-    <slot>dev_connected()</slot>
    </slots>
   </customwidget>
   <customwidget>
    <class>ApplyPowerButton</class>
    <extends>QPushButton</extends>
-   <header>widgets/beluga_pushbutton.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>update_checkbox_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>UwbPowerLabel</class>
-   <extends>QLabel</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -2149,16 +2123,7 @@
   <customwidget>
    <class>BelugaLabel</class>
    <extends>QLabel</extends>
-   <header>beluga_config.h</header>
-   <slots>
-    <slot>dev_connected()</slot>
-    <slot>update_buddy_state(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
-   <class>BelugaCustomPowerLabel</class>
-   <extends>QLabel</extends>
-   <header>beluga_config.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>dev_connected()</slot>
     <slot>update_buddy_state(bool)</slot>
@@ -2167,7 +2132,7 @@
   <customwidget>
    <class>UwbSfdCheckBox</class>
    <extends>QCheckBox</extends>
-   <header>widgets/beluga_checkbox.h</header>
+   <header>widgets.h</header>
    <slots>
     <slot>update_uwb_state(bool)</slot>
     <slot>dev_connected()</slot>
@@ -2176,7 +2141,7 @@
   <customwidget>
    <class>UwbCustomTxPower</class>
    <extends>QWidget</extends>
-   <header>uwbcustomtxpower.h</header>
+   <header>widgets.h</header>
    <container>1</container>
    <slots>
     <slot>update_checkbox_state(bool)</slot>
@@ -2195,7 +2160,7 @@
   <customwidget>
    <class>SettingsWidget</class>
    <extends>QWidget</extends>
-   <header>beluga_config</header>
+   <header>widgets.h</header>
    <container>1</container>
    <slots>
     <slot>update_connected_state(bool)</slot>
@@ -2621,7 +2586,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>checkBox</sender>
+   <sender>uwb_tx_power_checkbox</sender>
    <signal>toggled(bool)</signal>
    <receiver>uwb_txpower_combobox</receiver>
    <slot>update_checkbox_state(bool)</slot>
@@ -2637,7 +2602,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>checkBox</sender>
+   <sender>uwb_tx_power_checkbox</sender>
    <signal>toggled(bool)</signal>
    <receiver>widget_3</receiver>
    <slot>update_checkbox_state(bool)</slot>
@@ -2653,7 +2618,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>checkBox</sender>
+   <sender>uwb_tx_power_checkbox</sender>
    <signal>toggled(bool)</signal>
    <receiver>pushButton_4</receiver>
    <slot>update_checkbox_state(bool)</slot>

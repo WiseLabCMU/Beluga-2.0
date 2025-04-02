@@ -161,7 +161,7 @@ class Ui_BelugaGUI(object):
         self.line.setObjectName("line")
         self.verticalLayout.addWidget(self.line)
         self.widget_2 = SettingsWidget(self.Configuration)
-        self.widget_2.setEnabled(True)
+        self.widget_2.setEnabled(False)
         self.widget_2.setObjectName("widget_2")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.widget_2)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
@@ -374,11 +374,11 @@ class Ui_BelugaGUI(object):
         self.uwb_txpower_combobox.addItem("")
         self.uwb_txpower_combobox.addItem("")
         self.horizontalLayout_6.addWidget(self.uwb_txpower_combobox)
-        self.checkBox = QtWidgets.QCheckBox(self.widget_2)
-        self.checkBox.setLayoutDirection(QtCore.Qt.RightToLeft)
-        self.checkBox.setChecked(True)
-        self.checkBox.setObjectName("checkBox")
-        self.horizontalLayout_6.addWidget(self.checkBox)
+        self.uwb_tx_power_checkbox = QtWidgets.QCheckBox(self.widget_2)
+        self.uwb_tx_power_checkbox.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.uwb_tx_power_checkbox.setChecked(True)
+        self.uwb_tx_power_checkbox.setObjectName("uwb_tx_power_checkbox")
+        self.horizontalLayout_6.addWidget(self.uwb_tx_power_checkbox)
         spacerItem11 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_6.addItem(spacerItem11)
         self.verticalLayout_3.addLayout(self.horizontalLayout_6)
@@ -395,17 +395,17 @@ class Ui_BelugaGUI(object):
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
-        self.label_28 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_28 = QtWidgets.QLabel(self.widget_3)
         self.label_28.setEnabled(False)
         self.label_28.setMinimumSize(QtCore.QSize(162, 0))
         self.label_28.setObjectName("label_28")
         self.horizontalLayout_8.addWidget(self.label_28)
-        self.label_30 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_30 = QtWidgets.QLabel(self.widget_3)
         self.label_30.setEnabled(False)
         self.label_30.setMinimumSize(QtCore.QSize(161, 0))
         self.label_30.setObjectName("label_30")
         self.horizontalLayout_8.addWidget(self.label_30)
-        self.label_29 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_29 = QtWidgets.QLabel(self.widget_3)
         self.label_29.setEnabled(False)
         self.label_29.setMinimumSize(QtCore.QSize(162, 0))
         self.label_29.setObjectName("label_29")
@@ -415,11 +415,11 @@ class Ui_BelugaGUI(object):
         self.verticalLayout_7.addLayout(self.horizontalLayout_8)
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
-        self.label_32 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_32 = QtWidgets.QLabel(self.widget_3)
         self.label_32.setEnabled(False)
         self.label_32.setObjectName("label_32")
         self.horizontalLayout_9.addWidget(self.label_32)
-        self.BoostNormCoarseGain_2 = CoarseGainComboBox(self.widget_3)
+        self.BoostNormCoarseGain_2 = QtWidgets.QComboBox(self.widget_3)
         self.BoostNormCoarseGain_2.setEnabled(False)
         self.BoostNormCoarseGain_2.setObjectName("BoostNormCoarseGain_2")
         self.BoostNormCoarseGain_2.addItem("")
@@ -431,14 +431,14 @@ class Ui_BelugaGUI(object):
         self.BoostNormCoarseGain_2.addItem("")
         self.BoostNormCoarseGain_2.addItem("")
         self.horizontalLayout_9.addWidget(self.BoostNormCoarseGain_2)
-        self.BoostNormFineGain_2 = FineGainSpinBox(self.widget_3)
+        self.BoostNormFineGain_2 = QtWidgets.QDoubleSpinBox(self.widget_3)
         self.BoostNormFineGain_2.setEnabled(False)
         self.BoostNormFineGain_2.setDecimals(1)
         self.BoostNormFineGain_2.setMaximum(15.5)
         self.BoostNormFineGain_2.setSingleStep(0.5)
         self.BoostNormFineGain_2.setObjectName("BoostNormFineGain_2")
         self.horizontalLayout_9.addWidget(self.BoostNormFineGain_2)
-        self.label_31 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_31 = QtWidgets.QLabel(self.widget_3)
         self.label_31.setEnabled(False)
         self.label_31.setMaximumSize(QtCore.QSize(25, 16777215))
         self.label_31.setObjectName("label_31")
@@ -446,11 +446,11 @@ class Ui_BelugaGUI(object):
         self.verticalLayout_7.addLayout(self.horizontalLayout_9)
         self.horizontalLayout_10 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_10.setObjectName("horizontalLayout_10")
-        self.label_37 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_37 = QtWidgets.QLabel(self.widget_3)
         self.label_37.setEnabled(False)
         self.label_37.setObjectName("label_37")
         self.horizontalLayout_10.addWidget(self.label_37)
-        self.BoostNormCoarseGain_3 = CoarseGainComboBox(self.widget_3)
+        self.BoostNormCoarseGain_3 = QtWidgets.QComboBox(self.widget_3)
         self.BoostNormCoarseGain_3.setEnabled(False)
         self.BoostNormCoarseGain_3.setObjectName("BoostNormCoarseGain_3")
         self.BoostNormCoarseGain_3.addItem("")
@@ -462,14 +462,14 @@ class Ui_BelugaGUI(object):
         self.BoostNormCoarseGain_3.addItem("")
         self.BoostNormCoarseGain_3.addItem("")
         self.horizontalLayout_10.addWidget(self.BoostNormCoarseGain_3)
-        self.BoostNormFineGain_3 = FineGainSpinBox(self.widget_3)
+        self.BoostNormFineGain_3 = QtWidgets.QDoubleSpinBox(self.widget_3)
         self.BoostNormFineGain_3.setEnabled(False)
         self.BoostNormFineGain_3.setDecimals(1)
         self.BoostNormFineGain_3.setMaximum(15.5)
         self.BoostNormFineGain_3.setSingleStep(0.5)
         self.BoostNormFineGain_3.setObjectName("BoostNormFineGain_3")
         self.horizontalLayout_10.addWidget(self.BoostNormFineGain_3)
-        self.label_33 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_33 = QtWidgets.QLabel(self.widget_3)
         self.label_33.setEnabled(False)
         self.label_33.setMaximumSize(QtCore.QSize(25, 16777215))
         self.label_33.setObjectName("label_33")
@@ -477,11 +477,11 @@ class Ui_BelugaGUI(object):
         self.verticalLayout_7.addLayout(self.horizontalLayout_10)
         self.horizontalLayout_11 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_11.setObjectName("horizontalLayout_11")
-        self.label_38 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_38 = QtWidgets.QLabel(self.widget_3)
         self.label_38.setEnabled(False)
         self.label_38.setObjectName("label_38")
         self.horizontalLayout_11.addWidget(self.label_38)
-        self.BoostNormCoarseGain_4 = CoarseGainComboBox(self.widget_3)
+        self.BoostNormCoarseGain_4 = QtWidgets.QComboBox(self.widget_3)
         self.BoostNormCoarseGain_4.setEnabled(False)
         self.BoostNormCoarseGain_4.setObjectName("BoostNormCoarseGain_4")
         self.BoostNormCoarseGain_4.addItem("")
@@ -493,14 +493,14 @@ class Ui_BelugaGUI(object):
         self.BoostNormCoarseGain_4.addItem("")
         self.BoostNormCoarseGain_4.addItem("")
         self.horizontalLayout_11.addWidget(self.BoostNormCoarseGain_4)
-        self.BoostNormFineGain_4 = FineGainSpinBox(self.widget_3)
+        self.BoostNormFineGain_4 = QtWidgets.QDoubleSpinBox(self.widget_3)
         self.BoostNormFineGain_4.setEnabled(False)
         self.BoostNormFineGain_4.setDecimals(1)
         self.BoostNormFineGain_4.setMaximum(15.5)
         self.BoostNormFineGain_4.setSingleStep(0.5)
         self.BoostNormFineGain_4.setObjectName("BoostNormFineGain_4")
         self.horizontalLayout_11.addWidget(self.BoostNormFineGain_4)
-        self.label_34 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_34 = QtWidgets.QLabel(self.widget_3)
         self.label_34.setEnabled(False)
         self.label_34.setMaximumSize(QtCore.QSize(25, 16777215))
         self.label_34.setObjectName("label_34")
@@ -508,11 +508,11 @@ class Ui_BelugaGUI(object):
         self.verticalLayout_7.addLayout(self.horizontalLayout_11)
         self.horizontalLayout_12 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_12.setObjectName("horizontalLayout_12")
-        self.label_39 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_39 = QtWidgets.QLabel(self.widget_3)
         self.label_39.setEnabled(False)
         self.label_39.setObjectName("label_39")
         self.horizontalLayout_12.addWidget(self.label_39)
-        self.BoostNormCoarseGain_5 = CoarseGainComboBox(self.widget_3)
+        self.BoostNormCoarseGain_5 = QtWidgets.QComboBox(self.widget_3)
         self.BoostNormCoarseGain_5.setEnabled(False)
         self.BoostNormCoarseGain_5.setObjectName("BoostNormCoarseGain_5")
         self.BoostNormCoarseGain_5.addItem("")
@@ -524,14 +524,14 @@ class Ui_BelugaGUI(object):
         self.BoostNormCoarseGain_5.addItem("")
         self.BoostNormCoarseGain_5.addItem("")
         self.horizontalLayout_12.addWidget(self.BoostNormCoarseGain_5)
-        self.BoostNormFineGain_5 = FineGainSpinBox(self.widget_3)
+        self.BoostNormFineGain_5 = QtWidgets.QDoubleSpinBox(self.widget_3)
         self.BoostNormFineGain_5.setEnabled(False)
         self.BoostNormFineGain_5.setDecimals(1)
         self.BoostNormFineGain_5.setMaximum(15.5)
         self.BoostNormFineGain_5.setSingleStep(0.5)
         self.BoostNormFineGain_5.setObjectName("BoostNormFineGain_5")
         self.horizontalLayout_12.addWidget(self.BoostNormFineGain_5)
-        self.label_35 = BelugaCustomPowerLabel(self.widget_3)
+        self.label_35 = QtWidgets.QLabel(self.widget_3)
         self.label_35.setEnabled(False)
         self.label_35.setMaximumSize(QtCore.QSize(25, 16777215))
         self.label_35.setObjectName("label_35")
@@ -548,7 +548,7 @@ class Ui_BelugaGUI(object):
         self.label_10 = QtWidgets.QLabel(self.widget_2)
         self.label_10.setObjectName("label_10")
         self.horizontalLayout_13.addWidget(self.label_10)
-        self.label_9 = UwbPowerLabel(self.widget_2)
+        self.label_9 = QtWidgets.QLabel(self.widget_2)
         self.label_9.setObjectName("label_9")
         self.horizontalLayout_13.addWidget(self.label_9)
         self.label_8 = QtWidgets.QLabel(self.widget_2)
@@ -698,7 +698,7 @@ class Ui_BelugaGUI(object):
         self.pushButton.connected['QString'].connect(self.label_2.setText) # type: ignore
         self.pushButton.pressed.connect(self.pushButton.update_connected) # type: ignore
         self.pushButton.connected['bool'].connect(self.widget.device_connected) # type: ignore
-        # self.widget.connected['bool'].connect(self.widget_2.update_connected_state) # type: ignore
+        self.widget.connected['bool'].connect(self.widget_2.update_connected_state) # type: ignore
         self.ble_button.ble_update['bool'].connect(self.uwb_button.update_ble_state) # type: ignore
         self.uwb_button.uwb_update['bool'].connect(self.ble_button.update_uwb_state) # type: ignore
         self.node_id_line_edit.buddy_update['bool'].connect(self.label_3.update_buddy_state) # type: ignore
@@ -718,9 +718,9 @@ class Ui_BelugaGUI(object):
         self.uwb_button.uwb_update['bool'].connect(self.sfd_checkbox.update_uwb_state) # type: ignore
         self.uwb_button.uwb_update['bool'].connect(self.phr_checkbox.update_uwb_state) # type: ignore
         self.uwb_txpower_combobox.buddy_update['bool'].connect(self.label_4.update_buddy_state) # type: ignore
-        self.checkBox.toggled['bool'].connect(self.uwb_txpower_combobox.update_checkbox_state) # type: ignore
-        # self.checkBox.toggled['bool'].connect(self.widget_3.update_checkbox_state) # type: ignore
-        self.checkBox.toggled['bool'].connect(self.pushButton_4.update_checkbox_state) # type: ignore
+        self.uwb_tx_power_checkbox.toggled['bool'].connect(self.uwb_txpower_combobox.update_checkbox_state) # type: ignore
+        self.uwb_tx_power_checkbox.toggled['bool'].connect(self.widget_3.update_checkbox_state) # type: ignore
+        self.uwb_tx_power_checkbox.toggled['bool'].connect(self.pushButton_4.update_checkbox_state) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(BelugaGUI)
 
     def retranslateUi(self, BelugaGUI):
@@ -809,7 +809,7 @@ class Ui_BelugaGUI(object):
         self.label_4.setText(_translate("BelugaGUI", "UWB Transmit Power"))
         self.uwb_txpower_combobox.setItemText(0, _translate("BelugaGUI", "Default Power"))
         self.uwb_txpower_combobox.setItemText(1, _translate("BelugaGUI", "Maximum Power"))
-        self.checkBox.setText(_translate("BelugaGUI", "Simple Power Configuration"))
+        self.uwb_tx_power_checkbox.setText(_translate("BelugaGUI", "Simple Power Configuration"))
         self.label_28.setText(_translate("BelugaGUI", "Stage"))
         self.label_30.setText(_translate("BelugaGUI", "Coarse Gain"))
         self.label_29.setText(_translate("BelugaGUI", "Fine Gain"))
@@ -895,11 +895,6 @@ class Ui_BelugaGUI(object):
         self.RangesTabs.setTabText(self.RangesTabs.indexOf(self.RssiGraph), _translate("BelugaGUI", "RSSI Graph"))
         self.RangesTabs.setTabText(self.RangesTabs.indexOf(self.RssiVsDistance), _translate("BelugaGUI", "RSSI vs Distance"))
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Ranges), _translate("BelugaGUI", "Ranges"))
-from beluga_config import BelugaCustomPowerLabel, BelugaLabel, CoarseGainComboBox, FineGainSpinBox, NeighborEvictionSchemeComboBox, SettingsWidget, UwbPowerLabel
 from device import DeviceBar, DeviceComboBox, DeviceConnectButton
 from neighbor_list import NeighborListTable, RemoveDroppedNeighbors
-from uwbcustomtxpower import UwbCustomTxPower
-from widgets.beluga_checkbox import AntennaCheckBox, LedCheckBox, RangingCheckBox, UwbPhrCheckBox, UwbSfdCheckBox
-from widgets.beluga_combobox import AmplifierComboBox, BootModeComboBox, ChannelComboBox, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbTxPowerComboBox
-from widgets.beluga_line_edit import NodeIdLineEdit, PollRateLineEdit, TimeoutLineEdit, UwbPanIdLineEdit
-from widgets.beluga_pushbutton import ApplyPowerButton, BleButton, RebootButton, UwbButton
+from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
