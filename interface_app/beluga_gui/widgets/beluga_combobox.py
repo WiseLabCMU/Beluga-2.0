@@ -1,4 +1,4 @@
-from .beluga_widget import BelugaWidgetBase
+from .beluga_widget_base import BelugaWidgetBase
 from PyQt5.QtWidgets import QComboBox, QWidget
 from typing import Optional, Callable
 
@@ -63,3 +63,7 @@ class UwbTxPowerComboBox(BelugaComboBoxBase, BelugaWidgetBase):
         self._simple_power = state
         self.setEnabled(self._simple_power)
         self._buddy_sig.bool_update.emit(self._simple_power)
+
+
+class NeighborEvictionSchemeComboBox(BelugaComboBoxBase):
+    pass

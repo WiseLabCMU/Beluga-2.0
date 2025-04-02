@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QCheckBox, QWidget
-from .beluga_widget import BelugaWidgetBase
+from .beluga_widget_base import BelugaWidgetBase
 from typing import Optional, Callable
 
 
