@@ -6,3 +6,6 @@ from .configuration.beluga_line_edit import NodeIdLineEdit, PollRateLineEdit, Ti
 from .configuration.beluga_pushbutton import ApplyPowerButton, BleButton, RebootButton, UwbButton
 from .configuration.beluga_widget import SettingsWidget, UwbCustomTxPower
 from .configuration.beluga_label import BelugaLabel
+from .device.widget import DeviceBar
+from.device.combobox import DeviceComboBox
+from .device.pushbutton import DeviceConnectButton

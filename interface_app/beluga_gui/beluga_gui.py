@@ -895,6 +895,5 @@ class Ui_BelugaGUI(object):
         self.RangesTabs.setTabText(self.RangesTabs.indexOf(self.RssiGraph), _translate("BelugaGUI", "RSSI Graph"))
         self.RangesTabs.setTabText(self.RangesTabs.indexOf(self.RssiVsDistance), _translate("BelugaGUI", "RSSI vs Distance"))
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Ranges), _translate("BelugaGUI", "Ranges"))
-from device import DeviceBar, DeviceComboBox, DeviceConnectButton
 from neighbor_list import NeighborListTable, RemoveDroppedNeighbors
-from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
+from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox

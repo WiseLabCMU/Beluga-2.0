@@ -1902,7 +1902,7 @@
   <customwidget>
    <class>DeviceComboBox</class>
    <extends>QComboBox</extends>
-   <header>device.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>update_buddy(bool)</signal>
     <slot>lock(bool)</slot>
@@ -1911,7 +1911,7 @@
   <customwidget>
    <class>DeviceConnectButton</class>
    <extends>QPushButton</extends>
-   <header>device.h</header>
+   <header>widgets.h</header>
    <slots>
     <signal>connected(bool)</signal>
     <signal>connected(QString)</signal>
@@ -2150,7 +2150,7 @@
   <customwidget>
    <class>DeviceBar</class>
    <extends>QWidget</extends>
-   <header>device.h</header>
+   <header>widgets.h</header>
    <container>1</container>
    <slots>
     <signal>connected(bool)</signal>
