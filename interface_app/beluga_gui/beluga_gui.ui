@@ -352,7 +352,7 @@
           </widget>
          </item>
          <item>
-          <widget class="DeviceComboBox" name="comboBox">
+          <widget class="DeviceComboBox" name="device_combobox">
            <property name="minimumSize">
             <size>
              <width>175</width>
@@ -362,7 +362,7 @@
           </widget>
          </item>
          <item>
-          <widget class="DeviceConnectButton" name="pushButton">
+          <widget class="DeviceConnectButton" name="connect_button">
            <property name="enabled">
             <bool>false</bool>
            </property>
@@ -378,7 +378,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="label_2">
+          <widget class="QLabel" name="connect_status">
            <property name="text">
             <string>Status</string>
            </property>
@@ -819,7 +819,7 @@
               </widget>
              </item>
              <item>
-              <widget class="UwbPreambleLengthComboBox" name="uwb_preambl_combobox">
+              <widget class="UwbPreambleLengthComboBox" name="uwb_preamble_combobox">
                <property name="minimumSize">
                 <size>
                  <width>125</width>
@@ -947,7 +947,7 @@
               </widget>
              </item>
              <item>
-              <widget class="NeighborEvictionSchemeComboBox" name="comboBox_10">
+              <widget class="NeighborEvictionSchemeComboBox" name="eviction_combobox">
                <property name="minimumSize">
                 <size>
                  <width>225</width>
@@ -999,7 +999,7 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_16">
              <item>
-              <widget class="RebootButton" name="pushButton_5">
+              <widget class="RebootButton" name="reboot_button">
                <property name="minimumSize">
                 <size>
                  <width>200</width>
@@ -1186,7 +1186,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="BoostNormCoarseGain_2">
+                 <widget class="QComboBox" name="boost_norm_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1233,7 +1233,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_2">
+                 <widget class="QDoubleSpinBox" name="boost_norm_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1279,7 +1279,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="BoostNormCoarseGain_3">
+                 <widget class="QComboBox" name="boostp500_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1326,7 +1326,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_3">
+                 <widget class="QDoubleSpinBox" name="boostp50_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1372,7 +1372,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="BoostNormCoarseGain_4">
+                 <widget class="QComboBox" name="boostp250_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1419,7 +1419,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_4">
+                 <widget class="QDoubleSpinBox" name="boostp250_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1460,12 +1460,12 @@
                    <bool>false</bool>
                   </property>
                   <property name="text">
-                   <string>BOOSTP250</string>
+                   <string>BOOSTP125</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="BoostNormCoarseGain_5">
+                 <widget class="QComboBox" name="boostp125_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1512,7 +1512,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="BoostNormFineGain_5">
+                 <widget class="QDoubleSpinBox" name="boostp125_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1551,7 +1551,7 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_13">
              <item>
-              <widget class="ApplyPowerButton" name="pushButton_4">
+              <widget class="ApplyPowerButton" name="apply_power">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -1574,7 +1574,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="label_9">
+              <widget class="QLabel" name="tx_power_label">
                <property name="text">
                 <string>41.5</string>
                </property>
@@ -2170,7 +2170,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>comboBox</sender>
+   <sender>device_combobox</sender>
    <signal>update_buddy(bool)</signal>
    <receiver>label</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2186,9 +2186,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>comboBox</sender>
+   <sender>device_combobox</sender>
    <signal>currentTextChanged(QString)</signal>
-   <receiver>pushButton</receiver>
+   <receiver>connect_button</receiver>
    <slot>update_port(QString)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2202,9 +2202,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>connect_button</sender>
    <signal>connected(bool)</signal>
-   <receiver>comboBox</receiver>
+   <receiver>device_combobox</receiver>
    <slot>lock(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2218,9 +2218,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>connect_button</sender>
    <signal>connected(QString)</signal>
-   <receiver>label_2</receiver>
+   <receiver>connect_status</receiver>
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2234,9 +2234,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>connect_button</sender>
    <signal>pressed()</signal>
-   <receiver>pushButton</receiver>
+   <receiver>connect_button</receiver>
    <slot>update_connected()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2250,7 +2250,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>connect_button</sender>
    <signal>connected(bool)</signal>
    <receiver>widget</receiver>
    <slot>device_connected(bool)</slot>
@@ -2410,7 +2410,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>uwb_preambl_combobox</sender>
+   <sender>uwb_preamble_combobox</sender>
    <signal>buddy_update(bool)</signal>
    <receiver>label_15</receiver>
    <slot>update_buddy_state(bool)</slot>
@@ -2492,7 +2492,7 @@
   <connection>
    <sender>uwb_button</sender>
    <signal>uwb_update(bool)</signal>
-   <receiver>uwb_preambl_combobox</receiver>
+   <receiver>uwb_preamble_combobox</receiver>
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -2620,7 +2620,7 @@
   <connection>
    <sender>uwb_tx_power_checkbox</sender>
    <signal>toggled(bool)</signal>
-   <receiver>pushButton_4</receiver>
+   <receiver>apply_power</receiver>
    <slot>update_checkbox_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
