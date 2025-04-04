@@ -1198,9 +1198,12 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="boost_norm_coarse_gain">
+                 <widget class="CoarseGainComboBox" name="boost_norm_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>0</number>
                   </property>
                   <item>
                    <property name="text">
@@ -1245,7 +1248,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="boost_norm_fine_gain">
+                 <widget class="FineGainDoubleSpinBox" name="boost_norm_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1257,6 +1260,9 @@
                   </property>
                   <property name="singleStep">
                    <double>0.500000000000000</double>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>0</number>
                   </property>
                  </widget>
                 </item>
@@ -1291,9 +1297,12 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="boostp500_coarse_gain">
+                 <widget class="CoarseGainComboBox" name="boostp500_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>1</number>
                   </property>
                   <item>
                    <property name="text">
@@ -1338,7 +1347,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="boostp50_fine_gain">
+                 <widget class="FineGainDoubleSpinBox" name="boostp500_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1350,6 +1359,9 @@
                   </property>
                   <property name="singleStep">
                    <double>0.500000000000000</double>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>1</number>
                   </property>
                  </widget>
                 </item>
@@ -1384,9 +1396,12 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="boostp250_coarse_gain">
+                 <widget class="CoarseGainComboBox" name="boostp250_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>2</number>
                   </property>
                   <item>
                    <property name="text">
@@ -1431,7 +1446,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="boostp250_fine_gain">
+                 <widget class="FineGainDoubleSpinBox" name="boostp250_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1443,6 +1458,9 @@
                   </property>
                   <property name="singleStep">
                    <double>0.500000000000000</double>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>2</number>
                   </property>
                  </widget>
                 </item>
@@ -1477,9 +1495,12 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="boostp125_coarse_gain">
+                 <widget class="CoarseGainComboBox" name="boostp125_coarse_gain">
                   <property name="enabled">
                    <bool>false</bool>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>3</number>
                   </property>
                   <item>
                    <property name="text">
@@ -1524,7 +1545,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="boostp125_fine_gain">
+                 <widget class="FineGainDoubleSpinBox" name="boostp125_fine_gain">
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
@@ -1536,6 +1557,9 @@
                   </property>
                   <property name="singleStep">
                    <double>0.500000000000000</double>
+                  </property>
+                  <property name="power_stage" stdset="0">
+                   <number>3</number>
                   </property>
                  </widget>
                 </item>
@@ -2178,6 +2202,22 @@
     <slot>update_connected_state(bool)</slot>
    </slots>
   </customwidget>
+  <customwidget>
+   <class>CoarseGainComboBox</class>
+   <extends>QComboBox</extends>
+   <header>widgets.h</header>
+   <slots>
+    <slot>simple_power_update(int)</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
+   <class>FineGainDoubleSpinBox</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>widgets.h</header>
+   <slots>
+    <slot>simple_power_update(int)</slot>
+   </slots>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections>
@@ -2240,7 +2280,7 @@
      <y>80</y>
     </hint>
     <hint type="destinationlabel">
-     <x>365</x>
+     <x>374</x>
      <y>92</y>
     </hint>
    </hints>
@@ -2658,6 +2698,134 @@
     <hint type="destinationlabel">
      <x>294</x>
      <y>346</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boost_norm_coarse_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>912</x>
+     <y>136</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>825</x>
+     <y>221</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boost_norm_fine_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>889</x>
+     <y>147</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1007</x>
+     <y>220</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boostp500_coarse_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>870</x>
+     <y>145</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>883</x>
+     <y>265</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boostp500_fine_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>847</x>
+     <y>142</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1021</x>
+     <y>259</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boostp250_coarse_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>833</x>
+     <y>141</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>847</x>
+     <y>292</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boostp250_fine_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>926</x>
+     <y>142</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1000</x>
+     <y>298</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boostp125_coarse_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>860</x>
+     <y>141</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>866</x>
+     <y>335</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uwb_txpower_combobox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>boostp125_fine_gain</receiver>
+   <slot>simple_power_update(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>902</x>
+     <y>138</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1011</x>
+     <y>337</y>
     </hint>
    </hints>
   </connection>

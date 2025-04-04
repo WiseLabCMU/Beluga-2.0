@@ -67,6 +67,11 @@ class UwbTxPowerComboBox(BelugaComboBoxBase, BelugaWidgetBase):
         self._simple_power = state
         self.setEnabled(self._simple_power)
         self._buddy_sig.bool_update.emit(self._simple_power)
+        if self._simple_power:
+            self.refresh_advanced_power()
+
+    def refresh_advanced_power(self):
+        self.currentIndexChanged.emit(self.currentIndex())
 
 
 class NeighborEvictionSchemeComboBox(BelugaComboBoxBase, BelugaWidgetBase):
@@ -78,3 +83,20 @@ class NeighborEvictionSchemeComboBox(BelugaComboBoxBase, BelugaWidgetBase):
 
     def setEnabled(self, a0):
         super().setEnabled(a0 and self._support)
+
+
+class CoarseGainComboBox(QComboBox):
+    def update_power(self, power: int):
+        stage = self.property("power_stage")
+        mask = 0x7
+        shift = (8 * stage) + 5
+        setting = (power >> shift) & mask
+        index = (~setting) & mask
+        self.setCurrentIndex(index)
+
+    def simple_power_update(self, mode: int):
+        if mode == 0:
+            power = 0x0E080222
+        else:
+            power = 0x1F1F1F1F
+        self.update_power(power)

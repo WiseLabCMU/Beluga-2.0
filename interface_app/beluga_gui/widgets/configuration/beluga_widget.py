@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QCheckBox
 from .beluga_pushbutton import UwbButton, ApplyPowerButton
+from typing import Optional
 
 
 class UwbCustomTxPower(QWidget):
@@ -12,15 +13,14 @@ class UwbCustomTxPower(QWidget):
 class SettingsWidget(QWidget):
     def update_connected_state(self, connected: bool):
         self.setEnabled(connected)
-        tx_power_checkbox = None
+        tx_power_checkbox: Optional[QCheckBox] = None
         for child in self.findChildren(QWidget):
             if not connected or not isinstance(child, UwbButton):
                 child.setEnabled(connected)
             if child.objectName() == "uwb_tx_power_checkbox":
                 tx_power_checkbox = child
         if tx_power_checkbox is not None:
-            tx_power_checkbox.setChecked(True)
-            tx_power_checkbox.toggled.emit(True)
+            tx_power_checkbox.toggled.emit(tx_power_checkbox.isChecked())
 
 
     # TODO: Set states for UWB stuff

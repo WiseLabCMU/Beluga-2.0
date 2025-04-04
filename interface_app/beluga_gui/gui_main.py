@@ -67,12 +67,11 @@ class BelugaGui:
         return int("".join([c for c in response if c.isdigit()]))
 
     @staticmethod
-    def extract_hex(response: str) -> int:
+    def extract_hex(response: str) -> str:
         index = response.find("0x")
         if index == -1:
             raise ValueError("Hex number not present")
-        hex_str = response[index + 2:].split()[0]
-        print(hex_str)
+        return response[index + 2:].split()[0]
 
     @staticmethod
     def strip_alpha(response: str):
@@ -90,6 +89,10 @@ class BelugaGui:
             return int(math.ceil(math.log2(length))) - 6
         else:
             return int(math.log2(length)) - 5
+
+    @staticmethod
+    def check_standard_tx_power(response: str) -> bool:
+        return response == "0E080222" or response == "1F1F1F1F"
 
     def _gather_beluga_data(self) -> Tuple[bool, str]:
         # See if we can get the ID
@@ -143,8 +146,25 @@ class BelugaGui:
         pac = self.serial.pac()
         self.ui.uwb_pac_combobox.setCurrentIndex(self.strtoint(pac))
         pan = self.serial.panid()
-        self.extract_hex(pan)
-        # TODO: Set UI elements
+        self.ui.pan_id_text_edit.setText(self.extract_hex(pan))
+        self.ui.eviction_combobox.supported(False)
+        power = self.serial.txpower()
+        power = self.extract_hex(power)
+        if self.check_standard_tx_power(power):
+            self.ui.uwb_txpower_combobox.setCurrentIndex(int(power == "1F1F1F1F"))
+            self.ui.uwb_tx_power_checkbox.setChecked(True)
+            self.ui.uwb_txpower_combobox.refresh_advanced_power()
+        else:
+            self.ui.uwb_tx_power_checkbox.setChecked(False)
+            power = int(power, base=16)
+            self.ui.boost_norm_coarse_gain.update_power(power)
+            self.ui.boost_norm_fine_gain.update_power(power)
+            self.ui.boostp500_coarse_gain.update_power(power)
+            self.ui.boostp500_fine_gain.update_power(power)
+            self.ui.boostp250_coarse_gain.update_power(power)
+            self.ui.boostp250_fine_gain.update_power(power)
+            self.ui.boostp125_coarse_gain.update_power(power)
+            self.ui.boostp125_fine_gain.update_power(power)
         return True, ""
 
     def update_connection_state(self):
