@@ -1072,3 +1072,37 @@ AT_CMD_DEFINE(VERBOSE) {
     AT_OK(comms, "Verbose: %d", mode);
 }
 AT_CMD_REGISTER(VERBOSE);
+
+/**
+ * Retrieves the status information for Beluga. This includes build info, board
+ * info, and states that are not accessible through other AT commands
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ *
+ * Bits 31:12 -> Reserved
+ * Bit 11 -> Eviction Algorithm Runtime Selectable
+ * Bit 10 -> Antenna 2 used
+ * Bit 9 -> UWB Active
+ * Bit 8 -> BLE Active
+ * Bits 7:0 -> Board ID (Specific to Hardware platforms)
+ *
+ * @internal Please update bits above if adding new things
+ */
+AT_CMD_DEFINE(STATUS) {
+    LOG_INF("Running STATUS command");
+    const uint32_t settable_evict_algo =
+        IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT) << 11;
+    int antenna_ret = current_antenna();
+    uint32_t antenna = (antenna_ret >= 0) ? (antenna_ret << 10) : UINT32_C(0);
+    uint32_t uwb_state = (uint32_t)(get_uwb_led_state() == LED_UWB_ON) << 9;
+    uint32_t ble_state = (uint32_t)(get_ble_led_state() == LED_BLE_ON) << 8;
+    const uint32_t board = (uint8_t)CONFIG_BELUGA_BOARD_HW_ID;
+
+    uint32_t status =
+        settable_evict_algo | antenna | uwb_state | ble_state | board;
+    OK(comms, "Status: %" PRIu32, status);
+}
+AT_CMD_REGISTER(STATUS);

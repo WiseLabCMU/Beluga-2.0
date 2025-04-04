@@ -8,6 +8,10 @@ rsource "./Kconfig.uwb"
 
 rsource "./Kconfig.neighbors"
 
+config BELUGA_BOARD_HW_ID
+    int "Hardware ID of the Board"
+    default 0
+
 choice "BELUGA_LED_INDICATOR_CHOICE"
     prompt "LEDs are used to indicate states for"
     default BELUGA_LEDS

@@ -108,6 +108,15 @@ int update_power_mode(enum power_mode mode);
 int select_antenna(int32_t ant);
 
 /**
+ * @brief Retrieves the active antenna
+ * @return 0 if antenna 1 is being used
+ * @return 1 if antenna 2 is being used
+ * @return -ENOTSUP if antenna selection is not supported
+ * @return negative error code otherwise
+ */
+int current_antenna(void);
+
+/**
  * @brief Controls if the FEM (Front-End Module) is powered down or not.
  *
  * @param[in] shutdown `true` to power down the FEM, `false` to power on the

@@ -356,6 +356,21 @@ int select_antenna(int32_t antenna) {
 }
 
 /**
+ * @brief Retrieves the active antenna
+ * @return 0 if antenna 1 is being used
+ * @return 1 if antenna 2 is being used
+ * @return -ENOTSUP if antenna selection is not supported
+ * @return negative error code otherwise
+ */
+int current_antenna(void) {
+#if ANTENNA_SELECT
+    return gpio_pin_get_dt(&_fem_gpios.ant_sel);
+#else
+    return -ENOTSUP;
+#endif
+}
+
+/**
  * @brief Controls if the FEM (Front-End Module) is powered down or not.
  *
  * @param[in] shutdown `true` to power down the FEM, `false` to power on the
@@ -436,6 +451,15 @@ int select_antenna(int32_t ant) {
     ARG_UNUSED(ant);
     return -ENOTSUP;
 }
+
+/**
+ * @brief Retrieves the active antenna
+ * @return 0 if antenna 1 is being used
+ * @return 1 if antenna 2 is being used
+ * @return -ENOTSUP if antenna selection is not supported
+ * @return negative error code otherwise
+ */
+int current_antenna(void) { return -ENOTSUP; }
 
 /**
  * @brief Controls if the FEM (Front-End Module) is powered down or not.
