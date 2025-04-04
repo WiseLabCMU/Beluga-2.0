@@ -1103,6 +1103,6 @@ AT_CMD_DEFINE(STATUS) {
 
     uint32_t status =
         settable_evict_algo | antenna | uwb_state | ble_state | board;
-    OK(comms, "Status: %" PRIu32, status);
+    OK(comms, "Status: 0x%08" PRIX32, status);
 }
 AT_CMD_REGISTER(STATUS);
