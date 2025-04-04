@@ -110,4 +110,8 @@ config POLLING_REFRESH_PERIOD
     default 500 if POLLING_REFRESH > 500
     default POLLING_REFRESH
 
+config PWRAMP_ALLOW_BAD_CHANNELS
+    bool "Allow invalid UWB channels to use the amplifier"
+    default n
+
 endmenu
