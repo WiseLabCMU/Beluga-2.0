@@ -9,9 +9,6 @@ class BelugaComboBoxBase(QComboBox):
         self._handler: Optional[Callable[[int], None]] = None
         self.currentIndexChanged.connect(self.handle_index_changed)
 
-    def set_current_mode(self, index: int):
-        self.setCurrentIndex(index)
-
     def set_changed_index_handler(self, handler: Optional[Callable[[None], int]] = None):
         self._handler = handler
 
@@ -20,8 +17,15 @@ class BelugaComboBoxBase(QComboBox):
             self._handler(new_index)
 
 
-class AmplifierComboBox(BelugaComboBoxBase):
-    pass
+class AmplifierComboBox(BelugaComboBoxBase, BelugaWidgetBase):
+    _hardware_support = False
+
+    def supported(self, support: bool):
+        self._hardware_support = support
+        self._buddy_sig.bool_update.emit(self._hardware_support)
+
+    def setEnabled(self, a0):
+        super().setEnabled(a0 and self._hardware_support)
 
 
 class BootModeComboBox(BelugaComboBoxBase):
@@ -65,5 +69,12 @@ class UwbTxPowerComboBox(BelugaComboBoxBase, BelugaWidgetBase):
         self._buddy_sig.bool_update.emit(self._simple_power)
 
 
-class NeighborEvictionSchemeComboBox(BelugaComboBoxBase):
-    pass
+class NeighborEvictionSchemeComboBox(BelugaComboBoxBase, BelugaWidgetBase):
+    _support = False
+
+    def supported(self, support: bool):
+        self._support = support
+        self._buddy_sig.bool_update.emit(self._support)
+
+    def setEnabled(self, a0):
+        super().setEnabled(a0 and self._support)

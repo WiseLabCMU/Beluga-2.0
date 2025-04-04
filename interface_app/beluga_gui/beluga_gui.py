@@ -150,6 +150,7 @@ class Ui_BelugaGUI(object):
         self.connect_button.setObjectName("connect_button")
         self.horizontalLayout_2.addWidget(self.connect_button)
         self.connect_status = QtWidgets.QLabel(self.widget)
+        self.connect_status.setText("")
         self.connect_status.setObjectName("connect_status")
         self.horizontalLayout_2.addWidget(self.connect_status)
         spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
@@ -231,6 +232,8 @@ class Ui_BelugaGUI(object):
         self.timeout_line_edit = TimeoutLineEdit(self.widget_2)
         self.timeout_line_edit.setMaximumSize(QtCore.QSize(100, 16777215))
         self.timeout_line_edit.setPlaceholderText("")
+        self.timeout_line_edit.setCursorMoveStyle(QtCore.Qt.VisualMoveStyle)
+        self.timeout_line_edit.setClearButtonEnabled(False)
         self.timeout_line_edit.setObjectName("timeout_line_edit")
         self.horizontalLayout_14.addWidget(self.timeout_line_edit)
         self.ranging_checkbox = RangingCheckBox(self.widget_2)
@@ -691,12 +694,12 @@ class Ui_BelugaGUI(object):
 
         self.retranslateUi(BelugaGUI)
         self.TerminalTab.setCurrentIndex(1)
+        self.eviction_combobox.setCurrentIndex(1)
         self.RangesTabs.setCurrentIndex(3)
         self.device_combobox.update_buddy['bool'].connect(self.label.update_buddy_state) # type: ignore
         self.device_combobox.currentTextChanged['QString'].connect(self.connect_button.update_port) # type: ignore
         self.connect_button.connected['bool'].connect(self.device_combobox.lock) # type: ignore
         self.connect_button.connected['QString'].connect(self.connect_status.setText) # type: ignore
-        self.connect_button.pressed.connect(self.connect_button.update_connected) # type: ignore
         self.connect_button.connected['bool'].connect(self.widget.device_connected) # type: ignore
         self.widget.connected['bool'].connect(self.widget_2.update_connected_state) # type: ignore
         self.ble_button.ble_update['bool'].connect(self.uwb_button.update_ble_state) # type: ignore
@@ -721,6 +724,8 @@ class Ui_BelugaGUI(object):
         self.uwb_tx_power_checkbox.toggled['bool'].connect(self.uwb_txpower_combobox.update_checkbox_state) # type: ignore
         self.uwb_tx_power_checkbox.toggled['bool'].connect(self.widget_3.update_checkbox_state) # type: ignore
         self.uwb_tx_power_checkbox.toggled['bool'].connect(self.apply_power.update_checkbox_state) # type: ignore
+        self.extern_amp_combobox.buddy_update['bool'].connect(self.label_12.update_buddy_state) # type: ignore
+        self.eviction_combobox.buddy_update['bool'].connect(self.label_18.update_buddy_state) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(BelugaGUI)
 
     def retranslateUi(self, BelugaGUI):
@@ -744,7 +749,6 @@ class Ui_BelugaGUI(object):
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Terminal), _translate("BelugaGUI", "Terminal"))
         self.label.setText(_translate("BelugaGUI", "Devices"))
         self.connect_button.setText(_translate("BelugaGUI", "Connect"))
-        self.connect_status.setText(_translate("BelugaGUI", "Status"))
         self.ble_button.setText(_translate("BelugaGUI", "Start BLE"))
         self.uwb_button.setText(_translate("BelugaGUI", "Start UWB"))
         self.label_3.setText(_translate("BelugaGUI", "Node ID"))

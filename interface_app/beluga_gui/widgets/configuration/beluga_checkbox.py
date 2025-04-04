@@ -37,7 +37,13 @@ class UwbSfdCheckBox(UwbCheckBox):
 
 
 class AntennaCheckBox(BelugaCheckBox):
-    pass
+    _hardware_support = False
+
+    def supported(self, support):
+        self._hardware_support = support
+
+    def setEnabled(self, a0):
+        super().setEnabled(a0 and self._hardware_support)
 
 
 class UwbPhrCheckBox(UwbCheckBox):

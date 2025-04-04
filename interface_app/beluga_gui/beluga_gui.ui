@@ -380,7 +380,7 @@
          <item>
           <widget class="QLabel" name="connect_status">
            <property name="text">
-            <string>Status</string>
+            <string/>
            </property>
           </widget>
          </item>
@@ -614,6 +614,12 @@
                <property name="placeholderText">
                 <string/>
                </property>
+               <property name="cursorMoveStyle">
+                <enum>Qt::VisualMoveStyle</enum>
+               </property>
+               <property name="clearButtonEnabled">
+                <bool>false</bool>
+               </property>
               </widget>
              </item>
              <item>
@@ -772,14 +778,17 @@
              </item>
              <item>
               <widget class="UwbPulseRateComboBox" name="uwb_pulserate_combobox">
+               <property name="currentIndex">
+                <number>1</number>
+               </property>
                <item>
                 <property name="text">
-                 <string>64 MHz</string>
+                 <string>16 MHz</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>16 MHz</string>
+                 <string>64 MHz</string>
                 </property>
                </item>
               </widget>
@@ -953,6 +962,9 @@
                  <width>225</width>
                  <height>0</height>
                 </size>
+               </property>
+               <property name="currentIndex">
+                <number>1</number>
                </property>
                <item>
                 <property name="text">
@@ -2228,24 +2240,8 @@
      <y>80</y>
     </hint>
     <hint type="destinationlabel">
-     <x>408</x>
+     <x>365</x>
      <y>92</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>connect_button</sender>
-   <signal>pressed()</signal>
-   <receiver>connect_button</receiver>
-   <slot>update_connected()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>329</x>
-     <y>80</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>309</x>
-     <y>75</y>
     </hint>
    </hints>
   </connection>
@@ -2630,6 +2626,38 @@
     <hint type="destinationlabel">
      <x>754</x>
      <y>370</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extern_amp_combobox</sender>
+   <signal>buddy_update(bool)</signal>
+   <receiver>label_12</receiver>
+   <slot>update_buddy_state(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>199</x>
+     <y>238</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>135</x>
+     <y>242</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>eviction_combobox</sender>
+   <signal>buddy_update(bool)</signal>
+   <receiver>label_18</receiver>
+   <slot>update_buddy_state(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>393</x>
+     <y>347</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>294</x>
+     <y>346</y>
     </hint>
    </hints>
   </connection>

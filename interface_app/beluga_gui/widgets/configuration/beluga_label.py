@@ -6,7 +6,7 @@ from typing import Optional
 class BelugaLabel(QLabel, BelugaWidgetBase):
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._buddy_state = False
+        self._buddy_state = True
 
     def update_buddy_state(self, state: bool):
         self._buddy_state = state
@@ -16,3 +16,6 @@ class BelugaLabel(QLabel, BelugaWidgetBase):
         enable = self._buddy_state
         self.setEnabled(enable)
         self._buddy_sig.bool_update.emit(enable)
+
+    def setEnabled(self, a0):
+        super().setEnabled(a0 and self._buddy_state)

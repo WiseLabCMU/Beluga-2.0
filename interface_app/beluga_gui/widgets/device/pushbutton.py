@@ -16,7 +16,6 @@ class DeviceConnectButton(QPushButton):
             "bool": self._connected.bool_update,
             "QString": self._connected.str_update
         }
-        self.state = False # TODO: Get rid of this
 
     def update_port(self, port: str):
         self._current_port = port
@@ -26,15 +25,12 @@ class DeviceConnectButton(QPushButton):
         else:
             self.setEnabled(False)
 
-    def update_connected(self):
-        # TODO: take in bool and str inputs and handle pressed signal from main application
-        self.state = not self.state
-
-        if self.state:
+    def update_connected(self, connected: bool, status: str):
+        if connected:
             self.setText("Disconnect")
-            self._connected.str_update.emit("") # TODO: Set this to an error
+            self._connected.str_update.emit(status)
         else:
             self.setText("Connect")
-            self._connected.str_update.emit("Status") # TODO: Set this to an error
+            self._connected.str_update.emit(status)
 
-        self._connected.bool_update.emit(self.state)
+        self._connected.bool_update.emit(connected)

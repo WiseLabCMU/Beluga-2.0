@@ -13,6 +13,8 @@ class DeviceComboBox(QComboBox):
         self.update_buddy = {"bool": self._buddy_update.update_bool}
 
     def update_device_list(self, options: Iterable[str]):
+        if not self.isEnabled():
+            return
         current = self.currentText()
         items = [""] + list(options)
         index = None
