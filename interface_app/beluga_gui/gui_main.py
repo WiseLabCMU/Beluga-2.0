@@ -63,6 +63,8 @@ class BelugaGui:
         self.ui.ranging_checkbox.set_toggle_handler(self.update_ranging)
         self.ui.led_checkbox.set_toggle_handler(self.update_leds)
         self.ui.sfd_checkbox.set_toggle_handler(self.update_sfd)
+        self.ui.extern_amp_combobox.set_changed_index_handler(self.update_amplifiers)
+        self.ui.antenna_checkbox.set_toggle_handler(self.update_antenna)
 
     def run(self):
         self.window.show()
@@ -113,6 +115,15 @@ class BelugaGui:
     def refresh_sfd(self):
         mode = self.serial.sfd()
         self.ui.sfd_checkbox.setChecked(bool(self.strtoint(mode)))
+
+    def refresh_amplifiers(self):
+        mode = self.serial.pwramp()
+        self.ui.extern_amp_combobox.setCurrentIndex(self.strtoint(mode))
+
+    def refresh_antenna(self):
+        status = self.serial.status()
+        status = BelugaStatus(status)
+        self.ui.antenna_checkbox.setChecked(status.secondary_antenna)
 
     def update_ble(self):
         status = self.serial.status()
@@ -175,6 +186,16 @@ class BelugaGui:
     def update_sfd(self, state: bool):
         resp = self.serial.sfd(int(state))
         self.refresh_sfd()
+        self.ui.connect_status.setText(resp)
+
+    def update_amplifiers(self, index: int):
+        resp = self.serial.pwramp(index)
+        self.refresh_amplifiers()
+        self.ui.connect_status.setText(resp)
+
+    def update_antenna(self, state: bool):
+        resp = self.serial.antenna(int(state) + 1)
+        self.refresh_antenna()
         self.ui.connect_status.setText(resp)
 
     @staticmethod
@@ -249,8 +270,7 @@ class BelugaGui:
         self.refresh_sfd()
 
         if status.external_ble_amp and status.external_uwb_amp:
-            mode = self.serial.pwramp()
-            self.ui.extern_amp_combobox.setCurrentIndex(mode)
+            self.refresh_amplifiers()
             self.ui.extern_amp_combobox.supported(True)
         else:
             self.ui.extern_amp_combobox.supported(False)
