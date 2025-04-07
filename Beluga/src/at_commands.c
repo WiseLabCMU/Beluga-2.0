@@ -12,12 +12,12 @@
  *  @author Tom Schmitz
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/sys/reboot.h>
 #include <app_version.h>
 #include <deca_types.h>
 #include <initiator.h>
 #include <responder.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/reboot.h>
 
 #include <ble_app.h>
 #include <ctype.h>
@@ -1109,7 +1109,7 @@ AT_CMD_REGISTER(STATUS);
 
 /**
  * Retrieves the current firmware version of the Beluga node.
- * 
+ *
  * @param[in] comms Pointer to the comms instance
  * @param[in] argc Number of arguments
  * @param[in] argv The arguments

@@ -483,6 +483,22 @@ std::string BelugaSerial::panid(const std::string &pan_id) {
     return _send_command(oss.str());
 }
 
+std::string BelugaSerial::evict(const std::string &scheme = "") {
+    std::stringstream oss;
+    oss << "AT+EVICT " << scheme << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::verbose(const std::string &mode = "") {
+    std::stringstream oss;
+    oss << "AT+VERBOSE " << scheme << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::status() { return _send_command("AT+STATUS\r\n"); }
+
+std::string BelugaSerial::version() { return _send_command("AT+VERSION\r\n"); }
+
 void BelugaSerial::start() {
     if (_tasks_running || !_serial.is_open()) {
         throw std::runtime_error("Please stop before restarting");

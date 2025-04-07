@@ -337,6 +337,34 @@ class BelugaSerial {
     std::string panid(const std::string &pan_id = "");
 
     /**
+     * Sends a command for setting/getting the neighbor eviction scheme
+     * @param[in] scheme The eviction scheme to set. If empty, it will get the
+     * current eviction scheme
+     * @return The command response
+     */
+    std::string evict(const std::string &scheme = "");
+
+    /**
+     * Sends a command for setting/getting the verbose mode
+     * @param[in] mode The mode to set. If empty, it will get the current
+     * verbose mode setting.
+     * @return The command response
+     */
+    std::string verbose(const std::string &mode = "");
+
+    /**
+     * Retrieves the current status of the Beluga node.
+     * @return The command response
+     */
+    std::string status();
+
+    /**
+     * Retrieves the current version of the Beluga node.
+     * @return The command response
+     */
+    std::string version();
+
+    /**
      * Starts the serial reception and processing tasks
      * @throws std::runtime_error if the receive and processing tasks are
      * already running
