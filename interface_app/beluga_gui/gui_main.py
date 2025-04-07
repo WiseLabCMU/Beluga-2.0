@@ -59,6 +59,10 @@ class BelugaGui:
         self.ui.boot_mode_combobox.set_changed_index_handler(self.update_bootmode)
         self.ui.rate_line_edit.set_handler(self.update_rate)
         self.ui.channel_combobox.set_changed_index_handler(self.update_channel)
+        self.ui.timeout_line_edit.set_handler(self.update_timeout)
+        self.ui.ranging_checkbox.set_toggle_handler(self.update_ranging)
+        self.ui.led_checkbox.set_toggle_handler(self.update_leds)
+        self.ui.sfd_checkbox.set_toggle_handler(self.update_sfd)
 
     def run(self):
         self.window.show()
@@ -93,6 +97,22 @@ class BelugaGui:
         channel = self.serial.channel()
         index = self.channel_to_index(channel)
         self.ui.channel_combobox.setCurrentIndex(index)
+
+    def refresh_timeout(self):
+        timeout = self.serial.timeout()
+        self.ui.timeout_line_edit.setText(self.strip_alpha(timeout))
+
+    def refresh_ranging(self):
+        mode = self.serial.twrmode()
+        self.ui.ranging_checkbox.setChecked(bool(self.strtoint(mode)))
+
+    def refresh_leds(self):
+        mode = self.serial.ledmode()
+        self.ui.led_checkbox.setChecked(not bool(self.strtoint(mode)))
+
+    def refresh_sfd(self):
+        mode = self.serial.sfd()
+        self.ui.sfd_checkbox.setChecked(bool(self.strtoint(mode)))
 
     def update_ble(self):
         status = self.serial.status()
@@ -135,6 +155,26 @@ class BelugaGui:
             index = 7
         resp = self.serial.channel(index)
         self.refresh_channel()
+        self.ui.connect_status.setText(resp)
+
+    def update_timeout(self, timeout: str):
+        resp = self.serial.timeout(timeout)
+        self.refresh_timeout()
+        self.ui.connect_status.setText(resp)
+
+    def update_ranging(self, state: bool):
+        resp = self.serial.twrmode(int(state))
+        self.refresh_ranging()
+        self.ui.connect_status.setText(resp)
+
+    def update_leds(self, state: bool):
+        resp = self.serial.ledmode(int(not state))
+        self.refresh_leds()
+        self.ui.connect_status.setText(resp)
+
+    def update_sfd(self, state: bool):
+        resp = self.serial.sfd(int(state))
+        self.refresh_sfd()
         self.ui.connect_status.setText(resp)
 
     @staticmethod
@@ -200,28 +240,13 @@ class BelugaGui:
 
         status = BelugaStatus(self.serial.status())
 
-        mode = self.serial.bootmode()
-        mode = self.strtoint(mode)
-        self.ui.boot_mode_combobox.setCurrentIndex(mode)
-
-        rate = self.serial.rate()
-        self.ui.rate_line_edit.setText(self.strip_alpha(rate))
-
-        channel = self.serial.channel()
-        index = self.channel_to_index(channel)
-        self.ui.channel_combobox.setCurrentIndex(index)
-
-        timeout = self.serial.timeout()
-        self.ui.timeout_line_edit.setText(self.strip_alpha(timeout))
-
-        mode = self.serial.twrmode()
-        self.ui.ranging_checkbox.setChecked(bool(self.strtoint(mode)))
-
-        mode = self.serial.ledmode()
-        self.ui.led_checkbox.setChecked(not bool(self.strtoint(mode)))
-
-        mode = self.serial.phr()
-        self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
+        self.refresh_bootmode()
+        self.refresh_rate()
+        self.refresh_channel()
+        self.refresh_timeout()
+        self.refresh_ranging()
+        self.refresh_leds()
+        self.refresh_sfd()
 
         if status.external_ble_amp and status.external_uwb_amp:
             mode = self.serial.pwramp()
