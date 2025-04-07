@@ -677,6 +677,52 @@ class BelugaSerial:
         """
         return self._send_command(value=pan)
 
+    def evict(self, scheme: Optional[int] = None):
+        """
+        Sets or gets the eviction scheme of the Beluga node.
+
+        :param scheme: The eviction scheme to set:
+            * None: Retrieve the current scheme (Default)
+            * 0: Indexed Round-Robin
+            * 1: Lowest RSSI
+            * 2: Furthest away
+            * 3: Least recently scanned neighbor
+            * 4: Least recently ranged to neighbor
+        :type scheme: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=scheme)
+
+    def verbose(self, mode: Optional[int] = None):
+        """
+        Sets or gets the verbose mode of the Beluga node.
+
+        :param mode: The verbose mode to set:
+            * None: Retrieve the current verbose mode (Default)
+            * 0: verbose mode turned off
+            * 1: verbose mode turned on
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+
+    def status(self):
+        """
+        Retrieve the current status of the Beluga node
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
+    def version(self):
+        """
+        Retrieve the current version of the Beluga node
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
     def start(self):
         """
         Starts the processing and receive tasks, sets up the node to transmit
