@@ -14,7 +14,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
-
+#include <app_version.h>
 #include <deca_types.h>
 #include <initiator.h>
 #include <responder.h>
@@ -1106,3 +1106,17 @@ AT_CMD_DEFINE(STATUS) {
     OK(comms, "Status: 0x%08" PRIX32, status);
 }
 AT_CMD_REGISTER(STATUS);
+
+/**
+ * Retrieves the current firmware version of the Beluga node.
+ * 
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ */
+AT_CMD_DEFINE(VERSION) {
+    LOG_INF("Running version command");
+    OK(comms, APP_VERSION_STRING);
+}
+AT_CMD_REGISTER(VERSION);
