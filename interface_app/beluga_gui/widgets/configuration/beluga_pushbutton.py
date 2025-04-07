@@ -4,7 +4,7 @@ from .beluga_widget_base import BelugaWidgetBase
 from typing import Optional, Callable
 
 
-DEBUG = True
+DEBUG = False
 
 
 class BelugaPushButton(QPushButton):

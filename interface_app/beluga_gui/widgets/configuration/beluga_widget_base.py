@@ -5,7 +5,7 @@ class BelugaWidgetBase:
     class BuddyStateUpdateEmitter(QObject):
         bool_update = pyqtSignal(bool)
     _connected = True
-    _ble_running = True
+    _ble_running = False
     _uwb_running = False
 
     def __init__(self):
@@ -24,3 +24,11 @@ class BelugaWidgetBase:
 
     def update(self):
         pass
+
+    @property
+    def ble_running(self) -> bool:
+        return self._ble_running
+
+    @property
+    def uwb_running(self) -> bool:
+        return self._uwb_running

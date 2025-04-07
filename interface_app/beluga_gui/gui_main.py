@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import QThread, QObject
 from typing import Optional, Callable, Iterable, Tuple
 from beluga_gui import Ui_BelugaGUI
-from beluga_serial import BelugaSerial, BelugaSerialAttr, unpack_beluga_status, unpack_beluga_version
+from beluga_serial import BelugaSerial, BelugaSerialAttr, BelugaStatus, unpack_beluga_version
 from copy import deepcopy
 import time
 from serial import Serial, SerialException
@@ -43,7 +43,6 @@ class BelugaGui:
                     self._callback(prev_iter)
                 time.sleep(1.0)
 
-
     def __init__(self, argv):
         self.app = QApplication(argv)
         self.window = QMainWindow()
@@ -54,13 +53,89 @@ class BelugaGui:
         self._port_update.start()
         self._connected = False
         self.ui.connect_button.pressed.connect(self.update_connection_state)
-
+        self.ui.ble_button.pressed.connect(self.update_ble)
+        self.ui.uwb_button.pressed.connect(self.update_uwb)
+        self.ui.node_id_line_edit.set_handler(self.update_node_id)
+        self.ui.boot_mode_combobox.set_changed_index_handler(self.update_bootmode)
+        self.ui.rate_line_edit.set_handler(self.update_rate)
+        self.ui.channel_combobox.set_changed_index_handler(self.update_channel)
 
     def run(self):
         self.window.show()
         ret = self.app.exec_()
         self.serial.close()
         sys.exit(ret)
+
+    def refresh_ble(self):
+        status = self.serial.status()
+        status = BelugaStatus(status)
+        self.ui.ble_button.set_ble_state(status.ble)
+
+    def refresh_uwb(self):
+        status = self.serial.status()
+        status = BelugaStatus(status)
+        self.ui.uwb_button.set_uwb_state(status.uwb)
+
+    def refresh_id(self):
+        id_ = self.serial.id()
+        self.ui.node_id_line_edit.setText(self.strip_alpha(id_))
+
+    def refresh_bootmode(self):
+        mode = self.serial.bootmode()
+        mode = self.strtoint(mode)
+        self.ui.boot_mode_combobox.setCurrentIndex(mode)
+
+    def refresh_rate(self):
+        rate = self.serial.rate()
+        self.ui.rate_line_edit.setText(self.strip_alpha(rate))
+
+    def refresh_channel(self):
+        channel = self.serial.channel()
+        index = self.channel_to_index(channel)
+        self.ui.channel_combobox.setCurrentIndex(index)
+
+    def update_ble(self):
+        status = self.serial.status()
+        status = BelugaStatus(status)
+        if status.ble:
+            resp = self.serial.stop_ble()
+        else:
+            resp = self.serial.start_ble()
+        self.refresh_ble()
+        self.ui.connect_status.setText(resp)
+
+    def update_uwb(self):
+        status = self.serial.status()
+        status = BelugaStatus(status)
+        if status.uwb:
+            resp = self.serial.stop_uwb()
+        else:
+            resp = self.serial.start_uwb()
+        self.refresh_uwb()
+        self.ui.connect_status.setText(resp)
+
+    def update_node_id(self, id_: str):
+        resp = self.serial.id(id_)
+        self.refresh_id()
+        self.ui.connect_status.setText(resp)
+
+    def update_bootmode(self, mode: int):
+        resp = self.serial.bootmode(mode)
+        self.refresh_bootmode()
+        self.ui.connect_status.setText(resp)
+
+    def update_rate(self, rate: str):
+        resp = self.serial.rate(rate)
+        self.refresh_rate()
+        self.ui.connect_status.setText(resp)
+
+    def update_channel(self, index: int):
+        index += 1
+        if index == 6:
+            index = 7
+        resp = self.serial.channel(index)
+        self.refresh_channel()
+        self.ui.connect_status.setText(resp)
 
     @staticmethod
     def strtoint(response: str) -> int:
@@ -123,8 +198,7 @@ class BelugaGui:
             return False, "Unable to communicate with port"
         self.ui.node_id_line_edit.setText(self.strip_alpha(id_))
 
-        status = self.serial.status()
-        status = unpack_beluga_status(status)
+        status = BelugaStatus(self.serial.status())
 
         mode = self.serial.bootmode()
         mode = self.strtoint(mode)
@@ -149,20 +223,15 @@ class BelugaGui:
         mode = self.serial.phr()
         self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
 
-        if status["Hardware Platform"] == 1:
+        if status.external_ble_amp and status.external_uwb_amp:
             mode = self.serial.pwramp()
             self.ui.extern_amp_combobox.setCurrentIndex(mode)
             self.ui.extern_amp_combobox.supported(True)
-            self.ui.antenna_checkbox.supported(True)
         else:
             self.ui.extern_amp_combobox.supported(False)
-            self.ui.antenna_checkbox.supported(False)
 
-        if status["Using Antenna 2"]:
-            self.ui.antenna_checkbox.setChecked(True)
-        else:
-            # Will execute this is the secondary antenna is not supported
-            self.ui.antenna_checkbox.setChecked(False)
+        self.ui.antenna_checkbox.supported(status.secondary_antenna_support)
+        self.ui.antenna_checkbox.setChecked(status.secondary_antenna)
 
         rate = self.serial.datarate()
         self.ui.uwb_datarate_combobox.setCurrentIndex(self.strtoint(rate))
@@ -182,12 +251,12 @@ class BelugaGui:
         pan = self.serial.panid()
         self.ui.pan_id_text_edit.setText(self.extract_hex(pan))
 
-        self.ui.eviction_combobox.supported(status["eviction scheme settable"])
+        self.ui.eviction_combobox.supported(status.dynamic_eviction_scheme_support)
 
         self.init_uwb_power()
 
-        self.ui.ble_button.set_ble_state(status["BLE On"])
-        self.ui.uwb_button.set_uwb_state(status["UWB On"])
+        self.ui.ble_button.set_ble_state(status.ble)
+        self.ui.uwb_button.set_uwb_state(status.uwb)
 
         return True, ""
 

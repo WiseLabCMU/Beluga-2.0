@@ -13,7 +13,6 @@ class BelugaLineEdit(QLineEdit):
         self._handler = handler
 
     def handle_return_pressed(self):
-        print(self.text())
         if self._handler is not None:
             self._handler(self.text())
 
