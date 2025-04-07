@@ -1089,7 +1089,7 @@ AT_CMD_REGISTER(VERBOSE);
  * Bit 8 -> BLE Active
  * Bits 7:0 -> Board ID (Specific to Hardware platforms)
  *
- * @internal Please update bits above if adding new things
+ * @internal Please update bits above if updating this command
  */
 AT_CMD_DEFINE(STATUS) {
     LOG_INF("Running STATUS command");
