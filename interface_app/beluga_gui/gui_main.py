@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import QThread, QObject
 from typing import Optional, Callable, Iterable, Tuple
 from beluga_gui import Ui_BelugaGUI
-from beluga_serial import BelugaSerial, BelugaSerialAttr
+from beluga_serial import BelugaSerial, BelugaSerialAttr, unpack_beluga_status, unpack_beluga_version
 from copy import deepcopy
 import time
 from serial import Serial, SerialException
@@ -94,60 +94,7 @@ class BelugaGui:
     def check_standard_tx_power(response: str) -> bool:
         return response == "0E080222" or response == "1F1F1F1F"
 
-    def _gather_beluga_data(self) -> Tuple[bool, str]:
-        # See if we can get the ID
-        try:
-            id_ = self.serial.id()
-        except Exception:
-            return False, "Unable to communicate with port"
-        if id_ == 'Response timed out':
-            return False, "Unable to communicate with port"
-        # TODO: Create something to get current comms state
-        self.ui.node_id_line_edit.setText(self.strip_alpha(id_))
-        mode = self.serial.bootmode()
-        mode = self.strtoint(mode)
-        self.ui.boot_mode_combobox.setCurrentIndex(mode)
-        rate = self.serial.rate()
-        self.ui.rate_line_edit.setText(self.strip_alpha(rate))
-        channel = self.serial.channel()
-        index = self.channel_to_index(channel)
-        self.ui.channel_combobox.setCurrentIndex(index)
-        timeout = self.serial.timeout()
-        self.ui.timeout_line_edit.setText(self.strip_alpha(timeout))
-        mode = self.serial.twrmode()
-        self.ui.ranging_checkbox.setChecked(bool(self.strtoint(mode)))
-        mode = self.serial.ledmode()
-        self.ui.led_checkbox.setChecked(not bool(self.strtoint(mode)))
-        mode = self.serial.phr()
-        self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
-        mode = self.serial.pwramp()
-        try:
-            mode = self.strtoint(mode)
-            self.ui.extern_amp_combobox.setCurrentIndex(mode)
-            self.ui.extern_amp_combobox.supported(True)
-        except ValueError:
-            self.ui.extern_amp_combobox.supported(False)
-        mode = self.serial.antenna(1)
-        try:
-            # TODO:
-            mode = self.channel_to_index(mode)  # Antenna is 1-indexed
-            self.ui.antenna_checkbox.setChecked(bool(mode))
-            self.ui.antenna_checkbox.supported(True)
-        except ValueError:
-            self.ui.antenna_checkbox.supported(False)
-        rate = self.serial.datarate()
-        self.ui.uwb_datarate_combobox.setCurrentIndex(self.strtoint(rate))
-        rate = self.serial.pulserate()
-        self.ui.uwb_pulserate_combobox.setCurrentIndex(self.strtoint(rate))
-        mode = self.serial.phr()
-        self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
-        preamble = self.serial.preamble()
-        self.ui.uwb_preamble_combobox.setCurrentIndex(self.preamble_to_index(preamble))
-        pac = self.serial.pac()
-        self.ui.uwb_pac_combobox.setCurrentIndex(self.strtoint(pac))
-        pan = self.serial.panid()
-        self.ui.pan_id_text_edit.setText(self.extract_hex(pan))
-        self.ui.eviction_combobox.supported(False)
+    def init_uwb_power(self):
         power = self.serial.txpower()
         power = self.extract_hex(power)
         if self.check_standard_tx_power(power):
@@ -165,6 +112,83 @@ class BelugaGui:
             self.ui.boostp250_fine_gain.update_power(power)
             self.ui.boostp125_coarse_gain.update_power(power)
             self.ui.boostp125_fine_gain.update_power(power)
+
+    def _gather_beluga_data(self) -> Tuple[bool, str]:
+        # See if we can get the ID
+        try:
+            id_ = self.serial.id()
+        except Exception:
+            return False, "Unable to communicate with port"
+        if id_ == 'Response timed out':
+            return False, "Unable to communicate with port"
+        self.ui.node_id_line_edit.setText(self.strip_alpha(id_))
+
+        status = self.serial.status()
+        status = unpack_beluga_status(status)
+
+        mode = self.serial.bootmode()
+        mode = self.strtoint(mode)
+        self.ui.boot_mode_combobox.setCurrentIndex(mode)
+
+        rate = self.serial.rate()
+        self.ui.rate_line_edit.setText(self.strip_alpha(rate))
+
+        channel = self.serial.channel()
+        index = self.channel_to_index(channel)
+        self.ui.channel_combobox.setCurrentIndex(index)
+
+        timeout = self.serial.timeout()
+        self.ui.timeout_line_edit.setText(self.strip_alpha(timeout))
+
+        mode = self.serial.twrmode()
+        self.ui.ranging_checkbox.setChecked(bool(self.strtoint(mode)))
+
+        mode = self.serial.ledmode()
+        self.ui.led_checkbox.setChecked(not bool(self.strtoint(mode)))
+
+        mode = self.serial.phr()
+        self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
+
+        if status["Hardware Platform"] == 1:
+            mode = self.serial.pwramp()
+            self.ui.extern_amp_combobox.setCurrentIndex(mode)
+            self.ui.extern_amp_combobox.supported(True)
+            self.ui.antenna_checkbox.supported(True)
+        else:
+            self.ui.extern_amp_combobox.supported(False)
+            self.ui.antenna_checkbox.supported(False)
+
+        if status["Using Antenna 2"]:
+            self.ui.antenna_checkbox.setChecked(True)
+        else:
+            # Will execute this is the secondary antenna is not supported
+            self.ui.antenna_checkbox.setChecked(False)
+
+        rate = self.serial.datarate()
+        self.ui.uwb_datarate_combobox.setCurrentIndex(self.strtoint(rate))
+
+        rate = self.serial.pulserate()
+        self.ui.uwb_pulserate_combobox.setCurrentIndex(self.strtoint(rate))
+
+        mode = self.serial.phr()
+        self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
+
+        preamble = self.serial.preamble()
+        self.ui.uwb_preamble_combobox.setCurrentIndex(self.preamble_to_index(preamble))
+
+        pac = self.serial.pac()
+        self.ui.uwb_pac_combobox.setCurrentIndex(self.strtoint(pac))
+
+        pan = self.serial.panid()
+        self.ui.pan_id_text_edit.setText(self.extract_hex(pan))
+
+        self.ui.eviction_combobox.supported(status["eviction scheme settable"])
+
+        self.init_uwb_power()
+
+        self.ui.ble_button.set_ble_state(status["BLE On"])
+        self.ui.uwb_button.set_uwb_state(status["UWB On"])
+
         return True, ""
 
     def update_connection_state(self):
