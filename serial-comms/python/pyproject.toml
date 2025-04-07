@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "pyserial",
     "cmd2",
+    "semver",
 ]
 
 [project.entry-points]

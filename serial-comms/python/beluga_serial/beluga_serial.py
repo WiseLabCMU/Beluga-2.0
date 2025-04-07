@@ -22,6 +22,7 @@ from threading import Event, RLock
 import functools
 import inspect
 import os
+import semver
 
 TARGETS = [
     'CMU Beluga',
@@ -1009,6 +1010,53 @@ class BelugaSerial:
         :return: None
         """
         self._time_resync = callback
+
+
+def unpack_beluga_status(response: str) -> Dict[str, Union[int, bool]]:
+    """
+    Parses and unpacks the status message from the Beluga node's AT+STATUS command
+    :param response: The response from the AT+STATUS command
+    :type response: str
+    :return: The unpacked data from the status response
+    :rtype: Dict[str, Union[int, bool]]
+    :raises ValueError: If the status could not be parsed from the response
+    """
+    board_mask = 0xFF
+    ble_mask = 0x1 << 8
+    uwb_mask = 0x1 << 9
+    antenna_mask = 0x1 << 10
+    eviction_mask = 0x1 << 11
+    numerical_repr = None
+
+    for x in response.split():
+        try:
+            numerical_repr = int(x, base=16)
+        except ValueError:
+            pass
+
+    if numerical_repr is None:
+        raise ValueError("Cannot parse Beluga status info")
+
+    info = {
+        "hardware": numerical_repr & board_mask,
+        "BLE": (numerical_repr & ble_mask) != 0,
+        "UWB": (numerical_repr & uwb_mask) != 0,
+        "antenna 2": (numerical_repr & antenna_mask) != 0,
+        "eviction scheme settable": (numerical_repr & eviction_mask) != 0,
+    }
+    return info
+
+
+def unpack_beluga_version(response: str) -> semver.Version:
+    """
+    Parses the node version from the response string for the AT+VERSION command
+    :param response: The response from the AT+VERSION command
+    :type response: str
+    :return: Sematic version info
+    :rtype: semver.Version
+    :raises ValueError: If the version string could not be parsed
+    """
+    return semver.Version.parse(response.split()[0])
 
 
 if __name__ == "__main__":
