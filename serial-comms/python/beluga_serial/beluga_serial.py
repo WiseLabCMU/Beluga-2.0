@@ -35,6 +35,86 @@ USB_STILL_ALIVE: Dict[str, bool] = {
 }
 
 
+class BelugaStatus:
+    @dataclass(init=True)
+    class BoardInfo:
+        id: int = -1
+        name: str = ""
+        supports_uwb_amp: bool = False
+        supports_ble_amp: bool = False
+        supports_secondary_ble_antenna: bool = False
+
+    _boards = (
+        BoardInfo(0, "Decawave DWM1001-DEV"),
+        BoardInfo(1, "CMU Beluga", True, True, True)
+    )
+
+    def __init__(self, response):
+        board_mask = 0xFF
+        ble_mask = 0x1 << 8
+        uwb_mask = 0x1 << 9
+        antenna_mask = 0x1 << 10
+        eviction_mask = 0x1 << 11
+        numerical_repr = None
+
+        for x in response.split():
+            try:
+                numerical_repr = int(x, base=16)
+            except ValueError:
+                pass
+
+        if numerical_repr is None:
+            raise ValueError("Cannot parse Beluga status info")
+
+        board = self._find_board(numerical_repr & board_mask)
+        self._name = board.name
+        self._uwb_amplifier = board.supports_uwb_amp
+        self._ble_amplifier = board.supports_ble_amp
+        self._secondary_antenna = board.supports_secondary_ble_antenna
+        self._ble_active = (numerical_repr & ble_mask) != 0
+        self._uwb_active = (numerical_repr & uwb_mask) != 0
+        self._using_second_antenna = (numerical_repr & antenna_mask) != 0
+        self._dynamic_eviction_scheme_support = (numerical_repr & eviction_mask) != 0
+
+    def _find_board(self, id_: int) -> BoardInfo:
+        for board in self._boards:
+            if board.id == id_:
+                return board
+        raise ValueError("Given board ID is not supported")
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def external_uwb_amp(self):
+        return self._uwb_amplifier
+
+    @property
+    def external_ble_amp(self):
+        return self._ble_amplifier
+
+    @property
+    def secondary_antenna_support(self):
+        return self._secondary_antenna
+
+    @property
+    def ble(self):
+        return self._ble_active
+
+    @property
+    def uwb(self):
+        return self._uwb_active
+
+    @property
+    def secondary_antenna(self):
+        return self._using_second_antenna
+
+    @property
+    def dynamic_eviction_scheme_support(self):
+        return self._dynamic_eviction_scheme_support
+
+
 @dataclass(init=True)
 class BelugaSerialAttr:
     """
@@ -1012,39 +1092,16 @@ class BelugaSerial:
         self._time_resync = callback
 
 
-def unpack_beluga_status(response: str) -> Dict[str, Union[int, bool]]:
+def unpack_beluga_status(response: str) -> BelugaStatus:
     """
     Parses and unpacks the status message from the Beluga node's AT+STATUS command
     :param response: The response from the AT+STATUS command
     :type response: str
     :return: The unpacked data from the status response
-    :rtype: Dict[str, Union[int, bool]]
+    :rtype: BelugaStatus
     :raises ValueError: If the status could not be parsed from the response
     """
-    board_mask = 0xFF
-    ble_mask = 0x1 << 8
-    uwb_mask = 0x1 << 9
-    antenna_mask = 0x1 << 10
-    eviction_mask = 0x1 << 11
-    numerical_repr = None
-
-    for x in response.split():
-        try:
-            numerical_repr = int(x, base=16)
-        except ValueError:
-            pass
-
-    if numerical_repr is None:
-        raise ValueError("Cannot parse Beluga status info")
-
-    info = {
-        "Hardware Platform": numerical_repr & board_mask,
-        "BLE On": (numerical_repr & ble_mask) != 0,
-        "UWB On": (numerical_repr & uwb_mask) != 0,
-        "Using Antenna 2": (numerical_repr & antenna_mask) != 0,
-        "eviction scheme settable": (numerical_repr & eviction_mask) != 0,
-    }
-    return info
+    return BelugaStatus(response)
 
 
 def unpack_beluga_version(response: str) -> semver.Version:
