@@ -65,6 +65,9 @@ class BelugaGui:
         self.ui.sfd_checkbox.set_toggle_handler(self.update_sfd)
         self.ui.extern_amp_combobox.set_changed_index_handler(self.update_amplifiers)
         self.ui.antenna_checkbox.set_toggle_handler(self.update_antenna)
+        self.ui.uwb_datarate_combobox.set_changed_index_handler(self.update_datarate)
+        self.ui.uwb_pulserate_combobox.set_changed_index_handler(self.update_pulserate)
+        self.ui.phr_checkbox.set_toggle_handler(self.update_phr)
 
     def run(self):
         self.window.show()
@@ -124,6 +127,18 @@ class BelugaGui:
         status = self.serial.status()
         status = BelugaStatus(status)
         self.ui.antenna_checkbox.setChecked(status.secondary_antenna)
+
+    def refresh_datarate(self):
+        rate = self.serial.datarate()
+        self.ui.uwb_datarate_combobox.setCurrentIndex(self.strtoint(rate))
+
+    def refresh_pulserate(self):
+        rate = self.serial.pulserate()
+        self.ui.uwb_pulserate_combobox.setCurrentIndex(self.strtoint(rate))
+
+    def refresh_phr(self):
+        mode = self.serial.phr()
+        self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
 
     def update_ble(self):
         status = self.serial.status()
@@ -196,6 +211,21 @@ class BelugaGui:
     def update_antenna(self, state: bool):
         resp = self.serial.antenna(int(state) + 1)
         self.refresh_antenna()
+        self.ui.connect_status.setText(resp)
+
+    def update_datarate(self, index: int):
+        resp = self.serial.datarate(index)
+        self.refresh_datarate()
+        self.ui.connect_status.setText(resp)
+
+    def update_pulserate(self, index: int):
+        resp = self.serial.pulserate(index)
+        self.refresh_pulserate()
+        self.ui.connect_status.setText(resp)
+
+    def update_phr(self, state: bool):
+        resp = self.serial.phr(int(state))
+        self.refresh_phr()
         self.ui.connect_status.setText(resp)
 
     @staticmethod
@@ -278,14 +308,9 @@ class BelugaGui:
         self.ui.antenna_checkbox.supported(status.secondary_antenna_support)
         self.ui.antenna_checkbox.setChecked(status.secondary_antenna)
 
-        rate = self.serial.datarate()
-        self.ui.uwb_datarate_combobox.setCurrentIndex(self.strtoint(rate))
-
-        rate = self.serial.pulserate()
-        self.ui.uwb_pulserate_combobox.setCurrentIndex(self.strtoint(rate))
-
-        mode = self.serial.phr()
-        self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
+        self.refresh_datarate()
+        self.refresh_pulserate()
+        self.refresh_phr()
 
         preamble = self.serial.preamble()
         self.ui.uwb_preamble_combobox.setCurrentIndex(self.preamble_to_index(preamble))
