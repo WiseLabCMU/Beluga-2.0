@@ -178,7 +178,7 @@ static struct fem_gpios {
  * @return A negative error code upon failure to configure any pin.
  */
 int init_range_extension(void) {
-    INIT_FEM_PIN(ANTENNA_SELECT, _fem_gpios, ant_sel, GPIO_OUTPUT_INACTIVE);
+    INIT_FEM_PIN(ANTENNA_SELECT, _fem_gpios, ant_sel, GPIO_OUTPUT_LOW | GPIO_INPUT);
     INIT_FEM_PIN(1, _fem_gpios, shutdown, GPIO_OUTPUT_LOW);
     INIT_FEM_PIN(RF_BYPASS, _fem_gpios, bypass, GPIO_OUTPUT_HIGH);
     INIT_FEM_PIN(HIGHLOW_POWER, _fem_gpios, power, GPIO_OUTPUT_LOW);
