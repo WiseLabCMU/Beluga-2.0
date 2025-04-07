@@ -1038,10 +1038,10 @@ def unpack_beluga_status(response: str) -> Dict[str, Union[int, bool]]:
         raise ValueError("Cannot parse Beluga status info")
 
     info = {
-        "hardware": numerical_repr & board_mask,
-        "BLE": (numerical_repr & ble_mask) != 0,
-        "UWB": (numerical_repr & uwb_mask) != 0,
-        "antenna 2": (numerical_repr & antenna_mask) != 0,
+        "Hardware Platform": numerical_repr & board_mask,
+        "BLE On": (numerical_repr & ble_mask) != 0,
+        "UWB On": (numerical_repr & uwb_mask) != 0,
+        "Using Antenna 2": (numerical_repr & antenna_mask) != 0,
         "eviction scheme settable": (numerical_repr & eviction_mask) != 0,
     }
     return info

@@ -1,5 +1,5 @@
 import cmd2
-from beluga_serial import BelugaSerial, BelugaSerialAttr
+from beluga_serial import BelugaSerial, BelugaSerialAttr, unpack_beluga_status
 from serial import PortNotOpenError
 import functools
 
@@ -280,6 +280,102 @@ class BelugaTerminal(cmd2.Cmd):
             1: 16 MHz
         """
         self._run_command(self._serial.pulserate, arg)
+
+    @serial_command
+    def do_phr(self, arg):
+        """
+        Retrieve the PHR mode of the Beluga node if invoked without an argument.
+        Sets the PHR of the Beluga node if invoked with an argument.
+
+        Reference:
+            0: Standard PHR
+            1: Proprietary PHR
+        """
+        self._run_command(self._serial.phr, arg)
+
+    @serial_command
+    def do_pac(self, arg):
+        """
+        Retrieve the PAC size of the Beluga node if invoked without an argument.
+        Sets the PAC size of the Beluga node if invoked with an argument.
+
+        Reference:
+            0: 8 bytes
+            1: 16 bytes
+            2: 32 bytes
+            3: 64 bytes
+        """
+        self._run_command(self._serial.pac, arg)
+
+    @serial_command
+    def do_sfd(self, arg):
+        """
+        Retrieve the SFD setting of the Beluga node if invoked without an argument.
+        Sets the SFD setting of the Beluga node if invoked with an argument.
+
+        Reference:
+            0: Standard SFD
+            1: Proprietary SFD
+        """
+        self._run_command(self._serial.sfd, arg)
+
+    @serial_command
+    def do_panid(self, arg):
+        """
+        Retrieve the UWB PAN ID of the Beluga node if invoked without an argument.
+        Sets the UWB PAN ID of the Beluga node if invoked with an argument.
+
+        Hex IDs must have the 0x or 0X prefix
+        """
+        self._run_command(self._serial.panid, arg)
+
+    @serial_command
+    def do_evict(self, arg):
+        """
+        Retrieve the neighbor eviction scheme of the Beluga node if invoked without an argument.
+        Sets the neighbor eviction scheme of the Beluga node if invoked with an argument.
+
+        Reference:
+            0: Index round-robin
+            1: Lowest BLE RSSI
+            2: Furthest away
+            3: Least recent BLE update
+            4: Least recently ranged to
+        """
+        self._run_command(self._serial.evict, arg)
+
+    @serial_command
+    def do_verbose(self, arg):
+        """
+        Retrieve the verbose setting of the Beluga node if invoked without an argument.
+        Sets the verbose setting of the Beluga node if invoked with an argument.
+
+        Reference:
+            0: Response are not verbose
+            1: Responses are verbose
+        """
+        self._run_command(self._serial.verbose, arg)
+
+    @serial_command
+    def do_status(self, arg):
+        """
+        Retrieve the current status of the Beluga node
+        """
+        response = self._serial.status()
+        try:
+            status = unpack_beluga_status(response)
+        except ValueError:
+            print(response)
+            return
+        for key in status:
+            print(f"{key}: {status[key]}")
+
+    @serial_command
+    def do_version(self, arg):
+        """
+        Get the firmware version of the Beluga node
+        """
+        print(self._serial.version())
 
     def do_neighbors(self, arg):
         """Display the most recent neighbor list."""
