@@ -26,1834 +26,1804 @@
    <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTabWidget" name="TerminalTab">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>5</y>
-      <width>1215</width>
-      <height>591</height>
-     </rect>
-    </property>
-    <property name="minimumSize">
-     <size>
-      <width>1215</width>
-      <height>591</height>
-     </size>
-    </property>
-    <property name="maximumSize">
-     <size>
-      <width>1215</width>
-      <height>591</height>
-     </size>
-    </property>
-    <property name="currentIndex">
-     <number>1</number>
-    </property>
-    <widget class="QWidget" name="Terminal">
-     <attribute name="title">
-      <string>Terminal</string>
-     </attribute>
-     <widget class="QWidget" name="verticalLayoutWidget_4">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>0</y>
-        <width>1181</width>
-        <height>541</height>
-       </rect>
+   <layout class="QVBoxLayout" name="verticalLayout_8">
+    <item>
+     <widget class="QTabWidget" name="TerminalTab">
+      <property name="minimumSize">
+       <size>
+        <width>1215</width>
+        <height>591</height>
+       </size>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
-       <item>
-        <spacer name="verticalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Fixed</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>10</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <layout class="QGridLayout" name="gridLayout_5">
-         <item row="0" column="5">
-          <widget class="QLabel" name="RangingModeLabel_2">
-           <property name="text">
-            <string>Ranging mode: TWR</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="TxPowerLabel_2">
-           <property name="text">
-            <string>TX Power: XXX.X dB</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="4">
-          <widget class="QLabel" name="PacSizeLabel_2">
-           <property name="text">
-            <string>PAC size: XX bytes</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="ChannelLabel_2">
-           <property name="text">
-            <string>Channel: X</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QLabel" name="DataRateLabel_2">
-           <property name="text">
-            <string>Data rate: XXXXXHz</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="5">
-          <widget class="QLabel" name="SfdLabel_2">
-           <property name="text">
-            <string>SFD: XXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="NodeIdLabel">
-           <property name="text">
-            <string>Node ID: XXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="3">
-          <widget class="QLabel" name="PulseRateLabel_2">
-           <property name="text">
-            <string>Pulse rate: XX MHz</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="4">
-          <widget class="QLabel" name="TimeoutLabel_2">
-           <property name="text">
-            <string>Timeout: XXXX ms</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="PowerAmpLabel">
-           <property name="text">
-            <string>Power Amp: XXXXXXXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLabel" name="PhrLabel_2">
-           <property name="text">
-            <string>PHR: XXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="PollLabel">
-           <property name="text">
-            <string>Polling Rate: XXXXX ms</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="EvictLabel">
-           <property name="text">
-            <string>Evict: XXXXXXXXXXXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLabel" name="PanIdLabel_2">
-           <property name="text">
-            <string>PAN ID: 0xXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QPushButton" name="StartRangingButton">
-           <property name="text">
-            <string>Start Ranging</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QPlainTextEdit" name="plainTextEdit">
-         <property name="palette">
-          <palette>
-           <active>
-            <colorrole role="WindowText">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Text">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Base">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>0</red>
-               <green>0</green>
-               <blue>0</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="PlaceholderText">
-             <brush brushstyle="SolidPattern">
-              <color alpha="128">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-           </active>
-           <inactive>
-            <colorrole role="WindowText">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Text">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Base">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>0</red>
-               <green>0</green>
-               <blue>0</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="PlaceholderText">
-             <brush brushstyle="SolidPattern">
-              <color alpha="128">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-           </inactive>
-           <disabled>
-            <colorrole role="WindowText">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>190</red>
-               <green>190</green>
-               <blue>190</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Text">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>190</red>
-               <green>190</green>
-               <blue>190</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Base">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>239</red>
-               <green>239</green>
-               <blue>239</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="PlaceholderText">
-             <brush brushstyle="SolidPattern">
-              <color alpha="128">
-               <red>0</red>
-               <green>0</green>
-               <blue>0</blue>
-              </color>
-             </brush>
-            </colorrole>
-           </disabled>
-          </palette>
-         </property>
-         <property name="autoFillBackground">
-          <bool>false</bool>
-         </property>
-         <property name="backgroundVisible">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="Configuration">
-     <attribute name="title">
-      <string>Configuration</string>
-     </attribute>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
+      <property name="maximumSize">
+       <size>
+        <width>1215</width>
+        <height>591</height>
+       </size>
+      </property>
+      <property name="currentIndex">
+       <number>2</number>
+      </property>
+      <widget class="QWidget" name="Terminal">
+       <attribute name="title">
+        <string>Terminal</string>
+       </attribute>
+       <widget class="QWidget" name="verticalLayoutWidget_4">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>0</y>
+          <width>1181</width>
+          <height>541</height>
+         </rect>
         </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>10</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="DeviceBar" name="widget" native="true">
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <layout class="QVBoxLayout" name="verticalLayout_5">
          <item>
-          <widget class="BelugaLabel" name="label">
-           <property name="text">
-            <string>Devices</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="DeviceComboBox" name="device_combobox">
-           <property name="minimumSize">
-            <size>
-             <width>175</width>
-             <height>0</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="DeviceConnectButton" name="connect_button">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>100</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Connect</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="connect_status">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer">
+          <spacer name="verticalSpacer_4">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>40</width>
-             <height>20</height>
+             <width>20</width>
+             <height>10</height>
             </size>
            </property>
           </spacer>
          </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="Line" name="line">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="SettingsWidget" name="widget_2" native="true">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <item>
-              <widget class="BleButton" name="ble_button">
-               <property name="text">
-                <string>Start BLE</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbButton" name="uwb_button">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>Start UWB</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaLabel" name="label_3">
-               <property name="text">
-                <string>Node ID</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="NodeIdLineEdit" name="node_id_line_edit">
-               <property name="maximumSize">
-                <size>
-                 <width>70</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="inputMask">
-                <string>90000</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="maxLength">
-                <number>5</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+          <layout class="QGridLayout" name="gridLayout_5">
+           <item row="0" column="5">
+            <widget class="QLabel" name="RangingModeLabel_2">
+             <property name="text">
+              <string>Ranging mode: TWR</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_7">
-             <item>
-              <widget class="BelugaLabel" name="label_5">
-               <property name="text">
-                <string>Boot mode</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="BootModeComboBox" name="boot_mode_combobox">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Radios off</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>BLE on</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Radios on</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaLabel" name="label_6">
-               <property name="text">
-                <string>Rate</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="PollRateLineEdit" name="rate_line_edit">
-               <property name="maximumSize">
-                <size>
-                 <width>75</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="inputMask">
-                <string>90000</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaLabel" name="label_7">
-               <property name="text">
-                <string>Channel</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="ChannelComboBox" name="channel_combobox">
-               <property name="maximumSize">
-                <size>
-                 <width>40</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>1</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>2</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>3</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>4</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>5</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>7</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+           <item row="0" column="3">
+            <widget class="QLabel" name="TxPowerLabel_2">
+             <property name="text">
+              <string>TX Power: XXX.X dB</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_14">
-             <item>
-              <widget class="BelugaLabel" name="label_11">
-               <property name="text">
-                <string>Timeout</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="TimeoutLineEdit" name="timeout_line_edit">
-               <property name="maximumSize">
-                <size>
-                 <width>100</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="inputMask">
-                <string>90000</string>
-               </property>
-               <property name="placeholderText">
-                <string/>
-               </property>
-               <property name="cursorMoveStyle">
-                <enum>Qt::VisualMoveStyle</enum>
-               </property>
-               <property name="clearButtonEnabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="RangingCheckBox" name="ranging_checkbox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>Double-sided Ranging</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="LedCheckBox" name="led_checkbox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>LEDs On</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbSfdCheckBox" name="sfd_checkbox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>Proprietary SFD</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_6">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+           <item row="1" column="4">
+            <widget class="QLabel" name="PacSizeLabel_2">
+             <property name="text">
+              <string>PAC size: XX bytes</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_15">
-             <item>
-              <widget class="BelugaLabel" name="label_12">
-               <property name="text">
-                <string>External Amplifiers</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="AmplifierComboBox" name="extern_amp_combobox">
-               <property name="minimumSize">
-                <size>
-                 <width>175</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Both off</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>BLE Off, UWB On</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>BLE Low, UWB Off</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>BLE Low, UWB On</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>BLE High, UWB Off</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>BLE High, UWB On</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="AntennaCheckBox" name="antenna_checkbox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>Secondary Antenna</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_7">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+           <item row="0" column="2">
+            <widget class="QLabel" name="ChannelLabel_2">
+             <property name="text">
+              <string>Channel: X</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_17">
-             <item>
-              <widget class="BelugaLabel" name="label_13">
-               <property name="text">
-                <string>UWB Data Rate</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbDataRateComboBox" name="uwb_datarate_combobox">
-               <item>
-                <property name="text">
-                 <string>6.8 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>850 kHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>110 kHz</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaLabel" name="label_14">
-               <property name="text">
-                <string>UWB Pulse Rate</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbPulseRateComboBox" name="uwb_pulserate_combobox">
-               <property name="currentIndex">
-                <number>1</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>16 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>64 MHz</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbPhrCheckBox" name="phr_checkbox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>Proprietary PHR</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_8">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+           <item row="1" column="2">
+            <widget class="QLabel" name="DataRateLabel_2">
+             <property name="text">
+              <string>Data rate: XXXXXHz</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_18">
-             <item>
-              <widget class="BelugaLabel" name="label_15">
-               <property name="text">
-                <string>UWB Preamble length</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbPreambleLengthComboBox" name="uwb_preamble_combobox">
-               <property name="minimumSize">
-                <size>
-                 <width>125</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>64 Symbols</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>128 Symbols</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>256 Symbols</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>512 Symbols</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1024 Symbols</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1536 Symbols</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>2048 Symbols</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>4096 Symbols</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaLabel" name="label_16">
-               <property name="text">
-                <string>UWB PAC Size</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbPacSizeComboBox" name="uwb_pac_combobox">
-               <item>
-                <property name="text">
-                 <string>8 bytes</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>16 bytes</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>32 bytes</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>64 bytes</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_9">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+           <item row="1" column="5">
+            <widget class="QLabel" name="SfdLabel_2">
+             <property name="text">
+              <string>SFD: XXXXXXXXXXX</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_19">
-             <item>
-              <widget class="BelugaLabel" name="label_17">
-               <property name="text">
-                <string>UWB PAN ID</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbPanIdLineEdit" name="pan_id_text_edit">
-               <property name="maximumSize">
-                <size>
-                 <width>80</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="inputMask">
-                <string>Hhhh</string>
-               </property>
-               <property name="placeholderText">
-                <string/>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="BelugaLabel" name="label_18">
-               <property name="text">
-                <string>Neighbor Eviction Scheme</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="NeighborEvictionSchemeComboBox" name="eviction_combobox">
-               <property name="minimumSize">
-                <size>
-                 <width>225</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="currentIndex">
-                <number>1</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Round Robin</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Lowest RSSI</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Longest Distance</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Least Recent BLE Update</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Least Recent Range Update</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_10">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+           <item row="0" column="0">
+            <widget class="QLabel" name="NodeIdLabel">
+             <property name="text">
+              <string>Node ID: XXXXX</string>
+             </property>
+            </widget>
            </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_16">
-             <item>
-              <widget class="RebootButton" name="reboot_button">
-               <property name="minimumSize">
-                <size>
-                 <width>200</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Reboot</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_11">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+           <item row="1" column="3">
+            <widget class="QLabel" name="PulseRateLabel_2">
+             <property name="text">
+              <string>Pulse rate: XX MHz</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="QLabel" name="TimeoutLabel_2">
+             <property name="text">
+              <string>Timeout: XXXX ms</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="PowerAmpLabel">
+             <property name="text">
+              <string>Power Amp: XXXXXXXXXXXXXXXX</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="PhrLabel_2">
+             <property name="text">
+              <string>PHR: XXXXXXXXXXX</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="PollLabel">
+             <property name="text">
+              <string>Polling Rate: XXXXX ms</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="EvictLabel">
+             <property name="text">
+              <string>Evict: XXXXXXXXXXXXXXXXXXXX</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="PanIdLabel_2">
+             <property name="text">
+              <string>PAN ID: 0xXXXX</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QPushButton" name="StartRangingButton">
+             <property name="text">
+              <string>Start Ranging</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_3">
+          <widget class="QPlainTextEdit" name="plainTextEdit">
+           <property name="palette">
+            <palette>
+             <active>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Text">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="PlaceholderText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="128">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </active>
+             <inactive>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Text">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="PlaceholderText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="128">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </inactive>
+             <disabled>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>190</red>
+                 <green>190</green>
+                 <blue>190</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Text">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>190</red>
+                 <green>190</green>
+                 <blue>190</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>239</red>
+                 <green>239</green>
+                 <blue>239</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="PlaceholderText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="128">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </disabled>
+            </palette>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+           <property name="backgroundVisible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="Configuration">
+       <attribute name="title">
+        <string>Configuration</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>10</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="DeviceBar" name="widget" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <item>
-              <widget class="BelugaLabel" name="label_4">
-               <property name="text">
-                <string>UWB Transmit Power</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="UwbTxPowerComboBox" name="uwb_txpower_combobox">
-               <property name="minimumSize">
-                <size>
-                 <width>150</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Default Power</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Maximum Power</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="uwb_tx_power_checkbox">
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
-               </property>
-               <property name="text">
-                <string>Simple Power Configuration</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_3">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="UwbCustomTxPower" name="widget_3" native="true">
-             <property name="enabled">
-              <bool>false</bool>
+            <widget class="BelugaLabel" name="label">
+             <property name="text">
+              <string>Devices</string>
              </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>200</height>
-              </size>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_7">
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_8">
-                <item>
-                 <widget class="QLabel" name="label_28">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>162</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Stage</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_30">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>161</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Coarse Gain</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_29">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>162</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Fine Gain</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_15">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeType">
-                   <enum>QSizePolicy::Fixed</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>25</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_9">
-                <item>
-                 <widget class="QLabel" name="label_32">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>BOOSTNORM</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="CoarseGainComboBox" name="boost_norm_coarse_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <property name="text">
-                    <string>Off (No Output)</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>0 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>2.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>7.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>10 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>12.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>15 dB</string>
-                   </property>
-                  </item>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="FineGainDoubleSpinBox" name="boost_norm_fine_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="decimals">
-                   <number>1</number>
-                  </property>
-                  <property name="maximum">
-                   <double>15.500000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.500000000000000</double>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>0</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_31">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>25</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>dB</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_10">
-                <item>
-                 <widget class="QLabel" name="label_37">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>BOOSTP500</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="CoarseGainComboBox" name="boostp500_coarse_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>1</number>
-                  </property>
-                  <item>
-                   <property name="text">
-                    <string>Off (No Output)</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>0 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>2.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>7.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>10 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>12.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>15 dB</string>
-                   </property>
-                  </item>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="FineGainDoubleSpinBox" name="boostp500_fine_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="decimals">
-                   <number>1</number>
-                  </property>
-                  <property name="maximum">
-                   <double>15.500000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.500000000000000</double>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>1</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_33">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>25</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>dB</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_11">
-                <item>
-                 <widget class="QLabel" name="label_38">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>BOOSTP250</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="CoarseGainComboBox" name="boostp250_coarse_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>2</number>
-                  </property>
-                  <item>
-                   <property name="text">
-                    <string>Off (No Output)</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>0 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>2.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>7.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>10 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>12.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>15 dB</string>
-                   </property>
-                  </item>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="FineGainDoubleSpinBox" name="boostp250_fine_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="decimals">
-                   <number>1</number>
-                  </property>
-                  <property name="maximum">
-                   <double>15.500000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.500000000000000</double>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>2</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_34">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>25</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>dB</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_12">
-                <item>
-                 <widget class="QLabel" name="label_39">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>BOOSTP125</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="CoarseGainComboBox" name="boostp125_coarse_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>3</number>
-                  </property>
-                  <item>
-                   <property name="text">
-                    <string>Off (No Output)</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>0 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>2.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>7.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>10 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>12.5 dB</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>15 dB</string>
-                   </property>
-                  </item>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="FineGainDoubleSpinBox" name="boostp125_fine_gain">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="decimals">
-                   <number>1</number>
-                  </property>
-                  <property name="maximum">
-                   <double>15.500000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.500000000000000</double>
-                  </property>
-                  <property name="power_stage" stdset="0">
-                   <number>3</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_35">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>25</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>dB</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
             </widget>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_13">
+            <widget class="DeviceComboBox" name="device_combobox">
+             <property name="minimumSize">
+              <size>
+               <width>175</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="DeviceConnectButton" name="connect_button">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Connect</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="connect_status">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="SettingsWidget" name="widget_2" native="true">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_2">
              <item>
-              <widget class="ApplyPowerButton" name="apply_power">
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                <widget class="BleButton" name="ble_button">
+                 <property name="text">
+                  <string>Start BLE</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbButton" name="uwb_button">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>Start UWB</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="BelugaLabel" name="label_3">
+                 <property name="text">
+                  <string>Node ID</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="NodeIdLineEdit" name="node_id_line_edit">
+                 <property name="maximumSize">
+                  <size>
+                   <width>70</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="inputMask">
+                  <string>90000</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="maxLength">
+                  <number>5</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_7">
+               <item>
+                <widget class="BelugaLabel" name="label_5">
+                 <property name="text">
+                  <string>Boot mode</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="BootModeComboBox" name="boot_mode_combobox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Radios off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>BLE on</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Radios on</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="BelugaLabel" name="label_6">
+                 <property name="text">
+                  <string>Rate</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="PollRateLineEdit" name="rate_line_edit">
+                 <property name="maximumSize">
+                  <size>
+                   <width>75</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="inputMask">
+                  <string>90000</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="BelugaLabel" name="label_7">
+                 <property name="text">
+                  <string>Channel</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="ChannelComboBox" name="channel_combobox">
+                 <property name="maximumSize">
+                  <size>
+                   <width>40</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>1</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>2</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>3</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>4</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>5</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>7</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_4">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_14">
+               <item>
+                <widget class="BelugaLabel" name="label_11">
+                 <property name="text">
+                  <string>Timeout</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="TimeoutLineEdit" name="timeout_line_edit">
+                 <property name="maximumSize">
+                  <size>
+                   <width>100</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="inputMask">
+                  <string>90000</string>
+                 </property>
+                 <property name="placeholderText">
+                  <string/>
+                 </property>
+                 <property name="cursorMoveStyle">
+                  <enum>Qt::VisualMoveStyle</enum>
+                 </property>
+                 <property name="clearButtonEnabled">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="RangingCheckBox" name="ranging_checkbox">
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text">
+                  <string>Double-sided Ranging</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="LedCheckBox" name="led_checkbox">
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text">
+                  <string>LEDs On</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbSfdCheckBox" name="sfd_checkbox">
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text">
+                  <string>Proprietary SFD</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_6">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_15">
+               <item>
+                <widget class="BelugaLabel" name="label_12">
+                 <property name="text">
+                  <string>External Amplifiers</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="AmplifierComboBox" name="extern_amp_combobox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>175</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Both off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>BLE Off, UWB On</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>BLE Low, UWB Off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>BLE Low, UWB On</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>BLE High, UWB Off</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>BLE High, UWB On</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="AntennaCheckBox" name="antenna_checkbox">
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text">
+                  <string>Secondary Antenna</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_7">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_17">
+               <item>
+                <widget class="BelugaLabel" name="label_13">
+                 <property name="text">
+                  <string>UWB Data Rate</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbDataRateComboBox" name="uwb_datarate_combobox">
+                 <item>
+                  <property name="text">
+                   <string>6.8 MHz</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>850 kHz</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>110 kHz</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="BelugaLabel" name="label_14">
+                 <property name="text">
+                  <string>UWB Pulse Rate</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbPulseRateComboBox" name="uwb_pulserate_combobox">
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>16 MHz</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>64 MHz</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbPhrCheckBox" name="phr_checkbox">
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text">
+                  <string>Proprietary PHR</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_8">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_18">
+               <item>
+                <widget class="BelugaLabel" name="label_15">
+                 <property name="text">
+                  <string>UWB Preamble length</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbPreambleLengthComboBox" name="uwb_preamble_combobox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>125</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>64 Symbols</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>128 Symbols</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>256 Symbols</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>512 Symbols</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>1024 Symbols</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>1536 Symbols</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>2048 Symbols</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>4096 Symbols</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="BelugaLabel" name="label_16">
+                 <property name="text">
+                  <string>UWB PAC Size</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbPacSizeComboBox" name="uwb_pac_combobox">
+                 <item>
+                  <property name="text">
+                   <string>8 bytes</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>16 bytes</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>32 bytes</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>64 bytes</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_9">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_19">
+               <item>
+                <widget class="BelugaLabel" name="label_17">
+                 <property name="text">
+                  <string>UWB PAN ID</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbPanIdLineEdit" name="pan_id_text_edit">
+                 <property name="maximumSize">
+                  <size>
+                   <width>80</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="inputMask">
+                  <string>Hhhh</string>
+                 </property>
+                 <property name="placeholderText">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="BelugaLabel" name="label_18">
+                 <property name="text">
+                  <string>Neighbor Eviction Scheme</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="NeighborEvictionSchemeComboBox" name="eviction_combobox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>225</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="currentIndex">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Round Robin</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Lowest RSSI</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Longest Distance</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Least Recent BLE Update</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Least Recent Range Update</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_10">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_16">
+               <item>
+                <widget class="RebootButton" name="reboot_button">
+                 <property name="minimumSize">
+                  <size>
+                   <width>200</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Reboot</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_11">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_6">
+               <item>
+                <widget class="BelugaLabel" name="label_4">
+                 <property name="text">
+                  <string>UWB Transmit Power</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="UwbTxPowerComboBox" name="uwb_txpower_combobox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>150</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Default Power</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Maximum Power</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="uwb_tx_power_checkbox">
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="text">
+                  <string>Simple Power Configuration</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="UwbCustomTxPower" name="widget_3" native="true">
                <property name="enabled">
                 <bool>false</bool>
                </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="minimumSize">
                 <size>
-                 <width>170</width>
-                 <height>0</height>
+                 <width>0</width>
+                 <height>200</height>
                 </size>
                </property>
-               <property name="text">
-                <string>Apply Power Settings</string>
-               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_7">
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_8">
+                  <item>
+                   <widget class="QLabel" name="label_28">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>162</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>Stage</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_30">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>161</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>Coarse Gain</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_29">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>162</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>Fine Gain</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_15">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Fixed</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>25</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_9">
+                  <item>
+                   <widget class="QLabel" name="label_32">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>BOOSTNORM</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="CoarseGainComboBox" name="boost_norm_coarse_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Off (No Output)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>0 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>2.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>7.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>10 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>12.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>15 dB</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="FineGainDoubleSpinBox" name="boost_norm_fine_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="decimals">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <double>15.500000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.500000000000000</double>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>0</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_31">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>25</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>dB</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_10">
+                  <item>
+                   <widget class="QLabel" name="label_37">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>BOOSTP500</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="CoarseGainComboBox" name="boostp500_coarse_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>1</number>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Off (No Output)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>0 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>2.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>7.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>10 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>12.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>15 dB</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="FineGainDoubleSpinBox" name="boostp500_fine_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="decimals">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <double>15.500000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.500000000000000</double>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>1</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_33">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>25</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>dB</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_11">
+                  <item>
+                   <widget class="QLabel" name="label_38">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>BOOSTP250</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="CoarseGainComboBox" name="boostp250_coarse_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>2</number>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Off (No Output)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>0 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>2.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>7.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>10 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>12.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>15 dB</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="FineGainDoubleSpinBox" name="boostp250_fine_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="decimals">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <double>15.500000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.500000000000000</double>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>2</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_34">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>25</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>dB</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_12">
+                  <item>
+                   <widget class="QLabel" name="label_39">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>BOOSTP125</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="CoarseGainComboBox" name="boostp125_coarse_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>3</number>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Off (No Output)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>0 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>2.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>7.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>10 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>12.5 dB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>15 dB</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="FineGainDoubleSpinBox" name="boostp125_fine_gain">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="decimals">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <double>15.500000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.500000000000000</double>
+                    </property>
+                    <property name="power_stage" stdset="0">
+                     <number>3</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_35">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>25</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>dB</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_5">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
+              <layout class="QHBoxLayout" name="horizontalLayout_13">
+               <item>
+                <widget class="ApplyPowerButton" name="apply_power">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>170</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Apply Power Settings</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_5">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
              </item>
             </layout>
            </item>
           </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_20">
-        <item>
-         <widget class="QLabel" name="label_19">
-          <property name="text">
-           <string>Log file:</string>
-          </property>
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineEdit_5"/>
+         <layout class="QHBoxLayout" name="horizontalLayout_20">
+          <item>
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>Log file:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_5"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_6">
+            <property name="maximumSize">
+             <size>
+              <width>25</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_7">
+            <property name="text">
+             <string>Logging</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBox_8">
+            <property name="text">
+             <string>Append</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_6">
-          <property name="maximumSize">
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
            <size>
-            <width>25</width>
-            <height>16777215</height>
+            <width>20</width>
+            <height>40</height>
            </size>
           </property>
-          <property name="text">
-           <string>...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBox_7">
-          <property name="text">
-           <string>Logging</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBox_8">
-          <property name="text">
-           <string>Append</string>
-          </property>
-         </widget>
+         </spacer>
         </item>
        </layout>
-      </item>
-      <item>
-       <spacer name="verticalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </widget>
-    <widget class="QWidget" name="Ranges">
-     <attribute name="title">
-      <string>Ranges</string>
-     </attribute>
-     <widget class="QWidget" name="verticalLayoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>0</y>
-        <width>1181</width>
-        <height>541</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="RangesLayout">
-       <item>
-        <spacer name="verticalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Fixed</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>10</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <layout class="QGridLayout" name="DeviceAttributesGrid">
-         <item row="0" column="5">
-          <widget class="QLabel" name="RangingModeLabel">
-           <property name="text">
-            <string>Ranging mode: TWR</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="TxPowerLabel">
-           <property name="text">
-            <string>TX Power: XXX.X dB</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="4">
-          <widget class="QLabel" name="PacSizeLabel">
-           <property name="text">
-            <string>PAC size: XX bytes</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="ChannelLabel">
-           <property name="text">
-            <string>Channel: X</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QLabel" name="DataRateLabel">
-           <property name="text">
-            <string>Data rate: XXXXXHz</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="5">
-          <widget class="QLabel" name="SfdLabel">
-           <property name="text">
-            <string>SFD: XXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="NodeIDLabel">
-           <property name="text">
-            <string>Node ID: XXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="3">
-          <widget class="QLabel" name="PulseRateLabel">
-           <property name="text">
-            <string>Pulse rate: XX MHz</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="4">
-          <widget class="QLabel" name="TimeoutLabel">
-           <property name="text">
-            <string>Timeout: XXXX ms</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="PowerAmpLable">
-           <property name="text">
-            <string>Power Amp: XXXXXXXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLabel" name="PhrLabel">
-           <property name="text">
-            <string>PHR: XXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="RateLabel">
-           <property name="text">
-            <string>Polling Rate: XXXXX ms</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="EvictPolicyLabel">
-           <property name="text">
-            <string>Evict: XXXXXXXXXXXXXXXXXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLabel" name="PanIdLabel">
-           <property name="text">
-            <string>PAN ID: 0xXXXX</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QPushButton" name="RangingButton">
-           <property name="text">
-            <string>Start Ranging</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QTabWidget" name="RangesTabs">
-         <property name="tabPosition">
-          <enum>QTabWidget::West</enum>
-         </property>
-         <property name="currentIndex">
-          <number>3</number>
-         </property>
-         <widget class="QWidget" name="NeighborsTab">
-          <attribute name="title">
-           <string>Neighbors</string>
-          </attribute>
-          <widget class="QWidget" name="verticalLayoutWidget_3">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1181</width>
-             <height>451</height>
-            </rect>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
+      </widget>
+      <widget class="QWidget" name="Ranges">
+       <attribute name="title">
+        <string>Ranges</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>10</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="ranges_id">
+            <property name="text">
+             <string>Node ID: XXXXX</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="ranges_channel">
+            <property name="text">
+             <string>Channel: X</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="ranges_datarate">
+            <property name="text">
+             <string>Data Rate: XXXXXHz</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QLabel" name="ranges_timeout">
+            <property name="text">
+             <string>Timeout: XXXXX ms</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="5">
+           <widget class="QLabel" name="ranges_ranging_mode">
+            <property name="text">
+             <string>Ranging Mode: TWR</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="ranges_txpower">
+            <property name="text">
+             <string>TX Power: 0xXXXXXXXX</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="ranges_power_amp">
+            <property name="text">
+             <string>Power Amp: XXXXXXXXXXXXXXXXX</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QLabel" name="ranges_pulserate">
+            <property name="text">
+             <string>Pulse Rate: XX MHz</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="ranges_phr">
+            <property name="text">
+             <string>PHR: XXXXXXXXXXX</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="ranges_poll_rate">
+            <property name="text">
+             <string>Polling Rate: XXXXX ms</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="4">
+           <widget class="QLabel" name="ranges_pac">
+            <property name="text">
+             <string>PAC size: XX bytes</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QLabel" name="ranges_sfd">
+            <property name="text">
+             <string>SFD: XXXXXXXXXXX</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="ranges_evict">
+            <property name="text">
+             <string>Evict: XXXXXXXXXXXXXXXXXXXXXXXXXX</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="ranges_pan">
+            <property name="text">
+             <string>Pan ID: 0xXXXX</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="ranges_ranging_pushbutton">
+            <property name="text">
+             <string>Start Ranging</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QTabWidget" name="tabWidget">
+          <property name="tabPosition">
+           <enum>QTabWidget::West</enum>
+          </property>
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="tab_3">
+           <attribute name="title">
+            <string>Neighbors</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
             <item>
-             <widget class="RemoveDroppedNeighbors" name="DropNeighborCheckBox">
+             <widget class="QCheckBox" name="drop_neighbors">
               <property name="text">
                <string>Remove Dropped Neighbors</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="NeighborListTable" name="NeighborTabel">
-              <property name="editTriggers">
-               <set>QAbstractItemView::NoEditTriggers</set>
-              </property>
+             <widget class="QTableWidget" name="neighbors">
               <row>
                <property name="text">
                 <string>0</string>
@@ -1888,28 +1858,28 @@
             </item>
            </layout>
           </widget>
+          <widget class="QWidget" name="tab_4">
+           <attribute name="title">
+            <string>Distance Graph</string>
+           </attribute>
+          </widget>
+          <widget class="QWidget" name="tab_5">
+           <attribute name="title">
+            <string>RSSI Graph</string>
+           </attribute>
+          </widget>
+          <widget class="QWidget" name="tab_6">
+           <attribute name="title">
+            <string>RSSI vs Distance</string>
+           </attribute>
+          </widget>
          </widget>
-         <widget class="QWidget" name="DistanceGraph">
-          <attribute name="title">
-           <string>Distance Graph</string>
-          </attribute>
-         </widget>
-         <widget class="QWidget" name="RssiGraph">
-          <attribute name="title">
-           <string>RSSI Graph</string>
-          </attribute>
-         </widget>
-         <widget class="QWidget" name="RssiVsDistance">
-          <attribute name="title">
-           <string>RSSI vs Distance</string>
-          </attribute>
-         </widget>
-        </widget>
-       </item>
-      </layout>
+        </item>
+       </layout>
+      </widget>
      </widget>
-    </widget>
-   </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
@@ -2124,16 +2094,6 @@
    <slots>
     <slot>update_checkbox_state(bool)</slot>
    </slots>
-  </customwidget>
-  <customwidget>
-   <class>RemoveDroppedNeighbors</class>
-   <extends>QCheckBox</extends>
-   <header>neighbor_list.h</header>
-  </customwidget>
-  <customwidget>
-   <class>NeighborListTable</class>
-   <extends>QTableWidget</extends>
-   <header>neighbor_list.h</header>
   </customwidget>
   <customwidget>
    <class>BelugaLabel</class>
