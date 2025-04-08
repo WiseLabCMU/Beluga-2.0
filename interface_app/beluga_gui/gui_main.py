@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication
-from PyQt5.QtCore import QThread, QObject
+from PyQt5.QtCore import QThread, QObject, QThreadPool, QRunnable
 from typing import Optional, Callable, Iterable, Tuple
 from beluga_gui import Ui_BelugaGUI
 from beluga_serial import BelugaSerial, BelugaSerialAttr, BelugaStatus, unpack_beluga_version
@@ -70,6 +70,9 @@ class BelugaGui:
         self.ui.phr_checkbox.set_toggle_handler(self.update_phr)
         self.ui.uwb_preamble_combobox.set_changed_index_handler(self.update_preamble)
         self.ui.uwb_pac_combobox.set_changed_index_handler(self.update_pac)
+        self.ui.pan_id_text_edit.set_handler(self.update_pan)
+        self.ui.eviction_combobox.set_changed_index_handler(self.update_evict)
+        self.ui.reboot_button.pressed.connect(self.reboot)
 
     def run(self):
         self.window.show()
@@ -149,6 +152,15 @@ class BelugaGui:
     def refresh_pac(self):
         pac = self.serial.pac()
         self.ui.uwb_pac_combobox.setCurrentIndex(self.strtoint(pac))
+
+    def refresh_pan(self):
+        pan = self.serial.panid()
+        self.ui.pan_id_text_edit.setText(self.extract_hex(pan))
+
+    def refresh_evict(self):
+        if self.ui.eviction_combobox.support:
+            mode = self.serial.evict()
+            self.ui.eviction_combobox.setCurrentIndex(self.strtoint(mode))
 
     def update_ble(self):
         status = self.serial.status()
@@ -254,6 +266,33 @@ class BelugaGui:
         self.refresh_pac()
         self.ui.connect_status.setText(resp)
 
+    def update_pan(self, id_: str):
+        resp = self.serial.panid(f"0x{id_}")
+        self.refresh_pan()
+        self.ui.connect_status.setText(resp)
+
+    def update_evict(self, index: int):
+        resp = self.serial.evict(index)
+        self.refresh_evict()
+        self.ui.connect_status.setText(resp)
+
+    class RebootRunnable(QRunnable):
+        def __init__(self, serial: BelugaSerial, callback):
+            super().__init__()
+            self.serial = serial
+            self.update_func = callback
+
+        def run(self):
+            self.serial.reboot()
+            self.update_func()
+            # TODO: enable things
+
+    def reboot(self):
+        # TODO Disable everything
+        pool = QThreadPool.globalInstance()
+        runnable = self.RebootRunnable(self.serial, self._gather_beluga_data)
+        pool.start(runnable)
+
     @staticmethod
     def strtoint(response: str) -> int:
         return int("".join([c for c in response if c.isdigit()]))
@@ -339,11 +378,10 @@ class BelugaGui:
         self.refresh_phr()
         self.refresh_preamble()
         self.refresh_pac()
-
-        pan = self.serial.panid()
-        self.ui.pan_id_text_edit.setText(self.extract_hex(pan))
+        self.refresh_pan()
 
         self.ui.eviction_combobox.supported(status.dynamic_eviction_scheme_support)
+        self.refresh_evict()
 
         self.init_uwb_power()
 

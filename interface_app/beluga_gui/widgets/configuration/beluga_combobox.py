@@ -81,6 +81,10 @@ class NeighborEvictionSchemeComboBox(BelugaComboBoxBase, BelugaWidgetBase):
         self._support = support
         self._buddy_sig.bool_update.emit(self._support)
 
+    @property
+    def support(self):
+        return self._support
+
     def setEnabled(self, a0):
         super().setEnabled(a0 and self._support)
 
