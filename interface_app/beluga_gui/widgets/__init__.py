@@ -5,7 +5,7 @@ from .configuration.beluga_combobox import AmplifierComboBox, BootModeComboBox, 
 from .configuration.beluga_line_edit import NodeIdLineEdit, PollRateLineEdit, TimeoutLineEdit, UwbPanIdLineEdit
 from .configuration.beluga_pushbutton import ApplyPowerButton, BleButton, RebootButton, UwbButton
 from .configuration.beluga_widget import SettingsWidget, UwbCustomTxPower
-from .configuration.beluga_label import BelugaLabel
+from .configuration.beluga_label import BelugaLabel, BelugaConfigLabel
 from .configuration.beluga_double_spinbox import FineGainDoubleSpinBox
 from .device.widget import DeviceBar
 from.device.combobox import DeviceComboBox

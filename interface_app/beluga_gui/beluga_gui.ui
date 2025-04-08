@@ -42,7 +42,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="Terminal">
        <attribute name="title">
@@ -1696,107 +1696,189 @@
         <item>
          <layout class="QGridLayout" name="gridLayout_2">
           <item row="0" column="0">
-           <widget class="QLabel" name="ranges_id">
+           <widget class="BelugaConfigLabel" name="ranges_id">
             <property name="text">
              <string>Node ID: XXXXX</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Node ID</string>
             </property>
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QLabel" name="ranges_channel">
+           <widget class="BelugaConfigLabel" name="ranges_channel">
             <property name="text">
              <string>Channel: X</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Channel</string>
             </property>
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QLabel" name="ranges_datarate">
+           <widget class="BelugaConfigLabel" name="ranges_datarate">
             <property name="text">
              <string>Data Rate: XXXXXHz</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Data Rate</string>
             </property>
            </widget>
           </item>
           <item row="0" column="4">
-           <widget class="QLabel" name="ranges_timeout">
+           <widget class="BelugaConfigLabel" name="ranges_timeout">
             <property name="text">
              <string>Timeout: XXXXX ms</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Timeout</string>
+            </property>
+            <property name="suffix" stdset="0">
+             <string>ms</string>
             </property>
            </widget>
           </item>
           <item row="0" column="5">
-           <widget class="QLabel" name="ranges_ranging_mode">
+           <widget class="BelugaConfigLabel" name="ranges_ranging_mode">
             <property name="text">
              <string>Ranging Mode: TWR</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Ranging Mode</string>
+            </property>
+            <property name="true_str" stdset="0">
+             <string>DS-TWR</string>
+            </property>
+            <property name="false_str" stdset="0">
+             <string>SS-TWR</string>
             </property>
            </widget>
           </item>
           <item row="0" column="3">
-           <widget class="QLabel" name="ranges_txpower">
+           <widget class="BelugaConfigLabel" name="ranges_txpower">
             <property name="text">
              <string>TX Power: 0xXXXXXXXX</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>TX Power</string>
+            </property>
+            <property name="config_prefix" stdset="0">
+             <string>0x</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QLabel" name="ranges_power_amp">
+           <widget class="BelugaConfigLabel" name="ranges_power_amp">
             <property name="text">
              <string>Power Amp: XXXXXXXXXXXXXXXXX</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Power Amp</string>
             </property>
            </widget>
           </item>
           <item row="1" column="3">
-           <widget class="QLabel" name="ranges_pulserate">
+           <widget class="BelugaConfigLabel" name="ranges_pulserate">
             <property name="text">
              <string>Pulse Rate: XX MHz</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Pulse Rate</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLabel" name="ranges_phr">
+           <widget class="BelugaConfigLabel" name="ranges_phr">
             <property name="text">
              <string>PHR: XXXXXXXXXXX</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>PHR</string>
+            </property>
+            <property name="true_str" stdset="0">
+             <string>Proprietary</string>
+            </property>
+            <property name="false_str" stdset="0">
+             <string>Standard</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLabel" name="ranges_poll_rate">
+           <widget class="BelugaConfigLabel" name="ranges_poll_rate">
             <property name="text">
              <string>Polling Rate: XXXXX ms</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Polling Rate</string>
+            </property>
+            <property name="suffix" stdset="0">
+             <string>ms</string>
             </property>
            </widget>
           </item>
           <item row="1" column="4">
-           <widget class="QLabel" name="ranges_pac">
+           <widget class="BelugaConfigLabel" name="ranges_pac">
             <property name="text">
              <string>PAC size: XX bytes</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>PAC size</string>
             </property>
            </widget>
           </item>
           <item row="1" column="5">
-           <widget class="QLabel" name="ranges_sfd">
+           <widget class="BelugaConfigLabel" name="ranges_sfd">
             <property name="text">
              <string>SFD: XXXXXXXXXXX</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>SFD</string>
+            </property>
+            <property name="true_str" stdset="0">
+             <string>Proprietary</string>
+            </property>
+            <property name="false_str" stdset="0">
+             <string>Standard</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="ranges_evict">
+           <widget class="BelugaConfigLabel" name="ranges_evict">
             <property name="text">
              <string>Evict: XXXXXXXXXXXXXXXXXXXXXXXXXX</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Evict</string>
             </property>
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QLabel" name="ranges_pan">
+           <widget class="BelugaConfigLabel" name="ranges_pan">
             <property name="text">
              <string>Pan ID: 0xXXXX</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>PAN ID</string>
+            </property>
+            <property name="config_prefix" stdset="0">
+             <string>0x</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="5">
+           <widget class="QPushButton" name="ranges_ranging_pushbutton">
+            <property name="text">
+             <string>Start Ranging</string>
             </property>
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QPushButton" name="ranges_ranging_pushbutton">
+           <widget class="BelugaConfigLabel" name="ranges_preamble">
             <property name="text">
-             <string>Start Ranging</string>
+             <string>Preamble:</string>
+            </property>
+            <property name="prefix" stdset="0">
+             <string>Preamble</string>
             </property>
            </widget>
           </item>
@@ -2155,6 +2237,16 @@
    <header>widgets.h</header>
    <slots>
     <slot>simple_power_update(int)</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
+   <class>BelugaConfigLabel</class>
+   <extends>QLabel</extends>
+   <header>widgets</header>
+   <slots>
+    <slot>update_config(str)</slot>
+    <slot>update_config(int)</slot>
+    <slot>update_config(bool)</slot>
    </slots>
   </customwidget>
  </customwidgets>
