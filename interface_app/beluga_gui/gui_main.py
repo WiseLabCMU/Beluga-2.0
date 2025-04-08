@@ -10,6 +10,7 @@ from serial import Serial, SerialException
 import math
 
 
+
 class BelugaGui:
     class PortUpdateCheck(QThread):
         def __init__(self, serial: BelugaSerial, update: Callable[[Iterable[str]], None],
@@ -329,8 +330,9 @@ class BelugaGui:
 
         def run(self):
             self.serial.reboot()
-            self.widget.rebooting = False
+            time.sleep(0.1)
             self.update_func()
+            self.widget.rebooting = False
 
     def reboot(self):
         self.ui.widget_2.rebooting = True
@@ -442,8 +444,10 @@ class BelugaGui:
                 # TODO: Bring up error window
                 print(e)
                 sys.exit(1)
+            self.ui.uwb_txpower_combobox.disconnecting = True
             self.ui.connect_button.update_connected(False, "")
             self._connected = False
+            self.ui.uwb_txpower_combobox.disconnecting = False
         else:
             port = self.ui.device_combobox.currentText()
             port_: str = port.rsplit(":", 1)[-1].lstrip()

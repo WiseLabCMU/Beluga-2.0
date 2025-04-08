@@ -62,13 +62,22 @@ class UwbTxPowerComboBox(BelugaComboBoxBase, BelugaWidgetBase):
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
         self._simple_power = True
+        self._disconnecting = False
 
     def update_checkbox_state(self, state: bool):
         self._simple_power = state
         self.setEnabled(self._simple_power)
         self._buddy_sig.bool_update.emit(self._simple_power)
-        if self._simple_power:
+        if self._simple_power and not self._disconnecting:
             self.refresh_advanced_power()
+
+    @property
+    def disconnecting(self):
+        return self._disconnecting
+
+    @disconnecting.setter
+    def disconnecting(self, val: bool):
+        self._disconnecting = val
 
     def refresh_advanced_power(self):
         self.currentIndexChanged.emit(self.currentIndex())

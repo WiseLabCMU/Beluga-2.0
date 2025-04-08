@@ -19,7 +19,6 @@ class DeviceConnectButton(QPushButton):
 
     def update_port(self, port: str):
         self._current_port = port
-        print(port)
         if self._current_port:
             self.setEnabled(True)
         else:

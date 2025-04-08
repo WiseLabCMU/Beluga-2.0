@@ -1603,27 +1603,6 @@
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="label_10">
-               <property name="text">
-                <string>UWB Transmit Power: </string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="tx_power_label">
-               <property name="text">
-                <string>41.5</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>dB</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <spacer name="horizontalSpacer_5">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
