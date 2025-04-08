@@ -83,3 +83,18 @@ class RebootButton(BelugaPushButton):
 class ApplyPowerButton(BelugaPushButton):
     def update_checkbox_state(self, state: bool):
         self.setEnabled(not state)
+
+
+class StartRangingButton(BelugaPushButton, BelugaWidgetBase):
+    _ranging = False
+
+    def update(self):
+        self._ranging = self.uwb_running and self.ble_running
+        if self._ranging:
+            self.setText("Stop Ranging")
+        else:
+            self.setText("Start Ranging")
+
+    @property
+    def ranging(self):
+        return self._ranging

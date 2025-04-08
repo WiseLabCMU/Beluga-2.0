@@ -634,7 +634,7 @@ class Ui_BelugaGUI(object):
         self.ranges_pan = BelugaConfigLabel(self.Ranges)
         self.ranges_pan.setObjectName("ranges_pan")
         self.gridLayout_2.addWidget(self.ranges_pan, 2, 1, 1, 1)
-        self.ranges_ranging_pushbutton = QtWidgets.QPushButton(self.Ranges)
+        self.ranges_ranging_pushbutton = StartRangingButton(self.Ranges)
         self.ranges_ranging_pushbutton.setObjectName("ranges_ranging_pushbutton")
         self.gridLayout_2.addWidget(self.ranges_ranging_pushbutton, 2, 5, 1, 1)
         self.ranges_preamble = BelugaConfigLabel(self.Ranges)
@@ -925,4 +925,4 @@ class Ui_BelugaGUI(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("BelugaGUI", "RSSI Graph"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("BelugaGUI", "RSSI vs Distance"))
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Ranges), _translate("BelugaGUI", "Ranges"))
-from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
+from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, StartRangingButton, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox

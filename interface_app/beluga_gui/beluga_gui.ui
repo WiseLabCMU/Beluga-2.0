@@ -1866,7 +1866,7 @@
            </widget>
           </item>
           <item row="2" column="5">
-           <widget class="QPushButton" name="ranges_ranging_pushbutton">
+           <widget class="StartRangingButton" name="ranges_ranging_pushbutton">
             <property name="text">
              <string>Start Ranging</string>
             </property>
@@ -2248,6 +2248,11 @@
     <slot>update_config(int)</slot>
     <slot>update_config(bool)</slot>
    </slots>
+  </customwidget>
+  <customwidget>
+   <class>StartRangingButton</class>
+   <extends>QPushButton</extends>
+   <header>widgets.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

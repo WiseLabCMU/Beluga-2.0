@@ -77,12 +77,24 @@ class BelugaGui:
         self.ui.reboot_button.pressed.connect(self.reboot)
         self.ui.uwb_txpower_combobox.set_changed_index_handler(self.update_simple_power)
         self.ui.apply_power.pressed.connect(self.update_complex_power)
+        self.ui.ble_button.ble_update["bool"].connect(self.ui.ranges_ranging_pushbutton.update_ble_state)
+        self.ui.uwb_button.uwb_update["bool"].connect(self.ui.ranges_ranging_pushbutton.update_uwb_state)
+        self.ui.ranges_ranging_pushbutton.pressed.connect(self.toggle_ranging)
 
     def run(self):
         self.window.show()
         ret = self.app.exec_()
         self.serial.close()
         sys.exit(ret)
+
+    def toggle_ranging(self):
+        if self.ui.ranges_ranging_pushbutton.ranging:
+            self.ui.uwb_button.pressed.emit()
+            self.ui.ble_button.pressed.emit()
+        else:
+            if not self.ui.ble_button.ble_running:
+                self.ui.ble_button.pressed.emit()
+            self.ui.uwb_button.pressed.emit()
 
     def refresh_ble(self):
         status = self.serial.status()
