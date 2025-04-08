@@ -277,20 +277,21 @@ class BelugaGui:
         self.ui.connect_status.setText(resp)
 
     class RebootRunnable(QRunnable):
-        def __init__(self, serial: BelugaSerial, callback):
+        def __init__(self, serial: BelugaSerial, callback, widget):
             super().__init__()
             self.serial = serial
             self.update_func = callback
+            self.widget = widget
 
         def run(self):
             self.serial.reboot()
+            self.widget.rebooting = False
             self.update_func()
-            # TODO: enable things
 
     def reboot(self):
-        # TODO Disable everything
+        self.ui.widget_2.rebooting = True
         pool = QThreadPool.globalInstance()
-        runnable = self.RebootRunnable(self.serial, self._gather_beluga_data)
+        runnable = self.RebootRunnable(self.serial, self._gather_beluga_data, self.ui.widget_2)
         pool.start(runnable)
 
     @staticmethod
