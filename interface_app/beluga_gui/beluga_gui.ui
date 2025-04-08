@@ -1905,12 +1905,15 @@
              </widget>
             </item>
             <item>
-             <widget class="QTableWidget" name="neighbors">
-              <row>
+             <widget class="NeighborListTable" name="neighbors">
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <column>
                <property name="text">
-                <string>0</string>
+                <string>ID</string>
                </property>
-              </row>
+              </column>
               <column>
                <property name="text">
                 <string>RSSI</string>
@@ -2178,6 +2181,14 @@
    </slots>
   </customwidget>
   <customwidget>
+   <class>NeighborListTable</class>
+   <extends>QTableWidget</extends>
+   <header>widgets.h</header>
+   <slots>
+    <slot>remove_dropped_neighbors(bool)</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
    <class>BelugaLabel</class>
    <extends>QLabel</extends>
    <header>widgets.h</header>
@@ -2280,12 +2291,12 @@
    <slot>update_port(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>238</x>
-     <y>80</y>
+     <x>247</x>
+     <y>93</y>
     </hint>
     <hint type="destinationlabel">
-     <x>298</x>
-     <y>75</y>
+     <x>307</x>
+     <y>88</y>
     </hint>
    </hints>
   </connection>
@@ -2312,12 +2323,12 @@
    <slot>setText(QString)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>346</x>
-     <y>80</y>
+     <x>355</x>
+     <y>93</y>
     </hint>
     <hint type="destinationlabel">
-     <x>374</x>
-     <y>92</y>
+     <x>383</x>
+     <y>105</y>
     </hint>
    </hints>
   </connection>
@@ -2348,8 +2359,8 @@
      <y>88</y>
     </hint>
     <hint type="destinationlabel">
-     <x>637</x>
-     <y>129</y>
+     <x>646</x>
+     <y>142</y>
     </hint>
    </hints>
   </connection>
@@ -2376,12 +2387,12 @@
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>129</x>
-     <y>135</y>
+     <x>138</x>
+     <y>148</y>
     </hint>
     <hint type="destinationlabel">
-     <x>74</x>
-     <y>137</y>
+     <x>83</x>
+     <y>150</y>
     </hint>
    </hints>
   </connection>
@@ -2392,8 +2403,8 @@
    <slot>update_buddy_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>270</x>
-     <y>135</y>
+     <x>279</x>
+     <y>148</y>
     </hint>
     <hint type="destinationlabel">
      <x>221</x>
@@ -2408,12 +2419,12 @@
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>146</x>
-     <y>137</y>
+     <x>155</x>
+     <y>150</y>
     </hint>
     <hint type="destinationlabel">
-     <x>286</x>
-     <y>138</y>
+     <x>295</x>
+     <y>151</y>
     </hint>
    </hints>
   </connection>
@@ -2424,8 +2435,8 @@
    <slot>update_buddy_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>393</x>
-     <y>176</y>
+     <x>402</x>
+     <y>189</y>
     </hint>
     <hint type="destinationlabel">
      <x>375</x>
@@ -2440,8 +2451,8 @@
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>187</x>
-     <y>137</y>
+     <x>196</x>
+     <y>150</y>
     </hint>
     <hint type="destinationlabel">
      <x>416</x>
@@ -2460,8 +2471,8 @@
      <y>277</y>
     </hint>
     <hint type="destinationlabel">
-     <x>300</x>
-     <y>276</y>
+     <x>309</x>
+     <y>289</y>
     </hint>
    </hints>
   </connection>
@@ -2508,8 +2519,8 @@
      <y>312</y>
     </hint>
     <hint type="destinationlabel">
-     <x>376</x>
-     <y>310</y>
+     <x>385</x>
+     <y>323</y>
     </hint>
    </hints>
   </connection>
@@ -2520,8 +2531,8 @@
    <slot>update_buddy_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>343</y>
+     <x>154</x>
+     <y>356</y>
     </hint>
     <hint type="destinationlabel">
      <x>80</x>
@@ -2540,8 +2551,8 @@
      <y>144</y>
     </hint>
     <hint type="destinationlabel">
-     <x>179</x>
-     <y>270</y>
+     <x>188</x>
+     <y>283</y>
     </hint>
    </hints>
   </connection>
@@ -2556,8 +2567,8 @@
      <y>146</y>
     </hint>
     <hint type="destinationlabel">
-     <x>369</x>
-     <y>266</y>
+     <x>378</x>
+     <y>279</y>
     </hint>
    </hints>
   </connection>
@@ -2572,8 +2583,8 @@
      <y>148</y>
     </hint>
     <hint type="destinationlabel">
-     <x>202</x>
-     <y>302</y>
+     <x>211</x>
+     <y>315</y>
     </hint>
    </hints>
   </connection>
@@ -2588,8 +2599,8 @@
      <y>142</y>
     </hint>
     <hint type="destinationlabel">
-     <x>460</x>
-     <y>309</y>
+     <x>469</x>
+     <y>322</y>
     </hint>
    </hints>
   </connection>
@@ -2604,8 +2615,8 @@
      <y>149</y>
     </hint>
     <hint type="destinationlabel">
-     <x>147</x>
-     <y>340</y>
+     <x>156</x>
+     <y>353</y>
     </hint>
    </hints>
   </connection>
@@ -2616,12 +2627,12 @@
    <slot>update_uwb_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>175</x>
-     <y>139</y>
+     <x>184</x>
+     <y>152</y>
     </hint>
     <hint type="destinationlabel">
-     <x>564</x>
-     <y>206</y>
+     <x>573</x>
+     <y>219</y>
     </hint>
    </hints>
   </connection>
@@ -2636,8 +2647,8 @@
      <y>146</y>
     </hint>
     <hint type="destinationlabel">
-     <x>533</x>
-     <y>274</y>
+     <x>542</x>
+     <y>287</y>
     </hint>
    </hints>
   </connection>
@@ -2652,8 +2663,8 @@
      <y>142</y>
     </hint>
     <hint type="destinationlabel">
-     <x>742</x>
-     <y>135</y>
+     <x>751</x>
+     <y>148</y>
     </hint>
    </hints>
   </connection>
@@ -2684,8 +2695,8 @@
      <y>143</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1119</x>
-     <y>167</y>
+     <x>1128</x>
+     <y>180</y>
     </hint>
    </hints>
   </connection>
@@ -2696,12 +2707,12 @@
    <slot>update_checkbox_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1097</x>
-     <y>137</y>
+     <x>1106</x>
+     <y>150</y>
     </hint>
     <hint type="destinationlabel">
-     <x>754</x>
-     <y>370</y>
+     <x>763</x>
+     <y>383</y>
     </hint>
    </hints>
   </connection>
@@ -2712,12 +2723,12 @@
    <slot>update_buddy_state(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>199</x>
-     <y>238</y>
+     <x>208</x>
+     <y>251</y>
     </hint>
     <hint type="destinationlabel">
-     <x>135</x>
-     <y>242</y>
+     <x>144</x>
+     <y>255</y>
     </hint>
    </hints>
   </connection>
@@ -2744,12 +2755,12 @@
    <slot>simple_power_update(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>912</x>
-     <y>136</y>
+     <x>921</x>
+     <y>149</y>
     </hint>
     <hint type="destinationlabel">
-     <x>825</x>
-     <y>221</y>
+     <x>834</x>
+     <y>234</y>
     </hint>
    </hints>
   </connection>
@@ -2764,8 +2775,8 @@
      <y>147</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1007</x>
-     <y>220</y>
+     <x>1016</x>
+     <y>233</y>
     </hint>
    </hints>
   </connection>
@@ -2796,8 +2807,8 @@
      <y>142</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1021</x>
-     <y>259</y>
+     <x>1030</x>
+     <y>272</y>
     </hint>
    </hints>
   </connection>
@@ -2812,8 +2823,8 @@
      <y>141</y>
     </hint>
     <hint type="destinationlabel">
-     <x>847</x>
-     <y>292</y>
+     <x>856</x>
+     <y>305</y>
     </hint>
    </hints>
   </connection>
@@ -2856,12 +2867,28 @@
    <slot>simple_power_update(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>902</x>
-     <y>138</y>
+     <x>911</x>
+     <y>151</y>
     </hint>
     <hint type="destinationlabel">
      <x>1011</x>
      <y>337</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>drop_neighbors</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>neighbors</receiver>
+   <slot>remove_dropped_neighbors(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>180</x>
+     <y>182</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>744</x>
+     <y>315</y>
     </hint>
    </hints>
   </connection>

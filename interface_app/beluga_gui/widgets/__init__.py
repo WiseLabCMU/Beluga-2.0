@@ -10,3 +10,4 @@ from .configuration.beluga_double_spinbox import FineGainDoubleSpinBox
 from .device.widget import DeviceBar
 from.device.combobox import DeviceComboBox
 from .device.pushbutton import DeviceConnectButton
+from .neighbors.neighbor_table import NeighborListTable

@@ -651,12 +651,11 @@ class Ui_BelugaGUI(object):
         self.drop_neighbors = QtWidgets.QCheckBox(self.tab_3)
         self.drop_neighbors.setObjectName("drop_neighbors")
         self.verticalLayout_6.addWidget(self.drop_neighbors)
-        self.neighbors = QtWidgets.QTableWidget(self.tab_3)
+        self.neighbors = NeighborListTable(self.tab_3)
+        self.neighbors.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.neighbors.setObjectName("neighbors")
-        self.neighbors.setColumnCount(5)
-        self.neighbors.setRowCount(1)
-        item = QtWidgets.QTableWidgetItem()
-        self.neighbors.setVerticalHeaderItem(0, item)
+        self.neighbors.setColumnCount(6)
+        self.neighbors.setRowCount(0)
         item = QtWidgets.QTableWidgetItem()
         self.neighbors.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -667,6 +666,8 @@ class Ui_BelugaGUI(object):
         self.neighbors.setHorizontalHeaderItem(3, item)
         item = QtWidgets.QTableWidgetItem()
         self.neighbors.setHorizontalHeaderItem(4, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.neighbors.setHorizontalHeaderItem(5, item)
         self.verticalLayout_6.addWidget(self.neighbors)
         self.tabWidget.addTab(self.tab_3, "")
         self.tab_4 = QtWidgets.QWidget()
@@ -729,6 +730,7 @@ class Ui_BelugaGUI(object):
         self.uwb_txpower_combobox.currentIndexChanged['int'].connect(self.boostp250_fine_gain.simple_power_update) # type: ignore
         self.uwb_txpower_combobox.currentIndexChanged['int'].connect(self.boostp125_coarse_gain.simple_power_update) # type: ignore
         self.uwb_txpower_combobox.currentIndexChanged['int'].connect(self.boostp125_fine_gain.simple_power_update) # type: ignore
+        self.drop_neighbors.toggled['bool'].connect(self.neighbors.remove_dropped_neighbors) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(BelugaGUI)
 
     def retranslateUi(self, BelugaGUI):
@@ -908,21 +910,21 @@ class Ui_BelugaGUI(object):
         self.ranges_preamble.setText(_translate("BelugaGUI", "Preamble:"))
         self.ranges_preamble.setProperty("prefix", _translate("BelugaGUI", "Preamble"))
         self.drop_neighbors.setText(_translate("BelugaGUI", "Remove Dropped Neighbors"))
-        item = self.neighbors.verticalHeaderItem(0)
-        item.setText(_translate("BelugaGUI", "0"))
         item = self.neighbors.horizontalHeaderItem(0)
-        item.setText(_translate("BelugaGUI", "RSSI"))
+        item.setText(_translate("BelugaGUI", "ID"))
         item = self.neighbors.horizontalHeaderItem(1)
-        item.setText(_translate("BelugaGUI", "Distance"))
+        item.setText(_translate("BelugaGUI", "RSSI"))
         item = self.neighbors.horizontalHeaderItem(2)
-        item.setText(_translate("BelugaGUI", "Timestamp"))
+        item.setText(_translate("BelugaGUI", "Distance"))
         item = self.neighbors.horizontalHeaderItem(3)
-        item.setText(_translate("BelugaGUI", "Exchange ID"))
+        item.setText(_translate("BelugaGUI", "Timestamp"))
         item = self.neighbors.horizontalHeaderItem(4)
+        item.setText(_translate("BelugaGUI", "Exchange ID"))
+        item = self.neighbors.horizontalHeaderItem(5)
         item.setText(_translate("BelugaGUI", "Dropped"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("BelugaGUI", "Neighbors"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("BelugaGUI", "Distance Graph"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("BelugaGUI", "RSSI Graph"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("BelugaGUI", "RSSI vs Distance"))
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Ranges), _translate("BelugaGUI", "Ranges"))
-from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, StartRangingButton, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
+from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NeighborListTable, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, StartRangingButton, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
