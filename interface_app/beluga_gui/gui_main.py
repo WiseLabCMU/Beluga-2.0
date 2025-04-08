@@ -68,6 +68,8 @@ class BelugaGui:
         self.ui.uwb_datarate_combobox.set_changed_index_handler(self.update_datarate)
         self.ui.uwb_pulserate_combobox.set_changed_index_handler(self.update_pulserate)
         self.ui.phr_checkbox.set_toggle_handler(self.update_phr)
+        self.ui.uwb_preamble_combobox.set_changed_index_handler(self.update_preamble)
+        self.ui.uwb_pac_combobox.set_changed_index_handler(self.update_pac)
 
     def run(self):
         self.window.show()
@@ -139,6 +141,14 @@ class BelugaGui:
     def refresh_phr(self):
         mode = self.serial.phr()
         self.ui.phr_checkbox.setChecked(bool(self.strtoint(mode)))
+
+    def refresh_preamble(self):
+        preamble = self.serial.preamble()
+        self.ui.uwb_preamble_combobox.setCurrentIndex(self.preamble_to_index(preamble))
+
+    def refresh_pac(self):
+        pac = self.serial.pac()
+        self.ui.uwb_pac_combobox.setCurrentIndex(self.strtoint(pac))
 
     def update_ble(self):
         status = self.serial.status()
@@ -228,6 +238,22 @@ class BelugaGui:
         self.refresh_phr()
         self.ui.connect_status.setText(resp)
 
+    def update_preamble(self, index: int):
+        if index < 5:
+            preamble = 2 ** (index + 6)
+        elif index == 5:
+            preamble = 1536
+        else:
+            preamble = 2 ** (index + 5)
+        resp = self.serial.preamble(preamble)
+        self.refresh_preamble()
+        self.ui.connect_status.setText(resp)
+
+    def update_pac(self, index: int):
+        resp = self.serial.pac(index)
+        self.refresh_pac()
+        self.ui.connect_status.setText(resp)
+
     @staticmethod
     def strtoint(response: str) -> int:
         return int("".join([c for c in response if c.isdigit()]))
@@ -311,12 +337,8 @@ class BelugaGui:
         self.refresh_datarate()
         self.refresh_pulserate()
         self.refresh_phr()
-
-        preamble = self.serial.preamble()
-        self.ui.uwb_preamble_combobox.setCurrentIndex(self.preamble_to_index(preamble))
-
-        pac = self.serial.pac()
-        self.ui.uwb_pac_combobox.setCurrentIndex(self.strtoint(pac))
+        self.refresh_preamble()
+        self.refresh_pac()
 
         pan = self.serial.panid()
         self.ui.pan_id_text_edit.setText(self.extract_hex(pan))
