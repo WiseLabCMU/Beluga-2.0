@@ -13,7 +13,6 @@ class BelugaCheckBox(QCheckBox):
         self._handler = handler
 
     def handle_toggle(self, state: bool):
-        print(f"Toggled: {state}")
         if self._handler is not None:
             self._handler(state)
 

@@ -104,3 +104,7 @@ class CoarseGainComboBox(QComboBox):
         else:
             power = 0x1F1F1F1F
         self.update_power(power)
+
+    @property
+    def stage(self):
+        return self.property("power_stage")

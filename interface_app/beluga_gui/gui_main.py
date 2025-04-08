@@ -12,7 +12,8 @@ import math
 
 class BelugaGui:
     class PortUpdateCheck(QThread):
-        def __init__(self, serial: BelugaSerial, update: Callable[[Iterable[str]], None], parent: Optional[QObject] = None):
+        def __init__(self, serial: BelugaSerial, update: Callable[[Iterable[str]], None],
+                     parent: Optional[QObject] = None):
             super().__init__(parent)
             self._serial = serial
             self._callback = update
@@ -73,6 +74,8 @@ class BelugaGui:
         self.ui.pan_id_text_edit.set_handler(self.update_pan)
         self.ui.eviction_combobox.set_changed_index_handler(self.update_evict)
         self.ui.reboot_button.pressed.connect(self.reboot)
+        self.ui.uwb_txpower_combobox.set_changed_index_handler(self.update_simple_power)
+        self.ui.apply_power.pressed.connect(self.update_complex_power)
 
     def run(self):
         self.window.show()
@@ -161,6 +164,23 @@ class BelugaGui:
         if self.ui.eviction_combobox.support:
             mode = self.serial.evict()
             self.ui.eviction_combobox.setCurrentIndex(self.strtoint(mode))
+
+    def refresh_tx_power(self):
+        resp = self.serial.txpower()
+        power = self.extract_hex(resp)
+        if self.check_standard_tx_power(power):
+            self.ui.uwb_txpower_combobox.setCurrentIndex(int(power == "1F1F1F1F"))
+        else:
+            power = int(power, base=16)
+            self.ui.boost_norm_coarse_gain.update_power(power)
+            self.ui.boost_norm_fine_gain.update_power(power)
+            self.ui.boostp500_coarse_gain.update_power(power)
+            self.ui.boostp500_fine_gain.update_power(power)
+            self.ui.boostp250_coarse_gain.update_power(power)
+            self.ui.boostp250_fine_gain.update_power(power)
+            self.ui.boostp125_coarse_gain.update_power(power)
+            self.ui.boostp125_fine_gain.update_power(power)
+        self.ui.connect_status.setText(resp)
 
     def update_ble(self):
         status = self.serial.status()
@@ -276,6 +296,30 @@ class BelugaGui:
         self.refresh_evict()
         self.ui.connect_status.setText(resp)
 
+    def update_simple_power(self, index: int):
+        resp = self.serial.txpower(f"{index}")
+        self.refresh_tx_power()
+        self.ui.connect_status.setText(resp)
+
+    def update_complex_power(self):
+        self.serial.txpower(
+            f"{self.ui.boost_norm_coarse_gain.stage} "
+            f"{self.ui.boost_norm_coarse_gain.currentIndex()} "
+            f"{int(self.ui.boost_norm_fine_gain.value() / self.ui.boost_norm_fine_gain.singleStep())}")
+        self.serial.txpower(
+            f"{self.ui.boostp500_coarse_gain.stage} "
+            f"{self.ui.boostp500_coarse_gain.currentIndex()} "
+            f"{int(self.ui.boostp500_fine_gain.value() / self.ui.boostp500_fine_gain.singleStep())}")
+        self.serial.txpower(
+            f"{self.ui.boostp250_coarse_gain.stage} "
+            f"{self.ui.boostp250_coarse_gain.currentIndex()} "
+            f"{int(self.ui.boostp250_fine_gain.value() / self.ui.boostp250_fine_gain.singleStep())}")
+        self.serial.txpower(
+            f"{self.ui.boostp125_coarse_gain.stage} "
+            f"{self.ui.boostp125_coarse_gain.currentIndex()} "
+            f"{int(self.ui.boostp125_fine_gain.value() / self.ui.boostp125_fine_gain.singleStep())}")
+        self.refresh_tx_power()
+
     class RebootRunnable(QRunnable):
         def __init__(self, serial: BelugaSerial, callback, widget):
             super().__init__()
@@ -383,7 +427,6 @@ class BelugaGui:
 
         self.ui.eviction_combobox.supported(status.dynamic_eviction_scheme_support)
         self.refresh_evict()
-
         self.init_uwb_power()
 
         self.ui.ble_button.set_ble_state(status.ble)
@@ -417,8 +460,6 @@ class BelugaGui:
                 status, error = self._gather_beluga_data()
                 self.ui.connect_button.update_connected(status, error)
                 self._connected = status
-
-
 
 
 if __name__ == "__main__":
