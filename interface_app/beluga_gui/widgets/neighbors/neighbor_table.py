@@ -1,17 +1,6 @@
 from PyQt5.QtWidgets import QTableWidget, QWidget, QTableWidgetItem
 from typing import Optional, Dict
-from dataclasses import dataclass
-
-
-@dataclass(init=True)
-class Neighbor:
-    id: int = 0
-    rssi: int = 0
-    distance: float = 0.0
-    timestamp: int = 0
-    exchange: int = 0
-    dropped: bool = False
-    row: int = 0
+from .neighbors import Neighbor
 
 
 class NeighborListTable(QTableWidget):

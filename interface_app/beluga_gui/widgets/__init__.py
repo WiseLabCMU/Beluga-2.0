@@ -11,3 +11,4 @@ from .device.widget import DeviceBar
 from.device.combobox import DeviceComboBox
 from .device.pushbutton import DeviceConnectButton
 from .neighbors.neighbor_table import NeighborListTable
+from .neighbors.beluga_graph import DistanceGraph, RssiGraph, DistanceVRssiGraph

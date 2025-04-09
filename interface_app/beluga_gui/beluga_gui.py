@@ -641,6 +641,16 @@ class Ui_BelugaGUI(object):
         self.ranges_preamble.setObjectName("ranges_preamble")
         self.gridLayout_2.addWidget(self.ranges_preamble, 2, 2, 1, 1)
         self.verticalLayout_4.addLayout(self.gridLayout_2)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.drop_neighbors = QtWidgets.QCheckBox(self.Ranges)
+        self.drop_neighbors.setObjectName("drop_neighbors")
+        self.horizontalLayout_5.addWidget(self.drop_neighbors)
+        self.clear_neighbors = QtWidgets.QPushButton(self.Ranges)
+        self.clear_neighbors.setMaximumSize(QtCore.QSize(75, 16777215))
+        self.clear_neighbors.setObjectName("clear_neighbors")
+        self.horizontalLayout_5.addWidget(self.clear_neighbors)
+        self.verticalLayout_4.addLayout(self.horizontalLayout_5)
         self.tabWidget = QtWidgets.QTabWidget(self.Ranges)
         self.tabWidget.setTabPosition(QtWidgets.QTabWidget.West)
         self.tabWidget.setObjectName("tabWidget")
@@ -648,16 +658,6 @@ class Ui_BelugaGUI(object):
         self.tab_3.setObjectName("tab_3")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.tab_3)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.drop_neighbors = QtWidgets.QCheckBox(self.tab_3)
-        self.drop_neighbors.setObjectName("drop_neighbors")
-        self.horizontalLayout_5.addWidget(self.drop_neighbors)
-        self.clear_neighbors = QtWidgets.QPushButton(self.tab_3)
-        self.clear_neighbors.setMaximumSize(QtCore.QSize(75, 16777215))
-        self.clear_neighbors.setObjectName("clear_neighbors")
-        self.horizontalLayout_5.addWidget(self.clear_neighbors)
-        self.verticalLayout_6.addLayout(self.horizontalLayout_5)
         self.neighbors = NeighborListTable(self.tab_3)
         self.neighbors.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.neighbors.setObjectName("neighbors")
@@ -679,12 +679,36 @@ class Ui_BelugaGUI(object):
         self.tabWidget.addTab(self.tab_3, "")
         self.tab_4 = QtWidgets.QWidget()
         self.tab_4.setObjectName("tab_4")
+        self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.tab_4)
+        self.verticalLayout_9.setObjectName("verticalLayout_9")
+        self.distance_graph = DistanceGraph(self.tab_4)
+        self.distance_graph.setProperty("graph_type", 0)
+        self.distance_graph.setObjectName("distance_graph")
+        self.verticalLayout_10 = QtWidgets.QVBoxLayout(self.distance_graph)
+        self.verticalLayout_10.setObjectName("verticalLayout_10")
+        self.verticalLayout_9.addWidget(self.distance_graph)
         self.tabWidget.addTab(self.tab_4, "")
         self.tab_5 = QtWidgets.QWidget()
         self.tab_5.setObjectName("tab_5")
+        self.verticalLayout_11 = QtWidgets.QVBoxLayout(self.tab_5)
+        self.verticalLayout_11.setObjectName("verticalLayout_11")
+        self.rssi_graph = RssiGraph(self.tab_5)
+        self.rssi_graph.setProperty("graph_type", 1)
+        self.rssi_graph.setObjectName("rssi_graph")
+        self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.rssi_graph)
+        self.verticalLayout_12.setObjectName("verticalLayout_12")
+        self.verticalLayout_11.addWidget(self.rssi_graph)
         self.tabWidget.addTab(self.tab_5, "")
         self.tab_6 = QtWidgets.QWidget()
         self.tab_6.setObjectName("tab_6")
+        self.verticalLayout_13 = QtWidgets.QVBoxLayout(self.tab_6)
+        self.verticalLayout_13.setObjectName("verticalLayout_13")
+        self.rssi_v_distance = DistanceVRssiGraph(self.tab_6)
+        self.rssi_v_distance.setProperty("graph_type", 2)
+        self.rssi_v_distance.setObjectName("rssi_v_distance")
+        self.verticalLayout_14 = QtWidgets.QVBoxLayout(self.rssi_v_distance)
+        self.verticalLayout_14.setObjectName("verticalLayout_14")
+        self.verticalLayout_13.addWidget(self.rssi_v_distance)
         self.tabWidget.addTab(self.tab_6, "")
         self.verticalLayout_4.addWidget(self.tabWidget)
         self.TerminalTab.addTab(self.Ranges, "")
@@ -739,6 +763,12 @@ class Ui_BelugaGUI(object):
         self.uwb_txpower_combobox.currentIndexChanged['int'].connect(self.boostp125_fine_gain.simple_power_update) # type: ignore
         self.drop_neighbors.toggled['bool'].connect(self.neighbors.remove_dropped_neighbors) # type: ignore
         self.clear_neighbors.pressed.connect(self.neighbors.clear) # type: ignore
+        self.drop_neighbors.toggled['bool'].connect(self.distance_graph.remove_dropped_neighbors) # type: ignore
+        self.clear_neighbors.pressed.connect(self.distance_graph.clear) # type: ignore
+        self.drop_neighbors.toggled['bool'].connect(self.rssi_graph.remove_dropped_neighbors) # type: ignore
+        self.clear_neighbors.pressed.connect(self.rssi_graph.clear) # type: ignore
+        self.drop_neighbors.toggled['bool'].connect(self.rssi_v_distance.remove_dropped_neighbors) # type: ignore
+        self.clear_neighbors.pressed.connect(self.rssi_v_distance.clear) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(BelugaGUI)
 
     def retranslateUi(self, BelugaGUI):
@@ -936,4 +966,4 @@ class Ui_BelugaGUI(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("BelugaGUI", "RSSI Graph"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("BelugaGUI", "RSSI vs Distance"))
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Ranges), _translate("BelugaGUI", "Ranges"))
-from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NeighborListTable, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, SettingsWidget, StartRangingButton, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
+from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, DistanceGraph, DistanceVRssiGraph, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NeighborListTable, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, RssiGraph, SettingsWidget, StartRangingButton, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox

@@ -1885,6 +1885,30 @@
          </layout>
         </item>
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QCheckBox" name="drop_neighbors">
+            <property name="text">
+             <string>Remove dropped neighbors</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="clear_neighbors">
+            <property name="maximumSize">
+             <size>
+              <width>75</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Clear</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="tabPosition">
            <enum>QTabWidget::West</enum>
@@ -1897,30 +1921,6 @@
             <string>Neighbors</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_6">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_5">
-              <item>
-               <widget class="QCheckBox" name="drop_neighbors">
-                <property name="text">
-                 <string>Remove dropped neighbors</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="clear_neighbors">
-                <property name="maximumSize">
-                 <size>
-                  <width>75</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Clear</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
             <item>
              <widget class="NeighborListTable" name="neighbors">
               <property name="editTriggers">
@@ -1964,16 +1964,46 @@
            <attribute name="title">
             <string>Distance Graph</string>
            </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_9">
+            <item>
+             <widget class="DistanceGraph" name="distance_graph" native="true">
+              <property name="graph_type" stdset="0">
+               <UInt>0</UInt>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_10"/>
+             </widget>
+            </item>
+           </layout>
           </widget>
           <widget class="QWidget" name="tab_5">
            <attribute name="title">
             <string>RSSI Graph</string>
            </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_11">
+            <item>
+             <widget class="RssiGraph" name="rssi_graph" native="true">
+              <property name="graph_type" stdset="0">
+               <UInt>1</UInt>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_12"/>
+             </widget>
+            </item>
+           </layout>
           </widget>
           <widget class="QWidget" name="tab_6">
            <attribute name="title">
             <string>RSSI vs Distance</string>
            </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_13">
+            <item>
+             <widget class="DistanceVRssiGraph" name="rssi_v_distance" native="true">
+              <property name="graph_type" stdset="0">
+               <UInt>2</UInt>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_14"/>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>
@@ -2281,6 +2311,24 @@
    <class>StartRangingButton</class>
    <extends>QPushButton</extends>
    <header>widgets.h</header>
+  </customwidget>
+  <customwidget>
+   <class>DistanceGraph</class>
+   <extends>QWidget</extends>
+   <header>widgets.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>RssiGraph</class>
+   <extends>QWidget</extends>
+   <header>widgets.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DistanceVRssiGraph</class>
+   <extends>QWidget</extends>
+   <header>widgets.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -2922,6 +2970,102 @@
     <hint type="destinationlabel">
      <x>1162</x>
      <y>239</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>drop_neighbors</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>distance_graph</receiver>
+   <slot>remove_dropped_neighbors(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>145</x>
+     <y>169</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>141</x>
+     <y>218</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clear_neighbors</sender>
+   <signal>pressed()</signal>
+   <receiver>distance_graph</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1179</x>
+     <y>172</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1171</x>
+     <y>228</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>drop_neighbors</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>rssi_graph</receiver>
+   <slot>remove_dropped_neighbors(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>227</x>
+     <y>165</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>240</x>
+     <y>246</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clear_neighbors</sender>
+   <signal>pressed()</signal>
+   <receiver>rssi_graph</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1173</x>
+     <y>171</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1165</x>
+     <y>234</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>drop_neighbors</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>rssi_v_distance</receiver>
+   <slot>remove_dropped_neighbors(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>158</x>
+     <y>166</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>164</x>
+     <y>264</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clear_neighbors</sender>
+   <signal>pressed()</signal>
+   <receiver>rssi_v_distance</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1173</x>
+     <y>164</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1160</x>
+     <y>256</y>
     </hint>
    </hints>
   </connection>
