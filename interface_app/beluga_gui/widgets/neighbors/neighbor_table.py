@@ -115,4 +115,5 @@ class NeighborListTable(QTableWidget):
 
     def clear(self):
         self._neighbors.clear()
-        super().clear()
+        for row in range(self.rowCount() - 1, -1, -1):
+            self.removeRow(row)

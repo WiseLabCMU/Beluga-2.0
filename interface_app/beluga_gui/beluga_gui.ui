@@ -1898,11 +1898,28 @@
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_6">
             <item>
-             <widget class="QCheckBox" name="drop_neighbors">
-              <property name="text">
-               <string>Remove Dropped Neighbors</string>
-              </property>
-             </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QCheckBox" name="checkBox">
+                <property name="text">
+                 <string>Remove dropped neighbors</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton">
+                <property name="maximumSize">
+                 <size>
+                  <width>75</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Clear</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
             <item>
              <widget class="NeighborListTable" name="neighbors">
@@ -2877,18 +2894,34 @@
    </hints>
   </connection>
   <connection>
-   <sender>drop_neighbors</sender>
+   <sender>checkBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>neighbors</receiver>
    <slot>remove_dropped_neighbors(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>180</x>
-     <y>182</y>
+     <x>199</x>
+     <y>172</y>
     </hint>
     <hint type="destinationlabel">
-     <x>744</x>
-     <y>315</y>
+     <x>295</x>
+     <y>281</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>pressed()</signal>
+   <receiver>neighbors</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1177</x>
+     <y>171</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1162</x>
+     <y>239</y>
     </hint>
    </hints>
   </connection>

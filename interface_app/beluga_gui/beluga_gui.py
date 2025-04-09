@@ -648,9 +648,16 @@ class Ui_BelugaGUI(object):
         self.tab_3.setObjectName("tab_3")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.tab_3)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
-        self.drop_neighbors = QtWidgets.QCheckBox(self.tab_3)
-        self.drop_neighbors.setObjectName("drop_neighbors")
-        self.verticalLayout_6.addWidget(self.drop_neighbors)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.checkBox = QtWidgets.QCheckBox(self.tab_3)
+        self.checkBox.setObjectName("checkBox")
+        self.horizontalLayout_5.addWidget(self.checkBox)
+        self.pushButton = QtWidgets.QPushButton(self.tab_3)
+        self.pushButton.setMaximumSize(QtCore.QSize(75, 16777215))
+        self.pushButton.setObjectName("pushButton")
+        self.horizontalLayout_5.addWidget(self.pushButton)
+        self.verticalLayout_6.addLayout(self.horizontalLayout_5)
         self.neighbors = NeighborListTable(self.tab_3)
         self.neighbors.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.neighbors.setObjectName("neighbors")
@@ -730,7 +737,8 @@ class Ui_BelugaGUI(object):
         self.uwb_txpower_combobox.currentIndexChanged['int'].connect(self.boostp250_fine_gain.simple_power_update) # type: ignore
         self.uwb_txpower_combobox.currentIndexChanged['int'].connect(self.boostp125_coarse_gain.simple_power_update) # type: ignore
         self.uwb_txpower_combobox.currentIndexChanged['int'].connect(self.boostp125_fine_gain.simple_power_update) # type: ignore
-        self.drop_neighbors.toggled['bool'].connect(self.neighbors.remove_dropped_neighbors) # type: ignore
+        self.checkBox.toggled['bool'].connect(self.neighbors.remove_dropped_neighbors) # type: ignore
+        self.pushButton.pressed.connect(self.neighbors.clear) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(BelugaGUI)
 
     def retranslateUi(self, BelugaGUI):
@@ -909,7 +917,8 @@ class Ui_BelugaGUI(object):
         self.ranges_ranging_pushbutton.setText(_translate("BelugaGUI", "Start Ranging"))
         self.ranges_preamble.setText(_translate("BelugaGUI", "Preamble:"))
         self.ranges_preamble.setProperty("prefix", _translate("BelugaGUI", "Preamble"))
-        self.drop_neighbors.setText(_translate("BelugaGUI", "Remove Dropped Neighbors"))
+        self.checkBox.setText(_translate("BelugaGUI", "Remove dropped neighbors"))
+        self.pushButton.setText(_translate("BelugaGUI", "Clear"))
         item = self.neighbors.horizontalHeaderItem(0)
         item.setText(_translate("BelugaGUI", "ID"))
         item = self.neighbors.horizontalHeaderItem(1)
