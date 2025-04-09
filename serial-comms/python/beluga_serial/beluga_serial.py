@@ -229,6 +229,7 @@ class BelugaSerial:
 
         self._command_sent: Event = Event()
         self._reboot_done: Event = Event()
+        self._clear_neighbors: Event = Event()
 
         self._serial_lock: RLock = RLock()
 
@@ -330,6 +331,10 @@ class BelugaSerial:
     def __process_frames(self):
         while self._task_running:
             frame: BelugaFrame = self._batch_queue.get()
+
+            if self._clear_neighbors.is_set():
+                self._neighbors.clear()
+                self._clear_neighbors.clear()
 
             match frame.type:
                 case FrameType.UPDATES:
@@ -862,6 +867,7 @@ class BelugaSerial:
                 break
         if retries >= max_retries:
             raise RuntimeError("The processing task task is still hanging...")
+        self._neighbors.clear()
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
         """
@@ -1090,6 +1096,12 @@ class BelugaSerial:
         :return: None
         """
         self._time_resync = callback
+
+    def clear(self):
+        """
+        Clears the neighbor list
+        """
+        self._clear_neighbors.set()
 
 
 def unpack_beluga_status(response: str) -> BelugaStatus:

@@ -123,6 +123,7 @@ class BelugaGui:
         self.ui.ble_button.ble_update["bool"].connect(self.ui.ranges_ranging_pushbutton.update_ble_state)
         self.ui.uwb_button.uwb_update["bool"].connect(self.ui.ranges_ranging_pushbutton.update_uwb_state)
         self.ui.ranges_ranging_pushbutton.pressed.connect(self.toggle_ranging)
+        self.ui.clear_neighbors.pressed.connect(self.serial.clear)
 
     def run(self):
         self.window.show()

@@ -1900,14 +1900,14 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_5">
               <item>
-               <widget class="QCheckBox" name="checkBox">
+               <widget class="QCheckBox" name="drop_neighbors">
                 <property name="text">
                  <string>Remove dropped neighbors</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="pushButton">
+               <widget class="QPushButton" name="clear_neighbors">
                 <property name="maximumSize">
                  <size>
                   <width>75</width>
@@ -2894,7 +2894,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>checkBox</sender>
+   <sender>drop_neighbors</sender>
    <signal>toggled(bool)</signal>
    <receiver>neighbors</receiver>
    <slot>remove_dropped_neighbors(bool)</slot>
@@ -2910,7 +2910,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>clear_neighbors</sender>
    <signal>pressed()</signal>
    <receiver>neighbors</receiver>
    <slot>clear()</slot>
