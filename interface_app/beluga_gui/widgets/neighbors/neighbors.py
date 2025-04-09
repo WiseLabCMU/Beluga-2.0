@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional, Literal
+from pyqtgraph import PlotDataItem
 
 
 @dataclass(init=True)
@@ -14,9 +15,12 @@ class Neighbor:
 
 
 class NeighborHistory:
-    def __init__(self, save_history: Literal["distance", "rssi", "distance & rssi"], history_depth: int = 10000):
+    def __init__(self, save_history: Literal["distance", "rssi", "distance & rssi"], plot_data: PlotDataItem,
+                 history_depth: int = 10000):
         self._history_depth = history_depth
         self._depth = 0
+        self._dropped = False
+        self._plot = plot_data
 
         self._history_time: Optional[List[int]] = None
         self._history_distance: Optional[List[float]] = None
@@ -35,22 +39,34 @@ class NeighborHistory:
             raise ValueError(f"Unknown value: {save_history}")
 
     @property
-    def time(self):
+    def time(self) -> list[int]:
         if self._history_time is not None:
             return self._history_time
         raise AttributeError("This object is not saving time data")
 
     @property
-    def distance(self):
+    def distance(self) -> list[float]:
         if self._history_distance is not None:
             return self._history_distance
         raise AttributeError("This object is not saving distance data")
 
     @property
-    def rssi(self):
+    def rssi(self) -> list[int]:
         if self._history_rssi is not None:
             return self._history_rssi
         raise AttributeError("This object is not saving RSSI data")
+
+    @property
+    def dropped(self):
+        return self._dropped
+
+    @dropped.setter
+    def dropped(self, drop: bool):
+        self._dropped = drop
+
+    @property
+    def plot(self) -> PlotDataItem:
+        return self._plot
 
     def _update_time(self, timestamp):
         if self._history_time is not None:
