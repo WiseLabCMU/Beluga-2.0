@@ -89,12 +89,19 @@ class NeighborListTable(QTableWidget):
             self._neighbors[id_].dropped = True
             self._update_neighbor(self._neighbors[id_])
 
+    def _sort_list(self):
+        neighbors = list(self._neighbors.values())
+        neighbors.sort(key=lambda neighbor_: neighbor_.id + (65536 * int(neighbor_.dropped)))
+        for row, neighbor in enumerate(neighbors):
+            self._neighbors[neighbor.id].row = row
+            self._update_neighbor(self._neighbors[neighbor.id])
+
     def update_neighbor_list(self, neighbor_list: Optional[dict] = None):
         if neighbor_list is not None:
             self._update_neighbor_list(neighbor_list)
         if self._drop_neighbors:
             self._prune_dropped_neighbors()
-        # TODO: Sort table
+        self._sort_list()
 
     def update_neighbors(self, updates: dict):
         for id_ in updates:
