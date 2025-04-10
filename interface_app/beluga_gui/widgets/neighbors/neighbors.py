@@ -16,7 +16,7 @@ class Neighbor:
 
 class NeighborHistory:
     def __init__(self, save_history: Literal["distance", "rssi", "distance & rssi"], plot_data: PlotDataItem,
-                 history_depth: int = 10000):
+                 history_depth: int = 1000):
         self._history_depth = history_depth
         self._depth = 0
         self._dropped = False
@@ -32,7 +32,7 @@ class NeighborHistory:
         elif save_history == "rssi":
             self._history_time = []
             self._history_rssi = []
-        elif save_history == "distance_v_rssi":
+        elif save_history == "distance & rssi":
             self._history_distance = []
             self._history_rssi = []
         else:
@@ -70,21 +70,22 @@ class NeighborHistory:
 
     def _update_time(self, timestamp):
         if self._history_time is not None:
-            self._history_time.append(timestamp)
+            # Timestamps are in ms
+            self._history_time.append(timestamp / 1000)
             if self._depth > self._history_depth:
-                del self._history_time[0]
+                self._history_time = self._history_time[1:]
 
     def _update_distance(self, range_):
         if self._history_distance is not None:
             self._history_distance.append(range_)
             if self._depth > self._history_depth:
-                del self._history_distance[0]
+                self._history_distance = self._history_distance[1:]
 
     def _update_rssi(self, rssi):
         if self._history_rssi is not None:
             self._history_rssi.append(rssi)
             if self._depth > self._history_depth:
-                del self._history_rssi[0]
+                self._history_rssi = self._history_rssi[1:]
 
     def update_history(self, updates: dict):
         self._depth += 1

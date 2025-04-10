@@ -1698,7 +1698,7 @@
           <item row="0" column="0">
            <widget class="BelugaConfigLabel" name="ranges_id">
             <property name="text">
-             <string>Node ID: XXXXX</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Node ID</string>
@@ -1708,7 +1708,7 @@
           <item row="0" column="2">
            <widget class="BelugaConfigLabel" name="ranges_channel">
             <property name="text">
-             <string>Channel: X</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Channel</string>
@@ -1718,7 +1718,7 @@
           <item row="1" column="2">
            <widget class="BelugaConfigLabel" name="ranges_datarate">
             <property name="text">
-             <string>Data Rate: XXXXXHz</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Data Rate</string>
@@ -1728,7 +1728,7 @@
           <item row="0" column="4">
            <widget class="BelugaConfigLabel" name="ranges_timeout">
             <property name="text">
-             <string>Timeout: XXXXX ms</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Timeout</string>
@@ -1741,7 +1741,7 @@
           <item row="0" column="5">
            <widget class="BelugaConfigLabel" name="ranges_ranging_mode">
             <property name="text">
-             <string>Ranging Mode: TWR</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Ranging Mode</string>
@@ -1757,7 +1757,7 @@
           <item row="0" column="3">
            <widget class="BelugaConfigLabel" name="ranges_txpower">
             <property name="text">
-             <string>TX Power: 0xXXXXXXXX</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>TX Power</string>
@@ -1770,7 +1770,7 @@
           <item row="1" column="0">
            <widget class="BelugaConfigLabel" name="ranges_power_amp">
             <property name="text">
-             <string>Power Amp: XXXXXXXXXXXXXXXXX</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Power Amp</string>
@@ -1780,7 +1780,7 @@
           <item row="1" column="3">
            <widget class="BelugaConfigLabel" name="ranges_pulserate">
             <property name="text">
-             <string>Pulse Rate: XX MHz</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Pulse Rate</string>
@@ -1790,7 +1790,7 @@
           <item row="1" column="1">
            <widget class="BelugaConfigLabel" name="ranges_phr">
             <property name="text">
-             <string>PHR: XXXXXXXXXXX</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>PHR</string>
@@ -1806,7 +1806,7 @@
           <item row="0" column="1">
            <widget class="BelugaConfigLabel" name="ranges_poll_rate">
             <property name="text">
-             <string>Polling Rate: XXXXX ms</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Polling Rate</string>
@@ -1819,7 +1819,7 @@
           <item row="1" column="4">
            <widget class="BelugaConfigLabel" name="ranges_pac">
             <property name="text">
-             <string>PAC size: XX bytes</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>PAC size</string>
@@ -1829,7 +1829,7 @@
           <item row="1" column="5">
            <widget class="BelugaConfigLabel" name="ranges_sfd">
             <property name="text">
-             <string>SFD: XXXXXXXXXXX</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>SFD</string>
@@ -1845,7 +1845,7 @@
           <item row="2" column="0">
            <widget class="BelugaConfigLabel" name="ranges_evict">
             <property name="text">
-             <string>Evict: XXXXXXXXXXXXXXXXXXXXXXXXXX</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Evict</string>
@@ -1855,7 +1855,7 @@
           <item row="2" column="1">
            <widget class="BelugaConfigLabel" name="ranges_pan">
             <property name="text">
-             <string>Pan ID: 0xXXXX</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>PAN ID</string>
@@ -1875,7 +1875,7 @@
           <item row="2" column="2">
            <widget class="BelugaConfigLabel" name="ranges_preamble">
             <property name="text">
-             <string>Preamble:</string>
+             <string/>
             </property>
             <property name="prefix" stdset="0">
              <string>Preamble</string>
@@ -2317,18 +2317,27 @@
    <extends>QWidget</extends>
    <header>widgets.h</header>
    <container>1</container>
+   <slots>
+    <slot>clear_neighbors()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>RssiGraph</class>
    <extends>QWidget</extends>
    <header>widgets.h</header>
    <container>1</container>
+   <slots>
+    <slot>clear_neighbors()</slot>
+   </slots>
   </customwidget>
   <customwidget>
    <class>DistanceVRssiGraph</class>
    <extends>QWidget</extends>
    <header>widgets.h</header>
    <container>1</container>
+   <slots>
+    <slot>clear_neighbors()</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -2990,22 +2999,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>clear_neighbors</sender>
-   <signal>pressed()</signal>
-   <receiver>distance_graph</receiver>
-   <slot>clear()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1179</x>
-     <y>172</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1171</x>
-     <y>228</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>drop_neighbors</sender>
    <signal>toggled(bool)</signal>
    <receiver>rssi_graph</receiver>
@@ -3018,22 +3011,6 @@
     <hint type="destinationlabel">
      <x>240</x>
      <y>246</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>clear_neighbors</sender>
-   <signal>pressed()</signal>
-   <receiver>rssi_graph</receiver>
-   <slot>clear()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1173</x>
-     <y>171</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1165</x>
-     <y>234</y>
     </hint>
    </hints>
   </connection>
@@ -3056,16 +3033,48 @@
   <connection>
    <sender>clear_neighbors</sender>
    <signal>pressed()</signal>
-   <receiver>rssi_v_distance</receiver>
-   <slot>clear()</slot>
+   <receiver>distance_graph</receiver>
+   <slot>clear_neighbors()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1173</x>
-     <y>164</y>
+     <x>1179</x>
+     <y>174</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1160</x>
-     <y>256</y>
+     <x>1182</x>
+     <y>246</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clear_neighbors</sender>
+   <signal>pressed()</signal>
+   <receiver>rssi_graph</receiver>
+   <slot>clear_neighbors()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1150</x>
+     <y>165</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1157</x>
+     <y>232</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clear_neighbors</sender>
+   <signal>pressed()</signal>
+   <receiver>rssi_v_distance</receiver>
+   <slot>clear_neighbors()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1149</x>
+     <y>171</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1151</x>
+     <y>237</y>
     </hint>
    </hints>
   </connection>

@@ -102,12 +102,16 @@ class BelugaGui:
         if update:
             self.ui.neighbors.update_neighbor_list(neighbors)
             self.ui.distance_graph.update_neighbor_list(neighbors)
+            self.ui.rssi_graph.update_neighbor_list(neighbors)
+            self.ui.rssi_v_distance.update_neighbor_list(neighbors)
 
     def update_neighbors(self):
         updates = self.serial.get_ranges()
         if updates:
             self.ui.neighbors.update_neighbors(updates)
             self.ui.distance_graph.update_neighbors(updates)
+            self.ui.rssi_graph.update_neighbors(updates)
+            self.ui.rssi_v_distance.update_neighbors(updates)
 
     def toggle_ranging(self):
         if self.ui.ranges_ranging_pushbutton.ranging:
