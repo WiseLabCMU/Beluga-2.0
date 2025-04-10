@@ -1,8 +1,8 @@
 import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication
-from PyQt5.QtCore import QThread, QObject, QThreadPool, QRunnable, QMutex
+from PyQt5.QtCore import QThread, QObject, QThreadPool, QRunnable, QTimer
 from typing import Optional, Callable, Iterable, Tuple
-from beluga_gui import Ui_BelugaGUI, NeighborListTable
+from beluga_gui import Ui_BelugaGUI
 from beluga_serial import BelugaSerial, BelugaSerialAttr, BelugaStatus, unpack_beluga_version
 from copy import deepcopy
 import time
@@ -10,10 +10,7 @@ from serial import Serial, SerialException
 import math
 
 
-
 class BelugaGui:
-    neighbor_lock = QMutex()
-
     class PortUpdateCheck(QThread):
         def __init__(self, serial: BelugaSerial, update: Callable[[Iterable[str]], None],
                      parent: Optional[QObject] = None):
@@ -47,43 +44,6 @@ class BelugaGui:
                     self._callback(prev_iter)
                 time.sleep(1.0)
 
-    class NeighborUpdateThread(QThread):
-        def __init__(self, serial: BelugaSerial, table: NeighborListTable,
-                     lock: QMutex, parent: Optional[QObject] = None, neighbor_handling: bool = False):
-            super().__init__(parent)
-            self._serial = serial
-            self._table = table
-            self._manage_neighbors = neighbor_handling
-            self._lock = lock
-
-        def update_neighbor_list(self):
-            while True:
-                update, neighbors = self._serial.get_neighbors()
-                if update:
-                    self._lock.lock()
-                    self._table.update_neighbor_list(neighbors)
-                    self._lock.unlock()
-                time.sleep(0.1)
-
-        def update_neighbors(self):
-            while True:
-                updates = self._serial.get_ranges()
-                if updates:
-                    self._lock.lock()
-                    self._table.update_neighbors(updates)
-                    self._lock.unlock()
-                time.sleep(0.1)
-
-        def run(self):
-            try:
-                if self._manage_neighbors:
-                    self.update_neighbor_list()
-                else:
-                    self.update_neighbors()
-            except Exception as e:
-                print(e)
-                sys.exit(1)
-
     def __init__(self, argv):
         self.app = QApplication(argv)
         self.window = QMainWindow()
@@ -92,10 +52,6 @@ class BelugaGui:
         self.serial = BelugaSerial(BelugaSerialAttr(auto_connect=False))
         self._port_update = self.PortUpdateCheck(self.serial, self.ui.device_combobox.update_device_list)
         self._port_update.start()
-        self._neighbor_list_manager = self.NeighborUpdateThread(self.serial, self.ui.neighbors, self.neighbor_lock, neighbor_handling=True)
-        self._neighbor_updates = self.NeighborUpdateThread(self.serial, self.ui.neighbors, self.neighbor_lock)
-        self._neighbor_list_manager.start()
-        self._neighbor_updates.start()
         self._connected = False
         self.ui.connect_button.pressed.connect(self.update_connection_state)
         self.ui.ble_button.pressed.connect(self.update_ble)
@@ -125,11 +81,33 @@ class BelugaGui:
         self.ui.ranges_ranging_pushbutton.pressed.connect(self.toggle_ranging)
         self.ui.clear_neighbors.pressed.connect(self.serial.clear)
 
+        self._neighbor_list_update_timer = QTimer()
+        self._neighbor_list_update_timer.setInterval(50)
+        self._neighbor_list_update_timer.timeout.connect(self.update_neighbor_list)
+        self._neighbor_list_update_timer.start()
+
+        self._neighbor_updates_timer = QTimer()
+        self._neighbor_updates_timer.setInterval(100)
+        self._neighbor_updates_timer.timeout.connect(self.update_neighbors)
+        self._neighbor_updates_timer.start()
+
     def run(self):
         self.window.show()
         ret = self.app.exec_()
         self.serial.close()
         sys.exit(ret)
+
+    def update_neighbor_list(self):
+        update, neighbors = self.serial.get_neighbors()
+        if update:
+            self.ui.neighbors.update_neighbor_list(neighbors)
+            self.ui.distance_graph.update_neighbor_list(neighbors)
+
+    def update_neighbors(self):
+        updates = self.serial.get_ranges()
+        if updates:
+            self.ui.neighbors.update_neighbors(updates)
+            self.ui.distance_graph.update_neighbors(updates)
 
     def toggle_ranging(self):
         if self.ui.ranges_ranging_pushbutton.ranging:
