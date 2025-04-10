@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import List, Optional, Literal
-from pyqtgraph import PlotDataItem
+from typing import List, Optional, Literal, Union
+from pyqtgraph import PlotDataItem, ScatterPlotItem
 
 
 @dataclass(init=True)
@@ -15,8 +15,8 @@ class Neighbor:
 
 
 class NeighborHistory:
-    def __init__(self, save_history: Literal["distance", "rssi", "distance & rssi"], plot_data: PlotDataItem,
-                 history_depth: int = 1000):
+    def __init__(self, save_history: Literal["distance", "rssi", "distance & rssi"],
+                 plot_data: Union[PlotDataItem, ScatterPlotItem], history_depth: int = 1000):
         self._history_depth = history_depth
         self._depth = 0
         self._dropped = False
@@ -65,7 +65,7 @@ class NeighborHistory:
         self._dropped = drop
 
     @property
-    def plot(self) -> PlotDataItem:
+    def plot(self) -> Union[PlotDataItem, ScatterPlotItem]:
         return self._plot
 
     def _update_time(self, timestamp):

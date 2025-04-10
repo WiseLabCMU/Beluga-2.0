@@ -1,4 +1,4 @@
-from pyqtgraph import PlotWidget, mkPen
+from pyqtgraph import PlotWidget, mkPen, ScatterPlotItem
 from PyQt5.QtWidgets import QWidget
 from typing import Optional, Any, Dict
 from .neighbors import NeighborHistory
@@ -64,12 +64,10 @@ class BelugaGraph(PlotWidget):
         # Must be defined in subclass
         pass
 
-
     def clear_neighbors(self):
         for id_ in self._neighbors:
             self.removeItem(self._neighbors[id_].plot)
         self._neighbors.clear()
-
 
     def remove_dropped_neighbors(self, state):
         self._drop_neighbors = state
@@ -126,10 +124,11 @@ class DistanceVRssiGraph(BelugaGraph):
     def _update_neighbor_list(self, neighbor_list: dict):
         missing_ids, marker, color = super()._update_neighbor_list(neighbor_list)
         for id_ in missing_ids:
-            self._neighbors[id_] = NeighborHistory("distance & rssi", self.plot([], [], name=f"Node ID {id_}",
+            self._neighbors[id_] = NeighborHistory("distance & rssi", ScatterPlotItem(name=f"Node ID {id_}",
                                                                      pen=mkPen(color), symbol=marker,
                                                                      symbolSize=10,
                                                                      symbolBrush=color))
+            self.addItem(self._neighbors[id_].plot)
 
     def update_neighbors(self, neighbor_list: dict):
         for id_ in neighbor_list:
