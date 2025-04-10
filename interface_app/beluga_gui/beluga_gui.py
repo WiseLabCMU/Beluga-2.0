@@ -649,6 +649,7 @@ class Ui_BelugaGUI(object):
         self.ranges_pan.setObjectName("ranges_pan")
         self.gridLayout_2.addWidget(self.ranges_pan, 2, 1, 1, 1)
         self.ranges_ranging_pushbutton = StartRangingButton(self.Ranges)
+        self.ranges_ranging_pushbutton.setEnabled(False)
         self.ranges_ranging_pushbutton.setObjectName("ranges_ranging_pushbutton")
         self.gridLayout_2.addWidget(self.ranges_ranging_pushbutton, 2, 5, 1, 1)
         self.ranges_preamble = BelugaConfigLabel(self.Ranges)

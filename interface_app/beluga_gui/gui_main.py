@@ -507,6 +507,7 @@ class BelugaGui:
                 sys.exit(1)
             self.ui.uwb_txpower_combobox.disconnecting = True
             self.ui.connect_button.update_connected(False, "")
+            self.ui.ranges_ranging_pushbutton.update_connected_state(False)
             self._connected = False
             self.ui.uwb_txpower_combobox.disconnecting = False
         else:
@@ -524,6 +525,7 @@ class BelugaGui:
             else:
                 status, error = self._gather_beluga_data()
                 self.ui.connect_button.update_connected(status, error)
+                self.ui.ranges_ranging_pushbutton.update_connected_state(status)
                 self._connected = status
 
 

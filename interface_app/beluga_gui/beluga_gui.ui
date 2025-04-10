@@ -1867,6 +1867,9 @@
           </item>
           <item row="2" column="5">
            <widget class="StartRangingButton" name="ranges_ranging_pushbutton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Start Ranging</string>
             </property>

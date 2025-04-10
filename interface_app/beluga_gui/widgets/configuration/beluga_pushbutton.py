@@ -94,7 +94,12 @@ class StartRangingButton(BelugaPushButton, BelugaWidgetBase):
             self.setText("Stop Ranging")
         else:
             self.setText("Start Ranging")
+        self.setEnabled(self._connected)
 
     @property
     def ranging(self):
         return self._ranging
+
+    def update_connected_state(self, state):
+        self._connected = state
+        self.update()
