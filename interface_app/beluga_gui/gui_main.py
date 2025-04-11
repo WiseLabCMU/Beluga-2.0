@@ -11,6 +11,7 @@ import time
 from serial import Serial, SerialException
 import math
 import signal
+import json
 
 
 class BelugaGui:
@@ -57,7 +58,8 @@ class BelugaGui:
         def save(self, current_configs):
             messages.InfoMessage(self._capture_progress.parent(), message="Data capture complete")
             with open(self._file, 'w') as f:
-                # TODO save configuration
+                f.write(current_configs)
+                f.write("----------------------------------------\n")
                 for sample in self._captured_data:
                     for id_ in sample:
                         f.write(f"{id_},{sample[id_]['RSSI']},{sample[id_]['RANGE']}\n")
@@ -67,7 +69,10 @@ class BelugaGui:
             self._capture_progress.setValue(len(self._captured_data))
 
         def done(self):
-            return (len(self._captured_data) >= self._max_length) or self._capture_progress.wasCanceled()
+            done = (len(self._captured_data) >= self._max_length) or self._capture_progress.wasCanceled()
+            if done:
+                self._capture_progress.stop()
+            return done
 
         @property
         def canceled(self):
@@ -147,7 +152,18 @@ class BelugaGui:
 
     def save_captured_data(self):
         if not self._data_capture.canceled:
-            self._data_capture.save(None)
+            configs = f"Node ID: {self.ui.node_id_line_edit.text()}\n" \
+                      f"Channel: {self.ui.channel_combobox.currentText()}\n" \
+                      f"DS-TWR: {self.ui.ranging_checkbox.isChecked()}\n" \
+                      f"Proprietary SFD: {self.ui.sfd_checkbox.isChecked()}\n" \
+                      f"External Amplifiers: {self.ui.extern_amp_combobox.currentText()}\n" \
+                      f"Data rate: {self.ui.uwb_preamble_combobox.currentText()}\n" \
+                      f"Pulse rate: {self.ui.uwb_pulserate_combobox.currentText()}\n" \
+                      f"Proprietary PHR: {self.ui.phr_checkbox.isChecked()}\n" \
+                      f"Preamble length: {self.ui.uwb_preamble_combobox.currentText()}\n" \
+                      f"PAC size: {self.ui.uwb_pac_combobox.currentText()}\n" \
+                      f"UWB TX power: {self.serial.txpower()}\n"
+            self._data_capture.save(configs)
         self._data_capture = None
         self._capturing_data = False
 

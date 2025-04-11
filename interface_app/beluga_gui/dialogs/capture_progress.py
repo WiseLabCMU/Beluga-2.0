@@ -16,8 +16,13 @@ class CaptureProgress(QProgressDialog):
         self.setMaximum(samples)
         self.setAutoClose(True)
         self._timeout = QTimer()
-        self._timeout.singleShot(timeout * 1000 * 60, self.timeout)
+        self._timeout.timeout.connect(self.timeout)
+        self._timeout.setSingleShot(True)
+        self._timeout.start(timeout * 1000 * 60)
 
     def timeout(self):
         self.cancel()
         ErrorMessage(self, "Timeout", "Data capture timed out")
+
+    def stop(self):
+        self._timeout.stop()
