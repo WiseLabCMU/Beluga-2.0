@@ -40,7 +40,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="trial_name"/>
+      <widget class="QLineEdit" name="trial_name">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="file_select">

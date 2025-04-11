@@ -10,6 +10,7 @@ from copy import deepcopy
 import time
 from serial import Serial, SerialException
 import math
+import signal
 
 
 class BelugaGui:
@@ -96,10 +97,14 @@ class BelugaGui:
         self.ui.record_data_button.pressed.connect(self.start_data_recording)
 
     def run(self):
+        signal.signal(signal.SIGINT, self.quit)
         self.window.show()
         ret = self.app.exec_()
         self.serial.close()
         sys.exit(ret)
+
+    def quit(self, sig, frame):
+        self.app.quit()
 
     def start_data_recording(self):
         dlg = DataGatheringDialog(self.window)

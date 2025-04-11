@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(255, 176)
+        Dialog.resize(324, 176)
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
         spacerItem = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
@@ -25,8 +25,13 @@ class Ui_Dialog(object):
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.trial_name = QtWidgets.QLineEdit(Dialog)
+        self.trial_name.setReadOnly(True)
         self.trial_name.setObjectName("trial_name")
         self.horizontalLayout.addWidget(self.trial_name)
+        self.file_select = QtWidgets.QPushButton(Dialog)
+        self.file_select.setMaximumSize(QtCore.QSize(35, 16777215))
+        self.file_select.setObjectName("file_select")
+        self.horizontalLayout.addWidget(self.file_select)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem1)
         self.verticalLayout.addLayout(self.horizontalLayout)
@@ -80,7 +85,8 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Data Collection"))
-        self.label.setText(_translate("Dialog", "Trial Name"))
+        self.label.setText(_translate("Dialog", "Trial log file"))
+        self.file_select.setText(_translate("Dialog", "..."))
         self.label_4.setText(_translate("Dialog", "Samples"))
         self.label_2.setText(_translate("Dialog", "Timeout"))
         self.label_3.setText(_translate("Dialog", "minutes"))
