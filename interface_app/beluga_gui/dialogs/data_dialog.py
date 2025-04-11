@@ -17,7 +17,7 @@ class DataGatheringDialog(QDialog):
         dialog = FileDialog(self, [FileFilter("meas", "Measurement files"), FileFilter("log", "Log files")])
         file_path = dialog.exec()
         self.ui.trial_name.setText(file_path)
-
+        self._file = file_path
 
     def accept(self):
         if not self.ui.trial_name.text():
@@ -29,3 +29,11 @@ class DataGatheringDialog(QDialog):
     @property
     def save_file(self):
         return self._file
+
+    @property
+    def samples(self):
+        return self.ui.samples.value()
+
+    @property
+    def timeout(self):
+        return self.ui.timeout.value()
