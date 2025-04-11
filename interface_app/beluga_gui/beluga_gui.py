@@ -656,7 +656,8 @@ class Ui_BelugaGUI(object):
         self.ranges_preamble.setText("")
         self.ranges_preamble.setObjectName("ranges_preamble")
         self.gridLayout_2.addWidget(self.ranges_preamble, 2, 2, 1, 1)
-        self.record_data_button = QtWidgets.QPushButton(self.Ranges)
+        self.record_data_button = CaptureDataBtn(self.Ranges)
+        self.record_data_button.setEnabled(False)
         self.record_data_button.setObjectName("record_data_button")
         self.gridLayout_2.addWidget(self.record_data_button, 2, 4, 1, 1)
         self.verticalLayout_4.addLayout(self.gridLayout_2)
@@ -971,4 +972,4 @@ class Ui_BelugaGUI(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("BelugaGUI", "RSSI Graph"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("BelugaGUI", "RSSI vs Distance"))
         self.TerminalTab.setTabText(self.TerminalTab.indexOf(self.Ranges), _translate("BelugaGUI", "Ranges"))
-from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, DistanceGraph, DistanceVRssiGraph, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NeighborListTable, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, RssiGraph, SettingsWidget, StartRangingButton, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox
+from widgets import AmplifierComboBox, AntennaCheckBox, ApplyPowerButton, BelugaConfigLabel, BelugaLabel, BleButton, BootModeComboBox, CaptureDataBtn, ChannelComboBox, CoarseGainComboBox, DeviceBar, DeviceComboBox, DeviceConnectButton, DistanceGraph, DistanceVRssiGraph, FineGainDoubleSpinBox, LedCheckBox, NeighborEvictionSchemeComboBox, NeighborListTable, NodeIdLineEdit, PollRateLineEdit, RangingCheckBox, RebootButton, RssiGraph, SettingsWidget, StartRangingButton, TimeoutLineEdit, UwbButton, UwbCustomTxPower, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPanIdLineEdit, UwbPhrCheckBox, UwbPreambleLengthComboBox, UwbPulseRateComboBox, UwbSfdCheckBox, UwbTxPowerComboBox

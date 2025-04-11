@@ -1886,7 +1886,10 @@
            </widget>
           </item>
           <item row="2" column="4">
-           <widget class="QPushButton" name="record_data_button">
+           <widget class="CaptureDataBtn" name="record_data_button">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Record Data</string>
             </property>
@@ -2348,6 +2351,11 @@
    <slots>
     <slot>clear_neighbors()</slot>
    </slots>
+  </customwidget>
+  <customwidget>
+   <class>CaptureDataBtn</class>
+   <extends>QPushButton</extends>
+   <header>widgets.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

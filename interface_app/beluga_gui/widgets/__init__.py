@@ -3,7 +3,8 @@ from .configuration.beluga_combobox import AmplifierComboBox, BootModeComboBox, 
     NeighborEvictionSchemeComboBox, UwbDataRateComboBox, UwbPacSizeComboBox, UwbPreambleLengthComboBox, \
     UwbPulseRateComboBox, UwbTxPowerComboBox, CoarseGainComboBox
 from .configuration.beluga_line_edit import NodeIdLineEdit, PollRateLineEdit, TimeoutLineEdit, UwbPanIdLineEdit
-from .configuration.beluga_pushbutton import ApplyPowerButton, BleButton, RebootButton, UwbButton, StartRangingButton
+from .configuration.beluga_pushbutton import ApplyPowerButton, BleButton, RebootButton, UwbButton, StartRangingButton, \
+    CaptureDataBtn
 from .configuration.beluga_widget import SettingsWidget, UwbCustomTxPower
 from .configuration.beluga_label import BelugaLabel, BelugaConfigLabel
 from .configuration.beluga_double_spinbox import FineGainDoubleSpinBox

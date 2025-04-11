@@ -103,3 +103,12 @@ class StartRangingButton(BelugaPushButton, BelugaWidgetBase):
     def update_connected_state(self, state):
         self._connected = state
         self.update()
+
+
+class CaptureDataBtn(BelugaPushButton, BelugaWidgetBase):
+    def update(self):
+        self.setEnabled(self._connected)
+
+    def update_connected_state(self, state):
+        self._connected = state
+        self.update()
