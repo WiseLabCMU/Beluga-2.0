@@ -12,7 +12,7 @@ class DataGatheringDialog(QDialog):
 
     def accept(self):
         if not self.ui.trial_name.text():
-            ErrorMessage("File input", "Please enter file name", self)
+            ErrorMessage(self, "File input", "Please enter file name")
             self.ui.trial_name.setFocus()
             return
         super().accept()

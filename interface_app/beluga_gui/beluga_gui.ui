@@ -1885,6 +1885,13 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="4">
+           <widget class="QPushButton" name="record_data_button">
+            <property name="text">
+             <string>Record Data</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>

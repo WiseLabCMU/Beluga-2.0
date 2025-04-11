@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import QThread, QObject, QThreadPool, QRunnable, QTimer
 from typing import Optional, Callable, Iterable, Tuple
 from beluga_gui import Ui_BelugaGUI
+from dialogs import DataGatheringDialog
+import dialogs.messages as messages
 from beluga_serial import BelugaSerial, BelugaSerialAttr, BelugaStatus, unpack_beluga_version
 from copy import deepcopy
 import time
@@ -91,11 +93,20 @@ class BelugaGui:
         self._neighbor_updates_timer.timeout.connect(self.update_neighbors)
         self._neighbor_updates_timer.start()
 
+        self.ui.record_data_button.pressed.connect(self.start_data_recording)
+
     def run(self):
         self.window.show()
         ret = self.app.exec_()
         self.serial.close()
         sys.exit(ret)
+
+    def start_data_recording(self):
+        dlg = DataGatheringDialog(self.window)
+        if dlg.exec():
+            # TODO
+            pass
+
 
     def update_neighbor_list(self):
         update, neighbors = self.serial.get_neighbors()
@@ -502,8 +513,7 @@ class BelugaGui:
             try:
                 self.serial.close()
             except Exception as e:
-                # TODO: Bring up error window
-                print(e)
+                messages.ErrorMessage(self.window, "FATAL", f"Unable to close serial connection: {e}")
                 sys.exit(1)
             self.ui.uwb_txpower_combobox.disconnecting = True
             self.ui.connect_button.update_connected(False, "")
@@ -516,9 +526,7 @@ class BelugaGui:
             try:
                 self.serial.open_target(port_)
             except FileNotFoundError:
-                # TODO: Error window
-                print(port_)
-                print("Port not found")
+                messages.ErrorMessage(self.window, "Open error", "Unable to open port")
             except ValueError:
                 self.serial.close()
                 self.ui.connect_button.update_connected(False, "Unable to communicate with port")
