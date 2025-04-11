@@ -154,6 +154,10 @@ class BelugaGui:
 
     def record_sample(self, sample):
         if self._capturing_data:
+            if self._data_capture.done():
+                self._data_capture = None
+                self._capturing_data = False
+                return
             self._data_capture.capture_sample(sample)
             if self._data_capture.done():
                 self.save_captured_data()

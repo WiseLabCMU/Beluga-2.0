@@ -8,7 +8,6 @@ class CaptureProgress(QProgressDialog):
     def __init__(self, parent: Optional[QWidget] = None, samples: int = 1000, timeout: int = 5):
         super().__init__(parent)
         self._samples = samples
-        self._timeout = timeout
         self.setWindowModality(Qt.WindowModal)
         self.setWindowTitle("Ranging")
         self.setLabelText("Capturing ranges...")
@@ -16,3 +15,9 @@ class CaptureProgress(QProgressDialog):
         self.setMinimumDuration(0)
         self.setMaximum(samples)
         self.setAutoClose(True)
+        self._timeout = QTimer()
+        self._timeout.singleShot(timeout * 1000 * 60, self.timeout)
+
+    def timeout(self):
+        self.cancel()
+        ErrorMessage(self, "Timeout", "Data capture timed out")
