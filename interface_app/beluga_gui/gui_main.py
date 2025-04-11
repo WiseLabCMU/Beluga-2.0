@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import QThread, QObject, QThreadPool, QRunnable, QTimer
 from typing import Optional, Callable, Iterable, Tuple
 from beluga_gui import Ui_BelugaGUI
-from dialogs import DataGatheringDialog
+from dialogs import DataGatheringDialog, CaptureProgress
 import dialogs.messages as messages
 from beluga_serial import BelugaSerial, BelugaSerialAttr, BelugaStatus, unpack_beluga_version
 from copy import deepcopy
@@ -46,6 +46,32 @@ class BelugaGui:
                     prev_iter = deepcopy(eligible)
                     self._callback(prev_iter)
                 time.sleep(1.0)
+
+    class CaptureData:
+        def __init__(self, parent, save_file, samples, timeout):
+            self._capture_progress = CaptureProgress(parent, samples, timeout)
+            self._file = save_file
+            self._captured_data = []
+            self._max_length = samples
+
+        def save(self, current_configs):
+            messages.InfoMessage(self._capture_progress.parent(), message="Data capture complete")
+            with open(self._file, 'w') as f:
+                # TODO save configuration
+                for sample in self._captured_data:
+                    for id_ in sample:
+                        f.write(f"{id_},{sample[id_]['RSSI']},{sample[id_]['RANGE']}\n")
+
+        def capture_sample(self, sample):
+            self._captured_data.append(sample)
+            self._capture_progress.setValue(len(self._captured_data))
+
+        def done(self):
+            return (len(self._captured_data) >= self._max_length) or self._capture_progress.wasCanceled()
+
+        @property
+        def canceled(self):
+            return self._capture_progress.wasCanceled()
 
     def __init__(self, argv):
         self.app = QApplication(argv)
@@ -95,6 +121,10 @@ class BelugaGui:
         self._neighbor_updates_timer.start()
 
         self.ui.record_data_button.pressed.connect(self.start_data_recording)
+        self._logging = False
+
+        self._capturing_data = False
+        self._data_capture: Optional[BelugaGui.CaptureData] = None
 
     def run(self):
         signal.signal(signal.SIGINT, self.quit)
@@ -109,9 +139,24 @@ class BelugaGui:
     def start_data_recording(self):
         dlg = DataGatheringDialog(self.window)
         if dlg.exec():
-            # TODO
-            pass
+            if not self.ui.ranges_ranging_pushbutton.ranging:
+                # Start ranging
+                self.ui.ranges_ranging_pushbutton.pressed.emit()
+            self._data_capture = self.CaptureData(self.window, dlg.save_file, dlg.samples, dlg.timeout)
+            self._capturing_data = True
 
+    def save_captured_data(self):
+        if not self._data_capture.canceled:
+            self._data_capture.save(None)
+        self._data_capture = None
+        self._capturing_data = False
+
+
+    def record_sample(self, sample):
+        if self._capturing_data:
+            self._data_capture.capture_sample(sample)
+            if self._data_capture.done():
+                self.save_captured_data()
 
     def update_neighbor_list(self):
         update, neighbors = self.serial.get_neighbors()
@@ -128,6 +173,7 @@ class BelugaGui:
             self.ui.distance_graph.update_neighbors(updates)
             self.ui.rssi_graph.update_neighbors(updates)
             self.ui.rssi_v_distance.update_neighbors(updates)
+            self.record_sample(updates)
 
     def toggle_ranging(self):
         if self.ui.ranges_ranging_pushbutton.ranging:
