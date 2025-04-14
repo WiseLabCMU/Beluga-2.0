@@ -39,3 +39,41 @@ class BelugaConfigLabel(QLabel):
             else:
                 new = self.property("false_str")
             self.setText(f"{prefix}: {new}")
+
+
+class BelugaStatusLabel(QLabel):
+    def __init__(self, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self._connected = False
+        self._port = ""
+        self._version = ""
+        self.setText("Disconnected")
+
+    def set_connected(self, state):
+        self._connected = state
+        self.update()
+
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def port(self, new_port):
+        self._port = new_port
+        self.update()
+
+    @property
+    def version(self):
+        return self._version
+
+    @version.setter
+    def version(self, new_version):
+        self._version = new_version
+        self.update()
+
+    def update(self):
+        if self._connected:
+            status = f"Connected to {self._port}. Node version {self._version}"
+        else:
+            status = "Disconnected"
+        self.setText(status)

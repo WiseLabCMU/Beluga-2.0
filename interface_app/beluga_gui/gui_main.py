@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import QThread, QObject, QThreadPool, QRunnable, QTimer
 from typing import Optional, Callable, Iterable, Tuple
 from beluga_gui import Ui_BelugaGUI
+from widgets import BelugaStatusLabel
 from dialogs import DataGatheringDialog, CaptureProgress
 import dialogs.messages as messages
 from beluga_serial import BelugaSerial, BelugaSerialAttr, BelugaStatus, unpack_beluga_version
@@ -127,6 +128,9 @@ class BelugaGui:
 
         self.ui.record_data_button.pressed.connect(self.start_data_recording)
         self._logging = False
+
+        self._status_label = BelugaStatusLabel(self.ui.statusbar)
+        self.ui.statusbar.addWidget(self._status_label)
 
         self._capturing_data = False
         self._data_capture: Optional[BelugaGui.CaptureData] = None
@@ -325,6 +329,10 @@ class BelugaGui:
             self.ui.boostp125_fine_gain.update_power(power)
         self.ui.connect_status.setText(resp)
         self.ui.ranges_txpower.update_config(power)
+
+    def refresh_node_version(self):
+        resp = self.serial.version()
+        self._status_label.version = resp.split()[0]
 
     def update_ble(self):
         status = self.serial.status()
@@ -576,6 +584,7 @@ class BelugaGui:
 
         self.ui.ble_button.set_ble_state(status.ble)
         self.ui.uwb_button.set_uwb_state(status.uwb)
+        self.refresh_node_version()
 
         return True, ""
 
@@ -590,6 +599,7 @@ class BelugaGui:
             self.ui.connect_button.update_connected(False, "")
             self.ui.ranges_ranging_pushbutton.update_connected_state(False)
             self.ui.record_data_button.update_connected_state(False)
+            self._status_label.set_connected(False)
             self._connected = False
             self.ui.uwb_txpower_combobox.disconnecting = False
         else:
@@ -608,6 +618,8 @@ class BelugaGui:
                 self.ui.ranges_ranging_pushbutton.update_connected_state(status)
                 self.ui.record_data_button.update_connected_state(status)
                 self._connected = status
+                self._status_label.port = port
+                self._status_label.set_connected(status)
 
 
 if __name__ == "__main__":
