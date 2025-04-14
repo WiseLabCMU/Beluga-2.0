@@ -223,6 +223,7 @@ class BelugaGui:
         id_ = self.strip_alpha(id_)
         self.ui.node_id_line_edit.setText(id_)
         self.ui.ranges_id.update_config(id_)
+        self.ui.terminal_node_id.update_config(id_)
 
     def refresh_bootmode(self):
         mode = self.serial.bootmode()
@@ -234,24 +235,29 @@ class BelugaGui:
         rate = self.strip_alpha(rate)
         self.ui.rate_line_edit.setText(rate)
         self.ui.ranges_poll_rate.update_config(rate)
+        self.ui.terminal_poll_rate.update_config(rate)
 
     def refresh_channel(self):
         channel = self.serial.channel()
         index = self.channel_to_index(channel)
         self.ui.channel_combobox.setCurrentIndex(index)
-        self.ui.ranges_channel.update_config(self.strip_alpha(channel))
+        channel = self.strip_alpha(channel)
+        self.ui.ranges_channel.update_config(channel)
+        self.ui.terminal_channel.update_config(channel)
 
     def refresh_timeout(self):
         timeout = self.serial.timeout()
         timeout = self.strip_alpha(timeout)
         self.ui.timeout_line_edit.setText(timeout)
         self.ui.ranges_timeout.update_config(timeout)
+        self.ui.terminal_timeout.update_config(timeout)
 
     def refresh_ranging(self):
         mode = self.serial.twrmode()
         mode = bool(self.strtoint(mode))
         self.ui.ranging_checkbox.setChecked(mode)
         self.ui.ranges_ranging_mode.update_config(mode)
+        self.ui.terminal_ranging_mode.update_config(mode)
 
     def refresh_leds(self):
         mode = self.serial.ledmode()
@@ -262,12 +268,14 @@ class BelugaGui:
         mode = bool(self.strtoint(mode))
         self.ui.sfd_checkbox.setChecked(mode)
         self.ui.ranges_sfd.update_config(mode)
+        self.ui.terminal_sfd.update_config(mode)
 
     def refresh_amplifiers(self):
         mode = self.serial.pwramp()
         mode = self.strtoint(mode)
         self.ui.extern_amp_combobox.setCurrentIndex(mode)
         self.ui.ranges_power_amp.update_config(self.ui.extern_amp_combobox.currentText())
+        self.ui.terminal_power_amp.update_config(self.ui.extern_amp_combobox.currentText())
 
     def refresh_antenna(self):
         status = self.serial.status()
@@ -278,39 +286,46 @@ class BelugaGui:
         rate = self.serial.datarate()
         self.ui.uwb_datarate_combobox.setCurrentIndex(self.strtoint(rate))
         self.ui.ranges_datarate.update_config(self.ui.uwb_datarate_combobox.currentText())
+        self.ui.terminal_datarate.update_config(self.ui.uwb_datarate_combobox.currentText())
 
     def refresh_pulserate(self):
         rate = self.serial.pulserate()
         self.ui.uwb_pulserate_combobox.setCurrentIndex(self.strtoint(rate))
         self.ui.ranges_pulserate.update_config(self.ui.uwb_pulserate_combobox.currentText())
+        self.ui.terminal_pulserate.update_config(self.ui.uwb_pulserate_combobox.currentText())
 
     def refresh_phr(self):
         mode = self.serial.phr()
         mode = bool(self.strtoint(mode))
         self.ui.phr_checkbox.setChecked(mode)
         self.ui.ranges_phr.update_config(mode)
+        self.ui.terminal_phr.update_config(mode)
 
     def refresh_preamble(self):
         preamble = self.serial.preamble()
         self.ui.uwb_preamble_combobox.setCurrentIndex(self.preamble_to_index(preamble))
         self.ui.ranges_preamble.update_config(self.ui.uwb_preamble_combobox.currentText())
+        self.ui.terminal_preamble.update_config(self.ui.uwb_preamble_combobox.currentText())
 
     def refresh_pac(self):
         pac = self.serial.pac()
         self.ui.uwb_pac_combobox.setCurrentIndex(self.strtoint(pac))
         self.ui.ranges_pac.update_config(self.ui.uwb_pac_combobox.currentText())
+        self.ui.terminal_pac.update_config(self.ui.uwb_pac_combobox.currentText())
 
     def refresh_pan(self):
         pan = self.serial.panid()
         pan = self.extract_hex(pan)
         self.ui.pan_id_text_edit.setText(pan)
         self.ui.ranges_pan.update_config(pan)
+        self.ui.terminal_pan.update_config(pan)
 
     def refresh_evict(self):
         if self.ui.eviction_combobox.support:
             mode = self.serial.evict()
             self.ui.eviction_combobox.setCurrentIndex(self.strtoint(mode))
         self.ui.ranges_evict.update_config(self.ui.eviction_combobox.currentText())
+        self.ui.terminal_evict.update_config(self.ui.eviction_combobox.currentText())
 
     def refresh_tx_power(self):
         resp = self.serial.txpower()
@@ -329,6 +344,7 @@ class BelugaGui:
             self.ui.boostp125_fine_gain.update_power(power)
         self.ui.connect_status.setText(resp)
         self.ui.ranges_txpower.update_config(power)
+        self.ui.terminal_txpower.update_config(power)
 
     def refresh_node_version(self):
         resp = self.serial.version()
