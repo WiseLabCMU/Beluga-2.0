@@ -34,37 +34,59 @@ class BelugaTerminal(QPlainTextEdit):
             case QEvent.Hide:
                 self._slider_shown = False
 
+    def _handle_up_key(self):
+        if self._current_position > 0:
+            self._current_position -= 1
+        self._data_out_str = self._item_text[self._current_position]
+        self._data_out_cursor_pos = len(self._data_out_str)
+        self.update_display()
+        return True
+
+    def _handle_down_key(self):
+        if self._current_position < len(self._item_text):
+            self._current_position += 1
+        self._data_out_str = self._item_text[self._current_position]
+        self._data_out_cursor_pos = len(self._data_out_str)
+        self.update_display()
+        return True
+
+    def _handle_enter_pressed(self):
+        if not self._open:
+            return True
+        second_cond = len(self._item_text) == 0
+        if not second_cond:
+            second_cond = self._data_out_str != self._item_text[-1]
+        if self._data_out_str and second_cond:
+            # Previous entry is not the same as this entry
+            if len(self._item_text) >= self._maximum_command_storage:
+                self._item_text = self._item_text[1:]
+            self._item_text.append(self._data_out_str)
+        self._current_position = len(self._item_text)
+        self.enter_pressed.emit()
+        return True
+
+    def _handle_backspace(self, event: QKeyEvent):
+        if event.modifiers() & Qt.ControlModifier:
+            # Delete entire word
+            pass
+        elif True: # TODO
+            pass
+        self.update_display()
+        self.update_cursor()
+        return True
+
     def _handle_key_press_line_edit(self, key_event: QKeyEvent):
         if key_event.key() == Qt.Key_Up and not (key_event.modifiers() & Qt.ShiftModifier):
             # Up pressed without holding shift
-            if self._current_position > 0:
-                self._current_position -= 1
-            self._data_out_str = self._item_text[self._current_position]
-            self._data_out_cursor_pos = len(self._data_out_str)
-            self.update_display()
-            return True
+            return self._handle_up_key()
         if key_event.key() == Qt.Key_Down and not (key_event.modifiers() & Qt.ShiftModifier):
             # Up pressed without holding shift
-            if self._current_position < len(self._item_text):
-                self._current_position += 1
-            self._data_out_str = self._item_text[self._current_position]
-            self._data_out_cursor_pos = len(self._data_out_str)
-            self.update_display()
-            return True
+            return self._handle_down_key()
         if (key_event.key() == Qt.Key_Return or key_event.key() == Qt.Key_Enter) and not (key_event.modifiers() & Qt.ControlModifier) and not (key_event.modifiers() & Qt.ShiftModifier):
             # Enter pressed
-            if not self._open:
-                return True
-            second_cond = len(self._item_text) == 0
-            if not second_cond:
-                second_cond = self._data_out_str != self._item_text[-1]
-            if self._data_out_str and second_cond:
-                # Previous entry is not the same as this entry
-                if len(self._item_text) >= self._maximum_command_storage:
-                    self._item_text = self._item_text[1:]
-                self._item_text.append(self._data_out_str)
-            self._current_position = len(self._item_text)
-            self.enter_pressed.emit()
+            return self._handle_enter_pressed()
+        if key_event.key() == Qt.Key_Backspace:
+            return self._handle_backspace(key_event)
 
     def _handle_key_press(self, target, event: QEvent):
         key_event = QKeyEvent(event)
@@ -87,3 +109,6 @@ class BelugaTerminal(QPlainTextEdit):
 
     def update_display(self):
         print("Update display")
+
+    def update_cursor(self):
+        print("Update cursor")
