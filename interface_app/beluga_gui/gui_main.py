@@ -12,7 +12,6 @@ import time
 from serial import Serial, SerialException
 import math
 import signal
-import json
 
 
 class BelugaGui:
@@ -351,7 +350,8 @@ class BelugaGui:
 
     def refresh_node_version(self):
         resp = self.serial.version()
-        self._status_label.version = resp.split()[0]
+        version = unpack_beluga_version(resp)
+        self._status_label.version = f"{version.major}.{version.minor}.{version.patch}"
 
     def update_ble(self):
         status = self.serial.status()

@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QCheckBox
-from .beluga_pushbutton import UwbButton, ApplyPowerButton
+from .beluga_pushbutton import UwbButton
 from typing import Optional
 
 

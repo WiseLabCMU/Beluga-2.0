@@ -1,21 +1,14 @@
 from PyQt5.QtWidgets import QPushButton, QWidget
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from typing import Optional
 
 
 class DeviceConnectButton(QPushButton):
-    class DeviceConnectedEmitter(QObject):
-        bool_update = pyqtSignal(bool)
-        str_update = pyqtSignal(str)
+    connected = pyqtSignal([bool], [str])
 
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
         self._current_port = ""
-        self._connected = self.DeviceConnectedEmitter()
-        self.connected = {
-            "bool": self._connected.bool_update,
-            "QString": self._connected.str_update
-        }
 
     def update_port(self, port: str):
         self._current_port = port
@@ -27,9 +20,9 @@ class DeviceConnectButton(QPushButton):
     def update_connected(self, connected: bool, status: str):
         if connected:
             self.setText("Disconnect")
-            self._connected.str_update.emit(status)
+            self.connected[str].emit(status)
         else:
             self.setText("Connect")
-            self._connected.str_update.emit(status)
+            self.connected[str].emit(status)
 
-        self._connected.bool_update.emit(connected)
+        self.connected[bool].emit(connected)

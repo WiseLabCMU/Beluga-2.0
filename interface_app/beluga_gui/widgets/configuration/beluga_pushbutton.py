@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QPushButton, QWidget
 from .beluga_widget_base import BelugaWidgetBase
 from typing import Optional, Callable
@@ -22,13 +22,10 @@ class BelugaPushButton(QPushButton):
 
 
 class BleButton(BelugaPushButton, BelugaWidgetBase):
-    class BleUpdateEmitter(QObject):
-        bool_update = pyqtSignal(bool)
+    ble_update = pyqtSignal(bool)
 
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._ble_update = self.BleUpdateEmitter()
-        self.ble_update = {"bool": self._ble_update.bool_update}
         if DEBUG:
             self._handler = self.test_handler
 
@@ -38,7 +35,7 @@ class BleButton(BelugaPushButton, BelugaWidgetBase):
             self.setText("Stop BLE")
         else:
             self.setText("Start BLE")
-        self._ble_update.bool_update.emit(self._ble_running)
+        self.ble_update.emit(self._ble_running)
 
     def update(self):
         enable = not self._uwb_running
@@ -50,13 +47,10 @@ class BleButton(BelugaPushButton, BelugaWidgetBase):
 
 
 class UwbButton(BelugaPushButton, BelugaWidgetBase):
-    class UwbUpdateEmitter(QObject):
-        bool_update = pyqtSignal(bool)
+    uwb_update = pyqtSignal(bool)
 
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self._uwb_update = self.UwbUpdateEmitter()
-        self.uwb_update = {"bool": self._uwb_update.bool_update}
         if DEBUG:
             self._handler = self.test_handler
 
@@ -66,7 +60,7 @@ class UwbButton(BelugaPushButton, BelugaWidgetBase):
             self.setText("Stop UWB")
         else:
             self.setText("Start UWB")
-        self._uwb_update.bool_update.emit(self._uwb_running)
+        self.uwb_update.emit(self._uwb_running)
 
     def update(self):
         enable = self._ble_running

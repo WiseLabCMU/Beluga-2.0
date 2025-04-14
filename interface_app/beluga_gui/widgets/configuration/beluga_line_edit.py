@@ -20,7 +20,7 @@ class BelugaLineEdit(QLineEdit):
 class UwbLineEdit(BelugaLineEdit, BelugaWidgetBase):
     def update(self):
         self.setEnabled(not self._uwb_running)
-        self._buddy_sig.bool_update.emit(not self._uwb_running)
+        self.buddy_update.emit(not self._uwb_running)
 
 
 class NodeIdLineEdit(UwbLineEdit):

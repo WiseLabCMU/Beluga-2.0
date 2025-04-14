@@ -22,7 +22,7 @@ class AmplifierComboBox(BelugaComboBoxBase, BelugaWidgetBase):
 
     def supported(self, support: bool):
         self._hardware_support = support
-        self._buddy_sig.bool_update.emit(self._hardware_support)
+        self.buddy_update.emit(self._hardware_support)
 
     def setEnabled(self, a0):
         super().setEnabled(a0 and self._hardware_support)
@@ -35,7 +35,7 @@ class BootModeComboBox(BelugaComboBoxBase):
 class UwbComboBoxBase(BelugaComboBoxBase, BelugaWidgetBase):
     def update(self):
         self.setEnabled(not self._uwb_running)
-        self._buddy_sig.bool_update.emit(not self._uwb_running)
+        self.buddy_update.emit(not self._uwb_running)
 
 
 class ChannelComboBox(UwbComboBoxBase):
@@ -67,7 +67,7 @@ class UwbTxPowerComboBox(BelugaComboBoxBase, BelugaWidgetBase):
     def update_checkbox_state(self, state: bool):
         self._simple_power = state
         self.setEnabled(self._simple_power)
-        self._buddy_sig.bool_update.emit(self._simple_power)
+        self.buddy_update.emit(self._simple_power)
         if self._simple_power and not self._disconnecting:
             self.refresh_advanced_power()
 
@@ -88,7 +88,7 @@ class NeighborEvictionSchemeComboBox(BelugaComboBoxBase, BelugaWidgetBase):
 
     def supported(self, support: bool):
         self._support = support
-        self._buddy_sig.bool_update.emit(self._support)
+        self.buddy_update.emit(self._support)
 
     @property
     def support(self):

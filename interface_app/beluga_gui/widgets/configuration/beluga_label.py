@@ -15,7 +15,7 @@ class BelugaLabel(QLabel, BelugaWidgetBase):
     def update(self):
         enable = self._buddy_state
         self.setEnabled(enable)
-        self._buddy_sig.bool_update.emit(enable)
+        self.buddy_update.emit(enable)
 
     def setEnabled(self, a0):
         super().setEnabled(a0 and self._buddy_state)
