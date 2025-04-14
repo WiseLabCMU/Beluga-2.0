@@ -18,7 +18,7 @@ from .beluga_neighbor import BelugaNeighborList
 from .beluga_queue import BelugaQueue
 from concurrent.futures import ThreadPoolExecutor, Future
 from concurrent.futures import TimeoutError as FutureTimeoutError
-from threading import Event, RLock
+from threading import Event, RLock, Lock
 import functools
 import inspect
 import os
@@ -237,6 +237,9 @@ class BelugaSerial:
 
         self._time_resync: Optional[Callable[[None], None]] = None
 
+        self._io_hook_lock: Lock = Lock()
+        self._io_hooks = []
+
     def __del__(self):
         self.stop()
         self._tasks.shutdown()
@@ -282,6 +285,11 @@ class BelugaSerial:
                 else:
                     ret[name] = [port.device]
         return ret
+
+    def _record_serial_communication(self, record):
+        with self._io_hook_lock:
+            for hook in self._io_hooks:
+                hook(f"{record}\n")
 
     def _log(self, msg: Any):
         if self._logger_cb is not None:
@@ -339,8 +347,10 @@ class BelugaSerial:
             match frame.type:
                 case FrameType.UPDATES:
                     self._neighbors.update(frame.payload)
+                    self._record_serial_communication(frame.payload)
                 case FrameType.EVENT:
                     self._publish_range_event(frame.payload)
+                    self._record_serial_communication(frame.payload)
                 case FrameType.DROP:
                     self._neighbors.remove_neighbor(frame.payload)
                 case FrameType.RESPONSE:
@@ -399,31 +409,44 @@ class BelugaSerial:
                 self._log(f"An uncaught exception occurred in reading thread: {e}")
                 os.abort()
 
-    # noinspection PyTypeChecker
-    def _send_command(self, cmd: Optional[str] = None, value: Optional[Union[int, str]] = None) -> str:
-        if cmd is None:
-            if value is not None:
-                command = f"AT+{inspect.stack()[1][3].upper()} {value}\r\n".encode()
-            else:
-                command = f"AT+{inspect.stack()[1][3].upper()}\r\n".encode()
-        else:
-            if value is not None:
-                command = f"AT+{cmd.upper()} {value}\r\n".encode()
-            else:
-                command = f"AT+{cmd.upper()}\r\n".encode()
-
+    def send_raw_input(self, data: str) -> str:
+        """
+        Sends the given data directly to the Beluga node
+        :param data: The data to send to the Beluga node
+        :type data: str
+        :return: The response from the Beluga node
+        :rtype str
+        """
+        self._record_serial_communication(f"> {data}")
         with self._serial_lock:
             try:
-                self._serial.write(command)
+                self._serial.write(f"{data}\r\n".encode())
             except serial.PortNotOpenError:
+                self._record_serial_communication("Response timed out")
                 return 'Response timed out'
 
         try:
             self._command_sent.set()
             response: str = self._response_q.get(timeout=self._timeout)
         except queue.Empty:
-            response = "Response timed out"
+            response = 'Response timed out'
+        self._record_serial_communication(response)
         return response
+
+    # noinspection PyTypeChecker
+    def _send_command(self, cmd: Optional[str] = None, value: Optional[Union[int, str]] = None) -> str:
+        if cmd is None:
+            if value is not None:
+                command = f"AT+{inspect.stack()[1][3].upper()} {value}"
+            else:
+                command = f"AT+{inspect.stack()[1][3].upper()}"
+        else:
+            if value is not None:
+                command = f"AT+{cmd.upper()} {value}"
+            else:
+                command = f"AT+{cmd.upper()}"
+
+        return self.send_raw_input(command)
 
     def start_uwb(self):
         """
@@ -1096,6 +1119,22 @@ class BelugaSerial:
         :return: None
         """
         self._time_resync = callback
+
+    def register_io_hook(self, hook: Callable[[str], None]):
+        """
+        Registers a io callback. The IO callbacks echo the AT commands and their results. Additionally, range updates
+        and exchange events are also reported through the IO callbacks.
+
+        :param hook: An IO hook where serial communications are recorded
+        :type hook: Callable[[str], None]
+
+        :return: None
+
+        :raises ValueError: If `hook` is not a callable
+        """
+        if not callable(hook):
+            raise ValueError("`hook` must be a callable")
+        self._io_hooks.append(hook)
 
     def clear(self):
         """
