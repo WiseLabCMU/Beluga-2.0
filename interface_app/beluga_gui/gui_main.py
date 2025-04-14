@@ -113,7 +113,10 @@ class BelugaGui:
         self.ui.apply_power.pressed.connect(self.update_complex_power)
         self.ui.ble_button.ble_update["bool"].connect(self.ui.ranges_ranging_pushbutton.update_ble_state)
         self.ui.uwb_button.uwb_update["bool"].connect(self.ui.ranges_ranging_pushbutton.update_uwb_state)
+        self.ui.ble_button.ble_update["bool"].connect(self.ui.terminal_ranging_btn.update_ble_state)
+        self.ui.uwb_button.uwb_update["bool"].connect(self.ui.terminal_ranging_btn.update_uwb_state)
         self.ui.ranges_ranging_pushbutton.pressed.connect(self.toggle_ranging)
+        self.ui.terminal_ranging_btn.pressed.connect(self.toggle_ranging)
         self.ui.clear_neighbors.pressed.connect(self.serial.clear)
 
         self._neighbor_list_update_timer = QTimer()
@@ -614,6 +617,7 @@ class BelugaGui:
             self.ui.uwb_txpower_combobox.disconnecting = True
             self.ui.connect_button.update_connected(False, "")
             self.ui.ranges_ranging_pushbutton.update_connected_state(False)
+            self.ui.terminal_ranging_btn.update_connected_state(False)
             self.ui.record_data_button.update_connected_state(False)
             self._status_label.set_connected(False)
             self._connected = False
@@ -632,6 +636,7 @@ class BelugaGui:
                 status, error = self._gather_beluga_data()
                 self.ui.connect_button.update_connected(status, error)
                 self.ui.ranges_ranging_pushbutton.update_connected_state(status)
+                self.ui.terminal_ranging_btn.update_connected_state(status)
                 self.ui.record_data_button.update_connected_state(status)
                 self._connected = status
                 self._status_label.port = port
