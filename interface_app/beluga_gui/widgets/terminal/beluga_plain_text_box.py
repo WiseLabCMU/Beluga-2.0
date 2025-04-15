@@ -97,7 +97,7 @@ class CommandHistory:
             self._current_displayed_str += c
         else:
             self._current_displayed_str = (self._current_displayed_str[:self._cursor_position] + c +
-                                           self._current_displayed_str[self._cursor_position + 1:])
+                                           self._current_displayed_str[self._cursor_position:])
         self._cursor_position += 1
 
         if live_text:
@@ -113,7 +113,7 @@ class CommandHistory:
             part1 = self._current_displayed_str[:self._cursor_position]
             part2 = self._current_displayed_str[self._cursor_position:]
             part1 = part1.strip().rsplit(' ', 1)[0]
-            self._cursor_position = len(part1) + 1
+            self._cursor_position = len(part1)
             if part1.strip():
                 part1 += ' '
             self._current_displayed_str = part1 + part2
@@ -127,6 +127,12 @@ class CommandHistory:
 
         if live_text:
             self._current_str = self._current_displayed_str
+
+    def home(self):
+        self._cursor_position = 0
+
+    def end(self):
+        self._cursor_position = len(self._current_displayed_str)
 
 
 
@@ -157,21 +163,24 @@ class BelugaTerminal(QPlainTextEdit):
             case QEvent.Hide:
                 self._slider_shown = False
 
-    def _handle_up_key(self):
-        self._history.key_up()
-        self.update_display()
+    def _handle_up_key(self, event: QKeyEvent):
+        if not (event.modifiers() & Qt.ShiftModifier):
+            self._history.key_up()
+            self.update_display()
         return True
 
-    def _handle_down_key(self):
-        self._history.key_down()
-        self.update_display()
+    def _handle_down_key(self, event: QKeyEvent):
+        if not (event.modifiers() & Qt.ShiftModifier):
+            self._history.key_down()
+            self.update_display()
         return True
 
-    def _handle_enter_pressed(self):
+    def _handle_enter_pressed(self, event: QKeyEvent):
         if not self._open:
             return True
-        self._history.enter_pressed()
-        self.enter_pressed.emit()
+        if not (event.modifiers() & Qt.ControlModifier) and not (event.modifiers() & Qt.ShiftModifier):
+            self._history.enter_pressed()
+            self.enter_pressed.emit()
         return True
 
     def _handle_backspace(self, event: QKeyEvent):
@@ -199,22 +208,36 @@ class BelugaTerminal(QPlainTextEdit):
         self.update_cursor()
         return True
 
+    def _handle_home(self, event: QKeyEvent):
+        if not (event.modifiers() & Qt.ControlModifier):
+            self._history.home()
+            self.update_cursor()
+        return True
+
+    def _handle_end(self, event: QKeyEvent):
+        if not (event.modifiers() & Qt.ControlModifier):
+            self._history.end()
+            self.update_cursor()
+        return True
+
     def _handle_key_press_line_edit(self, key_event: QKeyEvent):
-        if key_event.key() == Qt.Key_Up and not (key_event.modifiers() & Qt.ShiftModifier):
-            # Up pressed without holding shift
-            return self._handle_up_key()
-        if key_event.key() == Qt.Key_Down and not (key_event.modifiers() & Qt.ShiftModifier):
-            # Up pressed without holding shift
-            return self._handle_down_key()
-        if (key_event.key() == Qt.Key_Return or key_event.key() == Qt.Key_Enter) and not (key_event.modifiers() & Qt.ControlModifier) and not (key_event.modifiers() & Qt.ShiftModifier):
-            # Enter pressed
-            return self._handle_enter_pressed()
-        if key_event.key() == Qt.Key_Backspace:
-            return self._handle_backspace(key_event)
-        if key_event.key() == Qt.Key_Left:
-            return self._handle_left_key(key_event)
-        if key_event.key() == Qt.Key_Right:
-            return self._handle_right_key(key_event)
+        match(key_event.key()):
+            case Qt.Key_Up:
+                return self._handle_up_key(key_event)
+            case Qt.Key_Down:
+                return self._handle_down_key(key_event)
+            case Qt.Key_Return | Qt.Key_Enter:
+                return self._handle_enter_pressed(key_event)
+            case Qt.Key_Backspace:
+                return self._handle_backspace(key_event)
+            case Qt.Key_Left:
+                return self._handle_left_key(key_event)
+            case Qt.Key_Right:
+                return self._handle_right_key(key_event)
+            case Qt.Key_Home:
+                return self._handle_home(key_event)
+            case Qt.Key_End:
+                return self._handle_end(key_event)
 
     def _handle_key_press(self, target, event: QEvent):
         key_event = QKeyEvent(event)
