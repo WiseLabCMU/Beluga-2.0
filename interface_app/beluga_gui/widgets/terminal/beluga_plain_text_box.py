@@ -98,7 +98,7 @@ class CommandHistory:
         else:
             self._current_displayed_str = (self._current_displayed_str[:self._cursor_position] + c +
                                            self._current_displayed_str[self._cursor_position:])
-        self._cursor_position += 1
+        self._cursor_position += len(c)
 
         if live_text:
             self._current_str = self._current_displayed_str
@@ -231,13 +231,18 @@ class BelugaTerminal(QPlainTextEdit):
         return True
 
     def _handle_delete(self, event: QKeyEvent):
-        if not (event.modifiers() & Qt.ControlModifier):
+        if event.modifiers() & Qt.ControlModifier:
             self._history.backspace(True, True)
         else:
             self._history.backspace(False, True)
         self.update_display()
         self.update_cursor()
         return True
+
+    def _handle_character(self, event: QKeyEvent):
+        if event.modifiers() & Qt.ControlModifier:
+            return
+        self._history.append_char(event.text())
 
     def _handle_key_press_line_edit(self, key_event: QKeyEvent):
         match(key_event.key()):
@@ -259,6 +264,13 @@ class BelugaTerminal(QPlainTextEdit):
                 return self._handle_end(key_event)
             case Qt.Key_Delete:
                 return self._handle_delete(key_event)
+            case Qt.Key_Escape | Qt.Key_Backtab | Qt.Key_Insert | Qt.Key_Pause | Qt.Key_Print | Qt.Key_SysReq \
+                 | Qt.Key_Clear | Qt.Key_Shift | Qt.Key_Control | Qt.Key_Meta | Qt.Key_Alt | Qt.Key_AltGr \
+                | Qt.Key_CapsLock | Qt.Key_NumLock | Qt.Key_ScrollLock:
+                pass
+            case _:
+                self._handle_character(key_event)
+
 
     def _handle_key_press(self, target, event: QEvent):
         key_event = QKeyEvent(event)
@@ -268,6 +280,7 @@ class BelugaTerminal(QPlainTextEdit):
                 QApplication.clipboard().setText(self.textCursor().selection().toPlainText())
                 return True
         self._dat_out_updated = True
+        return self._handle_key_press_line_edit(key_event)
 
     def eventFilter(self, target: QObject, event: QEvent):
         if target == self.verticalScrollBar():
