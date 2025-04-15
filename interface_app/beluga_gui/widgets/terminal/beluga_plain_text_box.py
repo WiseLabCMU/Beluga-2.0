@@ -103,27 +103,37 @@ class CommandHistory:
         if live_text:
             self._current_str = self._current_displayed_str
 
-    def backspace(self, remove_word: bool):
+    def backspace(self, remove_word: bool, delete: bool = False):
         live_text = not self._using_history()
 
         if not self._current_displayed_str.strip():
             return
 
         if remove_word:
-            part1 = self._current_displayed_str[:self._cursor_position]
-            part2 = self._current_displayed_str[self._cursor_position:]
-            part1 = part1.strip().rsplit(' ', 1)[0]
-            self._cursor_position = len(part1)
-            if part1.strip():
-                part1 += ' '
+            part1: str = self._current_displayed_str[:self._cursor_position]
+            part2: str | list[str] = self._current_displayed_str[self._cursor_position:]
+            if not delete:
+                part1 = part1.rstrip().rsplit(' ', 1)[0]
+                self._cursor_position = len(part1)
+                if part1:
+                    part1 += ' '
+            else:
+                part2 = part2.lstrip().split(' ', 1)
+                if len(part2) > 1:
+                    part2 = ' ' + part2[1]
+                else:
+                    part2 = ''
+
             self._current_displayed_str = part1 + part2
 
         else:
-            if self._cursor_position > 0:
-                self._cursor_position -= 1
-            else:
-                return
-            self._current_displayed_str = self._current_displayed_str[:self._cursor_position] + self._current_displayed_str[self._cursor_position + 1:]
+            if not delete:
+                if self._cursor_position > 0:
+                    self._cursor_position -= 1
+                else:
+                    return
+            self._current_displayed_str = (self._current_displayed_str[:self._cursor_position] +
+                                            self._current_displayed_str[self._cursor_position + 1:])
 
         if live_text:
             self._current_str = self._current_displayed_str
@@ -220,6 +230,15 @@ class BelugaTerminal(QPlainTextEdit):
             self.update_cursor()
         return True
 
+    def _handle_delete(self, event: QKeyEvent):
+        if not (event.modifiers() & Qt.ControlModifier):
+            self._history.backspace(True, True)
+        else:
+            self._history.backspace(False, True)
+        self.update_display()
+        self.update_cursor()
+        return True
+
     def _handle_key_press_line_edit(self, key_event: QKeyEvent):
         match(key_event.key()):
             case Qt.Key_Up:
@@ -238,6 +257,8 @@ class BelugaTerminal(QPlainTextEdit):
                 return self._handle_home(key_event)
             case Qt.Key_End:
                 return self._handle_end(key_event)
+            case Qt.Key_Delete:
+                return self._handle_delete(key_event)
 
     def _handle_key_press(self, target, event: QEvent):
         key_event = QKeyEvent(event)
