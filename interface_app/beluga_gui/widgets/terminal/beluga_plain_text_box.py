@@ -32,12 +32,27 @@ class CommandHistory:
             raise ValueError("`pos` must be an integer")
         self._cursor_position = pos
 
-    def increment_cursor_position(self):
-        if self._cursor_position < len(self._current_displayed_str):
+    def key_right(self, word: bool):
+        if word:
+            while self._cursor_position < len(self._current_displayed_str):
+                self._cursor_position += 1
+                if (self._current_displayed_str[self._cursor_position] == ' ' or
+                        self._current_displayed_str[self._cursor_position] == '\r' or
+                        self._current_displayed_str[self._cursor_position] == '\n'):
+                    break
+        elif self._cursor_position < len(self._current_displayed_str):
             self._cursor_position += 1
 
-    def decrement_cursor_position(self):
-        if self._cursor_position > 0:
+    def key_left(self, word: bool):
+
+        if word:
+            while self._cursor_position > 0:
+                self._cursor_position -= 1
+                if (self._current_displayed_str[self._cursor_position] == ' ' or
+                        self._current_displayed_str[self._cursor_position] == '\r' or
+                        self._current_displayed_str[self._cursor_position] == '\n'):
+                    break
+        elif self._cursor_position > 0:
             self._cursor_position -= 1
 
     def key_up(self):
@@ -168,6 +183,22 @@ class BelugaTerminal(QPlainTextEdit):
         self.update_cursor()
         return True
 
+    def _handle_left_key(self, event: QKeyEvent):
+        if event.modifiers() & Qt.ControlModifier:
+            self._history.key_left(True)
+        else:
+            self._history.key_left(False)
+        self.update_cursor()
+        return True
+
+    def _handle_right_key(self, event: QKeyEvent):
+        if event.modifiers() & Qt.ControlModifier:
+            self._history.key_right(True)
+        else:
+            self._history.key_right(False)
+        self.update_cursor()
+        return True
+
     def _handle_key_press_line_edit(self, key_event: QKeyEvent):
         if key_event.key() == Qt.Key_Up and not (key_event.modifiers() & Qt.ShiftModifier):
             # Up pressed without holding shift
@@ -180,6 +211,10 @@ class BelugaTerminal(QPlainTextEdit):
             return self._handle_enter_pressed()
         if key_event.key() == Qt.Key_Backspace:
             return self._handle_backspace(key_event)
+        if key_event.key() == Qt.Key_Left:
+            return self._handle_left_key(key_event)
+        if key_event.key() == Qt.Key_Right:
+            return self._handle_right_key(key_event)
 
     def _handle_key_press(self, target, event: QEvent):
         key_event = QKeyEvent(event)
