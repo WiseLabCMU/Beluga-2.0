@@ -2,6 +2,117 @@ from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QApplication
 from PyQt5.QtCore import QObject, QEvent, QTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QKeyEvent, QKeySequence
 from typing import Optional
+from collections import deque
+
+
+class CommandHistory:
+    def __init__(self, max_depth: int = 512):
+        # List of previous commands
+        self._previous_commands = deque(maxlen=max_depth)
+        # The current command string
+        self._current_str: str = ""
+        # Item in the list. If len, then current item is the one being modified
+        self._current_item: int = 0
+        # Displayed string. This is the one that gets saved when enter is pressed
+        self._current_displayed_str: str = ""
+        # Cursor position
+        self._cursor_position: int = 0
+
+    @property
+    def display_str(self):
+        return self._current_displayed_str
+
+    @property
+    def cursor_position(self):
+        return self._cursor_position
+
+    @cursor_position.setter
+    def cursor_position(self, pos: int):
+        if not isinstance(pos, int):
+            raise ValueError("`pos` must be an integer")
+        self._cursor_position = pos
+
+    def increment_cursor_position(self):
+        if self._cursor_position < len(self._current_displayed_str):
+            self._cursor_position += 1
+
+    def decrement_cursor_position(self):
+        if self._cursor_position > 0:
+            self._cursor_position -= 1
+
+    def key_up(self):
+        if self._current_item > 0:
+            self._current_item -= 1
+        self._current_displayed_str = self._previous_commands[self._current_item]
+        self._cursor_position = len(self._current_displayed_str)
+
+    def key_down(self):
+        if self._current_item < len(self._previous_commands):
+            self._current_item += 1
+        if self._current_item == len(self._previous_commands):
+            self._current_displayed_str = self._current_str
+        else:
+            self._current_displayed_str = self._previous_commands[self._current_item]
+        self._cursor_position = len(self._current_displayed_str)
+
+    def enter_pressed(self):
+        second_cond = not self._previous_commands
+        if not second_cond:
+            second_cond = self._current_displayed_str != self._previous_commands[-1]
+        if self._current_displayed_str and second_cond:
+            self._previous_commands.append(self._current_displayed_str)
+        self._current_str = ""
+        self._current_displayed_str = ""
+        self._current_item = len(self._previous_commands)
+        self._cursor_position = 0
+
+    @property
+    def command(self):
+        if not self._previous_commands:
+            return ""
+        return self._previous_commands[-1]
+
+    def _using_history(self) -> bool:
+        return not (self._current_displayed_str == self._current_str and self._current_item == len(self._previous_commands))
+
+    def append_char(self, c: str):
+        live_text = not self._using_history()
+
+        if self._cursor_position == len(self._current_displayed_str):
+            self._current_displayed_str += c
+        else:
+            self._current_displayed_str = (self._current_displayed_str[:self._cursor_position] + c +
+                                           self._current_displayed_str[self._cursor_position + 1:])
+        self._cursor_position += 1
+
+        if live_text:
+            self._current_str = self._current_displayed_str
+
+    def backspace(self, remove_word: bool):
+        live_text = not self._using_history()
+
+        if not self._current_displayed_str.strip():
+            return
+
+        if remove_word:
+            part1 = self._current_displayed_str[:self._cursor_position]
+            part2 = self._current_displayed_str[self._cursor_position:]
+            part1 = part1.strip().rsplit(' ', 1)[0]
+            self._cursor_position = len(part1) + 1
+            if part1.strip():
+                part1 += ' '
+            self._current_displayed_str = part1 + part2
+
+        else:
+            if self._cursor_position > 0:
+                self._cursor_position -= 1
+            else:
+                return
+            self._current_displayed_str = self._current_displayed_str[:self._cursor_position] + self._current_displayed_str[self._cursor_position + 1:]
+
+        if live_text:
+            self._current_str = self._current_displayed_str
+
 
 
 class BelugaTerminal(QPlainTextEdit):
@@ -14,10 +125,7 @@ class BelugaTerminal(QPlainTextEdit):
         self._slider_shown = False
         self._dat_out_updated = False
         self._line_edit = False
-        self._current_position = 0
-        self._item_text: list[str] = []
-        self._data_out_str: str = ""
-        self._data_out_cursor_pos: int = 0
+        self._history = CommandHistory()
         self._open = False
 
 
@@ -35,42 +143,27 @@ class BelugaTerminal(QPlainTextEdit):
                 self._slider_shown = False
 
     def _handle_up_key(self):
-        if self._current_position > 0:
-            self._current_position -= 1
-        self._data_out_str = self._item_text[self._current_position]
-        self._data_out_cursor_pos = len(self._data_out_str)
+        self._history.key_up()
         self.update_display()
         return True
 
     def _handle_down_key(self):
-        if self._current_position < len(self._item_text):
-            self._current_position += 1
-        self._data_out_str = self._item_text[self._current_position]
-        self._data_out_cursor_pos = len(self._data_out_str)
+        self._history.key_down()
         self.update_display()
         return True
 
     def _handle_enter_pressed(self):
         if not self._open:
             return True
-        second_cond = len(self._item_text) == 0
-        if not second_cond:
-            second_cond = self._data_out_str != self._item_text[-1]
-        if self._data_out_str and second_cond:
-            # Previous entry is not the same as this entry
-            if len(self._item_text) >= self._maximum_command_storage:
-                self._item_text = self._item_text[1:]
-            self._item_text.append(self._data_out_str)
-        self._current_position = len(self._item_text)
+        self._history.enter_pressed()
         self.enter_pressed.emit()
         return True
 
     def _handle_backspace(self, event: QKeyEvent):
         if event.modifiers() & Qt.ControlModifier:
-            # Delete entire word
-            pass
-        elif True: # TODO
-            pass
+            self._history.backspace(True)
+        else:
+            self._history.backspace(False)
         self.update_display()
         self.update_cursor()
         return True
