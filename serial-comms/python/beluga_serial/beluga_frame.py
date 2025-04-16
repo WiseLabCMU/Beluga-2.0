@@ -1,4 +1,4 @@
-from zero_based_enum import ZeroBasedEnum, auto
+from .zero_based_enum import ZeroBasedEnum, auto
 from typing import Optional, Union, Dict, List, Tuple
 import json
 import struct

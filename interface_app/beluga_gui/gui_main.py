@@ -54,15 +54,46 @@ class BelugaGui:
             self._file = save_file
             self._captured_data = []
             self._max_length = samples
+            self._dropped_exchanges = {}
+
+        @staticmethod
+        def make_header(header: str, length: int):
+            if len(header) >= length:
+                return header
+            padding_len = length - len(header) - 2
+            left = padding_len // 2
+            right = padding_len - left
+            return f"{'-' * left} {header} {'-' * right}\n"
 
         def save(self, current_configs):
             messages.InfoMessage(self._capture_progress.parent(), message="Data capture complete")
             with open(self._file, 'w') as f:
+                f.write(self.make_header("Configurations", 80))
                 f.write(current_configs)
-                f.write("----------------------------------------\n")
+                f.write("SS-TWR -> 1 TX and 1 RX per exchange, DS-TWR -> 2 TX and 2 RX per exchange\n")
+                f.write(self.make_header("Dropped Exchange Stats", 80))
+                f.write("Key: 0: TX Poll, 1: RX Response, 2: TX Final, 3: RX Report\n")
+                f.write("Node ID,UWB Exchange Stage,Drops\n")
+                for id_, stages in self._dropped_exchanges.items():
+                    for stage, drops in stages.items():
+                        if drops:
+                            f.write(f"{id_},{stage},{drops}\n")
+                f.write(self.make_header("Captured Data", 80))
+                f.write("Node ID,RSSI,Range\n")
                 for sample in self._captured_data:
                     for id_ in sample:
                         f.write(f"{id_},{sample[id_]['RSSI']},{sample[id_]['RANGE']}\n")
+
+        def report_drop(self, drop):
+            if len(self._captured_data) < self._max_length:
+                if drop['ID'] not in self._dropped_exchanges:
+                    self._dropped_exchanges[drop['ID']] = {
+                        0: 0,
+                        1: 0,
+                        2: 0,
+                        3: 0
+                    }
+                self._dropped_exchanges[drop['ID']][drop['STAGE']] += 1
 
         def capture_sample(self, sample):
             self._captured_data.append(sample)
@@ -154,6 +185,7 @@ class BelugaGui:
                 # Start ranging
                 self.ui.ranges_ranging_pushbutton.pressed.emit()
             self._data_capture = self.CaptureData(self.window, dlg.save_file, dlg.samples, dlg.timeout)
+            self.serial.register_dropped_uwb_exchange_hook(self._data_capture.report_drop)
             self._capturing_data = True
 
     def save_captured_data(self):
@@ -163,7 +195,7 @@ class BelugaGui:
                       f"DS-TWR: {self.ui.ranging_checkbox.isChecked()}\n" \
                       f"Proprietary SFD: {self.ui.sfd_checkbox.isChecked()}\n" \
                       f"External Amplifiers: {self.ui.extern_amp_combobox.currentText()}\n" \
-                      f"Data rate: {self.ui.uwb_preamble_combobox.currentText()}\n" \
+                      f"Data rate: {self.ui.uwb_datarate_combobox.currentText()}\n" \
                       f"Pulse rate: {self.ui.uwb_pulserate_combobox.currentText()}\n" \
                       f"Proprietary PHR: {self.ui.phr_checkbox.isChecked()}\n" \
                       f"Preamble length: {self.ui.uwb_preamble_combobox.currentText()}\n" \
