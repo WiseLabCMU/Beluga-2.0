@@ -125,7 +125,6 @@ class CommandHistory:
                     part2 = ''
 
             self._current_displayed_str = part1 + part2
-
         else:
             if not delete:
                 if self._cursor_position > 0:
@@ -155,9 +154,13 @@ class BelugaTerminal(QPlainTextEdit):
         self.installEventFilter(self)
         self._slider_shown = False
         self._dat_out_updated = False
-        self._line_edit = False
         self._history = CommandHistory()
         self._open = False
+        self._context_menu_open = False
+
+        self._display_text: str = ""
+
+        self._default_format = self.textCursor().charFormat()
 
 
     def _handle_vertical_scroll_bar_event(self, event):
@@ -186,8 +189,8 @@ class BelugaTerminal(QPlainTextEdit):
         return True
 
     def _handle_enter_pressed(self, event: QKeyEvent):
-        if not self._open:
-            return True
+        # if not self._open:
+        #     return True
         if not (event.modifiers() & Qt.ControlModifier) and not (event.modifiers() & Qt.ShiftModifier):
             self._history.enter_pressed()
             self.enter_pressed.emit()
@@ -293,7 +296,14 @@ class BelugaTerminal(QPlainTextEdit):
         return QObject().eventFilter(target, event)
 
     def update_display(self):
-        print("Update display")
+        if self.verticalScrollBar().isSliderDown() or self._context_menu_open:
+            return
+        ui_anchor = 0
+        ui_pos = 0
+
 
     def update_cursor(self):
-        print("Update cursor")
+        cursor = self.textCursor()
+        cursor.setPosition(len(self._display_text) + self._history.cursor_position)
+        cursor.setCharFormat(self._default_format)
+        self.setTextCursor(cursor)
