@@ -240,6 +240,8 @@ class BelugaSerial:
         self._io_hook_lock: Lock = Lock()
         self._io_hooks = []
 
+        self._dropped_uwb_transaction_hook: Optional[Callable[[dict[str, int]], None]] = None
+
     def __del__(self):
         self.stop()
         self._tasks.shutdown()
@@ -357,6 +359,9 @@ class BelugaSerial:
                     self._publish_response(frame.payload)
                 case FrameType.START:
                     self._process_reboot(frame.payload)
+                case FrameType.RANGING_DROP:
+                    if self._dropped_uwb_transaction_hook is not None:
+                        self._dropped_uwb_transaction_hook(frame.payload)
                 case _:
                     self._log("Invalid frame type")
 
@@ -1135,6 +1140,23 @@ class BelugaSerial:
         if not callable(hook):
             raise ValueError("`hook` must be a callable")
         self._io_hooks.append(hook)
+
+    def register_dropped_uwb_exchange_hook(self, hook: Optional[Callable[[dict[str, int]], None]]):
+        """
+        Registers or unregisters a hook for reporting dropped UWB exchanges.
+
+        :param hook: The hook to register. If None, this unregisters the current hook
+        :type hook: Optional[Callable[[str], None]]
+
+        :return: None
+
+        :raises ValueError: ``If `hook` is not a callable
+        """
+        if hook is None:
+            self._dropped_uwb_transaction_hook = None
+        if not callable(hook):
+            raise ValueError("`hook` must be a callable")
+        self._dropped_uwb_transaction_hook = hook
 
     def clear(self):
         """

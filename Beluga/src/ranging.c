@@ -754,12 +754,12 @@ static void initiate_ranging(const struct comms *comms) {
         if (err != 0) {
 #if defined(CONFIG_REPORT_UWB_DROPS)
             struct dropped_packet_event event = {
-                    .id = seen_list[current_neighbor].UUID,
-                    .sequence = dropped_stage(),
+                .id = seen_list[current_neighbor].UUID,
+                .sequence = dropped_stage(),
             };
             struct beluga_msg msg = {
-                    .type = UWB_RANGING_DROP,
-                    .payload.drop_event = &event,
+                .type = UWB_RANGING_DROP,
+                .payload.drop_event = &event,
             };
             comms_write_msg(comms, &msg);
 #endif // defined(CONFIG_REPORT_UWB_DROPS)
