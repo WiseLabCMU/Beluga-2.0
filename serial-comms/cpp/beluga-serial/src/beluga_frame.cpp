@@ -48,6 +48,12 @@ template <> struct json_data_contract<BelugaSerial::RangeEvent> {
                                   json_number<"EXCHANGE", uint32_t>,
                                   json_number<"TIMESTAMP", int64_t>>;
 };
+
+template <>
+struct json_data_contract<BelugaSerial::BelugaFrame::DroppedUwbExchange> {
+    using type = json_member_list<json_number<"ID", uint16_t>,
+                                  json_number<"STAGE", uint32_t>>;
+};
 } // namespace daw::json
 
 BelugaSerial::BelugaFrame::BelugaFrame() { parsed_data.type = NO_TYPE; }
@@ -111,6 +117,10 @@ void BelugaSerial::BelugaFrame::parse_frame(
             if (last_index != payload_len) {
                 throw std::invalid_argument("");
             }
+            break;
+        case RANGING_DROP:
+            this->parsed_data.payload =
+                daw::json::from_json<DroppedUwbExchange>(_payload);
             break;
         default:
             type = NO_TYPE;
