@@ -110,6 +110,15 @@ struct BelugaSerialAttributes {
      * @note If this is left unset, the library will not log anything.
      */
     std::function<int(const char *, va_list)> logger_cb = nullptr;
+
+    /**
+     * Callback for reporting UWB exchange drops
+     * Default is nullptr
+     * @note If this is left unset, then the library will not report UWB
+     * exchange drops.
+     */
+    std::function<void(const BelugaFrame::DroppedUwbExchange &)>
+        report_uwb_drops_cb = nullptr;
 };
 
 /// Manager for serial communication with Beluga nodes
@@ -443,6 +452,7 @@ class BelugaSerial {
     void _publish_range_update();
     void _publish_range_event(RangeEvent event);
     void _publish_response(std::string &response);
+    void _publish_uwb_exchange_drop(BelugaFrame::DroppedUwbExchange &drop_info);
 
     void _process_reboot(const std::string &payload);
 
@@ -500,6 +510,9 @@ class BelugaSerial {
     std::function<void()> _time_resync = nullptr;
 
     std::recursive_mutex _serial_lock;
+
+    std::function<void(const BelugaFrame::DroppedUwbExchange &)>
+        _report_uwb_drops = nullptr;
 };
 } // namespace BelugaSerial
 
