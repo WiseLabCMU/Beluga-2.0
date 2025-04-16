@@ -173,7 +173,19 @@ static const struct json_obj_descr json_ranging_event[] = {
     JSON_OBJ_DESCR_PRIM_NAMED(struct ranging_event, "TIMESTAMP", timestamp,
                               JSON_TOK_INT64),
 };
-#endif
+#endif // defined(CONFIG_UWB_LOGIC_CLK)
+
+#if defined(CONFIG_REPORT_UWB_DROPS)
+/**
+ * Mapping JSON types to attributes of dropped packet events
+ */
+static const struct json_obj_descr json_dropped_communication_event[] = {
+    JSON_OBJ_DESCR_PRIM_NAMED(struct dropped_packet_event, "ID", id,
+                              JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM_NAMED(struct dropped_packet_event, "STAGE", sequence,
+                              JSON_TOK_NUMBER),
+};
+#endif // defined(CONFIG_REPORT_UWB_DROPS)
 
 /**
  * @brief Calculates the total frame size
@@ -283,8 +295,53 @@ static ssize_t encode_ranging_event(const struct beluga_msg *msg,
     return numBytes;
 }
 #else
-#define encode_ranging_event(...) = -ENOTSUP
+#define encode_ranging_event(...) -ENOTSUP
 #endif // CONFIG_UWB_LOGIC_CLK
+
+#if defined(CONFIG_REPORT_UWB_DROPS)
+/**
+ * @brief Encodes a frame with the UWB_RANGING_DROP type. If no buffer is
+ * provided, then only the calculated frame length would be returned.
+ *
+ * @param[in] msg The message to convert into a frame
+ * @param[in] buffer The buffer to store the frame in.
+ * @param[in] len The maximum length of the buffer
+ * @return Frame length
+ * @return -EINVAL if msg is NULL
+ * @return negative error code otherwise
+ */
+static ssize_t encode_dropped_packet_event(const struct beluga_msg *msg,
+                                           uint8_t *buffer, size_t len) {
+    ssize_t numBytes = 0;
+    int err;
+
+    if (msg->payload.drop_event == NULL) {
+        LOG_ERR("Invalid drop event");
+        return -EINVAL;
+    }
+
+    numBytes = json_calc_encoded_len(
+        json_dropped_communication_event,
+        ARRAY_SIZE(json_dropped_communication_event), msg->payload.drop_event);
+
+    if (numBytes < 0 || buffer == NULL) {
+        return numBytes;
+    }
+
+    err = json_obj_encode_buf(json_dropped_communication_event,
+                              ARRAY_SIZE(json_dropped_communication_event),
+                              msg->payload.drop_event, buffer, len);
+
+    if (err != 0) {
+        LOG_ERR("Unable to encode JSON payload (%d)", err);
+        return (ssize_t)err;
+    }
+
+    return numBytes;
+}
+#else
+#define encode_dropped_packet_event(...) (-ENOTSUP)
+#endif // defined(CONFIG_REPORT_UWB_DROPS)
 
 /**
  * @brief Serializes a beluga message.
@@ -335,6 +392,11 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
         }
         msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD, "%s",
                           msg->payload.node_version);
+        break;
+    }
+    case UWB_RANGING_DROP: {
+        msgLen = encode_dropped_packet_event(msg, buffer + MSG_PAYLOAD_OFFSET,
+                                             len - MSG_OVERHEAD);
         break;
     }
     default:
@@ -397,6 +459,10 @@ int frame_length(const struct beluga_msg *msg) {
             return -EINVAL;
         }
         msgLen = (ssize_t)strlen(msg->payload.node_version) + 1;
+        break;
+    }
+    case UWB_RANGING_DROP: {
+        msgLen = encode_dropped_packet_event(msg, NULL, 0);
         break;
     }
     default:
