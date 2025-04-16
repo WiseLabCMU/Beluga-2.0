@@ -111,6 +111,38 @@ static double hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
 #define POLL_TX_TO_RESP_RX_DLY_UUS 300
 
 /**
+ * Stages for UWB ranging.
+ */
+enum uwb_ranging_stage {
+    RANGING_POLL = UINT8_C(0),     ///< Polling stage
+    RANGING_RESPONSE = UINT8_C(1), ///< Response stage
+    RANGING_FINAL = UINT8_C(2),    ///< Final stage
+    RANGING_REPORT = UINT8_C(3),   ///< Report stage
+};
+
+#if defined(CONFIG_REPORT_UWB_DROPS)
+/**
+ * Indicates which stage the UWB ranging exchange failed at
+ */
+uint8_t failed_stage = 0;
+
+/**
+ * Generic setter for the failure stage
+ *
+ * @param[in] stage The UWB ranging exchange stage that failed
+ */
+#define SET_FAILED_STAGE(stage) failed_stage = (stage)
+#else
+
+/**
+ * Generic setter for the failure stage
+ *
+ * @param[in] stage The UWB ranging exchange stage that failed
+ */
+#define SET_FAILED_STAGE(...) (void)0
+#endif
+
+/**
  * @brief Sets the source IDs for the messages that the initiator sends and the
  * destination ID for the messages the initiator receives
  *
@@ -422,18 +454,22 @@ int ds_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
     set_exchange_id();
 
     if ((err = send_poll()) < 0) {
+        SET_FAILED_STAGE(RANGING_POLL);
         return err;
     }
 
     if ((err = ds_rx_response()) < 0) {
+        SET_FAILED_STAGE(RANGING_RESPONSE);
         return err;
     }
 
     if ((err = send_final()) < 0) {
+        SET_FAILED_STAGE(RANGING_FINAL);
         return err;
     }
 
     if ((err = rx_report(distance)) < 0) {
+        SET_FAILED_STAGE(RANGING_REPORT);
         return err;
     }
 
@@ -534,14 +570,28 @@ int ss_init_run(uint16_t id, double *distance, uint32_t *logic_clock) {
     set_exchange_id();
 
     if ((err = send_poll()) < 0) {
+        SET_FAILED_STAGE(RANGING_POLL);
         return err;
     }
 
     if ((err = ss_rx_response(distance)) < 0) {
+        SET_FAILED_STAGE(RANGING_RESPONSE);
         return err;
     }
 
     update_exchange(logic_clock);
 
     return 0;
+}
+
+/**
+ * @brief Retrieves the stage that the UWB ranging exchange failed at
+ * @return The failed stage
+ */
+int dropped_stage(void) {
+#if !defined(CONFIG_REPORT_UWB_DROPS)
+    return -ENOTSUP;
+#else
+    return failed_stage;
+#endif // !defined(CONFIG_REPORT_UWB_DROPS)
 }

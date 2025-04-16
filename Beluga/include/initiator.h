@@ -106,6 +106,12 @@ int ds_init_run(uint16_t id, double *distance, uint32_t *logic_clock);
 int ss_init_run(uint16_t id, double *distance, uint32_t *logic_clock);
 
 /**
+ * @brief Retrieves the stage that the UWB ranging exchange failed at
+ * @return The failed stage
+ */
+int dropped_stage(void);
+
+/**
  * Semaphore for suspending the initiator task
  */
 extern struct k_sem k_sus_init;
