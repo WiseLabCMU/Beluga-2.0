@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "imgflash"
 version = "0.0.0"
-authors = [{name = "Tom Schmitz", email = "thomas.schmitz98@outlook.com"}]
+authors = [{name = "Tom Schmitz", email = "tschmitz@andrew.cmu.edu"}]
 description = "Tool that runs an SMP client for communicating with a microcontroller(s) that is running an SMP server"
 classifiers = [
     "Programming Language :: Python :: 3",
