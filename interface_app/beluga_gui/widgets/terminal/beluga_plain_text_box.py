@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QApplication
 from PyQt5.QtCore import QObject, QEvent, QTimer, Qt, pyqtSignal
-from PyQt5.QtGui import QKeyEvent, QKeySequence
+from PyQt5.QtGui import QKeyEvent, QKeySequence, QTextCursor
 from typing import Optional
 from collections import deque
 
@@ -159,6 +159,7 @@ class BelugaTerminal(QPlainTextEdit):
         self._context_menu_open = False
 
         self._display_text: str = ""
+        self._data_in = ""
 
         self._default_format = self.textCursor().charFormat()
 
@@ -295,12 +296,82 @@ class BelugaTerminal(QPlainTextEdit):
 
         return QObject().eventFilter(target, event)
 
+    def _handle_text_select_display(self) -> (int, int, Optional[QTextCursor], bool, bool, int):
+        ui_anchor = 0
+        ui_pos = 0
+        cursor = None
+        shift_start = False
+        shift_end = False
+        ui_current_size = 0
+        if self.textCursor().anchor() != self.textCursor().position():
+            # Text selected
+            ui_anchor = self.textCursor().anchor()
+            ui_pos = self.textCursor().position()
+            cursor = self.textCursor()
+            if ui_anchor >= len(self._display_text):
+                # Start of selected text is in the output buffer
+                shift_start = True
+                ui_current_size = len(self._display_text)
+            if ui_pos >= len(self._display_text):
+                # End of selected text is in the output buffer
+                shift_end = True
+                ui_current_size = len(self._display_text)
+
+        return ui_anchor, ui_pos, cursor, shift_start, shift_end, ui_current_size
+
+    def _handle_slider_display(self) -> int:
+        # Slider not held down, update
+        if self.verticalScrollBar().sliderPosition() == self.verticalScrollBar().maximum():
+            # Scroll to bottom
+            return 65535
+        # Else Stay here...
+        return self.verticalScrollBar().sliderPosition()
+
+    def _display_process_input(self):
+        result = []
+        for c in self._data_in:
+            current = ord(c)
+            if current < 0x08 or (0x0B <= current <= 0x0C) or (0x0E <= current <= 0x0F):
+                result.append(f"\\0{hex(current)[2:]}")
+            elif (0x10 <= current <= 0x1A) or (0x1C <= current <= 0x1F):
+                result.append(f"\\{hex(current)[2:]}")
+            else:
+                result.append(c)
+        self._data_in = "".join(result)
+
+    def _handle_append_data(self):
+        if not self._data_in:
+            return
+        cannot_parse_bytes = 0
+        unicode_replacement_char = "\ufffd"
+        append_data = self._data_in
+        end = 0
+
+        i = len(append_data) - 1
+        while i >= 0 and append_data[i] == unicode_replacement_char and end < 3:
+            end += 1
+            i -= 1
+
+        if end > 0:
+            cannot_parse_bytes += end
+            append_data = append_data[:-end]
+
+        if append_data:
+            cursor = self.textCursor()
+            l = 0
+
     def update_display(self):
         if self.verticalScrollBar().isSliderDown() or self._context_menu_open:
             return
-        ui_anchor = 0
-        ui_pos = 0
+        removed_size = 0
 
+        ui_anchor, ui_pos, cursor, shift_start, shift_end, ui_current_size = self._handle_text_select_display()
+        pos = self._handle_slider_display()
+        self.setUpdatesEnabled(False)
+        self._display_process_input()
+
+        if self._data_in:
+            pass
 
     def update_cursor(self):
         cursor = self.textCursor()
