@@ -99,6 +99,7 @@ void BelugaSerial::_initialize(const BelugaSerialAttributes &attr) {
     _neighbor_cb = attr.neighbor_update_cb;
     _range_cb = attr.range_updates_cb;
     _range_event_cb = attr.range_event_cb;
+    _report_uwb_drops = attr.report_uwb_drops_cb;
 }
 
 BelugaSerial::~BelugaSerial() { this->close(); }
@@ -148,6 +149,13 @@ void BelugaSerial::_publish_response(std::string &response) {
     if (_command_sent.is_set()) {
         _command_sent.clear();
         _response_queue.put(response);
+    }
+}
+
+void BelugaSerial::_publish_uwb_exchange_drop(
+    BelugaFrame::DroppedUwbExchange &drop_info) {
+    if (_report_uwb_drops != nullptr) {
+        _report_uwb_drops(drop_info);
     }
 }
 
@@ -215,6 +223,10 @@ void BelugaSerial::__process_frames() {
             break;
         case BelugaFrame::BelugaFrameType::START_EVENT:
             _process_reboot(std::get<std::string>(frame.payload));
+            break;
+        case BelugaFrame::BelugaFrameType::RANGING_DROP:
+            _publish_uwb_exchange_drop(
+                std::get<BelugaFrame::DroppedUwbExchange>(frame.payload));
             break;
         default:
             _log("Invalid frame type");
@@ -482,6 +494,22 @@ std::string BelugaSerial::panid(const std::string &pan_id) {
     oss << "AT+PANID " << pan_id << "\r\n";
     return _send_command(oss.str());
 }
+
+std::string BelugaSerial::evict(const std::string &scheme) {
+    std::stringstream oss;
+    oss << "AT+EVICT " << scheme << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::verbose(const std::string &mode) {
+    std::stringstream oss;
+    oss << "AT+VERBOSE " << mode << "\r\n";
+    return _send_command(oss.str());
+}
+
+std::string BelugaSerial::status() { return _send_command("AT+STATUS\r\n"); }
+
+std::string BelugaSerial::version() { return _send_command("AT+VERSION\r\n"); }
 
 void BelugaSerial::start() {
     if (_tasks_running || !_serial.is_open()) {

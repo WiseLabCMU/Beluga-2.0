@@ -690,8 +690,10 @@ static void resp_reconfig() {
 
 /**
  * @brief Find a node in the neighbors list and range to that node
+ *
+ * @param[in] comms Pointer to the comms object for drop reporting
  */
-static void initiate_ranging(void) {
+static void initiate_ranging(const struct comms *comms) {
     // Time left to sleep in ms
     static int32_t time_left = CONFIG_POLLING_REFRESH_PERIOD;
     // Flag to see if last ranging measurement was dropped
@@ -705,6 +707,7 @@ static void initiate_ranging(void) {
     int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD)
                             ? time_left
                             : CONFIG_POLLING_REFRESH_PERIOD;
+    ARG_UNUSED(comms);
 
     k_sleep(K_MSEC(sleep_for));
     time_left -= sleep_for;
@@ -749,6 +752,17 @@ static void initiate_ranging(void) {
         }
 
         if (err != 0) {
+#if defined(CONFIG_REPORT_UWB_DROPS)
+            struct dropped_packet_event event = {
+                .id = seen_list[current_neighbor].UUID,
+                .sequence = dropped_stage(),
+            };
+            struct beluga_msg msg = {
+                .type = UWB_RANGING_DROP,
+                .payload.drop_event = &event,
+            };
+            comms_write_msg(comms, &msg);
+#endif // defined(CONFIG_REPORT_UWB_DROPS)
             drop = true;
         }
 
@@ -814,6 +828,7 @@ void update_poll_count(void) {
  * @param p3 Additional context (unused)
  */
 NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
+    const struct comms *comms = comms_backend_uart_get_ptr();
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
@@ -828,7 +843,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
         watchdog_red_rocket(&watchdogAttr);
 
         if (initiator_freq > 0) {
-            initiate_ranging();
+            initiate_ranging(comms);
         } else {
             k_sleep(K_SECONDS(1));
         }

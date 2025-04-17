@@ -12,12 +12,12 @@
  *  @author Tom Schmitz
  */
 
-#include <zephyr/kernel.h>
-#include <zephyr/sys/reboot.h>
-
+#include <app_version.h>
 #include <deca_types.h>
 #include <initiator.h>
 #include <responder.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/reboot.h>
 
 #include <ble_app.h>
 #include <ctype.h>
@@ -358,8 +358,15 @@ AT_CMD_DEFINE(CHANNEL) {
 
     pwramp = retrieveSetting(BELUGA_RANGE_EXTEND);
     if (IS_UWB_AMP_ON(pwramp) && !UWB_AMP_CHANNEL(channel)) {
-        ERROR(comms, "UWB power amplifier is currently active and channels 2, "
-                     "3, and 4 can only be used with the amplifier");
+        COND_CODE_0(
+            IS_ENABLED(CONFIG_PWRAMP_ALLOW_BAD_CHANNELS),
+            (ERROR(comms,
+                   "UWB power amplifier is currently active and channels 2, "
+                   "3, and 4 can only be used with the amplifier")),
+            (ERROR_NORET(comms,
+                         "WARNING: channel %d is outside of the bandwidth of "
+                         "the external amplifier",
+                         channel)));
     }
 
     retVal = set_uwb_channel(channel);
@@ -575,6 +582,56 @@ AT_CMD_DEFINE(REBOOT) {
 AT_CMD_REGISTER(REBOOT);
 
 /**
+ * Performs a strict check on the UWB channel used. If the UWB channel falls
+ * outside of the bandwidth of the external amplifier, set err_ to -EFAULT
+ * and don't update the power mode.
+ *
+ * @param[out] err_ The error code
+ * @param[in] channel_ The current UWB channel
+ * @param[in] mode_ The desired mode
+ */
+#define _STRICT_UPDATE_POWER_MODE(err_, channel_, mode_)                       \
+    do {                                                                       \
+        if (UWB_AMP_CHANNEL(channel_)) {                                       \
+            (err_) = update_power_mode(mode_);                                 \
+        } else {                                                               \
+            (err_) = -EFAULT;                                                  \
+        }                                                                      \
+    } while (0)
+
+/**
+ * Performs a check on the UWB channel used. If the UWB channel falls
+ * outside the bandwidth of the external amplifier, throw a warning and proceed
+ * in setting the power mode
+ *
+ * @param[out] err_ The error code
+ * @param[in] channel_ The current UWB channel
+ * @param[in] mode_ The desired mode
+ */
+#define _NON_STRICT_UPDATE_POWER_MODE(err_, channel_, mode_)                   \
+    do {                                                                       \
+        if (!UWB_AMP_CHANNEL(channel_)) {                                      \
+            ERROR_NORET(comms,                                                 \
+                        "WARNING: channel %d is outside of the bandwidth of "  \
+                        "the external amplifier",                              \
+                        (channel_));                                           \
+        }                                                                      \
+        (err_) = update_power_mode(mode_);                                     \
+    } while (0)
+
+/**
+ * Performs UWB channel checks
+ *
+ * @param[out] err_ The error code
+ * @param[in] channel_ The current UWB channel
+ * @param[in] mode_ The desired mode
+ */
+#define UPDATE_POWER_MODE(err_, channel_, mode_)                               \
+    COND_CODE_1(IS_ENABLED(CONFIG_PWRAMP_ALLOW_BAD_CHANNELS),                  \
+                (_NON_STRICT_UPDATE_POWER_MODE(err_, channel_, mode_)),        \
+                (_STRICT_UPDATE_POWER_MODE(err_, channel_, mode_)))
+
+/**
  * The PWRAMP AT command
  *
  * Enables/disables the external power amplifiers, or gets the current power
@@ -602,11 +659,7 @@ AT_CMD_DEFINE(PWRAMP) {
         break;
     }
     case 1: {
-        if (UWB_AMP_CHANNEL(channel)) {
-            err = update_power_mode(POWER_MODE_BYPASS);
-        } else {
-            err = -EFAULT;
-        }
+        UPDATE_POWER_MODE(err, channel, POWER_MODE_BYPASS);
         break;
     }
     case 2: {
@@ -614,11 +667,7 @@ AT_CMD_DEFINE(PWRAMP) {
         break;
     }
     case 3: {
-        if (UWB_AMP_CHANNEL(channel)) {
-            err = update_power_mode(POWER_MODE_LOW);
-        } else {
-            err = -EFAULT;
-        }
+        UPDATE_POWER_MODE(err, channel, POWER_MODE_LOW);
         break;
     }
     case 4: {
@@ -626,11 +675,7 @@ AT_CMD_DEFINE(PWRAMP) {
         break;
     }
     case 5: {
-        if (UWB_AMP_CHANNEL(channel)) {
-            err = update_power_mode(POWER_MODE_HIGH);
-        } else {
-            err = -EFAULT;
-        }
+        UPDATE_POWER_MODE(err, channel, POWER_MODE_HIGH);
         break;
     }
     default: {
@@ -1027,3 +1072,51 @@ AT_CMD_DEFINE(VERBOSE) {
     AT_OK(comms, "Verbose: %d", mode);
 }
 AT_CMD_REGISTER(VERBOSE);
+
+/**
+ * Retrieves the status information for Beluga. This includes build info, board
+ * info, and states that are not accessible through other AT commands
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ *
+ * Bits 31:12 -> Reserved
+ * Bit 11 -> Eviction Algorithm Runtime Selectable
+ * Bit 10 -> Antenna 2 used
+ * Bit 9 -> UWB Active
+ * Bit 8 -> BLE Active
+ * Bits 7:0 -> Board ID (Specific to Hardware platforms)
+ *
+ * @internal Please update bits above if updating this command
+ */
+AT_CMD_DEFINE(STATUS) {
+    LOG_INF("Running STATUS command");
+    const uint32_t settable_evict_algo =
+        IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT) << 11;
+    int antenna_ret = current_antenna();
+    uint32_t antenna = (antenna_ret >= 0) ? (antenna_ret << 10) : UINT32_C(0);
+    uint32_t uwb_state = (uint32_t)(get_uwb_led_state() == LED_UWB_ON) << 9;
+    uint32_t ble_state = (uint32_t)(get_ble_led_state() == LED_BLE_ON) << 8;
+    const uint32_t board = (uint8_t)CONFIG_BELUGA_BOARD_HW_ID;
+
+    uint32_t status =
+        settable_evict_algo | antenna | uwb_state | ble_state | board;
+    OK(comms, "Status: 0x%08" PRIX32, status);
+}
+AT_CMD_REGISTER(STATUS);
+
+/**
+ * Retrieves the current firmware version of the Beluga node.
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ */
+AT_CMD_DEFINE(VERSION) {
+    LOG_INF("Running version command");
+    OK(comms, APP_VERSION_STRING);
+}
+AT_CMD_REGISTER(VERSION);

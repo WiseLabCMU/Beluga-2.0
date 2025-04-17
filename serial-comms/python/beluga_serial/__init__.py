@@ -1,2 +1,1 @@
-from .beluga_serial import BelugaSerial
-from .beluga_serial import BelugaSerialAttr
+from .beluga_serial import BelugaSerial, BelugaSerialAttr, unpack_beluga_status, unpack_beluga_version, BelugaStatus

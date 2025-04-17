@@ -18,10 +18,11 @@ from .beluga_neighbor import BelugaNeighborList
 from .beluga_queue import BelugaQueue
 from concurrent.futures import ThreadPoolExecutor, Future
 from concurrent.futures import TimeoutError as FutureTimeoutError
-from threading import Event, RLock
+from threading import Event, RLock, Lock
 import functools
 import inspect
 import os
+import semver
 
 TARGETS = [
     'CMU Beluga',
@@ -32,6 +33,86 @@ USB_STILL_ALIVE: Dict[str, bool] = {
     'CMU Beluga': False,
     'SEGGER J-Link': True,
 }
+
+
+class BelugaStatus:
+    @dataclass(init=True)
+    class BoardInfo:
+        id: int = -1
+        name: str = ""
+        supports_uwb_amp: bool = False
+        supports_ble_amp: bool = False
+        supports_secondary_ble_antenna: bool = False
+
+    _boards = (
+        BoardInfo(0, "Decawave DWM1001-DEV"),
+        BoardInfo(1, "CMU Beluga", True, True, True)
+    )
+
+    def __init__(self, response):
+        board_mask = 0xFF
+        ble_mask = 0x1 << 8
+        uwb_mask = 0x1 << 9
+        antenna_mask = 0x1 << 10
+        eviction_mask = 0x1 << 11
+        numerical_repr = None
+
+        for x in response.split():
+            try:
+                numerical_repr = int(x, base=16)
+            except ValueError:
+                pass
+
+        if numerical_repr is None:
+            raise ValueError("Cannot parse Beluga status info")
+
+        board = self._find_board(numerical_repr & board_mask)
+        self._name = board.name
+        self._uwb_amplifier = board.supports_uwb_amp
+        self._ble_amplifier = board.supports_ble_amp
+        self._secondary_antenna = board.supports_secondary_ble_antenna
+        self._ble_active = (numerical_repr & ble_mask) != 0
+        self._uwb_active = (numerical_repr & uwb_mask) != 0
+        self._using_second_antenna = (numerical_repr & antenna_mask) != 0
+        self._dynamic_eviction_scheme_support = (numerical_repr & eviction_mask) != 0
+
+    def _find_board(self, id_: int) -> BoardInfo:
+        for board in self._boards:
+            if board.id == id_:
+                return board
+        raise ValueError("Given board ID is not supported")
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def external_uwb_amp(self):
+        return self._uwb_amplifier
+
+    @property
+    def external_ble_amp(self):
+        return self._ble_amplifier
+
+    @property
+    def secondary_antenna_support(self):
+        return self._secondary_antenna
+
+    @property
+    def ble(self):
+        return self._ble_active
+
+    @property
+    def uwb(self):
+        return self._uwb_active
+
+    @property
+    def secondary_antenna(self):
+        return self._using_second_antenna
+
+    @property
+    def dynamic_eviction_scheme_support(self):
+        return self._dynamic_eviction_scheme_support
 
 
 @dataclass(init=True)
@@ -148,12 +229,18 @@ class BelugaSerial:
 
         self._command_sent: Event = Event()
         self._reboot_done: Event = Event()
+        self._clear_neighbors: Event = Event()
 
         self._serial_lock: RLock = RLock()
 
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=3)
 
         self._time_resync: Optional[Callable[[None], None]] = None
+
+        self._io_hook_lock: Lock = Lock()
+        self._io_hooks = []
+
+        self._dropped_uwb_transaction_hook: Optional[Callable[[dict[str, int]], None]] = None
 
     def __del__(self):
         self.stop()
@@ -200,6 +287,11 @@ class BelugaSerial:
                 else:
                     ret[name] = [port.device]
         return ret
+
+    def _record_serial_communication(self, record):
+        with self._io_hook_lock:
+            for hook in self._io_hooks:
+                hook(f"{record}\n")
 
     def _log(self, msg: Any):
         if self._logger_cb is not None:
@@ -250,17 +342,26 @@ class BelugaSerial:
         while self._task_running:
             frame: BelugaFrame = self._batch_queue.get()
 
+            if self._clear_neighbors.is_set():
+                self._neighbors.clear()
+                self._clear_neighbors.clear()
+
             match frame.type:
                 case FrameType.UPDATES:
                     self._neighbors.update(frame.payload)
+                    self._record_serial_communication(frame.payload)
                 case FrameType.EVENT:
                     self._publish_range_event(frame.payload)
+                    self._record_serial_communication(frame.payload)
                 case FrameType.DROP:
                     self._neighbors.remove_neighbor(frame.payload)
                 case FrameType.RESPONSE:
                     self._publish_response(frame.payload)
                 case FrameType.START:
                     self._process_reboot(frame.payload)
+                case FrameType.RANGING_DROP:
+                    if self._dropped_uwb_transaction_hook is not None:
+                        self._dropped_uwb_transaction_hook(frame.payload)
                 case _:
                     self._log("Invalid frame type")
 
@@ -313,31 +414,44 @@ class BelugaSerial:
                 self._log(f"An uncaught exception occurred in reading thread: {e}")
                 os.abort()
 
-    # noinspection PyTypeChecker
-    def _send_command(self, cmd: Optional[str] = None, value: Optional[Union[int, str]] = None) -> str:
-        if cmd is None:
-            if value is not None:
-                command = f"AT+{inspect.stack()[1][3].upper()} {value}\r\n".encode()
-            else:
-                command = f"AT+{inspect.stack()[1][3].upper()}\r\n".encode()
-        else:
-            if value is not None:
-                command = f"AT+{cmd.upper()} {value}\r\n".encode()
-            else:
-                command = f"AT+{cmd.upper()}\r\n".encode()
-
+    def send_raw_input(self, data: str) -> str:
+        """
+        Sends the given data directly to the Beluga node
+        :param data: The data to send to the Beluga node
+        :type data: str
+        :return: The response from the Beluga node
+        :rtype str
+        """
+        self._record_serial_communication(f"> {data}")
         with self._serial_lock:
             try:
-                self._serial.write(command)
+                self._serial.write(f"{data}\r\n".encode())
             except serial.PortNotOpenError:
+                self._record_serial_communication("Response timed out")
                 return 'Response timed out'
 
         try:
             self._command_sent.set()
             response: str = self._response_q.get(timeout=self._timeout)
         except queue.Empty:
-            response = "Response timed out"
+            response = 'Response timed out'
+        self._record_serial_communication(response)
         return response
+
+    # noinspection PyTypeChecker
+    def _send_command(self, cmd: Optional[str] = None, value: Optional[Union[int, str]] = None) -> str:
+        if cmd is None:
+            if value is not None:
+                command = f"AT+{inspect.stack()[1][3].upper()} {value}"
+            else:
+                command = f"AT+{inspect.stack()[1][3].upper()}"
+        else:
+            if value is not None:
+                command = f"AT+{cmd.upper()} {value}"
+            else:
+                command = f"AT+{cmd.upper()}"
+
+        return self.send_raw_input(command)
 
     def start_uwb(self):
         """
@@ -677,6 +791,52 @@ class BelugaSerial:
         """
         return self._send_command(value=pan)
 
+    def evict(self, scheme: Optional[int] = None):
+        """
+        Sets or gets the eviction scheme of the Beluga node.
+
+        :param scheme: The eviction scheme to set:
+            * None: Retrieve the current scheme (Default)
+            * 0: Indexed Round-Robin
+            * 1: Lowest RSSI
+            * 2: Furthest away
+            * 3: Least recently scanned neighbor
+            * 4: Least recently ranged to neighbor
+        :type scheme: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=scheme)
+
+    def verbose(self, mode: Optional[int] = None):
+        """
+        Sets or gets the verbose mode of the Beluga node.
+
+        :param mode: The verbose mode to set:
+            * None: Retrieve the current verbose mode (Default)
+            * 0: verbose mode turned off
+            * 1: verbose mode turned on
+        :type mode: Optional[int]
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+
+    def status(self):
+        """
+        Retrieve the current status of the Beluga node
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
+    def version(self):
+        """
+        Retrieve the current version of the Beluga node
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
     def start(self):
         """
         Starts the processing and receive tasks, sets up the node to transmit
@@ -735,6 +895,7 @@ class BelugaSerial:
                 break
         if retries >= max_retries:
             raise RuntimeError("The processing task task is still hanging...")
+        self._neighbors.clear()
 
     def get_neighbors(self) -> Tuple[bool, Dict[int, Dict[str, Union[int, float]]]]:
         """
@@ -963,6 +1124,69 @@ class BelugaSerial:
         :return: None
         """
         self._time_resync = callback
+
+    def register_io_hook(self, hook: Callable[[str], None]):
+        """
+        Registers a io callback. The IO callbacks echo the AT commands and their results. Additionally, range updates
+        and exchange events are also reported through the IO callbacks.
+
+        :param hook: An IO hook where serial communications are recorded
+        :type hook: Callable[[str], None]
+
+        :return: None
+
+        :raises ValueError: If `hook` is not a callable
+        """
+        if not callable(hook):
+            raise ValueError("`hook` must be a callable")
+        self._io_hooks.append(hook)
+
+    def register_dropped_uwb_exchange_hook(self, hook: Optional[Callable[[dict[str, int]], None]]):
+        """
+        Registers or unregisters a hook for reporting dropped UWB exchanges.
+
+        :param hook: The hook to register. If None, this unregisters the current hook
+        :type hook: Optional[Callable[[str], None]]
+
+        :return: None
+
+        :raises ValueError: ``If `hook` is not a callable
+        """
+        if hook is None:
+            self._dropped_uwb_transaction_hook = None
+        if not callable(hook):
+            raise ValueError("`hook` must be a callable")
+        self._dropped_uwb_transaction_hook = hook
+
+    def clear(self):
+        """
+        Clears the neighbor list
+        """
+        self._clear_neighbors.set()
+
+
+def unpack_beluga_status(response: str) -> BelugaStatus:
+    """
+    Parses and unpacks the status message from the Beluga node's AT+STATUS command
+    :param response: The response from the AT+STATUS command
+    :type response: str
+    :return: The unpacked data from the status response
+    :rtype: BelugaStatus
+    :raises ValueError: If the status could not be parsed from the response
+    """
+    return BelugaStatus(response)
+
+
+def unpack_beluga_version(response: str) -> semver.Version:
+    """
+    Parses the node version from the response string for the AT+VERSION command
+    :param response: The response from the AT+VERSION command
+    :type response: str
+    :return: Sematic version info
+    :rtype: semver.Version
+    :raises ValueError: If the version string could not be parsed
+    """
+    return semver.Version.parse(response.split()[0])
 
 
 if __name__ == "__main__":

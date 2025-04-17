@@ -1,17 +1,18 @@
-from enum import IntEnum
+from .zero_based_enum import ZeroBasedEnum, auto
 from typing import Optional, Union, Dict, List, Tuple
 import json
 import struct
 
 
-class FrameType(IntEnum):
+class FrameType(ZeroBasedEnum):
     """Enumerations for different frames types for Beluga"""
-    RESPONSE = 0,
-    UPDATES = 1,
-    EVENT = 2,
-    DROP = 3,
-    START = 4,
-    NO_TYPE = 5,
+    RESPONSE = auto()
+    UPDATES = auto()
+    EVENT = auto()
+    DROP = auto()
+    START = auto()
+    RANGING_DROP = auto()
+    NO_TYPE = auto()
 
     def __str__(self):
         return f"{self.name} ({self.value})"
@@ -117,6 +118,8 @@ class BelugaFrame:
                 payload = int(payload_.decode())
             case FrameType.START:
                 payload = payload_.decode()
+            case FrameType.RANGING_DROP:
+                payload = json.loads(payload_.decode())
             case _:
                 raise ValueError("Invalid type")
 

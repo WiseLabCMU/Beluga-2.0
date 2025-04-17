@@ -57,6 +57,7 @@ enum beluga_msg_type {
     RANGING_EVENT,    ///< Response to an initiator
     NEIGHBOR_DROP,    ///< Can no longer find neighbor in network
     START_EVENT,      ///< A boot event
+    UWB_RANGING_DROP, ///< Report that ranging failed
 };
 
 /**
@@ -66,6 +67,14 @@ struct ranging_event {
     uint32_t id;          ///< The initiator's ID
     uint32_t exchange_id; ///< The exchange ID (This is set by the initiator)
     int64_t timestamp;    ///< The time the ranging event was recorded
+};
+
+/**
+ * Structure for describing dropped packets
+ */
+struct dropped_packet_event {
+    uint32_t id;       ///< Responder's ID
+    uint32_t sequence; ///< The stage the packet was dropped in
 };
 
 /**
@@ -79,9 +88,10 @@ struct beluga_msg {
             const struct node *neighbor_list; ///< NEIGHBOR_UPDATE
             bool stream;                      ///< flag if in stream mode
         };
-        const struct ranging_event *event; ///< RANGING_EVENT
-        uint32_t dropped_neighbor;         ///< NEIGHBOR_DROP
-        const char *node_version;          ///< START_EVENT
+        const struct ranging_event *event;             ///< RANGING_EVENT
+        uint32_t dropped_neighbor;                     ///< NEIGHBOR_DROP
+        const char *node_version;                      ///< START_EVENT
+        const struct dropped_packet_event *drop_event; ///< UWB_RANGING_DROP
     } payload;
 };
 

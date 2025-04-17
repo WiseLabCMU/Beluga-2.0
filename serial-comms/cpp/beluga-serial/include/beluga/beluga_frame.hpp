@@ -83,6 +83,7 @@ class BelugaFrame {
                        ///< ranging request
         NEIGHBOR_DROP, ///< Indicates that a neighbor has been dropped
         START_EVENT,   ///< Indicates that the node has booted
+        RANGING_DROP,  ///< Dropped ranging exchange
         NO_TYPE        ///< No frame type. Used for error handling
     };
 
@@ -97,11 +98,17 @@ class BelugaFrame {
                            ///< with the neighbor
     };
 
+    /// Structure for logging UWB ranging exchange drops
+    struct DroppedUwbExchange {
+        uint16_t ID;    ///< ID of the neighbor that was being ranged to
+        uint32_t STAGE; ///< The stage that the ranging failed at
+    };
+
     /// Structure for decoded frame data
     struct DecodedFrame {
         BelugaFrame::BelugaFrameType type; ///< Type of the frame
         std::variant<std::string, std::vector<BelugaFrame::NeighborUpdate>,
-                     RangeEvent, uint32_t>
+                     RangeEvent, uint32_t, DroppedUwbExchange>
             payload; ///< Payload of the frame. This is dependent on the frame
                      ///< type. Types are:
                      ///< - `COMMAND_RESPONSE`: `std::string`
@@ -110,6 +117,7 @@ class BelugaFrame {
                      ///< - `RANGING_EVENT`: `RangeEvent`
                      ///< - `NEIGHBOR_DROP`: `uint32_t`
                      ///< - `START_EVENT`: `std::string`
+                     ///< - `RANGING_DROP`: `BelugaFrame::DroppedUwbExchange`
                      /// - `NO_TYPE`: No payload
     };
 

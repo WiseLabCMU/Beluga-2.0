@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "beluga_serial"
-version = "0.0.2"
+version = "0.0.4"
 authors = [
     { name= "Tom Schmitz", email="tschmitz@andrew.cmu.edu" },
 ]
@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "pyserial",
     "cmd2",
+    "semver",
 ]
 
 [project.entry-points]
