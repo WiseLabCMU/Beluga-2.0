@@ -29,6 +29,9 @@
    <layout class="QVBoxLayout" name="verticalLayout_8">
     <item>
      <widget class="QTabWidget" name="TerminalTab">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="minimumSize">
        <size>
         <width>1215</width>
@@ -249,6 +252,9 @@
           </item>
           <item row="2" column="5">
            <widget class="StartRangingButton" name="terminal_ranging_btn">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>Start Ranging</string>
             </property>
@@ -264,6 +270,9 @@
           <layout class="QVBoxLayout" name="verticalLayout_15">
            <item>
             <widget class="QPushButton" name="terminal_clear_btn">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="maximumSize">
               <size>
                <width>75</width>
@@ -280,6 +289,9 @@
            </item>
            <item>
             <widget class="BelugaTerminal" name="terminal">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="palette">
               <palette>
                <active>
