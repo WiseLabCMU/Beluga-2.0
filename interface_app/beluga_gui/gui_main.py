@@ -2,10 +2,9 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import QThread, QObject, QThreadPool, QRunnable, QTimer
 from typing import Optional, Callable, Iterable, Tuple
-from beluga_gui import Ui_BelugaGUI
-from widgets import BelugaStatusLabel
-from dialogs import DataGatheringDialog, CaptureProgress
-import dialogs.messages as messages
+from .beluga_gui import Ui_BelugaGUI
+from .widgets import BelugaStatusLabel
+from .dialogs import DataGatheringDialog, CaptureProgress, messages
 from beluga_serial import BelugaSerial, BelugaSerialAttr, BelugaStatus, unpack_beluga_version
 from copy import deepcopy
 import time
@@ -675,6 +674,10 @@ class BelugaGui:
                 self._status_label.set_connected(status)
 
 
-if __name__ == "__main__":
+def main():
     gui = BelugaGui(sys.argv)
     gui.run()
+
+
+if __name__ == "__main__":
+    main()

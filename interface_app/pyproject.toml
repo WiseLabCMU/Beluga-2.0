@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "beluga_gui"
+version = "0.0.0"
+authors = [{name = "Tom Schmitz", email = "tschmitz@andrew.cmu.edu"}]
+description = "GUI for communicating with and observing a Beluga ad-hoc ranging network"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows"
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pyqt5",
+    "pyqtgraph",
+    "pyInstaller",
+    "beluga_serial@git+https://github.com/WiseLabCMU/Beluga-2.0.git#subdirectory=serial-comms/python",
+]
+
+[project.scripts]
+beluga_gui = "beluga_gui.gui_main:main"
