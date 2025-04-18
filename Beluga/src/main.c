@@ -268,7 +268,12 @@ static void load_timeout(const struct comms *comms) {
  */
 static void load_tx_power(const struct comms *comms) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
-    set_tx_power((uint32_t)tx_power);
+    struct uwb_tx_power_config config = {
+        .mode = UWB_TX_PWR_CONFIG_RAW,
+        .raw_power = tx_power,
+    };
+
+    set_tx_power(&config);
     CUSTOM_INIT_MSG(comms, print_tx_power, (uint32_t)tx_power);
 }
 

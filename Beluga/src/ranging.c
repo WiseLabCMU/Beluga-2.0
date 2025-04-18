@@ -658,6 +658,10 @@ int set_tx_power(const struct uwb_tx_power_config *tx_power) {
                                     tx_power->advanced_power.fine);
         break;
     }
+    case UWB_TX_PWR_CONFIG_RAW: {
+        config_tx.power = tx_power->raw_power;
+        break;
+    }
     default: {
         ret = -EFAULT;
         break;
