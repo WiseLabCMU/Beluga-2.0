@@ -604,12 +604,70 @@ int set_uwb_channel(uint32_t channel) {
 }
 
 /**
+ * @brief Helper function for using the advanced API for the UWB TX power.
+ * @param[in] stage The amplifier stage being set
+ * @param[in] coarse_gain The coarse gain of the stage
+ * @param[in] fine_gain The fine gain of the stage
+ * @return 0 upon success
+ * @return -EILSEQ if any parameter is invalid
+ */
+static int set_advanced_tx_power(uint32_t stage, uint32_t coarse_gain,
+                                 uint32_t fine_gain) {
+    const uint32_t coarse_gain_shift = 5;
+    uint32_t mask = UINT8_MAX;
+    uint32_t power, gain;
+    if (stage > 3 || coarse_gain > 7 || fine_gain > 31) {
+        return -EILSEQ;
+    }
+
+    power = config_tx.power;
+    mask <<= (uint32_t)CHAR_BIT * stage;
+    power &= ~mask;
+    gain = coarse_gain << coarse_gain_shift;
+    gain |= fine_gain;
+    gain <<= (uint32_t)CHAR_BIT * stage;
+    power |= gain;
+    config_tx.power = power;
+    return 0;
+}
+
+/**
  * @brief Sets the transmit power of the DW1000
  * @param[in] tx_power The new transmit power of the DW1000
+ * @return 0 upon success
+ * @return -EINVAL if tx_power is NULL
+ * @return -EILSEQ if any parameter in the advanced power configurations is
+ * invalid
+ * @return -EFAULT if mode is invalid
  */
-void set_tx_power(uint32_t tx_power) {
-    config_tx.power = tx_power;
-    dwt_configuretxrf(&config_tx);
+int set_tx_power(const struct uwb_tx_power_config *tx_power) {
+    int ret = 0;
+    if (tx_power == NULL) {
+        return -EINVAL;
+    }
+
+    switch (tx_power->mode) {
+    case UWB_TX_PWR_CONFIG_SIMPLE: {
+        config_tx.power =
+            (tx_power->simple_power == 0) ? TX_POWER_MAN_DEFAULT : TX_POWER_MAX;
+        break;
+    }
+    case UWB_TX_PWR_CONFIG_ADVANCED: {
+        ret = set_advanced_tx_power(tx_power->advanced_power.stage,
+                                    tx_power->advanced_power.coarse,
+                                    tx_power->advanced_power.fine);
+        break;
+    }
+    default: {
+        ret = -EFAULT;
+        break;
+    }
+    }
+
+    if (ret == 0) {
+        dwt_configuretxrf(&config_tx);
+    }
+    return ret;
 }
 
 /**
