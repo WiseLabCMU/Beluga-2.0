@@ -1,2 +1,5 @@
 .venv/
 __pycache__
+beluga_gui.egg-info
+build/
+dist/
