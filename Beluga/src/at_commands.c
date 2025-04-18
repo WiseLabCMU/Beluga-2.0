@@ -438,46 +438,34 @@ AT_CMD_REGISTER(TIMEOUT);
 AT_CMD_DEFINE(TXPOWER) {
     LOG_INF("Running TXPOWER command");
     READ_SETTING_HEX(comms, argc, 2, BELUGA_TX_POWER, "TX Power", "08");
-    int32_t arg1, coarse_control, fine_control;
-    bool value, success = strtoint32(argv[1], &arg1);
-    uint32_t power, mask = UINT8_MAX, new_setting;
+    struct uwb_tx_power_config tx_power;
+    int32_t arg1;
+    uint32_t power;
+    bool value;
 
-    switch (argc) {
-    case 2: {
-        if (success && int2bool(&value, arg1)) {
-            power = value ? TX_POWER_MAX : TX_POWER_MAN_DEFAULT;
-            set_tx_power(power);
-        } else {
-            ERROR(comms, "Tx power parameter input error");
-        }
-        break;
+    if (!strtoint32(argv[1], &arg1)) {
+        ERROR(comms, "Tx power parameter input error");
     }
-    case 3: {
-        ERROR(comms, "Invalid number of parameters");
-    }
-    case 4:
-    default: {
-        if (!success || arg1 < 0 || arg1 > 3) {
-            ERROR(comms, "Invalid TX amplification stage");
-        }
-        success = strtoint32(argv[2], &coarse_control);
-        if (!success || coarse_control < 0 || coarse_control > 7) {
+
+    if (argc == 2 && int2bool(&value, arg1)) {
+        tx_power.mode = UWB_TX_PWR_CONFIG_SIMPLE;
+        tx_power.simple_power = value;
+    } else if (argc == 4) {
+        tx_power.advanced_power.stage = arg1;
+        if (!strtoint32(argv[2], &tx_power.advanced_power.coarse)) {
             ERROR(comms, "Invalid TX coarse gain");
         }
-        success = strtoint32(argv[3], &fine_control);
-        if (!success || fine_control < 0 || fine_control > 31) {
+        if (!strtoint32(argv[3], &tx_power.advanced_power.fine)) {
             ERROR(comms, "Invalid TX fine gain");
         }
-        power = (uint32_t)retrieveSetting(BELUGA_TX_POWER);
-        coarse_control = (~coarse_control) & 0x7;
-        new_setting = (coarse_control << 5) | fine_control;
-        mask <<= 8 * arg1;
-        power &= ~mask;
-        power |= new_setting << 8 * arg1;
-        set_tx_power(power);
-        break;
+        if (set_tx_power(&tx_power) < 0) {
+            ERROR(comms, "Tx power parameter input error");
+        }
+    } else {
+        ERROR(comms, "Invalid number of parameters");
     }
-    }
+
+    power = get_tx_power();
 
     updateSetting(BELUGA_TX_POWER, (int32_t)power);
     AT_OK(comms, "TX Power: 0x%08X", power);

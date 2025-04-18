@@ -649,7 +649,7 @@ int set_tx_power(const struct uwb_tx_power_config *tx_power) {
     switch (tx_power->mode) {
     case UWB_TX_PWR_CONFIG_SIMPLE: {
         config_tx.power =
-            (tx_power->simple_power == 0) ? TX_POWER_MAN_DEFAULT : TX_POWER_MAX;
+            (tx_power->simple_power) ? TX_POWER_MAX : TX_POWER_MAN_DEFAULT;
         break;
     }
     case UWB_TX_PWR_CONFIG_ADVANCED: {
@@ -669,6 +669,12 @@ int set_tx_power(const struct uwb_tx_power_config *tx_power) {
     }
     return ret;
 }
+
+/**
+ * Retrieves the currently set TX power for the UWB
+ * @return the raw TX power setting
+ */
+uint32_t get_tx_power(void) { return config_tx.power; }
 
 /**
  * Sets the ranging mode used by the initiator and responder

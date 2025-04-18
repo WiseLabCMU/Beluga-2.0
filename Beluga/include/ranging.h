@@ -134,6 +134,8 @@ enum uwb_sfd {
 enum uwb_tx_power_config_mode {
     UWB_TX_PWR_CONFIG_SIMPLE,   ///< Simple configuration
     UWB_TX_PWR_CONFIG_ADVANCED, ///< Advanced configuration
+    UWB_TX_PWR_CONFIG_RAW,      ///< Set the TX power using the raw
+                                ///< interface. Used internally.
 };
 
 /**
@@ -147,7 +149,13 @@ struct uwb_tx_power_config {
          * - 0: Default power setting
          * - 1: Maximum power
          */
-        int32_t simple_power;
+        bool simple_power;
+
+        /**
+         * Raw interface for setting the power.
+         * This should only be used when loading settings.
+         */
+        uint32_t raw_power;
 
         /**
          * Advanced interface for setting the power.
@@ -311,6 +319,12 @@ int set_rate(uint32_t rate);
  * @return -EFAULT if mode is invalid
  */
 int set_tx_power(const struct uwb_tx_power_config *tx_power);
+
+/**
+ * Retrieves the currently set TX power for the UWB
+ * @return the raw TX power setting
+ */
+uint32_t get_tx_power(void);
 
 /**
  * @brief Initialize the DW1000 for ranging.
