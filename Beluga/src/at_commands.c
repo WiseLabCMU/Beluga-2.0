@@ -161,11 +161,11 @@ static bool strtoint32(const char *str, int32_t *result) {
  */
 AT_CMD_DEFINE(STARTUWB) {
     LOG_INF("Running STARTUWB command");
-    if (get_ble_led_state() == LED_BLE_OFF) {
+    if (get_ble_led_state() == LED_OFF) {
         // Avoid undefined behavior
         ERROR(comms, "Cannot start UWB: BLE has not been started");
     }
-    if (get_uwb_led_state() == LED_UWB_ON) {
+    if (get_uwb_led_state() == LED_ON) {
         ERROR(comms, "UWB is already on");
     }
     enum power_mode pwramp =
@@ -173,7 +173,7 @@ AT_CMD_DEFINE(STARTUWB) {
     update_power_mode(pwramp);
     k_sem_give(&k_sus_resp);
     k_sem_give(&k_sus_init);
-    update_led_state(LED_UWB_ON);
+    update_led_state(LED_UWB, LED_ON);
     AT_OK(comms, "Started UWB");
 }
 AT_CMD_REGISTER(STARTUWB);
@@ -188,12 +188,12 @@ AT_CMD_REGISTER(STARTUWB);
  */
 AT_CMD_DEFINE(STOPUWB) {
     LOG_INF("Running STOPUWB command");
-    if (get_uwb_led_state() == LED_UWB_OFF) {
+    if (get_uwb_led_state() == LED_OFF) {
         ERROR(comms, "UWB is not running");
     }
     k_sem_take(&k_sus_resp, K_FOREVER);
     k_sem_take(&k_sus_init, K_FOREVER);
-    update_led_state(LED_UWB_OFF);
+    update_led_state(LED_UWB, LED_OFF);
     AT_OK(comms, "Stopped UWB");
 }
 AT_CMD_REGISTER(STOPUWB);
@@ -210,7 +210,7 @@ AT_CMD_DEFINE(STARTBLE) {
     LOG_INF("Running STARTBLE) command");
     if (get_NODE_UUID() == 0) {
         ERROR(comms, "Cannot start BLE: Node ID is not set");
-    } else if (get_ble_led_state() == LED_BLE_ON) {
+    } else if (get_ble_led_state() == LED_ON) {
         ERROR(comms, "BLE is already on");
     }
     k_sem_give(&print_list_sem);
@@ -219,7 +219,7 @@ AT_CMD_DEFINE(STARTBLE) {
         k_sem_take(&print_list_sem, K_FOREVER);
         ERROR(comms, "Failed to start BLE (%d)", err);
     }
-    update_led_state(LED_BLE_ON);
+    update_led_state(LED_BLE, LED_ON);
     AT_OK(comms, "Started BLE");
 }
 AT_CMD_REGISTER(STARTBLE);
@@ -234,7 +234,7 @@ AT_CMD_REGISTER(STARTBLE);
  */
 AT_CMD_DEFINE(STOPBLE) {
     LOG_INF("Running STOPBLE command");
-    if (get_ble_led_state() == LED_BLE_OFF) {
+    if (get_ble_led_state() == LED_OFF) {
         ERROR(comms, "BLE is already off");
     }
     int err = disable_bluetooth();
@@ -242,7 +242,7 @@ AT_CMD_DEFINE(STOPBLE) {
         ERROR(comms, "Failed to stop BLE (%d)", err);
     }
     k_sem_take(&print_list_sem, K_FOREVER);
-    update_led_state(LED_BLE_OFF);
+    update_led_state(LED_BLE, LED_OFF);
     AT_OK(comms, "Stopped BLE");
 }
 AT_CMD_REGISTER(STOPBLE);
@@ -674,9 +674,9 @@ AT_CMD_DEFINE(PWRAMP) {
 
     if (err == 0 || err == -ENODEV) {
         if (pwramp == 0) {
-            update_led_state(LED_PWRAMP_OFF);
+            update_led_state(LED_PWRAMP, LED_OFF);
         } else {
-            update_led_state(LED_PWRAMP_ON);
+            update_led_state(LED_PWRAMP, LED_ON);
         }
 
         updateSetting(BELUGA_RANGE_EXTEND, pwramp);
@@ -1085,8 +1085,8 @@ AT_CMD_DEFINE(STATUS) {
         IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT) << 11;
     int antenna_ret = current_antenna();
     uint32_t antenna = (antenna_ret >= 0) ? (antenna_ret << 10) : UINT32_C(0);
-    uint32_t uwb_state = (uint32_t)(get_uwb_led_state() == LED_UWB_ON) << 9;
-    uint32_t ble_state = (uint32_t)(get_ble_led_state() == LED_BLE_ON) << 8;
+    uint32_t uwb_state = (uint32_t)(get_uwb_led_state() == LED_ON) << 9;
+    uint32_t ble_state = (uint32_t)(get_ble_led_state() == LED_ON) << 8;
     const uint32_t board = (uint8_t)CONFIG_BELUGA_BOARD_HW_ID;
 
     uint32_t status =
