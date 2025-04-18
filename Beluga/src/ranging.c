@@ -762,11 +762,13 @@ static void resp_reconfig() {
  * @return `true` if there was a ranging error
  * @return `false` if ranging succeeded
  */
-static inline bool run_ranging(size_t current_neighbor) {
+static inline bool run_ranging(const struct comms *comms, size_t current_neighbor) {
     int err;
     double range;
     uint32_t exchange;
     bool drop = false;
+
+    ARG_UNUSED(comms);
 
     if (twr_mode) {
         err = ds_init_run(seen_list[current_neighbor].UUID, &range, &exchange);
@@ -821,7 +823,6 @@ static void initiate_ranging(const struct comms *comms) {
     int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD)
                             ? time_left
                             : CONFIG_POLLING_REFRESH_PERIOD;
-    ARG_UNUSED(comms);
 
     k_sleep(K_MSEC(sleep_for));
     time_left -= sleep_for;
@@ -853,7 +854,7 @@ static void initiate_ranging(const struct comms *comms) {
     }
 
     if (!search_broken) {
-        drop = run_ranging(current_neighbor);
+        drop = run_ranging(comms, current_neighbor);
         BOUND_INCREMENT(current_neighbor, MAX_ANCHOR_COUNT);
     }
 
