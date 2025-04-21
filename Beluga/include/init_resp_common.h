@@ -93,7 +93,7 @@
  */
 #define CHECK_UWB_ACTIVE()                                                     \
     do {                                                                       \
-        if (get_uwb_led_state() == LED_UWB_ON) {                               \
+        if (get_uwb_led_state() == LED_ON) {                                   \
             return -EBUSY;                                                     \
         }                                                                      \
     } while (0)

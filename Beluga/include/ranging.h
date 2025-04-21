@@ -129,6 +129,74 @@ enum uwb_sfd {
 };
 
 /**
+ * @brief Represent the different ways the UWB TX power can be set
+ */
+enum uwb_tx_power_config_mode {
+    UWB_TX_PWR_CONFIG_SIMPLE,   ///< Simple configuration
+    UWB_TX_PWR_CONFIG_ADVANCED, ///< Advanced configuration
+    UWB_TX_PWR_CONFIG_RAW,      ///< Set the TX power using the raw
+                                ///< interface. Used internally.
+};
+
+/**
+ * @brief Struct for setting a power configuration
+ */
+struct uwb_tx_power_config {
+    enum uwb_tx_power_config_mode mode; ///< Indicates which values to use
+    union {
+        /**
+         * Simple interface for setting the power.
+         * - 0: Default power setting
+         * - 1: Maximum power
+         */
+        bool simple_power;
+
+        /**
+         * Raw interface for setting the power.
+         * This should only be used when loading settings.
+         */
+        uint32_t raw_power;
+
+        /**
+         * Advanced interface for setting the power.
+         *
+         * Stage gain = coarse + fine dB
+         */
+        struct {
+            /**
+             * The stage the that is being being updated.
+             * - 0: BOOSTNORM
+             * - 1: BOOSTP500
+             * - 2: BOOSTP250
+             * - 3: BOOSTP125
+             */
+            int32_t stage;
+
+            /**
+             * The coarse gain of the amplifier stage (2.5 dB steps)
+             * - 0: Off (No output)
+             * - 1: 0 dB Gain
+             * - 2: 2.5 dB Gain
+             * - 3: 5 dB Gain
+             * - ...
+             * - 7: 15 dB Gain
+             */
+            int32_t coarse;
+
+            /**
+             * The fine gain of the amplifier gain (0.5 dB steps)
+             * - 0: 0.0 dB Gain
+             * - 1: 0.5 dB Gain
+             * - 2: 1.0 dB Gain
+             * - ...
+             * - 31: 15.5 dB Gain
+             */
+            int32_t fine;
+        } advanced_power;
+    };
+};
+
+/**
  * @brief Prints the TX power in a non-standard (human readable) format
  * @param[in] tx_power The current TX power
  */
@@ -244,8 +312,19 @@ int set_rate(uint32_t rate);
 /**
  * @brief Sets the transmit power of the DW1000
  * @param[in] tx_power The new transmit power of the DW1000
+ * @return 0 upon success
+ * @return -EINVAL if tx_power is NULL
+ * @return -EILSEQ if any parameter in the advanced power configurations is
+ * invalid
+ * @return -EFAULT if mode is invalid
  */
-void set_tx_power(uint32_t tx_power);
+int set_tx_power(const struct uwb_tx_power_config *tx_power);
+
+/**
+ * Retrieves the currently set TX power for the UWB
+ * @return the raw TX power setting
+ */
+uint32_t get_tx_power(void);
 
 /**
  * @brief Initialize the DW1000 for ranging.

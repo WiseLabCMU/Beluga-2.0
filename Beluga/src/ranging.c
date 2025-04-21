@@ -604,13 +604,81 @@ int set_uwb_channel(uint32_t channel) {
 }
 
 /**
+ * @brief Helper function for using the advanced API for the UWB TX power.
+ * @param[in] stage The amplifier stage being set
+ * @param[in] coarse_gain The coarse gain of the stage
+ * @param[in] fine_gain The fine gain of the stage
+ * @return 0 upon success
+ * @return -EILSEQ if any parameter is invalid
+ */
+static int set_advanced_tx_power(uint32_t stage, uint32_t coarse_gain,
+                                 uint32_t fine_gain) {
+    const uint32_t coarse_gain_shift = 5;
+    uint32_t mask = UINT8_MAX;
+    uint32_t power, gain;
+    if (stage > 3 || coarse_gain > 7 || fine_gain > 31) {
+        return -EILSEQ;
+    }
+
+    power = config_tx.power;
+    mask <<= (uint32_t)CHAR_BIT * stage;
+    power &= ~mask;
+    gain = coarse_gain << coarse_gain_shift;
+    gain |= fine_gain;
+    gain <<= (uint32_t)CHAR_BIT * stage;
+    power |= gain;
+    config_tx.power = power;
+    return 0;
+}
+
+/**
  * @brief Sets the transmit power of the DW1000
  * @param[in] tx_power The new transmit power of the DW1000
+ * @return 0 upon success
+ * @return -EINVAL if tx_power is NULL
+ * @return -EILSEQ if any parameter in the advanced power configurations is
+ * invalid
+ * @return -EFAULT if mode is invalid
  */
-void set_tx_power(uint32_t tx_power) {
-    config_tx.power = tx_power;
-    dwt_configuretxrf(&config_tx);
+int set_tx_power(const struct uwb_tx_power_config *tx_power) {
+    int ret = 0;
+    if (tx_power == NULL) {
+        return -EINVAL;
+    }
+
+    switch (tx_power->mode) {
+    case UWB_TX_PWR_CONFIG_SIMPLE: {
+        config_tx.power =
+            (tx_power->simple_power) ? TX_POWER_MAX : TX_POWER_MAN_DEFAULT;
+        break;
+    }
+    case UWB_TX_PWR_CONFIG_ADVANCED: {
+        ret = set_advanced_tx_power(tx_power->advanced_power.stage,
+                                    tx_power->advanced_power.coarse,
+                                    tx_power->advanced_power.fine);
+        break;
+    }
+    case UWB_TX_PWR_CONFIG_RAW: {
+        config_tx.power = tx_power->raw_power;
+        break;
+    }
+    default: {
+        ret = -EFAULT;
+        break;
+    }
+    }
+
+    if (ret == 0) {
+        dwt_configuretxrf(&config_tx);
+    }
+    return ret;
 }
+
+/**
+ * Retrieves the currently set TX power for the UWB
+ * @return the raw TX power setting
+ */
+uint32_t get_tx_power(void) { return config_tx.power; }
 
 /**
  * Sets the ranging mode used by the initiator and responder
@@ -689,6 +757,57 @@ static void resp_reconfig() {
 }
 
 /**
+ * @brief Run the initiator ranging routine and save the results.
+ * @param[in] current_neighbor The neighbor to run the routine for
+ * @return `true` if there was a ranging error
+ * @return `false` if ranging succeeded
+ */
+static inline bool run_ranging(const struct comms *comms,
+                               size_t current_neighbor) {
+    int err;
+    double range;
+    uint32_t exchange;
+    bool drop = false;
+
+    ARG_UNUSED(comms);
+
+    if (twr_mode) {
+        err = ds_init_run(seen_list[current_neighbor].UUID, &range, &exchange);
+        LOG_INF("Double sided ranging returned %d", err);
+    } else {
+        err = ss_init_run(seen_list[current_neighbor].UUID, &range, &exchange);
+        LOG_INF("Single sided ranging returned %d", err);
+    }
+
+    if (err != 0) {
+#if defined(CONFIG_REPORT_UWB_DROPS)
+        struct dropped_packet_event event = {
+            .id = seen_list[current_neighbor].UUID,
+            .sequence = dropped_stage(),
+        };
+        struct beluga_msg msg = {
+            .type = UWB_RANGING_DROP,
+            .payload.drop_event = &event,
+        };
+        comms_write_msg(comms, &msg);
+#endif // defined(CONFIG_REPORT_UWB_DROPS)
+        drop = true;
+    }
+
+    if (!drop && RANGE_CONDITION(range)) {
+        seen_list[current_neighbor].update_flag = true;
+        seen_list[current_neighbor].range = (float)range;
+        seen_list[current_neighbor].time_stamp = k_uptime_get();
+#if defined(CONFIG_UWB_LOGIC_CLK)
+        seen_list[current_neighbor].exchange_id = exchange;
+#endif // defined(CONFIG_UWB_LOGIC_CLK)
+
+        update_ble_service(seen_list[current_neighbor].UUID, range);
+    }
+    return drop;
+}
+
+/**
  * @brief Find a node in the neighbors list and range to that node
  *
  * @param[in] comms Pointer to the comms object for drop reporting
@@ -702,12 +821,9 @@ static void initiate_ranging(const struct comms *comms) {
     static size_t current_neighbor = 0;
 
     bool search_broken = false;
-    double range;
-    uint32_t exchange;
     int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD)
                             ? time_left
                             : CONFIG_POLLING_REFRESH_PERIOD;
-    ARG_UNUSED(comms);
 
     k_sleep(K_MSEC(sleep_for));
     time_left -= sleep_for;
@@ -739,44 +855,7 @@ static void initiate_ranging(const struct comms *comms) {
     }
 
     if (!search_broken) {
-        int err;
-
-        if (twr_mode) {
-            err = ds_init_run(seen_list[current_neighbor].UUID, &range,
-                              &exchange);
-            LOG_INF("Double sided ranging returned %d", err);
-        } else {
-            err = ss_init_run(seen_list[current_neighbor].UUID, &range,
-                              &exchange);
-            LOG_INF("Single sided ranging returned %d", err);
-        }
-
-        if (err != 0) {
-#if defined(CONFIG_REPORT_UWB_DROPS)
-            struct dropped_packet_event event = {
-                .id = seen_list[current_neighbor].UUID,
-                .sequence = dropped_stage(),
-            };
-            struct beluga_msg msg = {
-                .type = UWB_RANGING_DROP,
-                .payload.drop_event = &event,
-            };
-            comms_write_msg(comms, &msg);
-#endif // defined(CONFIG_REPORT_UWB_DROPS)
-            drop = true;
-        }
-
-        if (!drop && RANGE_CONDITION(range)) {
-            seen_list[current_neighbor].update_flag = true;
-            seen_list[current_neighbor].range = (float)range;
-            seen_list[current_neighbor].time_stamp = k_uptime_get();
-#if defined(CONFIG_UWB_LOGIC_CLK)
-            seen_list[current_neighbor].exchange_id = exchange;
-#endif // defined(CONFIG_UWB_LOGIC_CLK)
-
-            update_ble_service(seen_list[current_neighbor].UUID, range);
-        }
-
+        drop = run_ranging(comms, current_neighbor);
         BOUND_INCREMENT(current_neighbor, MAX_ANCHOR_COUNT);
     }
 

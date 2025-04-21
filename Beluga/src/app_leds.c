@@ -78,54 +78,66 @@ static bool led_mode = led_mode_on;
  * @param[in] led The identifier for the LED to be turned on (e.g., BLE, UWB,
  * POWER, etc.).
  */
-static void led_on(uint32_t led) {
+static inline void led_on(uint32_t led) {
     if (led_mode) {
         APP_LED_ON(led);
     }
 }
 
 /**
+ * Sets the appropriate LED's state
+ * @param[in] bit The bit that represents the LED's state
+ * @param[in] led The LED being updated
+ * @param[in] state The new state of the LED
+ */
+static inline void update_led(uint8_t bit, uint32_t led, enum led_state state) {
+    switch (state) {
+    case LED_ON: {
+        ledState |= bit;
+        led_on(led);
+        break;
+    }
+    case LED_OFF: {
+        ledState &= ~bit;
+        APP_LED_OFF(led);
+    }
+    default:
+        __ASSERT_UNREACHABLE;
+        break;
+    }
+}
+
+/**
  * @brief Updates the state of the specified LED based on the given LED state.
  *
- * @param[in] update The new state to apply to the LED (e.g., LED_BLE_ON,
- * LED_UWB_OFF).
+ * @param[in] led The led whose state is being updated
+ * @param[in] update The new state to apply to the LED.
+ *
+ * @note If the master LED state is off, then this will not update the hardware
+ * state of the LED; However, it will save the software state. The software
+ * state is only reflected by the hardware when the master LED state is on.
  */
-void update_led_state(enum led_state update) {
-    switch (update) {
-    case LED_BLE_ON:
-        ledState |= BIT(BLE_BIT);
-        led_on(BLE_LED);
+void update_led_state(enum led led, enum led_state update) {
+    switch (led) {
+    case LED_BLE: {
+        update_led(BIT(BLE_BIT), BLE_LED, update);
         break;
-    case LED_BLE_OFF:
-        ledState &= ~(BIT(BLE_BIT));
-        APP_LED_OFF(BLE_LED);
+    }
+    case LED_UWB: {
+        update_led(BIT(UWB_BIT), UWB_LED, update);
         break;
-    case LED_UWB_ON:
-        ledState |= BIT(UWB_BIT);
-        led_on(UWB_LED);
+    }
+    case LED_POWER: {
+        update_led(BIT(POWER_BIT), POWER_LED, update);
         break;
-    case LED_UWB_OFF:
-        ledState &= ~(BIT(UWB_BIT));
-        APP_LED_OFF(UWB_LED);
+    }
+    case LED_PWRAMP: {
+        update_led(BIT(PWRAMP_BIT), PWRAMP_LED, update);
         break;
-    case LED_POWER_ON:
-        ledState |= BIT(POWER_BIT);
-        led_on(POWER_LED);
-        break;
-    case LED_POWER_OFF:
-        ledState &= ~(BIT(POWER_BIT));
-        APP_LED_OFF(POWER_LED);
-        break;
-    case LED_PWRAMP_ON:
-        ledState |= BIT(PWRAMP_BIT);
-        led_on(PWRAMP_LED);
-        break;
-    case LED_PWRAMP_OFF:
-        ledState &= ~(BIT(PWRAMP_BIT));
-        APP_LED_OFF(PWRAMP_LED);
-        break;
+    }
     default:
-        LOG_ERR("Attempted to update invalid LED: %d", update);
+        __ASSERT_UNREACHABLE;
+        break;
     }
 }
 
@@ -177,7 +189,7 @@ void restore_led_states(void) {
  * state of the BLE LED as if the LED master state is on
  */
 enum led_state get_ble_led_state(void) {
-    return (ledState & BIT(BLE_BIT)) ? LED_BLE_ON : LED_BLE_OFF;
+    return (ledState & BIT(BLE_BIT)) ? LED_ON : LED_OFF;
 }
 
 /**
@@ -189,7 +201,7 @@ enum led_state get_ble_led_state(void) {
  * state of the UWB LED as if the LED master state is on
  */
 enum led_state get_uwb_led_state(void) {
-    return (ledState & BIT(UWB_BIT)) ? LED_UWB_ON : LED_UWB_OFF;
+    return (ledState & BIT(UWB_BIT)) ? LED_ON : LED_OFF;
 }
 
 /**
@@ -201,7 +213,7 @@ enum led_state get_uwb_led_state(void) {
  * state of the Power LED as if the LED master state is on
  */
 enum led_state get_power_led_state(void) {
-    return (ledState & BIT(POWER_BIT)) ? LED_POWER_ON : LED_POWER_OFF;
+    return (ledState & BIT(POWER_BIT)) ? LED_ON : LED_OFF;
 }
 
 /**
@@ -214,7 +226,7 @@ enum led_state get_power_led_state(void) {
  * state of the Amplifier LED as if the LED master state is on
  */
 enum led_state get_pwramp_led_state(void) {
-    return ledState & BIT(PWRAMP_BIT) ? LED_PWRAMP_ON : LED_PWRAMP_OFF;
+    return ledState & BIT(PWRAMP_BIT) ? LED_ON : LED_OFF;
 }
 
 /**

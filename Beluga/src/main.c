@@ -177,7 +177,7 @@ static void load_led_mode(const struct comms *comms) {
     if (led_mode == 1) {
         all_leds_off();
     }
-    update_led_state(LED_POWER_ON);
+    update_led_state(LED_POWER, LED_ON);
     SETTINGS_PRINT(comms, "LED Mode: %d", led_mode);
 }
 
@@ -210,15 +210,15 @@ static void load_bootmode(const struct comms *comms) {
     case 1:
         k_sem_give(&print_list_sem);
         enable_bluetooth();
-        update_led_state(LED_BLE_ON);
+        update_led_state(LED_BLE, LED_ON);
         break;
     case 2:
         k_sem_give(&print_list_sem);
         enable_bluetooth();
-        update_led_state(LED_BLE_ON);
+        update_led_state(LED_BLE, LED_ON);
         k_sem_give(&k_sus_resp);
         k_sem_give(&k_sus_init);
-        update_led_state(LED_UWB_ON);
+        update_led_state(LED_UWB, LED_ON);
     case 0:
         break;
     default:
@@ -268,7 +268,12 @@ static void load_timeout(const struct comms *comms) {
  */
 static void load_tx_power(const struct comms *comms) {
     int32_t tx_power = retrieveSetting(BELUGA_TX_POWER);
-    set_tx_power((uint32_t)tx_power);
+    struct uwb_tx_power_config config = {
+        .mode = UWB_TX_PWR_CONFIG_RAW,
+        .raw_power = tx_power,
+    };
+
+    set_tx_power(&config);
     CUSTOM_INIT_MSG(comms, print_tx_power, (uint32_t)tx_power);
 }
 
@@ -373,9 +378,9 @@ UNUSED static void load_power_amplifiers(const struct comms *comms) {
     ret = update_power_mode((enum power_mode)pwramp);
 
     if (pwramp == 0 || ret != 0) {
-        update_led_state(LED_PWRAMP_OFF);
+        update_led_state(LED_PWRAMP, LED_OFF);
     } else {
-        update_led_state(LED_PWRAMP_ON);
+        update_led_state(LED_PWRAMP, LED_ON);
     }
 
     SETTINGS_PRINT(comms, "Range Extension: %d", pwramp);
@@ -436,7 +441,7 @@ static void load_settings(const struct comms *comms) {
 
     // Disable UWB LED since setters check LED if UWB is active or not
     enum led_state uwb_state = get_uwb_led_state();
-    update_led_state(LED_UWB_OFF);
+    update_led_state(LED_UWB, LED_OFF);
 
     // Load UWB settings since ranging task has not started yet
     load_poll_rate(comms);
@@ -450,7 +455,7 @@ static void load_settings(const struct comms *comms) {
     load_pan_id(comms);
 
     // Restore UWB state in the LEDs
-    update_led_state(uwb_state);
+    update_led_state(LED_UWB, uwb_state);
 
     load_timeout(comms);
     load_tx_power(comms);
