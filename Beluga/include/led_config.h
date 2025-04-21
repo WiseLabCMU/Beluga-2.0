@@ -202,7 +202,7 @@
  * @param[in] LED The LED to turn on.
  * @param[in] ... Additional arguments passed to control behavior.
  */
-#define LED_ON(LED, ...) _LED_GENERATE_CODE(LED, dk_set_led_on, __VA_ARGS__)
+#define _LED_ON(LED, ...) _LED_GENERATE_CODE(LED, dk_set_led_on, __VA_ARGS__)
 
 /**
  * @brief Macro to turn the specified LED off.
@@ -212,7 +212,7 @@
  * @param[in] LED The LED to turn off.
  * @param[in] ... Additional arguments passed to control behavior.
  */
-#define LED_OFF(LED, ...) _LED_GENERATE_CODE(LED, dk_set_led_off, __VA_ARGS__)
+#define _LED_OFF(LED, ...) _LED_GENERATE_CODE(LED, dk_set_led_off, __VA_ARGS__)
 
 /**
  * @brief Macro to initialize the LEDs.
@@ -228,28 +228,28 @@
             LOG_ERR("LEDs init failed (err %d)\n", _ledErr);                   \
             return 0;                                                          \
         }                                                                      \
-        LED_OFF(DK_LED1, LED_EARLY_EXIT_INT);                                  \
-        LED_OFF(DK_LED2, LED_EARLY_EXIT_INT);                                  \
-        LED_OFF(DK_LED2, LED_EARLY_EXIT_INT);                                  \
-        LED_OFF(DK_LED3, LED_EARLY_EXIT_INT);                                  \
-        LED_OFF(DK_LED4, LED_EARLY_EXIT_INT);                                  \
+        _LED_OFF(DK_LED1, LED_EARLY_EXIT_INT);                                 \
+        _LED_OFF(DK_LED2, LED_EARLY_EXIT_INT);                                 \
+        _LED_OFF(DK_LED2, LED_EARLY_EXIT_INT);                                 \
+        _LED_OFF(DK_LED3, LED_EARLY_EXIT_INT);                                 \
+        _LED_OFF(DK_LED4, LED_EARLY_EXIT_INT);                                 \
         LOG_INF("LEDs initialized");                                           \
     } while (0)
 #else
 /**
  * Placeholder macro when LEDs are not enabled
  */
-#define LED_ON(LED, ...)  (void)0
+#define _LED_ON(LED, ...)  (void)0
 
 /**
  * Placeholder macro when LEDs are not enabled
  */
-#define LED_OFF(LED, ...) LED_ON(LED)
+#define _LED_OFF(LED, ...) _LED_ON(LED)
 
 /**
  * Placeholder macro when LEDs are not enabled
  */
-#define LED_INIT()        LOG_INF("LEDs disabled");
+#define LED_INIT()         LOG_INF("LEDs disabled");
 #endif // LED_SUPPORT_ENABLED
 
 #if defined(CONFIG_BELUGA_LEDS)
@@ -259,8 +259,8 @@
  *
  * @{
  */
-#define APP_LED_ON(LED, ...)  LED_ON(LED, __VA_ARGS__)
-#define APP_LED_OFF(LED, ...) LED_OFF(LED, __VA_ARGS__)
+#define APP_LED_ON(LED, ...)  _LED_ON(LED, __VA_ARGS__)
+#define APP_LED_OFF(LED, ...) _LED_OFF(LED, __VA_ARGS__)
 #define BLE_LED_ON(LED)       (void)0
 #define BLE_LED_OFF(LED)      BLE_LED_ON(LED)
 /**
@@ -276,8 +276,8 @@
  */
 #define APP_LED_ON(LED)       (void)0
 #define APP_LED_OFF(LED)      APP_LED_ON(LED)
-#define BLE_LED_ON(LED, ...)  LED_ON(LED, __VA_ARGS__)
-#define BLE_LED_OFF(LED, ...) LED_OFF(LED, __VA_ARGS__)
+#define BLE_LED_ON(LED, ...)  _LED_ON(LED, __VA_ARGS__)
+#define BLE_LED_OFF(LED, ...) _LED_OFF(LED, __VA_ARGS__)
 /**
  * @}
  */

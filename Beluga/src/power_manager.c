@@ -76,7 +76,7 @@ static void configure_wake_source(void) {
 // #endif
 
 static void sleep_dw1000(void) {
-    if (get_uwb_led_state() == LED_UWB_ON) {
+    if (get_uwb_led_state() == LED_ON) {
         // Stop UWB tasks
         k_sem_take(&k_sus_resp, K_FOREVER);
         k_sem_take(&k_sus_init, K_FOREVER);
@@ -88,7 +88,7 @@ static void sleep_dw1000(void) {
 }
 
 static void stop_ble(void) {
-    if (get_ble_led_state() == LED_BLE_ON) {
+    if (get_ble_led_state() == LED_ON) {
         k_sem_take(&print_list_sem, K_FOREVER);
     }
     deinit_bt_stack();

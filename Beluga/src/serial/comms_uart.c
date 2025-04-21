@@ -204,7 +204,6 @@ static void uart_callback(const struct device *dev, void *user_data) {
     }
 
     if (uart_irq_tx_ready(dev)) {
-        serial_leds_update_state(LED_START_TX);
         uart_tx_handle(dev, sh_uart);
         serial_leds_update_state(LED_STOP_TX);
     }
@@ -293,6 +292,8 @@ static int init(const struct comms_transport *transport, const void *config,
     common->dev = (const struct device *)config;
     common->handler = evt_handler;
     common->context = context;
+
+    serial_leds_init();
 
 #ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
     common->smp.buf_pool = &smp_comms_rx_pool;
@@ -401,6 +402,8 @@ static int write_uart(const struct comms_transport *transport, const void *data,
                       size_t length, size_t *cnt) {
     struct comms_uart_common *sh_uart =
         (struct comms_uart_common *)transport->ctx;
+
+    serial_leds_update_state(LED_START_TX);
 
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_POLLING) ||
         sh_uart->blocking_tx) {

@@ -18,6 +18,16 @@
 #include <stdbool.h>
 
 /**
+ * Enum representing the different LEDs
+ */
+enum led {
+    LED_BLE,   ///< LED for indicating the BLE state
+    LED_UWB,   ///< LED for indicating the UWB state
+    LED_POWER, ///< LED for indicating the power state
+    LED_PWRAMP ///< LED for indicating the power amplifier state
+};
+
+/**
  * @enum led_state
  *
  * @brief Enum representing the possible states for various LEDs in the system.
@@ -27,23 +37,21 @@
  * track and update the state of the LEDs.
  */
 enum led_state {
-    LED_BLE_ON,    ///< BLE LED is turned on
-    LED_BLE_OFF,   ///< BLE LED is turned off
-    LED_UWB_ON,    ///< UWB LED is turned on
-    LED_UWB_OFF,   ///< UWB LED is turned off
-    LED_POWER_ON,  ///< Power LED is turned on
-    LED_POWER_OFF, ///< Power LED is turned off
-    LED_PWRAMP_ON, ///< Power amplifier LED is turned on
-    LED_PWRAMP_OFF ///< Power amplifier LED is turned off
+    LED_ON,  ///< LED is turned on
+    LED_OFF, ///< LED is turned off
 };
 
 /**
  * @brief Updates the state of the specified LED based on the given LED state.
  *
- * @param[in] update The new state to apply to the LED (e.g., LED_BLE_ON,
- * LED_UWB_OFF).
+ * @param[in] led The led whose state is being updated
+ * @param[in] update The new state to apply to the LED.
+ *
+ * @note If the master LED state is off, then this will not update the hardware
+ * state of the LED; However, it will save the software state. The software
+ * state is only reflected by the hardware when the master LED state is on.
  */
-void update_led_state(enum led_state update);
+void update_led_state(enum led led, enum led_state update);
 
 /**
  * @brief Turns off all LEDs and disables LED control.
