@@ -458,11 +458,12 @@ AT_CMD_DEFINE(TXPOWER) {
         if (!strtoint32(argv[3], &tx_power.advanced_power.fine)) {
             ERROR(comms, "Invalid TX fine gain");
         }
-        if (set_tx_power(&tx_power) < 0) {
-            ERROR(comms, "Tx power parameter input error");
-        }
     } else {
         ERROR(comms, "Invalid number of parameters");
+    }
+
+    if (set_tx_power(&tx_power) < 0) {
+        ERROR(comms, "Tx power parameter input error");
     }
 
     power = get_tx_power();
