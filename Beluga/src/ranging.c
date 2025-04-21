@@ -757,57 +757,6 @@ static void resp_reconfig() {
 }
 
 /**
- * @brief Run the initiator ranging routine and save the results.
- * @param[in] current_neighbor The neighbor to run the routine for
- * @return `true` if there was a ranging error
- * @return `false` if ranging succeeded
- */
-static inline bool run_ranging(const struct comms *comms,
-                               size_t current_neighbor) {
-    int err;
-    double range;
-    uint32_t exchange;
-    bool drop = false;
-
-    ARG_UNUSED(comms);
-
-    if (twr_mode) {
-        err = ds_init_run(seen_list[current_neighbor].UUID, &range, &exchange);
-        LOG_INF("Double sided ranging returned %d", err);
-    } else {
-        err = ss_init_run(seen_list[current_neighbor].UUID, &range, &exchange);
-        LOG_INF("Single sided ranging returned %d", err);
-    }
-
-    if (err != 0) {
-#if defined(CONFIG_REPORT_UWB_DROPS)
-        struct dropped_packet_event event = {
-            .id = seen_list[current_neighbor].UUID,
-            .sequence = dropped_stage(),
-        };
-        struct beluga_msg msg = {
-            .type = UWB_RANGING_DROP,
-            .payload.drop_event = &event,
-        };
-        comms_write_msg(comms, &msg);
-#endif // defined(CONFIG_REPORT_UWB_DROPS)
-        drop = true;
-    }
-
-    if (!drop && RANGE_CONDITION(range)) {
-        seen_list[current_neighbor].update_flag = true;
-        seen_list[current_neighbor].range = (float)range;
-        seen_list[current_neighbor].time_stamp = k_uptime_get();
-#if defined(CONFIG_UWB_LOGIC_CLK)
-        seen_list[current_neighbor].exchange_id = exchange;
-#endif // defined(CONFIG_UWB_LOGIC_CLK)
-
-        update_ble_service(seen_list[current_neighbor].UUID, range);
-    }
-    return drop;
-}
-
-/**
  * @brief Find a node in the neighbors list and range to that node
  *
  * @param[in] comms Pointer to the comms object for drop reporting
@@ -821,9 +770,12 @@ static void initiate_ranging(const struct comms *comms) {
     static size_t current_neighbor = 0;
 
     bool search_broken = false;
+    double range;
+    uint32_t exchange;
     int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD)
-                            ? time_left
-                            : CONFIG_POLLING_REFRESH_PERIOD;
+                        ? time_left
+                        : CONFIG_POLLING_REFRESH_PERIOD;
+    ARG_UNUSED(comms);
 
     k_sleep(K_MSEC(sleep_for));
     time_left -= sleep_for;
@@ -855,7 +807,44 @@ static void initiate_ranging(const struct comms *comms) {
     }
 
     if (!search_broken) {
-        drop = run_ranging(comms, current_neighbor);
+        int err;
+
+        if (twr_mode) {
+            err = ds_init_run(seen_list[current_neighbor].UUID, &range,
+                              &exchange);
+            LOG_INF("Double sided ranging returned %d", err);
+        } else {
+            err = ss_init_run(seen_list[current_neighbor].UUID, &range,
+                              &exchange);
+            LOG_INF("Single sided ranging returned %d", err);
+        }
+
+        if (err != 0) {
+#if defined(CONFIG_REPORT_UWB_DROPS)
+            struct dropped_packet_event event = {
+                .id = seen_list[current_neighbor].UUID,
+                .sequence = dropped_stage(),
+            };
+            struct beluga_msg msg = {
+                .type = UWB_RANGING_DROP,
+                .payload.drop_event = &event,
+            };
+            comms_write_msg(comms, &msg);
+#endif // defined(CONFIG_REPORT_UWB_DROPS)
+            drop = true;
+        }
+
+        if (!drop && RANGE_CONDITION(range)) {
+            seen_list[current_neighbor].update_flag = true;
+            seen_list[current_neighbor].range = (float)range;
+            seen_list[current_neighbor].time_stamp = k_uptime_get();
+#if defined(CONFIG_UWB_LOGIC_CLK)
+            seen_list[current_neighbor].exchange_id = exchange;
+#endif // defined(CONFIG_UWB_LOGIC_CLK)
+
+            update_ble_service(seen_list[current_neighbor].UUID, range);
+        }
+
         BOUND_INCREMENT(current_neighbor, MAX_ANCHOR_COUNT);
     }
 
