@@ -762,7 +762,8 @@ static void resp_reconfig() {
  * @return `true` if there was a ranging error
  * @return `false` if ranging succeeded
  */
-static inline bool run_ranging(const struct comms *comms, size_t current_neighbor) {
+static inline bool run_ranging(const struct comms *comms,
+                               size_t current_neighbor) {
     int err;
     double range;
     uint32_t exchange;
