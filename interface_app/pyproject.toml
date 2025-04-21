@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "beluga_gui"
-version = "0.0.0"
+version = "0.0.1"
 authors = [{name = "Tom Schmitz", email = "tschmitz@andrew.cmu.edu"}]
 description = "GUI for communicating with and observing a Beluga ad-hoc ranging network"
 classifiers = [
