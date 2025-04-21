@@ -14,7 +14,7 @@ class DataGatheringDialog(QDialog):
         self._file: Optional[str] = None
 
     def launch_file_dialog(self):
-        dialog = FileDialog(self, [FileFilter("meas", "Measurement files"), FileFilter("log", "Log files")])
+        dialog = FileDialog(self, [FileFilter("json", "JSON files"), FileFilter("meas", "Measurement files"), FileFilter("log", "Log files")])
         file_path = dialog.exec()
         self.ui.trial_name.setText(file_path)
         self._file = file_path

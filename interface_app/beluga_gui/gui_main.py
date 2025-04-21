@@ -11,6 +11,8 @@ import time
 from serial import Serial, SerialException
 import math
 import signal
+from pathlib import Path
+import json
 
 
 class BelugaGui:
@@ -50,7 +52,7 @@ class BelugaGui:
     class CaptureData:
         def __init__(self, parent, save_file, samples, timeout):
             self._capture_progress = CaptureProgress(parent, samples, timeout)
-            self._file = save_file
+            self._file: str = save_file
             self._captured_data = []
             self._max_length = samples
             self._dropped_exchanges = {}
@@ -64,11 +66,11 @@ class BelugaGui:
             right = padding_len - left
             return f"{'-' * left} {header} {'-' * right}\n"
 
-        def save(self, current_configs):
-            messages.InfoMessage(self._capture_progress.parent(), message="Data capture complete")
+        def _save_normal(self, current_configs: dict[str, str | int | bool]):
             with open(self._file, 'w') as f:
                 f.write(self.make_header("Configurations", 80))
-                f.write(current_configs)
+                for key, item in current_configs.items():
+                    f.write(f"{key}: {item}\n")
                 f.write("SS-TWR -> 1 TX and 1 RX per exchange, DS-TWR -> 2 TX and 2 RX per exchange\n")
                 f.write(self.make_header("Dropped Exchange Stats", 80))
                 f.write("Key: 0: TX Poll, 1: RX Response, 2: TX Final, 3: RX Report\n")
@@ -82,6 +84,32 @@ class BelugaGui:
                 for sample in self._captured_data:
                     for id_ in sample:
                         f.write(f"{id_},{sample[id_]['RSSI']},{sample[id_]['RANGE']}\n")
+
+        def _save_json(self, current_configs):
+            json_dict = {
+                "configurations": current_configs,
+                "drops": self._dropped_exchanges,
+            }
+
+            samples: dict[str, list[dict[str, int | float]]] = {}
+
+            for sample in self._captured_data:
+                for id_ in sample:
+                    if str(id_) in samples:
+                        samples[str(id_)].append({"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE']})
+                    else:
+                        samples[str(id_)] = [{"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE']}]
+            json_dict["samples"] = samples
+
+            with open(self._file, 'w') as f:
+                json.dump(json_dict, f, indent='\t')
+
+        def save(self, current_configs):
+            messages.InfoMessage(self._capture_progress.parent(), message="Data capture complete")
+            if Path(self._file).suffix == ".json":
+                self._save_json(current_configs)
+            else:
+                self._save_normal(current_configs)
 
         def report_drop(self, drop):
             if len(self._captured_data) < self._max_length:
@@ -189,17 +217,19 @@ class BelugaGui:
 
     def save_captured_data(self):
         if not self._data_capture.canceled:
-            configs = f"Node ID: {self.ui.node_id_line_edit.text()}\n" \
-                      f"Channel: {self.ui.channel_combobox.currentText()}\n" \
-                      f"DS-TWR: {self.ui.ranging_checkbox.isChecked()}\n" \
-                      f"Proprietary SFD: {self.ui.sfd_checkbox.isChecked()}\n" \
-                      f"External Amplifiers: {self.ui.extern_amp_combobox.currentText()}\n" \
-                      f"Data rate: {self.ui.uwb_datarate_combobox.currentText()}\n" \
-                      f"Pulse rate: {self.ui.uwb_pulserate_combobox.currentText()}\n" \
-                      f"Proprietary PHR: {self.ui.phr_checkbox.isChecked()}\n" \
-                      f"Preamble length: {self.ui.uwb_preamble_combobox.currentText()}\n" \
-                      f"PAC size: {self.ui.uwb_pac_combobox.currentText()}\n" \
-                      f"UWB TX power: {self.serial.txpower()}\n"
+            configs = {
+                "ID": self.ui.node_id_line_edit.text(),
+                "Channel": self.ui.channel_combobox.currentText(),
+                "DS-TWR": self.ui.ranging_checkbox.isChecked(),
+                "SFD": self.ui.sfd_checkbox.isChecked(),
+                "External Amps": self.ui.extern_amp_combobox.currentText(),
+                "Data rate": self.ui.uwb_datarate_combobox.currentText(),
+                "Pulse rate": self.ui.uwb_pulserate_combobox.currentText(),
+                "PHR": self.ui.phr_checkbox.isChecked(),
+                "Preamble": self.ui.uwb_preamble_combobox.currentText(),
+                "PAC": self.ui.uwb_pac_combobox.currentText(),
+                "TX Power": self.serial.txpower(),
+            }
             self._data_capture.save(configs)
         self._data_capture = None
         self._capturing_data = False
