@@ -109,11 +109,6 @@ K_SEM_DEFINE(ble_state, 1, 1);
 #define MANF_INDEX 3
 
 /**
- * The index the polling flag is stored at in the manufacturer data
- */
-#define POLLING_FLAG_INDEX 2
-
-/**
  * The different advertising modes Beluga can be in
  */
 enum adv_mode {
@@ -326,7 +321,7 @@ bool in_seen_list(uint16_t uuid) { return get_seen_list_index(uuid) != -1; }
  * @param[in] evict_call A variable or function return value to set index to
  * when evicting a node
  */
-#define INSERT_NODE(evict_call)                                                \
+#define INSERT_NODE(evict_call, _poll_flag)                                    \
     do {                                                                       \
         ssize_t index = get_seen_list_index(0);                                \
         if (index < 0) {                                                       \
@@ -341,11 +336,7 @@ bool in_seen_list(uint16_t uuid) { return get_seen_list_index(uuid) != -1; }
         seen_list[index].RSSI = rssi;                                          \
         EVAL_STRENGTH();                                                       \
         seen_list[index].ble_time_stamp = k_uptime_get();                      \
-        if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {               \
-            seen_list[index].polling_flag = false;                             \
-        } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {        \
-            seen_list[index].polling_flag = true;                              \
-        }                                                                      \
+        seen_list[index].polling_flag = _poll_flag;                            \
         node_added();                                                          \
     } while (0)
 
@@ -363,9 +354,9 @@ bool in_seen_list(uint16_t uuid) { return get_seen_list_index(uuid) != -1; }
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-static void RR_FUNC_NAME(struct ble_data *data, int8_t rssi) {
+static void RR_FUNC_NAME(struct ble_data *data, int8_t rssi, bool polling) {
     static ssize_t last_seen_index = 0;
-    INSERT_NODE(last_seen_index);
+    INSERT_NODE(last_seen_index, polling);
     BOUND_INCREMENT(last_seen_index, MAX_ANCHOR_COUNT);
 }
 #endif
@@ -403,8 +394,8 @@ static ssize_t find_smallest_rssi(int8_t rssi) {
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-static void RSSI_FUNC_NAME(struct ble_data *data, int8_t rssi) {
-    INSERT_NODE(find_smallest_rssi(rssi));
+static void RSSI_FUNC_NAME(struct ble_data *data, int8_t rssi, bool polling) {
+    INSERT_NODE(find_smallest_rssi(rssi), polling);
 }
 #endif
 
@@ -442,8 +433,8 @@ static ssize_t find_largest_range(void) {
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-static void RANGE_FUNC_NAME(struct ble_data *data, int8_t rssi) {
-    INSERT_NODE(find_largest_range());
+static void RANGE_FUNC_NAME(struct ble_data *data, int8_t rssi, bool polling) {
+    INSERT_NODE(find_largest_range(), polling);
 }
 #endif
 
@@ -479,8 +470,8 @@ static ssize_t find_oldest_ble_ts(void) {
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-void BLE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi) {
-    INSERT_NODE(find_oldest_ble_ts());
+void BLE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi, bool polling) {
+    INSERT_NODE(find_oldest_ble_ts(), polling);
 }
 #endif
 
@@ -516,8 +507,8 @@ static ssize_t find_oldest_range_ts(void) {
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-void RANGE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi) {
-    INSERT_NODE(find_oldest_range_ts());
+void RANGE_TS_FUNC_NAME(struct ble_data *data, int8_t rssi, bool polling) {
+    INSERT_NODE(find_oldest_range_ts(), polling);
 }
 #endif
 
@@ -534,22 +525,23 @@ static enum node_eviction_policy policy = EVICT_POLICY_RR;
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-static void insert_into_seen_list(struct ble_data *data, int8_t rssi) {
+static void insert_into_seen_list(struct ble_data *data, int8_t rssi,
+                                  bool polling) {
     switch (policy) {
     case EVICT_POLICY_RR:
-        insert_seen_list_rr(data, rssi);
+        insert_seen_list_rr(data, rssi, polling);
         break;
     case EVICT_POLICY_RSSI:
-        insert_seen_list_rssi(data, rssi);
+        insert_seen_list_rssi(data, rssi, polling);
         break;
     case EVICT_POLICY_RANGE:
-        insert_seen_list_range(data, rssi);
+        insert_seen_list_range(data, rssi, polling);
         break;
     case EVICT_POLICY_BLE_TS:
-        insert_seen_list_ble_ts(data, rssi);
+        insert_seen_list_ble_ts(data, rssi, polling);
         break;
     case EVICT_POLICY_RANGE_TS:
-        insert_seen_list_range_ts(data, rssi);
+        insert_seen_list_range_ts(data, rssi, polling);
         break;
     default:
         break;
@@ -626,17 +618,13 @@ int print_eviction_scheme(const struct comms *comms) {
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
+static void update_seen_neighbor(struct ble_data *data, int8_t rssi,
+                                 bool polling) {
     int32_t index = get_seen_list_index(data->uuid);
     seen_list[index].RSSI = rssi;
     EVAL_STRENGTH();
     seen_list[index].ble_time_stamp = k_uptime_get();
-
-    if (data->manufacturerData[POLLING_FLAG_INDEX] == '0') {
-        seen_list[index].polling_flag = false;
-    } else if (data->manufacturerData[POLLING_FLAG_INDEX] == '1') {
-        seen_list[index].polling_flag = true;
-    }
+    seen_list[index].polling_flag = polling;
 }
 
 /**
@@ -645,14 +633,31 @@ static void update_seen_neighbor(struct ble_data *data, int8_t rssi) {
  * @param[in] rssi The RSSI of the scanned node
  */
 static void update_seen_list(struct ble_data *data, int8_t rssi) {
+    bool polling;
     if (data->uuid == NODE_UUID) {
         return;
     }
 
+    // Check if node is polling
+    polling = (data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] &
+               UWB_POLLING_MASK) != 0;
+
+    // Filter out nodes that do not have the same settings
+    data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] &= ~UWB_POLLING_MASK;
+    data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] |=
+        beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
+        UWB_POLLING_MASK;
+
+    if (memcmp(data->manufacturerData, beluga_manufacturer_data,
+               sizeof(beluga_manufacturer_data)) != 0) {
+        // UWB parameters do not match
+        return;
+    }
+
     if (!in_seen_list(data->uuid)) {
-        insert_into_seen_list(data, rssi);
+        insert_into_seen_list(data, rssi, polling);
     } else {
-        update_seen_neighbor(data, rssi);
+        update_seen_neighbor(data, rssi, polling);
     }
 }
 
