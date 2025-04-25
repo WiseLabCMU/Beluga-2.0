@@ -28,4 +28,8 @@ config BELUGA_EVICT_RUNTIME_SELECT
 
 endchoice
 
+config RANGE_TO_ACTIVE_ONLY
+    bool "Only range to active neighbors"
+    default n
+
 endmenu

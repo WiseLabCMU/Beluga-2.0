@@ -190,7 +190,7 @@ static struct bt_data sd[] = {
 #define UWB_POLLING_MASK                (UINT8_C(0x1) << UWB_POLL_SHIFT)
 #define UWB_ACTIVE_MASK                 (UINT8_C(0x1) << UWB_ACTIVE_SHIFT)
 
-static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD];
+static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
 static struct bt_data beluga_data;
 
 static inline void set_ble_pan(uint16_t pan) {
@@ -1177,7 +1177,9 @@ static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
     SET_UWB_METADATA(uwb_metadata, PULSERATE);
     SET_UWB_METADATA(uwb_metadata, PHR);
     SET_UWB_METADATA(uwb_metadata, PAC);
+#if IS_ENABLED(CONFIG_RANGE_TO_ACTIVE_ONLY)
     SET_UWB_METADATA(uwb_metadata, ACTIVE);
+#endif
 
     switch (uwb_metadata->preamble) {
     case 64: {
