@@ -149,18 +149,6 @@ static struct bt_data ad[] = {
 static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
-///**
-// * Bluetooth data for indicating that the node is not polling the UWB
-// */
-// static const struct bt_data polling_0 =
-//    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30");
-//
-///**
-// * Bluetooth data for indicating that the node is polling the UWB
-// */
-// static const struct bt_data polling_1 =
-//    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
-
 #define BLE_PAN_OVERHEAD                2
 #define BLE_UWB_METADATA_OVERHEAD       2
 #define BLE_MANF_DATA_OVERHEAD          (BLE_PAN_OVERHEAD + BLE_UWB_METADATA_OVERHEAD)
@@ -176,6 +164,7 @@ static struct bt_data sd[] = {
 #define BLE_UWB_METADATA_PREAMBLE_BYTE  BLE_UWB_METADATA_PHR_BYTE
 #define BLE_UWB_METADATA_PAC_BYTE       BLE_UWB_METADATA_PHR_BYTE
 #define BLE_UWB_METADATA_POLLING_BYTE   BLE_UWB_METADATA_PHR_BYTE
+#define BLE_UWB_METADATA_ACTIVE_BYTE    BLE_UWB_METADATA_PHR_BYTE
 
 #define UWB_CHANNEL_SHIFT               0
 #define UWB_TWR_SHIFT                   3
@@ -187,6 +176,7 @@ static struct bt_data sd[] = {
 #define UWB_PREAMBLE_SHIFT              1
 #define UWB_PAC_SHIFT                   4
 #define UWB_POLL_SHIFT                  6
+#define UWB_ACTIVE_SHIFT                7
 
 #define UWB_CHANNEL_MASK                UINT8_C(0x7)
 #define UWB_TWR_MASK                    (UINT8_C(0x1) << UWB_TWR_SHIFT)
@@ -198,6 +188,7 @@ static struct bt_data sd[] = {
 #define UWB_PREAMBLE_MASK               (UINT8_C(0x7) << UWB_PREAMBLE_SHIFT)
 #define UWB_PAC_MASK                    (UINT8_C(0x3) << UWB_PAC_SHIFT)
 #define UWB_POLLING_MASK                (UINT8_C(0x1) << UWB_POLL_SHIFT)
+#define UWB_ACTIVE_MASK                 (UINT8_C(0x1) << UWB_ACTIVE_SHIFT)
 
 static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD];
 static struct bt_data beluga_data;
@@ -1186,6 +1177,7 @@ static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
     SET_UWB_METADATA(uwb_metadata, PULSERATE);
     SET_UWB_METADATA(uwb_metadata, PHR);
     SET_UWB_METADATA(uwb_metadata, PAC);
+    SET_UWB_METADATA(uwb_metadata, ACTIVE);
 
     switch (uwb_metadata->preamble) {
     case 64: {

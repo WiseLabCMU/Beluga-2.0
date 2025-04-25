@@ -37,6 +37,7 @@ struct advertising_info {
     bool PULSERATE;
     bool PHR;
     uint8_t PAC;
+    bool ACTIVE;
     uint16_t pan;
     uint32_t preamble;
     uint32_t poll_rate;
