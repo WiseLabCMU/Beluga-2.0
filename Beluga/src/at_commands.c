@@ -171,9 +171,7 @@ AT_CMD_DEFINE(STARTUWB) {
     enum power_mode pwramp =
         (enum power_mode)retrieveSetting(BELUGA_RANGE_EXTEND);
     update_power_mode(pwramp);
-    k_sem_give(&k_sus_resp);
-    k_sem_give(&k_sus_init);
-    update_led_state(LED_UWB, LED_ON);
+    update_uwb_state(true);
     AT_OK(comms, "Started UWB");
 }
 AT_CMD_REGISTER(STARTUWB);
@@ -191,9 +189,7 @@ AT_CMD_DEFINE(STOPUWB) {
     if (get_uwb_led_state() == LED_OFF) {
         ERROR(comms, "UWB is not running");
     }
-    k_sem_take(&k_sus_resp, K_FOREVER);
-    k_sem_take(&k_sus_init, K_FOREVER);
-    update_led_state(LED_UWB, LED_OFF);
+    update_uwb_state(false);
     AT_OK(comms, "Stopped UWB");
 }
 AT_CMD_REGISTER(STOPUWB);

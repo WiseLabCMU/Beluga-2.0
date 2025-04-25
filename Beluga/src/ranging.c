@@ -762,6 +762,19 @@ int set_uwb_pan_id(uint32_t pan) {
     return 0;
 }
 
+void update_uwb_state(bool active) {
+    if (active) {
+        k_sem_give(&k_sus_resp);
+        k_sem_give(&k_sus_init);
+        update_led_state(LED_UWB, LED_ON);
+    } else {
+        k_sem_take(&k_sus_resp, K_FOREVER);
+        k_sem_take(&k_sus_init, K_FOREVER);
+        update_led_state(LED_UWB, LED_OFF);
+    }
+    UPDATE_ADV_DATA(ACTIVE, active);
+}
+
 /**
  * @brief Initialize the DW1000 for ranging.
  *

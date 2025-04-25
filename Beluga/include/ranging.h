@@ -328,6 +328,8 @@ uint32_t get_tx_power(void);
 
 int set_uwb_pan_id(uint32_t pan);
 
+void update_uwb_state(bool active);
+
 /**
  * @brief Initialize the DW1000 for ranging.
  *

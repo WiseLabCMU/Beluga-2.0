@@ -216,9 +216,7 @@ static void load_bootmode(const struct comms *comms) {
         k_sem_give(&print_list_sem);
         enable_bluetooth();
         update_led_state(LED_BLE, LED_ON);
-        k_sem_give(&k_sus_resp);
-        k_sem_give(&k_sus_init);
-        update_led_state(LED_UWB, LED_ON);
+        update_uwb_state(true);
     case 0:
         break;
     default:
