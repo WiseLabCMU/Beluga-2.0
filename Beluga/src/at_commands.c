@@ -329,8 +329,6 @@ AT_CMD_DEFINE(RATE) {
     updateSetting(BELUGA_POLL_RATE, rate);
     set_rate(rate);
 
-    // reconfig ble data
-    advertising_reconfig(rate != 0);
     AT_OK(comms, "Rate: %d", rate);
 }
 AT_CMD_REGISTER(RATE);
@@ -1001,12 +999,11 @@ AT_CMD_DEFINE(PANID) {
         ERROR(comms, "Invalid PAN ID");
     }
 
-    retVal = set_initiator_pan_id((uint16_t)pan_id);
+    retVal = set_uwb_pan_id((uint16_t)pan_id);
 
     if (retVal != 0) {
         ERROR(comms, "Cannot set PAN ID: UWB Active");
     }
-    set_responder_pan_id((uint16_t)pan_id);
     updateSetting(BELUGA_PAN_ID, pan_id);
     AT_OK(comms, "PAN ID: 0x%04X", (uint16_t)pan_id);
 }

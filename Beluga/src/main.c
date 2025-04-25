@@ -241,7 +241,6 @@ static void load_poll_rate(const struct comms *comms) {
     }
 
     set_rate(rate);
-    advertising_reconfig(rate != 0);
     SETTINGS_PRINT(comms, "UWB Polling Rate: %d", rate);
 }
 
@@ -364,8 +363,7 @@ static void load_sfd_mode(const struct comms *comms) {
 static void load_pan_id(const struct comms *comms) {
     int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
     CUSTOM_INIT_MSG(comms, print_pan_id, pan_id);
-    set_initiator_pan_id((uint16_t)pan_id);
-    set_responder_pan_id((uint16_t)pan_id);
+    set_uwb_pan_id((uint16_t)pan_id);
 }
 
 /**
