@@ -197,6 +197,18 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 static struct task_wdt_attr watchdogAttr = {.period =
                                                 2 * CONFIG_MAX_POLLING_RATE};
 
+static struct advertising_info uwb_metadata = {
+    .CHANNEL = 5,
+    .PULSERATE = 1,
+    .preamble = 128,
+    .PAC = 0,
+    .DATARATE = 0,
+    .SFD = 0,
+    .PHR = 0,
+    .TWR = 1,
+    .poll_rate = 100,
+};
+
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
  * @param[in] tx_power The current TX power
@@ -702,6 +714,21 @@ int set_rate(uint32_t rate) {
     return 0;
 }
 
+int set_uwb_pan_id(uint32_t pan) {
+    if (!IN_RANGE(pan, 0, UINT16_MAX)) {
+        return -EINVAL;
+    }
+    if (set_initiator_pan_id(pan) < 0) {
+        return -EBUSY;
+    }
+    set_responder_pan_id(pan);
+
+    uwb_metadata.pan = pan;
+    advertising_reconfig(&uwb_metadata);
+
+    return 0;
+}
+
 /**
  * @brief Initialize the DW1000 for ranging.
  *
@@ -773,8 +800,8 @@ static void initiate_ranging(const struct comms *comms) {
     double range;
     uint32_t exchange;
     int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD)
-                        ? time_left
-                        : CONFIG_POLLING_REFRESH_PERIOD;
+                            ? time_left
+                            : CONFIG_POLLING_REFRESH_PERIOD;
     ARG_UNUSED(comms);
 
     k_sleep(K_MSEC(sleep_for));

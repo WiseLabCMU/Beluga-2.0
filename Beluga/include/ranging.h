@@ -326,6 +326,8 @@ int set_tx_power(const struct uwb_tx_power_config *tx_power);
  */
 uint32_t get_tx_power(void);
 
+int set_uwb_pan_id(uint32_t pan);
+
 /**
  * @brief Initialize the DW1000 for ranging.
  *
