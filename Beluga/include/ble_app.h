@@ -29,6 +29,19 @@ enum node_eviction_policy {
     EVICT_POLICY_INVALID       ///< Last enumerator
 };
 
+struct advertising_info {
+    uint8_t CHANNEL;
+    bool TWR;
+    bool SFD;
+    uint8_t DATARATE;
+    bool PULSERATE;
+    bool PHR;
+    uint8_t PAC;
+    uint16_t pan;
+    uint32_t preamble;
+    uint32_t poll_rate;
+};
+
 /**
  * BLE neighbor node structure
  */
@@ -118,7 +131,7 @@ uint16_t get_NODE_UUID(void);
  * @param[in] change If 0, updates the advertising data to indicate that the
  * node has stopped polling; otherwise, indicates that the node is polling UWB
  */
-void advertising_reconfig(int32_t change);
+void advertising_reconfig(struct advertising_info *uwb_metadata);
 
 /**
  * Checks if Bluetooth is currently advertising/scanning

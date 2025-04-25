@@ -154,17 +154,70 @@ static struct bt_data ad[] = {
 static struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
-/**
- * Bluetooth data for indicating that the node is not polling the UWB
- */
-static const struct bt_data polling_0 =
-    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30");
+///**
+// * Bluetooth data for indicating that the node is not polling the UWB
+// */
+// static const struct bt_data polling_0 =
+//    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30");
+//
+///**
+// * Bluetooth data for indicating that the node is polling the UWB
+// */
+// static const struct bt_data polling_1 =
+//    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
 
-/**
- * Bluetooth data for indicating that the node is polling the UWB
- */
-static const struct bt_data polling_1 =
-    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x31");
+#define BLE_PAN_OVERHEAD                2
+#define BLE_UWB_METADATA_OVERHEAD       2
+#define BLE_MANF_DATA_OVERHEAD          (BLE_PAN_OVERHEAD + BLE_UWB_METADATA_OVERHEAD)
+
+#define BLE_PAN_OFFSET                  0
+#define BLE_UWB_METADATA_OFFSET         (BLE_PAN_OFFSET + BLE_PAN_OVERHEAD)
+#define BLE_UWB_METADATA_CHANNEL_BYTE   BLE_UWB_METADATA_OFFSET
+#define BLE_UWB_METADATA_TWR_BYTE       BLE_UWB_METADATA_OFFSET
+#define BLE_UWB_METADATA_SFD_BYTE       BLE_UWB_METADATA_OFFSET
+#define BLE_UWB_METADATA_DATARATE_BYTE  BLE_UWB_METADATA_OFFSET
+#define BLE_UWB_METADATA_PULSERATE_BYTE BLE_UWB_METADATA_OFFSET
+#define BLE_UWB_METADATA_PHR_BYTE       (BLE_UWB_METADATA_OFFSET + 1)
+#define BLE_UWB_METADATA_PREAMBLE_BYTE  BLE_UWB_METADATA_PHR_BYTE
+#define BLE_UWB_METADATA_PAC_BYTE       BLE_UWB_METADATA_PHR_BYTE
+#define BLE_UWB_METADATA_POLLING_BYTE   BLE_UWB_METADATA_PHR_BYTE
+
+#define UWB_CHANNEL_SHIFT               0
+#define UWB_TWR_SHIFT                   3
+#define UWB_SFD_SHIFT                   4
+#define UWB_DATARATE_SHIFT              5
+#define UWB_PULSERATE_SHIFT             7
+
+#define UWB_PHR_SHIFT                   0
+#define UWB_PREAMBLE_SHIFT              1
+#define UWB_PAC_SHIFT                   4
+#define UWB_POLL_SHIFT                  6
+
+#define UWB_CHANNEL_MASK                UINT8_C(0x7)
+#define UWB_TWR_MASK                    (UINT8_C(0x1) << UWB_TWR_SHIFT)
+#define UWB_SFD_MASK                    (UINT8_C(0x1) << UWB_SFD_SHIFT)
+#define UWB_DATARATE_MASK               (UINT8_C(0x3) << UWB_DATARATE_SHIFT)
+#define UWB_PULSERATE_MASK              (UINT8_C(0x1) << UWB_PULSERATE_SHIFT)
+
+#define UWB_PHR_MASK                    UINT8_C(0x1)
+#define UWB_PREAMBLE_MASK               (UINT8_C(0x7) << UWB_PREAMBLE_SHIFT)
+#define UWB_PAC_MASK                    (UINT8_C(0x3) << UWB_PAC_SHIFT)
+#define UWB_POLLING_MASK                (UINT8_C(0x1) << UWB_POLL_SHIFT)
+
+static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD];
+static struct bt_data beluga_data;
+
+static inline void set_ble_pan(uint16_t pan) {
+    memcpy(beluga_manufacturer_data + BLE_PAN_OFFSET, &pan, BLE_PAN_OVERHEAD);
+}
+
+static inline void set_uwb_metadata(size_t byte, uint8_t mask, uint8_t shift,
+                                    uint8_t value) {
+    uint8_t val = beluga_manufacturer_data[byte];
+    val &= ~mask;
+    val |= (value << shift) & mask;
+    beluga_manufacturer_data[byte] = val;
+}
 
 /**
  * Flag indicating that the bluetooth is on
@@ -1114,19 +1167,77 @@ uint16_t get_NODE_UUID(void) {
     return retVal;
 }
 
+#define SET_UWB_METADATA(meta, field)                                          \
+    set_uwb_metadata(BLE_UWB_METADATA_##field##_BYTE, UWB_##field##_MASK,      \
+                     UWB_##field##_SHIFT, (meta)->field)
+
+static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
+    uint8_t preamble;
+    set_ble_pan(uwb_metadata->pan);
+    SET_UWB_METADATA(uwb_metadata, CHANNEL);
+    SET_UWB_METADATA(uwb_metadata, TWR);
+    SET_UWB_METADATA(uwb_metadata, SFD);
+    SET_UWB_METADATA(uwb_metadata, DATARATE);
+    SET_UWB_METADATA(uwb_metadata, PULSERATE);
+    SET_UWB_METADATA(uwb_metadata, PHR);
+    SET_UWB_METADATA(uwb_metadata, PAC);
+
+    switch (uwb_metadata->preamble) {
+    case 64: {
+        preamble = 0;
+        break;
+    }
+    case 128: {
+        preamble = 1;
+        break;
+    }
+    case 256: {
+        preamble = 2;
+        break;
+    }
+    case 512: {
+        preamble = 3;
+        break;
+    }
+    case 1024: {
+        preamble = 4;
+        break;
+    }
+    case 1536: {
+        preamble = 5;
+        break;
+    }
+    case 2048: {
+        preamble = 6;
+        break;
+    }
+    case 4096: {
+        preamble = 7;
+        break;
+    }
+    default:
+        __ASSERT_UNREACHABLE;
+    }
+
+    set_uwb_metadata(BLE_UWB_METADATA_PREAMBLE_BYTE, UWB_PREAMBLE_MASK,
+                     UWB_PREAMBLE_SHIFT, preamble);
+    set_uwb_metadata(BLE_UWB_METADATA_POLLING_BYTE, UWB_POLLING_MASK,
+                     UWB_POLL_SHIFT, uwb_metadata->poll_rate != 0);
+}
+
 /**
  * Update the advertising data to indicate that the node is polling UWB or not
  * @param[in] change If 0, updates the advertising data to indicate that the
  * node has stopped polling; otherwise, indicates that the node is polling UWB
  */
-void advertising_reconfig(int32_t change) {
+void advertising_reconfig(struct advertising_info *uwb_metadata) {
     bt_le_adv_stop();
 
-    if (change == 0) {
-        ad[MANF_INDEX] = polling_0;
-    } else {
-        ad[MANF_INDEX] = polling_1;
-    }
+    update_manufacturer_info(uwb_metadata);
+    beluga_data.data = beluga_manufacturer_data;
+    beluga_data.data_len = sizeof(beluga_manufacturer_data);
+    beluga_data.type = BT_DATA_MANUFACTURER_DATA;
+    ad[MANF_INDEX] = beluga_data;
 
     switch (currentAdvMode) {
     case ADVERTISING_CONNECTABLE:
