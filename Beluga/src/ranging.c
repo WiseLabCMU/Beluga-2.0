@@ -151,6 +151,24 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
         k_sem_give(&k_sus_resp);                                               \
     } while (0)
 
+static struct advertising_info uwb_metadata = {
+    .CHANNEL = 5,
+    .PULSERATE = 1,
+    .preamble = 128,
+    .PAC = 0,
+    .DATARATE = 0,
+    .SFD = 0,
+    .PHR = 0,
+    .TWR = 1,
+    .poll_rate = 100,
+};
+
+#define UPDATE_ADV_DATA(setting_, val_)                                        \
+    do {                                                                       \
+        uwb_metadata.setting_ = val_;                                          \
+        advertising_reconfig(&uwb_metadata);                                   \
+    } while (0)
+
 /**
  * The number of milliseconds between initiator runs
  */
@@ -196,18 +214,6 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
  */
 static struct task_wdt_attr watchdogAttr = {.period =
                                                 2 * CONFIG_MAX_POLLING_RATE};
-
-static struct advertising_info uwb_metadata = {
-    .CHANNEL = 5,
-    .PULSERATE = 1,
-    .preamble = 128,
-    .PAC = 0,
-    .DATARATE = 0,
-    .SFD = 0,
-    .PHR = 0,
-    .TWR = 1,
-    .poll_rate = 100,
-};
 
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
@@ -345,6 +351,9 @@ int uwb_set_phr_mode(enum uwb_phr_mode mode) {
     }
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(PHR, mode);
+
     return 0;
 }
 
@@ -438,6 +447,9 @@ int uwb_set_datarate(enum uwb_datarate rate) {
 
     dwt_configure(&config);
     set_freq_offset_multiplier(rate == UWB_DR_110K);
+
+    UPDATE_ADV_DATA(DATARATE, rate);
+
     return 0;
 }
 
@@ -463,6 +475,9 @@ int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
     }
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(PULSERATE, rate);
+
     return 0;
 }
 
@@ -508,6 +523,9 @@ int uwb_set_preamble(enum uwb_preamble_length length) {
         SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(preamble, length);
+
     return 0;
 }
 
@@ -542,6 +560,9 @@ int set_pac_size(enum uwb_pac pac) {
         SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(PAC, pac);
+
     return 0;
 }
 
@@ -570,6 +591,9 @@ int set_sfd_mode(enum uwb_sfd mode) {
         SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(SFD, config.nsSFD);
+
     return 0;
 }
 
@@ -612,6 +636,9 @@ int set_uwb_channel(uint32_t channel) {
     dwt_configure(&config);
     dwt_configuretxrf(&config_tx);
     set_hertz_to_ppm_multiplier((uint8_t)channel);
+
+    UPDATE_ADV_DATA(CHANNEL, channel);
+
     return 0;
 }
 
@@ -697,7 +724,11 @@ uint32_t get_tx_power(void) { return config_tx.power; }
  * @param[in] value The ranging mode. If `true`, use two-way ranging, if
  * `false`, use single-sided ranging
  */
-void set_twr_mode(bool value) { twr_mode = value; }
+void set_twr_mode(bool value) {
+    twr_mode = value;
+
+    UPDATE_ADV_DATA(TWR, value);
+}
 
 /**
  * @brief Set the rate the initiator sends polling messages
@@ -711,6 +742,9 @@ int set_rate(uint32_t rate) {
         return -EINVAL;
     }
     initiator_freq = (int32_t)rate;
+
+    UPDATE_ADV_DATA(poll_rate, rate);
+
     return 0;
 }
 
@@ -723,8 +757,7 @@ int set_uwb_pan_id(uint32_t pan) {
     }
     set_responder_pan_id(pan);
 
-    uwb_metadata.pan = pan;
-    advertising_reconfig(&uwb_metadata);
+    UPDATE_ADV_DATA(pan, pan);
 
     return 0;
 }
