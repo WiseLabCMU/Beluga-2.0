@@ -773,9 +773,7 @@ void update_uwb_state(bool active) {
         update_led_state(LED_UWB, LED_OFF);
     }
 
-#if IS_ENABLED(CONFIG_RANGE_TO_ACTIVE_ONLY)
     UPDATE_ADV_DATA(ACTIVE, active);
-#endif
 }
 
 /**

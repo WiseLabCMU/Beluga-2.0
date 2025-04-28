@@ -638,6 +638,13 @@ static void update_seen_list(struct ble_data *data, int8_t rssi) {
     data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] |=
         beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
         UWB_POLLING_MASK;
+#if !defined(CONFIG_RANGE_TO_ACTIVE_ONLY)
+    // Range to everything advertising
+    data->manufacturerData[BLE_UWB_METADATA_ACTIVE_BYTE] &= ~UWB_ACTIVE_MASK;
+    data->manufacturerData[BLE_UWB_METADATA_ACTIVE_BYTE] |=
+        beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
+        UWB_ACTIVE_MASK;
+#endif
 
     if (memcmp(data->manufacturerData, beluga_manufacturer_data,
                sizeof(beluga_manufacturer_data)) != 0) {
@@ -700,6 +707,7 @@ static int32_t adv_scan_start(void) {
 
     BLE_LED_ON(CENTRAL_SCANNING_LED);
 
+    LOG_INF("Start connectable advertising");
     err =
         bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 
@@ -731,6 +739,7 @@ static int adv_no_connect_start(void) {
 
         BLE_LED_ON(CENTRAL_SCANNING_LED);
 
+        LOG_INF("Start non-connectable advertising");
         err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad), sd,
                               ARRAY_SIZE(sd));
 
@@ -946,7 +955,8 @@ static void scan_filter_match(struct bt_scan_device_info *device_info,
 
     bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
 
-    LOG_INF("Filters matched. Address: %s connectable: %d", addr, connectable);
+    // LOG_INF("Filters matched. Address: %s connectable: %d", addr,
+    // connectable);
 }
 
 /**
@@ -1130,6 +1140,7 @@ void update_node_id(uint16_t uuid) {
 
     if (currentAdvMode != ADVERTISING_OFF) {
         bt_le_adv_stop();
+        bt_le_scan_stop();
     }
 
     ad[UUID_INDEX] = uuid_data;
@@ -1177,9 +1188,7 @@ static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
     SET_UWB_METADATA(uwb_metadata, PULSERATE);
     SET_UWB_METADATA(uwb_metadata, PHR);
     SET_UWB_METADATA(uwb_metadata, PAC);
-#if IS_ENABLED(CONFIG_RANGE_TO_ACTIVE_ONLY)
     SET_UWB_METADATA(uwb_metadata, ACTIVE);
-#endif
 
     switch (uwb_metadata->preamble) {
     case 64: {
@@ -1230,7 +1239,10 @@ static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
  * node has stopped polling; otherwise, indicates that the node is polling UWB
  */
 void advertising_reconfig(struct advertising_info *uwb_metadata) {
-    bt_le_adv_stop();
+    if (currentAdvMode != ADVERTISING_OFF) {
+        bt_le_adv_stop();
+        bt_le_scan_stop();
+    }
 
     update_manufacturer_info(uwb_metadata);
     beluga_data.data = beluga_manufacturer_data;

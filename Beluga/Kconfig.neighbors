@@ -31,5 +31,11 @@ endchoice
 config RANGE_TO_ACTIVE_ONLY
     bool "Only range to active neighbors"
     default n
+    help
+        When enabled, this will filter out the neighbors
+        that do not have UWB active. If disabled, then
+        the modem will continue to range to neighbors
+        that do not have UWB active (Good for UWB
+        power evaluation).
 
 endmenu
