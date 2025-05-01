@@ -12,6 +12,10 @@ file(GLOB SOURCE "src/*.c")
 set(SERIAL_SRC
         src/serial/comms.c
         src/serial/comms_uart.c)
+set(SERVICE_SRC
+        src/services/beluga_service.c
+        src/services/beluga_client.c
+        src/services/beluga_service_common.c)
 file(GLOB DECAWAVE_SRC "DecaDriver/src/*.c")
 
 include_directories(include DecaDriver/include)
@@ -20,6 +24,7 @@ target_sources(app PRIVATE
     ${SOURCE}
     ${SERIAL_SRC}
     ${DECAWAVE_SRC}
+    ${SERVICE_SRC}
 )
 target_sources_ifdef(CONFIG_MCUMGR_TRANSPORT_COMMS app PRIVATE
         src/serial/smp_comms.c
