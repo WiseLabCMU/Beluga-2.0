@@ -24,6 +24,7 @@ static bool ranging_enabled = false;
 
 static void bs_ccc_ranging_cfg_changed(const struct bt_gatt_attr *attr,
                                        uint16_t value) {
+    ARG_UNUSED(attr);
     ranging_enabled = value == BT_GATT_CCC_NOTIFY;
 }
 
@@ -31,6 +32,28 @@ static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
                                  const struct bt_gatt_attr *attr,
                                  const void *buf, uint16_t len, uint16_t offset,
                                  uint8_t flags) {
+    ARG_UNUSED(attr);
+    ARG_UNUSED(flags);
+    struct beluga_uwb_params configs;
+
+    if (len != BT_BELUGA_SVC_SYNC_PAYLOAD_SIZE) {
+        return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+    }
+
+    if (offset != 0) {
+        return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
+    }
+
+    if (service_cb.sync_cb == NULL) {
+        return len;
+    }
+
+    if (deserialize_uwb_configurations(&configs, buf, len) != 0) {
+        return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
+    }
+
+    service_cb.sync_cb(conn, &configs);
+
     return len;
 }
 
