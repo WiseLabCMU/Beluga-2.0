@@ -111,3 +111,59 @@ int serialize_uwb_configurations(char *buf, size_t len,
 
     return 0;
 }
+
+#define DESERIALIZE_UWB_PARAM_VAL(name_, buf_, val_)                           \
+    val_ = ((buf_)[BT_BELUGA_SVC_SYNC_##name_##_BYTE] >> name_##_SHIFT) &      \
+           name_##_MASK
+#define DESERIALIZE_UWB_PARAM(name_, buf_, config_)                            \
+    DESERIALIZE_UWB_PARAM_VAL(name_, buf_, (config_)->name_)
+
+int deserialize_uwb_configurations(struct beluga_uwb_params *configs,
+                                   const char *buf, size_t len) {
+    uint16_t preamble;
+    if (buf == NULL || len < BT_BELUGA_SVC_SYNC_PAYLOAD_SIZE) {
+        return -EINVAL;
+    }
+    DESERIALIZE_UWB_PARAM(TWR, buf, configs);
+    DESERIALIZE_UWB_PARAM(SFD, buf, configs);
+    DESERIALIZE_UWB_PARAM(PULSE_RATE, buf, configs);
+    DESERIALIZE_UWB_PARAM(PHR, buf, configs);
+    DESERIALIZE_UWB_PARAM(DATA_RATE, buf, configs);
+    DESERIALIZE_UWB_PARAM(PAC, buf, configs);
+    DESERIALIZE_UWB_PARAM_VAL(PREAMBLE, buf, preamble);
+
+    switch (preamble) {
+    case 0:
+        configs->PREAMBLE = 64;
+        break;
+    case 1:
+        configs->PREAMBLE = 128;
+        break;
+    case 2:
+        configs->PREAMBLE = 256;
+        break;
+    case 3:
+        configs->PREAMBLE = 512;
+        break;
+    case 4:
+        configs->PREAMBLE = 1024;
+        break;
+    case 5:
+        configs->PREAMBLE = 1536;
+        break;
+    case 6:
+        configs->PREAMBLE = 2048;
+        break;
+    case 7:
+        configs->PREAMBLE = 4096;
+        break;
+    default:
+        __ASSERT_UNREACHABLE;
+    }
+
+    DESERIALIZE_UWB_PARAM(CHANNEL, buf, configs);
+    DESERIALIZE_UWB_PARAM(POWER_AMP, buf, configs);
+    memcpy(&configs->TX_POWER, buf + BT_BELUGA_SVC_SYNC_TX_POWER_BYTE,
+           sizeof(configs->TX_POWER));
+    return 0;
+}
