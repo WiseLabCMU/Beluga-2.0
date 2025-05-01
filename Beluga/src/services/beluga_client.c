@@ -7,3 +7,5 @@
  *
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
+
+#include <services/beluga_client.h>
