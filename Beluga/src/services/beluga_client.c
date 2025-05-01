@@ -28,6 +28,7 @@ enum {
 static uint8_t on_received(struct bt_conn *conn,
                            struct bt_gatt_subscribe_params *params,
                            const void *data, uint16_t length) {
+    ARG_UNUSED(conn);
     struct bt_beluga_client *client =
         CONTAINER_OF(params, struct bt_beluga_client, range_notif_params);
 
@@ -55,6 +56,7 @@ static uint8_t on_received(struct bt_conn *conn,
 
 static void on_sent(struct bt_conn *conn, uint8_t err,
                     struct bt_gatt_write_params *params) {
+    ARG_UNUSED(conn);
     const void *data;
     size_t len;
     struct bt_beluga_client *client =
