@@ -59,7 +59,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <list_monitor.h>
+#include <settings.h>
+
 #include <range_extension.h>
 #include <zephyr/logging/log.h>
 
@@ -104,48 +105,7 @@ K_SEM_DEFINE(ble_state, 1, 1);
 /**
  * The index the manufacturer data is stored at in the advertising data
  */
-#define MANF_INDEX 3
-
-/**
- * The different advertising modes Beluga can be in
- */
-enum adv_mode {
-    ADVERTISING_CONNECTABLE,    ///< Advertising as a connectable node
-    ADVERTISING_NONCONNECTABLE, ///< Advertising as a node that cannot be
-                                ///< connected to
-    ADVERTISING_OFF             ///< Advertising is turned off
-};
-
-/**
- * The node identifier
- */
-static uint16_t NODE_UUID = 0;
-
-/**
- * Prefix for the node advertising name
- */
-static char const m_target_peripheral_name[] = "BN ";
-
-/**
- * The BLE advertising data
- */
-static struct bt_data ad[] = {
-    BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE,
-                  (CONFIG_BT_DEVICE_APPEARANCE >> 0) & 0xff,
-                  (CONFIG_BT_DEVICE_APPEARANCE >> 8) & 0xff),
-    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    BT_DATA_BYTES(
-        BT_DATA_UUID16_ALL,
-        BT_UUID_16_ENCODE(BELUGA_SERVICE_UUID)), /* Heart Rate Service */
-    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
-    BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(0x1234)),
-};
-
-/**
- * The BLE scan response data
- */
-static struct bt_data sd[] = {
-    BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
+#define MANF_INDEX                      3
 
 #define BLE_PAN_OVERHEAD                2
 #define BLE_UWB_METADATA_OVERHEAD       2
@@ -188,20 +148,55 @@ static struct bt_data sd[] = {
 #define UWB_POLLING_MASK                (UINT8_C(0x1) << UWB_POLL_SHIFT)
 #define UWB_ACTIVE_MASK                 (UINT8_C(0x1) << UWB_ACTIVE_SHIFT)
 
-static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
-static struct bt_data beluga_data;
+#define SET_UWB_METADATA(meta, field)                                          \
+    set_uwb_metadata(BLE_UWB_METADATA_##field##_BYTE, UWB_##field##_MASK,      \
+                     UWB_##field##_SHIFT, (meta)->field)
 
-static inline void set_ble_pan(uint16_t pan) {
-    memcpy(beluga_manufacturer_data + BLE_PAN_OFFSET, &pan, BLE_PAN_OVERHEAD);
-}
+/**
+ * The different advertising modes Beluga can be in
+ */
+enum adv_mode {
+    ADVERTISING_CONNECTABLE,    ///< Advertising as a connectable node
+    ADVERTISING_NONCONNECTABLE, ///< Advertising as a node that cannot be
+                                ///< connected to
+    ADVERTISING_OFF             ///< Advertising is turned off
+};
 
-static inline void set_uwb_metadata(size_t byte, uint8_t mask, uint8_t shift,
-                                    uint8_t value) {
-    uint8_t val = beluga_manufacturer_data[byte];
-    val &= ~mask;
-    val |= (value << shift) & mask;
-    beluga_manufacturer_data[byte] = val;
-}
+struct bt_connect_work {
+    bt_addr_le_t addr;
+    struct k_work work;
+};
+
+/**
+ * The node identifier
+ */
+static uint16_t NODE_UUID = 0;
+
+/**
+ * Prefix for the node advertising name
+ */
+static char const m_target_peripheral_name[] = "BN ";
+
+/**
+ * The BLE advertising data
+ */
+static struct bt_data ad[] = {
+    BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE,
+                  (CONFIG_BT_DEVICE_APPEARANCE >> 0) & 0xff,
+                  (CONFIG_BT_DEVICE_APPEARANCE >> 8) & 0xff),
+    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+    BT_DATA_BYTES(
+        BT_DATA_UUID16_ALL,
+        BT_UUID_16_ENCODE(BELUGA_SERVICE_UUID)), /* Heart Rate Service */
+    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
+    BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(0x1234)),
+};
+
+/**
+ * The BLE scan response data
+ */
+static struct bt_data sd[] = {
+    BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
 
 /**
  * Flag indicating that the bluetooth is on
@@ -223,15 +218,180 @@ struct node seen_list[MAX_ANCHOR_COUNT];
  */
 static enum adv_mode currentAdvMode = ADVERTISING_OFF;
 
+static struct bt_beluga_client client;
+
+static struct bt_connect_work connect_work;
+
+static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
+static struct bt_data beluga_data;
+
+//// Advertising data
+static inline void set_ble_pan(uint16_t pan) {
+    memcpy(beluga_manufacturer_data + BLE_PAN_OFFSET, &pan, BLE_PAN_OVERHEAD);
+}
+
+static inline void set_uwb_metadata(size_t byte, uint8_t mask, uint8_t shift,
+                                    uint8_t value) {
+    uint8_t val = beluga_manufacturer_data[byte];
+    val &= ~mask;
+    val |= (value << shift) & mask;
+    beluga_manufacturer_data[byte] = val;
+}
+
+static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
+    uint8_t preamble;
+    set_ble_pan(uwb_metadata->pan);
+    SET_UWB_METADATA(uwb_metadata, CHANNEL);
+    SET_UWB_METADATA(uwb_metadata, TWR);
+    SET_UWB_METADATA(uwb_metadata, SFD);
+    SET_UWB_METADATA(uwb_metadata, DATARATE);
+    SET_UWB_METADATA(uwb_metadata, PULSERATE);
+    SET_UWB_METADATA(uwb_metadata, PHR);
+    SET_UWB_METADATA(uwb_metadata, PAC);
+    SET_UWB_METADATA(uwb_metadata, ACTIVE);
+
+    switch (uwb_metadata->preamble) {
+    case 64: {
+        preamble = 0;
+        break;
+    }
+    case 128: {
+        preamble = 1;
+        break;
+    }
+    case 256: {
+        preamble = 2;
+        break;
+    }
+    case 512: {
+        preamble = 3;
+        break;
+    }
+    case 1024: {
+        preamble = 4;
+        break;
+    }
+    case 1536: {
+        preamble = 5;
+        break;
+    }
+    case 2048: {
+        preamble = 6;
+        break;
+    }
+    case 4096: {
+        preamble = 7;
+        break;
+    }
+    default:
+        __ASSERT_UNREACHABLE;
+    }
+
+    set_uwb_metadata(BLE_UWB_METADATA_PREAMBLE_BYTE, UWB_PREAMBLE_MASK,
+                     UWB_PREAMBLE_SHIFT, preamble);
+    set_uwb_metadata(BLE_UWB_METADATA_POLLING_BYTE, UWB_POLLING_MASK,
+                     UWB_POLL_SHIFT, uwb_metadata->poll_rate != 0);
+}
+
 /**
  * Sets the node ID
  * @param[in] uuid The new node ID
  */
-ALWAYS_INLINE static void set_NODE_UUID(uint16_t uuid) {
-    k_mutex_lock(&UUID_mutex, K_FOREVER);
-    NODE_UUID = uuid;
-    k_mutex_unlock(&UUID_mutex);
+ALWAYS_INLINE static void set_NODE_UUID(uint16_t uuid) { NODE_UUID = uuid; }
+
+/**
+ * Retrieves the current node ID
+ * @return The current node ID
+ */
+uint16_t get_NODE_UUID(void) { return NODE_UUID; }
+
+////
+
+//// Client stuff
+/**
+ * Callback indicating that GATT discovery was completed
+ * @param[in] dm GATT discovery manager
+ * @param[in] context Additional context
+ */
+static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
+    int err;
+    struct bt_beluga_client *bsc = context;
+
+    LOG_INF("The discovery procedure succeeded");
+
+    bt_gatt_dm_data_print(dm);
+
+    err = bt_beluga_client_assign(dm, bsc);
+    if (err) {
+        LOG_INF("Could not init Beluga client object (err %d)", err);
+        return;
+    }
+    // If we want range, then we subscribe here
+    // bt_beluga_client_subscribe_ranging(bsc);
+
+    err = bt_gatt_dm_data_release(dm);
+    if (err) {
+        LOG_INF("Could not release the discovery data (err %d)", err);
+    }
 }
+
+/**
+ * Callback for handling service not found problems
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] context Additional context
+ */
+static void discovery_not_found_cb(struct bt_conn *conn, void *context) {
+    LOG_INF("Beluga Service could not be found during the discovery");
+}
+
+/**
+ * Callback for handling GATT discovery errors
+ * @param[in] conn Pointer to Bluetooth connection data
+ * @param[in] err The error code
+ * @param[in] context Additional context
+ */
+static void discovery_error_found_cb(struct bt_conn *conn, int err,
+                                     void *context) {
+    LOG_INF("The discovery procedure failed with %d", err);
+}
+
+static void beluga_uwb_settings_synced(struct bt_beluga_client *bt_client,
+                                       uint8_t err,
+                                       const struct beluga_uwb_params *config) {
+
+}
+
+static int init_beluga_client(void) {
+    struct bt_beluga_client_cb cb = {
+        .synced = beluga_uwb_settings_synced,
+    };
+
+    return bt_beluga_client_init(&client, &cb);
+}
+
+int sync_uwb_parameters(uint16_t id) {
+    struct beluga_uwb_params config;
+    int ret;
+    // TODO: Put this stuff on the work q
+    config.TX_POWER = retrieveSetting(BELUGA_TX_POWER);
+    config.PREAMBLE = (uint16_t)retrieveSetting(BELUGA_UWB_PREAMBLE);
+    config.POWER_AMP = (uint8_t)retrieveSetting(BELUGA_RANGE_EXTEND);
+    config.CHANNEL = (uint8_t)retrieveSetting(BELUGA_UWB_CHANNEL);
+    config.TWR = (bool)retrieveSetting(BELUGA_TWR);
+    config.PHR = (bool)retrieveSetting(BELUGA_UWB_PHR);
+    config.SFD = (bool)retrieveSetting(BELUGA_UWB_NSSFD);
+    config.DATA_RATE = (uint8_t)retrieveSetting(BELUGA_UWB_DATA_RATE);
+    config.PAC = (uint8_t)retrieveSetting(BELUGA_UWB_PAC);
+    config.PULSE_RATE = (bool)retrieveSetting(BELUGA_UWB_PULSE_RATE);
+
+    // TODO: Signal connect
+    // TODO: Wait connection (timeout if one could not be established)
+    ret = bt_beluga_client_sync(&client, &config);
+    // TODO: Wait sent
+    return ret;
+}
+
+////
 
 /**
  * Callback function for assisting with scan data parsing
@@ -291,7 +451,7 @@ static void update_seen_list(struct ble_data *data, int8_t rssi) {
         beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
         UWB_ACTIVE_MASK;
 #endif
-
+    // TODO: Check if syncing. If so, check the ID and submit work if ID matches
     if (memcmp(data->manufacturerData, beluga_manufacturer_data,
                sizeof(beluga_manufacturer_data)) != 0) {
         // UWB parameters do not match
@@ -398,41 +558,6 @@ static int adv_no_connect_start(void) {
         currentAdvMode = ADVERTISING_CONNECTABLE;
     }
     return 0;
-}
-
-/**
- * Callback indicating that GATT discovery was completed
- * @param[in] dm GATT discovery manager
- * @param[in] context Additional context
- */
-static void discovery_completed_cb(struct bt_gatt_dm *dm,
-                                   UNUSED void *context) {
-    bt_gatt_dm_data_print(dm);
-
-    // TODO: Figure out how to implement this
-
-    bt_gatt_dm_data_release(dm);
-}
-
-/**
- * Callback for handling service not found problems
- * @param[in] conn Pointer to Bluetooth connection data
- * @param[in] context Additional context
- */
-static void discovery_not_found_cb(UNUSED struct bt_conn *conn,
-                                   UNUSED void *context) {
-    LOG_WRN("Heart Rate Service could not be found during the discovery");
-}
-
-/**
- * Callback for handling GATT discovery errors
- * @param[in] conn Pointer to Bluetooth connection data
- * @param[in] err The error code
- * @param[in] context Additional context
- */
-static void discovery_error_found_cb(UNUSED struct bt_conn *conn,
-                                     UNUSED int err, UNUSED void *context) {
-    LOG_ERR("The discovery procedure failed with %d", err);
 }
 
 /**
@@ -806,77 +931,6 @@ void update_node_id(uint16_t uuid) {
         assert_print("Bad advertising mode");
         break;
     }
-}
-
-/**
- * Retrieves the current node ID
- * @return The current node ID
- */
-uint16_t get_NODE_UUID(void) {
-    uint16_t retVal;
-    k_mutex_lock(&UUID_mutex, K_FOREVER);
-    retVal = NODE_UUID;
-    k_mutex_unlock(&UUID_mutex);
-    return retVal;
-}
-
-#define SET_UWB_METADATA(meta, field)                                          \
-    set_uwb_metadata(BLE_UWB_METADATA_##field##_BYTE, UWB_##field##_MASK,      \
-                     UWB_##field##_SHIFT, (meta)->field)
-
-static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
-    uint8_t preamble;
-    set_ble_pan(uwb_metadata->pan);
-    SET_UWB_METADATA(uwb_metadata, CHANNEL);
-    SET_UWB_METADATA(uwb_metadata, TWR);
-    SET_UWB_METADATA(uwb_metadata, SFD);
-    SET_UWB_METADATA(uwb_metadata, DATARATE);
-    SET_UWB_METADATA(uwb_metadata, PULSERATE);
-    SET_UWB_METADATA(uwb_metadata, PHR);
-    SET_UWB_METADATA(uwb_metadata, PAC);
-    SET_UWB_METADATA(uwb_metadata, ACTIVE);
-
-    switch (uwb_metadata->preamble) {
-    case 64: {
-        preamble = 0;
-        break;
-    }
-    case 128: {
-        preamble = 1;
-        break;
-    }
-    case 256: {
-        preamble = 2;
-        break;
-    }
-    case 512: {
-        preamble = 3;
-        break;
-    }
-    case 1024: {
-        preamble = 4;
-        break;
-    }
-    case 1536: {
-        preamble = 5;
-        break;
-    }
-    case 2048: {
-        preamble = 6;
-        break;
-    }
-    case 4096: {
-        preamble = 7;
-        break;
-    }
-    default:
-        __ASSERT_UNREACHABLE;
-    }
-
-    set_uwb_metadata(BLE_UWB_METADATA_PREAMBLE_BYTE, UWB_PREAMBLE_MASK,
-                     UWB_PREAMBLE_SHIFT, preamble);
-    set_uwb_metadata(BLE_UWB_METADATA_POLLING_BYTE, UWB_POLLING_MASK,
-                     UWB_POLL_SHIFT, uwb_metadata->poll_rate != 0);
 }
 
 /**
