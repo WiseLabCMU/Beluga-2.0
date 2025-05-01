@@ -63,6 +63,9 @@
 #include <range_extension.h>
 #include <zephyr/logging/log.h>
 
+#include <services/beluga_service.h>
+#include <services/beluga_client.h>
+
 LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
 /**
