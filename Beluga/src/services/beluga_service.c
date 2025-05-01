@@ -44,7 +44,7 @@ static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
         return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
     }
 
-    if (service_cb.sync_cb == NULL) {
+    if (service_cb.sync == NULL) {
         return len;
     }
 
@@ -52,7 +52,7 @@ static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
         return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
     }
 
-    service_cb.sync_cb(conn, &configs);
+    service_cb.sync(conn, &configs);
 
     return len;
 }
@@ -68,10 +68,11 @@ BT_GATT_SERVICE_DEFINE(
                            NULL), );
 
 int beluga_service_init(struct beluga_service_cb *cb) {
-    if (cb == NULL || cb->sync_cb == NULL) {
+    if (cb == NULL || cb->sync == NULL) {
         return -EINVAL;
     }
-    service_cb.sync_cb = cb->sync_cb;
-    service_cb.sent_cb = cb->sent_cb;
+    service_cb.sync = cb->sync;
+    service_cb.sent_range = cb->sent_range;
+    service_cb.send_range_enabled = cb->send_range_enabled;
     return 0;
 }

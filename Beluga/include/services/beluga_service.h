@@ -53,6 +53,16 @@
  */
 
 /**
+ * Beluga service ranging send status
+ */
+enum bt_beluga_service_range_send_status {
+    /** Ranging send notification enabled */
+    BT_BELUGA_SERVICE_STATUS_ENABLED,
+    /** Ranging send notification disabled */
+    BT_BELUGA_SERVICE_STATUS_DISABLED,
+};
+
+/**
  * Callback type for when a SYNC request is received
  */
 typedef void (*beluga_uwb_sync)(struct bt_conn *conn,
@@ -62,6 +72,12 @@ typedef void (*beluga_uwb_sync)(struct bt_conn *conn,
  * Callback type for when the range notification has been sent
  */
 typedef void (*beluga_range_sent)(struct bt_conn *conn);
+
+/**
+ * Callback type for range notification status updates
+ */
+typedef void (*beluga_range_enabled)(
+    enum bt_beluga_service_range_send_status status);
 
 /**
  * Callbacks for service events
@@ -76,7 +92,7 @@ struct beluga_service_cb {
      *
      * @note This callback is required.
      */
-    beluga_uwb_sync sync_cb;
+    beluga_uwb_sync sync;
 
     /**
      * @brief Range sent callback
@@ -84,7 +100,17 @@ struct beluga_service_cb {
      * @param[in] conn Pointer to the connection object that sent the data. NULL
      * if sent to all connected peers.
      */
-    beluga_range_sent sent_cb;
+    beluga_range_sent sent_range;
+
+    /**
+     * @brief Send range callback.
+     *
+     * Indicate the CCCD descriptor status of the Beluga service range
+     * characteristic.
+     *
+     * @param[in] status Range notification status.
+     */
+    beluga_range_enabled send_range_enabled;
 };
 
 /**
