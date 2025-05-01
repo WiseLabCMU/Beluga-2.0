@@ -84,3 +84,39 @@ int bt_beluga_client_init(struct bt_beluga_client *client,
     memcpy(&client->cb, callbacks, sizeof(client->cb));
     return 0;
 }
+
+int bt_beluga_client_sync(struct bt_beluga_client *client,
+                          const struct beluga_uwb_params *config) {
+    int err;
+    static char buf[BT_BELUGA_SVC_SYNC_PAYLOAD_SIZE];
+
+    if (!client) {
+        return -EINVAL;
+    }
+
+    if (!client->conn) {
+        return -ENOTCONN;
+    }
+
+    if (atomic_test_and_set_bit(&client->state, BELUGA_C_SYNC_PENDING)) {
+        return -EALREADY;
+    }
+
+    err = serialize_uwb_configurations(buf, sizeof(buf), config);
+    if (err) {
+        return err;
+    }
+
+    client->sync_write_params.func = on_sent;
+    client->sync_write_params.handle = client->handles.sync;
+    client->sync_write_params.offset = 0;
+    client->sync_write_params.data = buf;
+    client->sync_write_params.length = BT_BELUGA_SVC_SYNC_PAYLOAD_SIZE;
+
+    err = bt_gatt_write(client->conn, &client->sync_write_params);
+    if (err) {
+        atomic_clear_bit(&client->state, BELUGA_C_SYNC_PENDING);
+    }
+
+    return err;
+}
