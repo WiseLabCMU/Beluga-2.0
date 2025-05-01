@@ -42,24 +42,38 @@ static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
     struct beluga_uwb_params configs;
 
     if (len != BT_BELUGA_SVC_SYNC_PAYLOAD_SIZE) {
+        LOG_ERR("Invalid payload length for UWB sync request");
         return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
     }
 
     if (offset != 0) {
+        LOG_ERR("Invalid offset for UWB sync request");
         return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
     }
 
     if (service_cb.sync == NULL) {
+        LOG_DBG("Service not initialized");
         return len;
     }
 
     if (deserialize_uwb_configurations(&configs, buf, len) != 0) {
+        LOG_ERR("Invalid UWB sync data received");
         return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
     }
 
     service_cb.sync(conn, &configs);
 
     return len;
+}
+
+static void on_range_sent(struct bt_conn *conn, void *user_data) {
+    ARG_UNUSED(user_data);
+
+    LOG_DBG("Range sent, conn %p", (void *)conn);
+
+    if (service_cb.sent_range) {
+        service_cb.sent_range(conn);
+    }
 }
 
 BT_GATT_SERVICE_DEFINE(
@@ -80,4 +94,26 @@ int beluga_service_init(struct beluga_service_cb *cb) {
     service_cb.sent_range = cb->sent_range;
     service_cb.send_range_enabled = cb->send_range_enabled;
     return 0;
+}
+
+int range_notify(struct bt_conn *conn, uint16_t id, float range) {
+    struct bt_gatt_notify_params params = {0};
+    const struct bt_gatt_attr *attr = &beluga_svc.attrs[2];
+    static char data[sizeof(id) + sizeof(range)];
+
+    memcpy(data, &id, sizeof(id));
+    memcpy(data + sizeof(id), &range, sizeof(range));
+
+    params.attr = attr;
+    params.data = data;
+    params.len = sizeof(data);
+    params.func = on_range_sent;
+
+    if (!conn) {
+        LOG_DBG("Notification sent to all connected peers");
+        return bt_gatt_notify_cb(NULL, &params);
+    } else if (bt_gatt_is_subscribed(conn, attr, BT_GATT_CCC_NOTIFY)) {
+        return bt_gatt_notify_cb(conn, &params);
+    }
+    return -EINVAL;
 }
