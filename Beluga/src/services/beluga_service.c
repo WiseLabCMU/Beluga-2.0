@@ -66,3 +66,12 @@ BT_GATT_SERVICE_DEFINE(
     BT_GATT_CHARACTERISTIC(BT_UUID_BELUGA_SYNC, BT_GATT_CHRC_WRITE,
                            BT_GATT_PERM_WRITE, NULL, bs_write_uwb_sync,
                            NULL), );
+
+int beluga_service_init(struct beluga_service_cb *cb) {
+    if (cb == NULL || cb->sync_cb == NULL) {
+        return -EINVAL;
+    }
+    service_cb.sync_cb = cb->sync_cb;
+    service_cb.sent_cb = cb->sent_cb;
+    return 0;
+}
