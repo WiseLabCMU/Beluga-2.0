@@ -70,3 +70,17 @@ static void on_sent(struct bt_conn *conn, uint8_t err,
         client->cb.synced(client, err, &config);
     }
 }
+
+int bt_beluga_client_init(struct bt_beluga_client *client,
+                          const struct bt_beluga_client_cb *callbacks) {
+    if (!client || !callbacks) {
+        return -EINVAL;
+    }
+
+    if (atomic_test_and_set_bit(&client->state, BELUGA_C_INITIALIZED)) {
+        return -EALREADY;
+    }
+
+    memcpy(&client->cb, callbacks, sizeof(client->cb));
+    return 0;
+}
