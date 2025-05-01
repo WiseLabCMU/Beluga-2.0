@@ -20,12 +20,17 @@
 LOG_MODULE_REGISTER(beluga_service);
 
 static struct beluga_service_cb service_cb;
-static bool ranging_enabled = false;
 
 static void bs_ccc_ranging_cfg_changed(const struct bt_gatt_attr *attr,
                                        uint16_t value) {
     ARG_UNUSED(attr);
-    ranging_enabled = value == BT_GATT_CCC_NOTIFY;
+    if (service_cb.send_range_enabled) {
+        LOG_DBG("Notification has been turned %s",
+                value == BT_GATT_CCC_NOTIFY ? "on" : "off");
+        service_cb.send_range_enabled(value == BT_GATT_CCC_NOTIFY
+                                          ? BT_BELUGA_SERVICE_STATUS_ENABLED
+                                          : BT_BELUGA_SERVICE_STATUS_DISABLED);
+    }
 }
 
 static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
