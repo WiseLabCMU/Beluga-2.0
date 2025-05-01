@@ -52,3 +52,21 @@ static uint8_t on_received(struct bt_conn *conn,
 
     return BT_GATT_ITER_CONTINUE;
 }
+
+static void on_sent(struct bt_conn *conn, uint8_t err,
+                    struct bt_gatt_write_params *params) {
+    const void *data;
+    size_t len;
+    struct bt_beluga_client *client =
+        CONTAINER_OF(params, struct bt_beluga_client, sync_write_params);
+
+    data = params->data;
+    len = params->length;
+
+    atomic_clear_bit(&client->state, BELUGA_C_SYNC_PENDING);
+    if (client->cb.synced) {
+        struct beluga_uwb_params config;
+        (void)deserialize_uwb_configurations(&config, data, len);
+        client->cb.synced(client, err, &config);
+    }
+}
