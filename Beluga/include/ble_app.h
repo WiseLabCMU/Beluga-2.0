@@ -163,39 +163,4 @@ void update_ble_service(uint16_t uuid, float range);
 #define update_ble_service(x, y) (void)0
 #endif // defined(CONFIG_BELUGA_GATT)
 
-#if defined(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
-/**
- * Updates the eviction policy
- * @param[in] policy The new policy
- */
-void set_node_eviction_policy(enum node_eviction_policy new_policy);
-
-/**
- * Prints the eviction policy in human readable text
- * @param[in] comms Pointer to the comms instance
- * @return 0 upon success
- * @return -EINVAL if input parameters are invalid
- * @return -EFAULT if the current eviction policy is unknown
- * @return negative error code otherwise
- */
-int print_eviction_scheme(const struct comms *comms);
-#else
-/**
- * Updates the eviction policy
- * @param[in] policy The new policy
- */
-#define set_node_eviction_policy(...) (void)0
-
-/**
- * Prints the eviction policy in human readable text
- * @param[in] comms Pointer to the comms instance
- * @return 0 upon success
- * @return -EINVAL if input parameters are invalid
- * @return -EFAULT if the current eviction policy is unknown
- * @return -ENOTSUP if disabled
- * @return negative error code otherwise
- */
-#define print_eviction_scheme(...)    (-ENOTSUP)
-#endif
-
 #endif
