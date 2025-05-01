@@ -184,3 +184,33 @@ int bt_beluga_client_assign(struct bt_gatt_dm *dm,
     client->conn = bt_gatt_dm_conn_get(dm);
     return 0;
 }
+
+int bt_beluga_client_subscribe_ranging(struct bt_beluga_client *client) {
+    int err;
+
+    if (!client) {
+        return -EINVAL;
+    }
+
+    if (atomic_test_and_set_bit(&client->state,
+                                BELUGA_C_RANGING_NOTIF_ENABLED)) {
+        return -EALREADY;
+    }
+
+    client->range_notif_params.notify = on_received;
+    client->range_notif_params.value = BT_GATT_CCC_NOTIFY;
+    client->range_notif_params.value_handle = client->handles.range;
+    client->range_notif_params.ccc_handle = client->handles.range_ccc;
+    atomic_set_bit(client->range_notif_params.flags,
+                   BT_GATT_SUBSCRIBE_FLAG_VOLATILE);
+
+    err = bt_gatt_subscribe(client->conn, &client->range_notif_params);
+    if (err) {
+        LOG_ERR("Subscribe failed (err %d)", err);
+        atomic_clear_bit(&client->state, BELUGA_C_RANGING_NOTIF_ENABLED);
+    } else {
+        LOG_DBG("[SUBSCRIBED]");
+    }
+
+    return err;
+}
