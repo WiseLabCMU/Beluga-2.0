@@ -190,13 +190,8 @@ static char const m_target_peripheral_name[] = "BN ";
  * The BLE advertising data
  */
 static struct bt_data ad[] = {
-    BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE,
-                  (CONFIG_BT_DEVICE_APPEARANCE >> 0) & 0xff,
-                  (CONFIG_BT_DEVICE_APPEARANCE >> 8) & 0xff),
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    BT_DATA_BYTES(
-        BT_DATA_UUID16_ALL,
-        BT_UUID_16_ENCODE(BELUGA_SERVICE_UUID)), /* Heart Rate Service */
+    BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME),
     BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
     BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(0x1234)),
 };
@@ -205,7 +200,8 @@ static struct bt_data ad[] = {
  * The BLE scan response data
  */
 static struct bt_data sd[] = {
-    BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME)};
+    BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_BELUGA_SVC_VAL),
+};
 
 /**
  * Flag indicating that the bluetooth is on
@@ -428,14 +424,16 @@ int sync_uwb_parameters(uint16_t id) {
         return ret;
     }
 
-    (void)k_poll(&connect_signalling.connect_events[CONNECT_CONNECTED], 1, K_FOREVER);
+    (void)k_poll(&connect_signalling.connect_events[CONNECT_CONNECTED], 1,
+                 K_FOREVER);
     k_poll_signal_reset(&connect_signalling.connect_signals[CONNECT_CONNECTED]);
 
     ret = bt_beluga_client_sync(&client, &config);
     if (ret != 0) {
         return ret;
     }
-    (void)k_poll(&connect_signalling.connect_events[CONNECTED_SYNCED], 1, K_FOREVER);
+    (void)k_poll(&connect_signalling.connect_events[CONNECTED_SYNCED], 1,
+                 K_FOREVER);
     k_poll_signal_reset(&connect_signalling.connect_signals[CONNECTED_SYNCED]);
 
     ret = bt_conn_disconnect(central_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
@@ -455,22 +453,24 @@ int sync_uwb_parameters(uint16_t id) {
  */
 static bool data_cb(struct bt_data *data, void *user_data) {
     struct ble_data *_data = user_data;
-    uint16_t uuid = 0;
+    struct bt_uuid_128 service = {0};
 
     switch (data->type) {
-    case BT_DATA_UUID16_ALL:
-        UUID16_EXTRACT(&uuid, data->data);
-        if (uuid == BELUGA_SERVICE_UUID) {
+    case BT_DATA_UUID128_ALL:
+        bt_uuid_create((struct bt_uuid *)&service, data->data, data->data_len);
+        if (bt_uuid_cmp(BT_UUID_BELUGA_SVC, (struct bt_uuid *)&service) == 0) {
             _data->beluga_node = true;
-        } else {
-            _data->uuid = uuid;
         }
+        break;
+    case BT_DATA_UUID16_ALL:
+        UUID16_EXTRACT(&_data->uuid, data->data);
         break;
     case BT_DATA_MANUFACTURER_DATA:
         memcpy(_data->manufacturerData, data->data,
-               MIN(data->data_len, NAME_LEN - 1));
+               MIN(data->data_len, NAME_LEN));
         break;
     default:
+        // Some unhandled data
         break;
     }
 
