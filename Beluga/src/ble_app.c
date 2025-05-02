@@ -162,9 +162,18 @@ enum adv_mode {
     ADVERTISING_OFF             ///< Advertising is turned off
 };
 
-struct bt_connect_work {
+enum connect_signals {
+    CONNECT_SEARCH_ID,
+    CONNECT_SEARCH_FOUND,
+    CONNECT_CONNECTED,
+    CONNECTED_SYNCED,
+    CONNECT_LAST_ENUMERATOR
+};
+
+struct bt_connect {
     bt_addr_le_t addr;
-    struct k_work work;
+    struct k_poll_signal connect_signals[CONNECT_LAST_ENUMERATOR];
+    struct k_poll_event connect_events[CONNECT_LAST_ENUMERATOR];
 };
 
 /**
@@ -220,7 +229,7 @@ static enum adv_mode currentAdvMode = ADVERTISING_OFF;
 
 static struct bt_beluga_client client;
 
-static struct bt_connect_work connect_work;
+static struct bt_connect connect_signalling;
 
 static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
 static struct bt_data beluga_data;
@@ -308,6 +317,7 @@ uint16_t get_NODE_UUID(void) { return NODE_UUID; }
 ////
 
 //// Client stuff
+
 /**
  * Callback indicating that GATT discovery was completed
  * @param[in] dm GATT discovery manager
@@ -365,6 +375,17 @@ static int init_beluga_client(void) {
     struct bt_beluga_client_cb cb = {
         .synced = beluga_uwb_settings_synced,
     };
+    int err = bt_beluga_client_init(&client, &cb);
+    if (err) {
+        return err;
+    }
+
+    for (size_t i = 0; i < CONNECT_LAST_ENUMERATOR; i++) {
+        k_poll_signal_init(&connect_signalling.connect_signals[i]);
+        k_poll_event_init(&connect_signalling.connect_events[i],
+                          K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+                          &connect_signalling.connect_signals[i]);
+    }
 
     return bt_beluga_client_init(&client, &cb);
 }
@@ -372,7 +393,10 @@ static int init_beluga_client(void) {
 int sync_uwb_parameters(uint16_t id) {
     struct beluga_uwb_params config;
     int ret;
-    // TODO: Put this stuff on the work q
+
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
+                        (int)id);
+
     config.TX_POWER = retrieveSetting(BELUGA_TX_POWER);
     config.PREAMBLE = (uint16_t)retrieveSetting(BELUGA_UWB_PREAMBLE);
     config.POWER_AMP = (uint8_t)retrieveSetting(BELUGA_RANGE_EXTEND);
@@ -384,10 +408,39 @@ int sync_uwb_parameters(uint16_t id) {
     config.PAC = (uint8_t)retrieveSetting(BELUGA_UWB_PAC);
     config.PULSE_RATE = (bool)retrieveSetting(BELUGA_UWB_PULSE_RATE);
 
-    // TODO: Signal connect
-    // TODO: Wait connection (timeout if one could not be established)
+    ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_FOUND], 1,
+                 K_SECONDS(1));
+    if (ret != 0) {
+        // Timed out
+        k_poll_signal_reset(
+            &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+        return -EAGAIN;
+    }
+    k_poll_signal_reset(
+        &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND]);
+
+    bt_le_adv_stop();
+    bt_le_scan_stop();
+
+    ret = bt_conn_le_create(&connect_signalling.addr, BT_CONN_LE_CREATE_CONN,
+                            BT_LE_CONN_PARAM_DEFAULT, &central_conn);
+    if (ret != 0) {
+        return ret;
+    }
+
+    (void)k_poll(&connect_signalling.connect_events[CONNECT_CONNECTED], 1, K_FOREVER);
+    k_poll_signal_reset(&connect_signalling.connect_signals[CONNECT_CONNECTED]);
+
     ret = bt_beluga_client_sync(&client, &config);
-    // TODO: Wait sent
+    if (ret != 0) {
+        return ret;
+    }
+    (void)k_poll(&connect_signalling.connect_events[CONNECTED_SYNCED], 1, K_FOREVER);
+    k_poll_signal_reset(&connect_signalling.connect_signals[CONNECTED_SYNCED]);
+
+    ret = bt_conn_disconnect(central_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    central_conn = NULL;
+
     return ret;
 }
 
@@ -429,8 +482,10 @@ static bool data_cb(struct bt_data *data, void *user_data) {
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-static void update_seen_list(struct ble_data *data, int8_t rssi) {
+static void update_seen_list(struct ble_data *data, int8_t rssi,
+                             const bt_addr_le_t *addr) {
     bool polling;
+    int ret;
     if (data->uuid == NODE_UUID) {
         return;
     }
@@ -451,7 +506,23 @@ static void update_seen_list(struct ble_data *data, int8_t rssi) {
         beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
         UWB_ACTIVE_MASK;
 #endif
-    // TODO: Check if syncing. If so, check the ID and submit work if ID matches
+
+    ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_ID], 1,
+                 K_NO_WAIT);
+    if (ret == 0) {
+        int signaled, search_id;
+        k_poll_signal_check(
+            &connect_signalling.connect_signals[CONNECT_SEARCH_ID], &signaled,
+            &search_id);
+        if (signaled && search_id == (int)data->uuid) {
+            k_poll_signal_reset(
+                &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+            bt_addr_le_copy(&connect_signalling.addr, addr);
+            k_poll_signal_raise(
+                &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND], 0);
+        }
+    }
+
     if (memcmp(data->manufacturerData, beluga_manufacturer_data,
                sizeof(beluga_manufacturer_data)) != 0) {
         // UWB parameters do not match
@@ -474,14 +545,14 @@ static void update_seen_list(struct ble_data *data, int8_t rssi) {
  * @param[in] type The device type
  * @param[in] adv_info Advertising information for the device
  */
-static void device_found_callback(UNUSED const bt_addr_le_t *addr, int8_t rssi,
+static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
                                   UNUSED uint8_t type,
                                   struct net_buf_simple *adv_info) {
     struct ble_data _data = {};
     bt_data_parse(adv_info, data_cb, &_data);
 
     if (_data.beluga_node) {
-        update_seen_list(&_data, rssi);
+        update_seen_list(&_data, rssi, addr);
     }
 }
 
@@ -624,7 +695,8 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
 
             scan_start();
         }
-
+        k_poll_signal_raise(
+            &connect_signalling.connect_signals[CONNECT_CONNECTED], 1);
         return;
     }
 
@@ -648,6 +720,8 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
 
             gatt_discover(conn);
         }
+        k_poll_signal_raise(
+            &connect_signalling.connect_signals[CONNECT_CONNECTED], 0);
     } else {
         BLE_LED_ON(PERIPHERAL_CONNECTED_LED);
         bt_le_adv_stop();
@@ -797,7 +871,17 @@ int init_bt_stack(void) {
     }
     LOG_INF("Bluetooth stack loaded");
 
-    return scan_init();
+    err = scan_init();
+    if (err) {
+        return err;
+    }
+
+    err = init_beluga_client();
+    if (err != 0 && err != -EALREADY) {
+        return err;
+    }
+
+    return 0;
 }
 
 /**

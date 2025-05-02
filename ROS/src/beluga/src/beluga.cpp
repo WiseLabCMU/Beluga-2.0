@@ -365,7 +365,7 @@ void Beluga::__time_sync() { _time_sync(); }
 
 #define CALLBACK_DEF(name_)                                                    \
     {                                                                          \
-        #name_, std::bind(&BelugaSerial::BelugaSerial::name_, &this->_serial,  \
+#name_, std::bind(&BelugaSerial::BelugaSerial::name_, &this->_serial,  \
                           std::placeholders::_1)                               \
     }
 
