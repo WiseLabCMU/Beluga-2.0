@@ -11,11 +11,11 @@
 #ifndef _BLE_APP_
 #define _BLE_APP_
 
+#include <deca_device_api.h>
+#include <services/beluga_service_common.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
-
-#include <deca_device_api.h>
 
 /**
  * Eviction policies for when the neighbor list is full
@@ -61,6 +61,12 @@ struct node {
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
     uint32_t exchange_id; /** Ranging exchange ID (Logic clock) */
 #endif
+};
+
+struct uwb_sync_configs {
+    struct beluga_uwb_params config;
+    struct k_poll_signal ready_sig;
+    struct k_poll_event ready;
 };
 
 /**
@@ -164,5 +170,7 @@ void update_ble_service(uint16_t uuid, float range);
 #endif // defined(CONFIG_BELUGA_GATT)
 
 int sync_uwb_parameters(uint16_t id);
+
+extern struct uwb_sync_configs sync_configs;
 
 #endif

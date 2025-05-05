@@ -467,6 +467,59 @@ static void load_settings(const struct comms *comms) {
     SETTINGS_BREAK(comms);
 }
 
+static void update_uwb_tx_power(uint32_t power) {
+    struct uwb_tx_power_config config;
+    config.mode = UWB_TX_PWR_CONFIG_RAW;
+    config.raw_power = power;
+    (void)set_tx_power(&config);
+    updateSetting(BELUGA_TX_POWER, (int32_t)power);
+}
+
+static void update_uwb_preamble(uint16_t preamble) {
+    uwb_set_preamble(preamble);
+    updateSetting(BELUGA_UWB_PREAMBLE, preamble);
+}
+
+static void update_uwb_channel(uint8_t channel) {
+    set_uwb_channel(channel);
+    updateSetting(BELUGA_UWB_CHANNEL, channel);
+}
+
+static void update_uwb_twr(bool twr) {
+    set_twr_mode(twr);
+    updateSetting(BELUGA_TWR, twr);
+}
+
+static void update_uwb_phr(bool phr) {
+    uwb_set_phr_mode(phr);
+    updateSetting(BELUGA_UWB_PHR, phr);
+}
+
+static void update_uwb_sfd(bool sfd) {
+    set_sfd_mode(sfd);
+    updateSetting(BELUGA_UWB_NSSFD, sfd);
+}
+
+static void update_uwb_data_rate(uint8_t rate) {
+    uwb_set_datarate(rate);
+    updateSetting(BELUGA_UWB_DATA_RATE, rate);
+}
+
+static void update_uwb_pac(uint8_t pac) {
+    set_pac_size(pac);
+    updateSetting(BELUGA_UWB_PAC, pac);
+}
+
+static void update_uwb_pulse_rate(bool pulse_rate) {
+    uwb_set_pulse_rate(pulse_rate);
+    updateSetting(BELUGA_UWB_PULSE_RATE, pulse_rate);
+}
+
+static void update_power_mode_(uint8_t pwramp) {
+    update_power_mode(pwramp);
+    updateSetting(BELUGA_RANGE_EXTEND, pwramp);
+}
+
 /**
  * @brief Main entry point of the application
  * @return 1 on error
@@ -536,7 +589,28 @@ int main(void) {
     init_monitor_thread();
 
     for (;;) {
-        k_sleep(K_FOREVER);
+        enum led_state uwb_led_state;
+        k_poll(&sync_configs.ready, 1, K_FOREVER);
+        uwb_led_state = get_uwb_led_state();
+        if (uwb_led_state == LED_ON) {
+            update_uwb_state(false);
+        }
+
+        update_uwb_tx_power(sync_configs.config.TX_POWER);
+        update_uwb_preamble(sync_configs.config.PREAMBLE);
+        update_uwb_channel(sync_configs.config.CHANNEL);
+        update_uwb_twr(sync_configs.config.TWR);
+        update_uwb_phr(sync_configs.config.PHR);
+        update_uwb_sfd(sync_configs.config.SFD);
+        update_uwb_data_rate(sync_configs.config.DATA_RATE);
+        update_uwb_pac(sync_configs.config.PAC);
+        update_uwb_pulse_rate(sync_configs.config.PULSE_RATE);
+        update_power_mode_(sync_configs.config.POWER_AMP);
+
+        if (uwb_led_state == LED_ON) {
+            update_uwb_state(true);
+        }
+        k_poll_signal_reset(&sync_configs.ready_sig);
     }
 
     return 1;
