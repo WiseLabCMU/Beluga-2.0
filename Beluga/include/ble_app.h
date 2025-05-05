@@ -163,4 +163,6 @@ void update_ble_service(uint16_t uuid, float range);
 #define update_ble_service(x, y) (void)0
 #endif // defined(CONFIG_BELUGA_GATT)
 
+int sync_uwb_parameters(uint16_t id);
+
 #endif

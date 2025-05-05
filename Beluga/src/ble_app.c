@@ -93,19 +93,14 @@ K_SEM_DEFINE(ble_state, 1, 1);
     } while (0)
 
 /**
- * The service UUID that Beluga uses
- */
-#define BELUGA_SERVICE_UUID BT_UUID_HRS_VAL
-
-/**
  * The index the UUID is stored at in the advertising data
  */
-#define UUID_INDEX 4
+#define UUID_INDEX 3
 
 /**
  * The index the manufacturer data is stored at in the advertising data
  */
-#define MANF_INDEX                      3
+#define MANF_INDEX                      2
 
 #define BLE_PAN_OVERHEAD                2
 #define BLE_UWB_METADATA_OVERHEAD       2
@@ -230,6 +225,9 @@ static struct bt_connect connect_signalling;
 static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
 static struct bt_data beluga_data;
 
+static void temp_stop_ble(void);
+static void temp_restart_ble(void);
+
 //// Advertising data
 static inline void set_ble_pan(uint16_t pan) {
     memcpy(beluga_manufacturer_data + BLE_PAN_OFFSET, &pan, BLE_PAN_OVERHEAD);
@@ -330,6 +328,8 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
     err = bt_beluga_client_assign(dm, bsc);
     if (err) {
         LOG_INF("Could not init Beluga client object (err %d)", err);
+        k_poll_signal_raise(
+            &connect_signalling.connect_signals[CONNECT_CONNECTED], 1);
         return;
     }
     // If we want range, then we subscribe here
@@ -339,6 +339,9 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
     if (err) {
         LOG_INF("Could not release the discovery data (err %d)", err);
     }
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_CONNECTED],
+                        0);
+    LOG_INF("Client data updated");
 }
 
 /**
@@ -348,6 +351,8 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
  */
 static void discovery_not_found_cb(struct bt_conn *conn, void *context) {
     LOG_INF("Beluga Service could not be found during the discovery");
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_CONNECTED],
+                        1);
 }
 
 /**
@@ -359,12 +364,15 @@ static void discovery_not_found_cb(struct bt_conn *conn, void *context) {
 static void discovery_error_found_cb(struct bt_conn *conn, int err,
                                      void *context) {
     LOG_INF("The discovery procedure failed with %d", err);
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_CONNECTED],
+                        1);
 }
 
 static void beluga_uwb_settings_synced(struct bt_beluga_client *bt_client,
                                        uint8_t err,
                                        const struct beluga_uwb_params *config) {
-
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECTED_SYNCED],
+                        0);
 }
 
 static int init_beluga_client(void) {
@@ -386,58 +394,114 @@ static int init_beluga_client(void) {
     return bt_beluga_client_init(&client, &cb);
 }
 
-int sync_uwb_parameters(uint16_t id) {
-    struct beluga_uwb_params config;
+static void prep_configs(struct beluga_uwb_params *config) {
+    LOG_DBG("Loading UWB settings");
+    config->TX_POWER = retrieveSetting(BELUGA_TX_POWER);
+    config->PREAMBLE = (uint16_t)retrieveSetting(BELUGA_UWB_PREAMBLE);
+    config->POWER_AMP = (uint8_t)retrieveSetting(BELUGA_RANGE_EXTEND);
+    config->CHANNEL = (uint8_t)retrieveSetting(BELUGA_UWB_CHANNEL);
+    config->TWR = (bool)retrieveSetting(BELUGA_TWR);
+    config->PHR = (bool)retrieveSetting(BELUGA_UWB_PHR);
+    config->SFD = (bool)retrieveSetting(BELUGA_UWB_NSSFD);
+    config->DATA_RATE = (uint8_t)retrieveSetting(BELUGA_UWB_DATA_RATE);
+    config->PAC = (uint8_t)retrieveSetting(BELUGA_UWB_PAC);
+    config->PULSE_RATE = (bool)retrieveSetting(BELUGA_UWB_PULSE_RATE);
+}
+
+static int wait_connection(bool *stopped) {
     int ret;
 
-    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
-                        (int)id);
-
-    config.TX_POWER = retrieveSetting(BELUGA_TX_POWER);
-    config.PREAMBLE = (uint16_t)retrieveSetting(BELUGA_UWB_PREAMBLE);
-    config.POWER_AMP = (uint8_t)retrieveSetting(BELUGA_RANGE_EXTEND);
-    config.CHANNEL = (uint8_t)retrieveSetting(BELUGA_UWB_CHANNEL);
-    config.TWR = (bool)retrieveSetting(BELUGA_TWR);
-    config.PHR = (bool)retrieveSetting(BELUGA_UWB_PHR);
-    config.SFD = (bool)retrieveSetting(BELUGA_UWB_NSSFD);
-    config.DATA_RATE = (uint8_t)retrieveSetting(BELUGA_UWB_DATA_RATE);
-    config.PAC = (uint8_t)retrieveSetting(BELUGA_UWB_PAC);
-    config.PULSE_RATE = (bool)retrieveSetting(BELUGA_UWB_PULSE_RATE);
-
+    LOG_DBG("Waiting for node to be found");
     ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_FOUND], 1,
                  K_SECONDS(1));
+
     if (ret != 0) {
         // Timed out
         k_poll_signal_reset(
             &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+        LOG_ERR("Search timed out");
         return -EAGAIN;
     }
+
     k_poll_signal_reset(
         &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND]);
 
-    bt_le_adv_stop();
-    bt_le_scan_stop();
+    LOG_DBG("Found node. Stopping advertising and scanning");
+    temp_stop_ble();
+    *stopped = true;
 
+    LOG_DBG("Attempting to establish a connection");
     ret = bt_conn_le_create(&connect_signalling.addr, BT_CONN_LE_CREATE_CONN,
                             BT_LE_CONN_PARAM_DEFAULT, &central_conn);
+
     if (ret != 0) {
-        return ret;
+        LOG_ERR("Connection failed: %d", ret);
     }
 
+    return ret;
+}
+
+static int perform_gatt_exchange(struct beluga_uwb_params *config) {
+    int ret, set, val;
+    LOG_DBG("Waiting for GATT exchange");
     (void)k_poll(&connect_signalling.connect_events[CONNECT_CONNECTED], 1,
                  K_FOREVER);
+    k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_CONNECTED],
+                        &set, &val);
     k_poll_signal_reset(&connect_signalling.connect_signals[CONNECT_CONNECTED]);
+    if (val) {
+        LOG_ERR("GATT exchange failed");
+        return -ENOTCONN;
+    }
 
-    ret = bt_beluga_client_sync(&client, &config);
+    LOG_DBG("Now syncing other node's UWB settings");
+    ret = bt_beluga_client_sync(&client, config);
     if (ret != 0) {
+        LOG_ERR("Beluga client sync failed: %d", ret);
         return ret;
     }
+
+    LOG_DBG("Waiting for target to be synced");
     (void)k_poll(&connect_signalling.connect_events[CONNECTED_SYNCED], 1,
                  K_FOREVER);
     k_poll_signal_reset(&connect_signalling.connect_signals[CONNECTED_SYNCED]);
+    return 0;
+}
 
-    ret = bt_conn_disconnect(central_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
-    central_conn = NULL;
+int sync_uwb_parameters(uint16_t id) {
+    struct beluga_uwb_params config;
+    int ret, disconnect_ret;
+    bool ble_stopped = false;
+    LOG_DBG("Searching for node");
+
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
+                        (int)id);
+
+    prep_configs(&config);
+    ret = wait_connection(&ble_stopped);
+    if (ret != 0) {
+        if (ble_stopped) {
+            goto finish;
+        }
+        return ret;
+    }
+
+    ret = perform_gatt_exchange(&config);
+
+    LOG_DBG("Now attempting to disconnect");
+    disconnect_ret =
+        bt_conn_disconnect(central_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+
+    if (disconnect_ret) {
+        LOG_ERR("Disconnect failed: %d", ret);
+    }
+
+    if (ret == 0 && disconnect_ret != 0) {
+        ret = disconnect_ret;
+    }
+
+finish:
+    temp_restart_ble();
 
     return ret;
 }
@@ -552,6 +616,8 @@ static void device_found_callback(const bt_addr_le_t *addr, int8_t rssi,
     bt_data_parse(adv_info, data_cb, &_data);
 
     if (_data.beluga_node) {
+        LOG_DBG("Found node advertising Beluga service: 0x%" PRIX16,
+                _data.uuid);
         update_seen_list(&_data, rssi, addr);
     }
 }
@@ -648,7 +714,7 @@ static const struct bt_gatt_dm_cb discovery_cb = {
 static int gatt_discover(struct bt_conn *conn) {
     int err;
 
-    err = bt_gatt_dm_start(conn, BT_UUID_GAP, &discovery_cb, NULL);
+    err = bt_gatt_dm_start(conn, BT_UUID_BELUGA_SVC, &discovery_cb, &client);
 
     if (err) {
         LOG_ERR("Could not start the discovery procedure, error "
@@ -713,17 +779,12 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
 
     if (info.role == BT_CONN_ROLE_CENTRAL) {
         BLE_LED_ON(CENTRAL_CONNECTED_LED);
+        LOG_INF("Connected as central");
 
-        err = bt_conn_set_security(conn, BT_SECURITY_L2);
-        if (err) {
-            LOG_ERR("Failed to set security (err %d)", err);
-
-            gatt_discover(conn);
-        }
-        k_poll_signal_raise(
-            &connect_signalling.connect_signals[CONNECT_CONNECTED], 0);
+        gatt_discover(conn);
     } else {
         BLE_LED_ON(PERIPHERAL_CONNECTED_LED);
+        LOG_INF("Connected as peripheral");
         bt_le_adv_stop();
         adv_no_connect_start();
     }
@@ -775,6 +836,7 @@ static void security_changed(struct bt_conn *conn, bt_security_t level,
     }
 
     if (conn == central_conn) {
+        LOG_INF("Starting GATT discovery");
         gatt_discover(conn);
     }
 }
@@ -800,8 +862,7 @@ static void scan_filter_match(struct bt_scan_device_info *device_info,
 
     bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
 
-    // LOG_INF("Filters matched. Address: %s connectable: %d", addr,
-    // connectable);
+    LOG_INF("Filters matched. Address: %s connectable: %d", addr, connectable);
 }
 
 /**
@@ -975,6 +1036,30 @@ int disable_bluetooth(void) {
     return retVal;
 }
 
+static void temp_stop_ble(void) {
+    if (currentAdvMode != ADVERTISING_OFF) {
+        bt_le_adv_stop();
+        bt_le_scan_stop();
+    }
+}
+
+static void temp_restart_ble(void) {
+    switch (currentAdvMode) {
+    case ADVERTISING_CONNECTABLE:
+        adv_scan_start();
+        break;
+    case ADVERTISING_NONCONNECTABLE:
+        adv_no_connect_start();
+        break;
+    case ADVERTISING_OFF:
+        // do nothing
+        break;
+    default:
+        assert_print("Bad advertising mode");
+        break;
+    }
+}
+
 /**
  * Updates the node ID and publishes the update to the Bluetooth advertising
  * data
@@ -993,28 +1078,12 @@ void update_node_id(uint16_t uuid) {
 
     set_NODE_UUID(uuid);
 
-    if (currentAdvMode != ADVERTISING_OFF) {
-        bt_le_adv_stop();
-        bt_le_scan_stop();
-    }
+    temp_stop_ble();
 
     ad[UUID_INDEX] = uuid_data;
     sd[0] = name_data;
 
-    switch (currentAdvMode) {
-    case ADVERTISING_CONNECTABLE:
-        adv_scan_start();
-        break;
-    case ADVERTISING_NONCONNECTABLE:
-        adv_no_connect_start();
-        break;
-    case ADVERTISING_OFF:
-        // do nothing
-        break;
-    default:
-        assert_print("Bad advertising mode");
-        break;
-    }
+    temp_restart_ble();
 }
 
 /**
@@ -1023,10 +1092,7 @@ void update_node_id(uint16_t uuid) {
  * node has stopped polling; otherwise, indicates that the node is polling UWB
  */
 void advertising_reconfig(struct advertising_info *uwb_metadata) {
-    if (currentAdvMode != ADVERTISING_OFF) {
-        bt_le_adv_stop();
-        bt_le_scan_stop();
-    }
+    temp_stop_ble();
 
     update_manufacturer_info(uwb_metadata);
     beluga_data.data = beluga_manufacturer_data;
@@ -1034,20 +1100,7 @@ void advertising_reconfig(struct advertising_info *uwb_metadata) {
     beluga_data.type = BT_DATA_MANUFACTURER_DATA;
     ad[MANF_INDEX] = beluga_data;
 
-    switch (currentAdvMode) {
-    case ADVERTISING_CONNECTABLE:
-        adv_scan_start();
-        break;
-    case ADVERTISING_NONCONNECTABLE:
-        adv_no_connect_start();
-        break;
-    case ADVERTISING_OFF:
-        // do nothing
-        break;
-    default:
-        assert_print("Bad advertising mode");
-        break;
-    }
+    temp_restart_ble();
 }
 
 /**
