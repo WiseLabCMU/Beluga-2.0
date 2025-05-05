@@ -61,7 +61,10 @@ static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
         return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
     }
 
-    service_cb.sync(conn, &configs);
+    if (service_cb.sync(conn, &configs) != 0) {
+        LOG_ERR("UWB sync is not ready");
+        return BT_GATT_ERR(BT_ATT_ERR_WRITE_REQ_REJECTED);
+    }
 
     return len;
 }

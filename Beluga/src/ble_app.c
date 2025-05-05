@@ -511,16 +511,23 @@ finish:
 //// Server stuff
 struct uwb_sync_configs sync_configs;
 
-static void sync_uwb_settings(struct bt_conn *conn,
-                              const struct beluga_uwb_params *configs) {
+static int sync_uwb_settings(struct bt_conn *conn,
+                             const struct beluga_uwb_params *configs) {
     ARG_UNUSED(conn);
     LOG_INF("Syncing UWB parameters");
     // This is probably running in a cooperative thread. Move it over
     // into the main thread. This is to make sure that this does not
     // run into a deadlock issue...
-    // TODO: return code indicating not ready
+    int set, val;
+
+    k_poll_signal_check(&sync_configs.ready_sig, &set, &val);
+    if (set) {
+        return -EAGAIN;
+    }
+
     memcpy(&sync_configs.config, configs, sizeof(sync_configs.config));
     k_poll_signal_raise(&sync_configs.ready_sig, 0);
+    return 0;
 }
 
 static int init_beluga_service(void) {

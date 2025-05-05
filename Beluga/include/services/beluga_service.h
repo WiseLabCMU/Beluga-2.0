@@ -65,8 +65,8 @@ enum bt_beluga_service_range_send_status {
 /**
  * Callback type for when a SYNC request is received
  */
-typedef void (*beluga_uwb_sync)(struct bt_conn *conn,
-                                const struct beluga_uwb_params *configs);
+typedef int (*beluga_uwb_sync)(struct bt_conn *conn,
+                               const struct beluga_uwb_params *configs);
 
 /**
  * Callback type for when the range notification has been sent
