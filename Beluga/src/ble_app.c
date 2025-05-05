@@ -508,6 +508,22 @@ finish:
 
 ////
 
+//// Server stuff
+
+static void sync_uwb_settings(struct bt_conn *conn, const struct beluga_uwb_params *configs) {
+    LOG_INF("Syncing UWB parameters");
+}
+
+static int init_beluga_service(void) {
+    struct beluga_service_cb cb = {
+            .sync = sync_uwb_settings,
+    };
+
+    return beluga_service_init(&cb);
+}
+
+////
+
 /**
  * Callback function for assisting with scan data parsing
  * @param[in] data The bt data that got parsed by the OS
@@ -942,7 +958,7 @@ int init_bt_stack(void) {
         return err;
     }
 
-    return 0;
+    return init_beluga_service();
 }
 
 /**
@@ -1111,31 +1127,10 @@ void advertising_reconfig(struct advertising_info *uwb_metadata) {
 bool check_ble_enabled(void) { return bluetooth_on; }
 
 #if IS_ENABLED(CONFIG_BELUGA_GATT)
-#warning "Beluga's GATT service is experimental and may not work"
-#define BELUGA_GATT_VAL_LEN 14
 void update_ble_service(uint16_t uuid, float range) {
-    static uint8_t gatt_value[BELUGA_GATT_VAL_LEN];
-
-    union {
-        int32_t i32;
-        uint8_t bytes[sizeof(int32_t)];
-    } range_int;
-
-    struct bt_gatt_attr attr;
-    int err;
-
-    range_int.i32 = (int32_t)range * INT32_C(1000);
-
-    memset(gatt_value, 1, 2);
-    memcpy(gatt_value + 2, &uuid, sizeof(uuid));
-    memcpy(gatt_value + 4, range_int.bytes, sizeof(range_int));
-    gatt_value[8] = 10;
-    memset(gatt_value + 9, 0, 5);
-
-    // TODO: Fix parameters 1 and 2
-    err = bt_gatt_notify(NULL, NULL, gatt_value, BELUGA_GATT_VAL_LEN);
-    if (err != 0) {
-        LOG_ERR("Cannot perform gatt notify (%d)", err);
+    int ret = range_notify(NULL, uuid, range);
+    if (ret != 0) {
+        LOG_ERR("range_notify(): %d", ret);
     }
 }
 #endif
