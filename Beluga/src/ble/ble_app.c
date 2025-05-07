@@ -20,7 +20,10 @@
 #include <ble/services/beluga_service.h>
 
 #include <list_monitor.h>
+#include <range_extension.h>
 #include <settings.h>
+
+K_SEM_DEFINE(ble_state, 1, 1);
 
 static uint16_t NODE_UUID = 0;
 
@@ -29,6 +32,7 @@ static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
 struct bt_connect connect_signalling;
 struct uwb_sync_configs sync_configs;
 static struct bt_beluga_client client;
+static bool bluetooth_on = false;
 
 /**
  * Updates the neighbor list by either, updating or inserting the scanned node
@@ -336,6 +340,11 @@ int init_bt_stack(void) {
     }
     LOG_INF("Bluetooth stack loaded");
 
+    err = init_advertising();
+    if (err) {
+        return err;
+    }
+
     err = init_beluga_service();
     if (err) {
         return err;
@@ -354,4 +363,67 @@ int deinit_bt_stack(void) {
     stop_scanning();
 
     return bt_disable();
+}
+
+static int _enable_bluetooth(void) {
+
+    int err = start_advertising();
+    if (err != 0) {
+        return err;
+    }
+
+    err = start_active_scanning();
+    if (err != 0) {
+        stop_advertising();
+        return err;
+    }
+
+    bluetooth_on = true;
+    return 0;
+}
+
+static int _disable_bluetooth(void) {
+    int err;
+
+    err = stop_advertising();
+    if (err) {
+        LOG_ERR("Unable to stop advertising (err: %d)", err);
+        return err;
+    }
+
+    err = stop_scanning();
+    if (err) {
+        LOG_ERR("Unable to stop scanning (err: %d)", err);
+        return err;
+    }
+
+    bluetooth_on = false;
+    return 0;
+}
+
+int enable_bluetooth(void) {
+    int retVal = 1;
+    k_sem_take(&ble_state, K_FOREVER);
+    if (!bluetooth_on) {
+        if (update_fem_shutdown_state(false) != 0) {
+            retVal = -EFAULT;
+        } else {
+            retVal = _enable_bluetooth();
+        }
+    }
+    k_sem_give(&ble_state);
+    return retVal;
+}
+
+int disable_bluetooth(void) {
+    int retVal = 1;
+    k_sem_take(&ble_state, K_FOREVER);
+    if (bluetooth_on) {
+        retVal = _disable_bluetooth();
+        if (!retVal && update_fem_shutdown_state(true) != 0) {
+            retVal = -EFAULT;
+        }
+    }
+    k_sem_give(&ble_state);
+    return retVal;
 }

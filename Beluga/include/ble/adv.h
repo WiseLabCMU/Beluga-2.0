@@ -12,7 +12,7 @@
 #define BELUGA_DTS_ADV_H
 
 int init_advertising(void);
-void stop_advertising(void);
-void start_advertising(void);
+int stop_advertising(void);
+int start_advertising(void);
 
 #endif // BELUGA_DTS_ADV_H

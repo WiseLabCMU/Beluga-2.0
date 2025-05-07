@@ -217,37 +217,45 @@ int init_advertising(void) {
     return connectable_adv_create();
 }
 
-void stop_advertising(void) {
+int stop_advertising(void) {
     int err;
 
     err = bt_le_ext_adv_stop(ext_adv[NCONN_ADV_IDX]);
     if (err) {
         LOG_ERR("Unable to stop advertising for the non-connectable set (%d)",
                 err);
+        return err;
     }
 
     err = bt_le_ext_adv_stop(ext_adv[CONN_ADV_IDX]);
     if (err) {
         LOG_ERR("Unable to stop advertising for the non-connectable set (%d)",
                 err);
+        return err;
     }
+
+    return 0;
 }
 
-void start_advertising(void) {
+int start_advertising(void) {
     // TODO Check advertising mode
     int err;
 
     err = bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX],
                               BT_LE_EXT_ADV_START_DEFAULT);
-    if (err) {
+    if (err != 0 && err != -EALREADY) {
         LOG_ERR("Unable to start non-connectable advertising (%d)", err);
+        return err;
     }
 
     err =
         bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
-    if (err) {
+    if (err != 0 && err != -EALREADY) {
         LOG_ERR("Unable to start connectable advertising (%d)", err);
+        return err;
     }
+
+    return 0;
 }
 
 static inline void set_ble_pan(uint16_t pan) {

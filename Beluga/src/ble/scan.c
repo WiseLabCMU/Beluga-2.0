@@ -65,23 +65,26 @@ static void device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
     }
 }
 
-void start_active_scanning(void) {
+int start_active_scanning(void) {
     int err = bt_le_scan_start(BT_LE_SCAN_ACTIVE, device_found);
     if (err) {
         LOG_ERR("Failed to start active scanning (%d)", err);
     }
+    return err;
 }
 
-void start_passive_scanning(void) {
+int start_passive_scanning(void) {
     int err = bt_le_scan_start(BT_LE_SCAN_PASSIVE, device_found);
     if (err) {
         LOG_ERR("Failed to start passive scanning (%d)", err);
     }
+    return err;
 }
 
-void stop_scanning(void) {
+int stop_scanning(void) {
     int err = bt_le_scan_stop();
     if (err) {
         LOG_ERR("Unable to stop scanning (%d)", err);
     }
+    return err;
 }
