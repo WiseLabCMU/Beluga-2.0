@@ -352,3 +352,7 @@ void update_adv_name(uint16_t uuid) {
     scan_data[SCAN_UUID_IDX] = uuid_data;
     // TODO internal_start_ble();
 }
+
+struct bt_conn **get_central_connection_obj(void) {
+    return &central_conn;
+}

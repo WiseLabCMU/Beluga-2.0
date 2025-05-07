@@ -18,6 +18,8 @@
 
 #include <zephyr/logging/log.h>
 
+#include <settings.h>
+
 static uint16_t NODE_UUID = 0;
 
 static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
@@ -113,6 +115,8 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
 }
 
 static void discovery_not_found_cb(struct bt_conn *conn, void *context) {
+    ARG_UNUSED(conn);
+    ARG_UNUSED(context);
     LOG_INF("Beluga Service could not be found during the discovery");
     k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_CONNECTED],
                         1);
@@ -120,6 +124,9 @@ static void discovery_not_found_cb(struct bt_conn *conn, void *context) {
 
 static void discovery_error_found_cb(struct bt_conn *conn, int err,
                                      void *context) {
+    ARG_UNUSED(conn);
+    ARG_UNUSED(context);
+    ARG_UNUSED(err);
     LOG_INF("The discovery procedure failed with %d", err);
     k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_CONNECTED],
                         1);
@@ -140,4 +147,149 @@ int gatt_discover(struct bt_conn *conn) {
                 err);
     }
     return err;
+}
+
+static void beluga_uwb_settings_synced(struct bt_beluga_client *bt_client,
+                                       uint8_t err,
+                                       const struct beluga_uwb_params *config) {
+    ARG_UNUSED(bt_client);
+    ARG_UNUSED(err);
+    ARG_UNUSED(config);
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECTED_SYNCED],
+                        0);
+}
+
+static int init_beluga_client(void) {
+    struct bt_beluga_client_cb cb = {
+            .synced = beluga_uwb_settings_synced,
+    };
+    int err = bt_beluga_client_init(&client, &cb);
+    if (err) {
+        return err;
+    }
+
+    for (size_t i = 0; i < CONNECT_LAST_ENUMERATOR; i++) {
+        k_poll_signal_init(&connect_signalling.connect_signals[i]);
+        k_poll_event_init(&connect_signalling.connect_events[i],
+                          K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+                          &connect_signalling.connect_signals[i]);
+    }
+
+    return bt_beluga_client_init(&client, &cb);
+}
+
+static void prep_configs(struct beluga_uwb_params *config) {
+    LOG_DBG("Loading UWB settings");
+    config->TX_POWER = retrieveSetting(BELUGA_TX_POWER);
+    config->PREAMBLE = (uint16_t)retrieveSetting(BELUGA_UWB_PREAMBLE);
+    config->POWER_AMP = (uint8_t)retrieveSetting(BELUGA_RANGE_EXTEND);
+    config->CHANNEL = (uint8_t)retrieveSetting(BELUGA_UWB_CHANNEL);
+    config->TWR = (bool)retrieveSetting(BELUGA_TWR);
+    config->PHR = (bool)retrieveSetting(BELUGA_UWB_PHR);
+    config->SFD = (bool)retrieveSetting(BELUGA_UWB_NSSFD);
+    config->DATA_RATE = (uint8_t)retrieveSetting(BELUGA_UWB_DATA_RATE);
+    config->PAC = (uint8_t)retrieveSetting(BELUGA_UWB_PAC);
+    config->PULSE_RATE = (bool)retrieveSetting(BELUGA_UWB_PULSE_RATE);
+}
+
+static int wait_connection(bool *stopped) {
+    struct bt_conn **central_conn;
+    int ret;
+
+    LOG_DBG("Waiting for node to be found");
+    ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_FOUND], 1,
+                 K_SECONDS(1));
+
+    if (ret != 0) {
+        // Timed out
+        k_poll_signal_reset(
+                &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+        LOG_ERR("Search timed out");
+        return -EAGAIN;
+    }
+
+    k_poll_signal_reset(
+            &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND]);
+
+    LOG_DBG("Found node. Stopping advertising and scanning");
+    // TODO internal stop ble
+    *stopped = true;
+
+    LOG_DBG("Attempting to establish a connection");
+    central_conn = get_central_connection_obj();
+    ret = bt_conn_le_create(&connect_signalling.addr, BT_CONN_LE_CREATE_CONN,
+                            BT_LE_CONN_PARAM_DEFAULT, central_conn);
+
+    if (ret != 0) {
+        LOG_ERR("Connection failed: %d", ret);
+    }
+
+    return ret;
+}
+
+static int perform_gatt_exchange(struct beluga_uwb_params *config) {
+    int ret, set, val;
+    LOG_DBG("Waiting for GATT exchange");
+    (void)k_poll(&connect_signalling.connect_events[CONNECT_CONNECTED], 1,
+                 K_FOREVER);
+    k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_CONNECTED],
+                        &set, &val);
+    k_poll_signal_reset(&connect_signalling.connect_signals[CONNECT_CONNECTED]);
+    if (val) {
+        LOG_ERR("GATT exchange failed");
+        return -ENOTCONN;
+    }
+
+    LOG_DBG("Now syncing other node's UWB settings");
+    ret = bt_beluga_client_sync(&client, config);
+    if (ret != 0) {
+        LOG_ERR("Beluga client sync failed: %d", ret);
+        return ret;
+    }
+
+    LOG_DBG("Waiting for target to be synced");
+    (void)k_poll(&connect_signalling.connect_events[CONNECTED_SYNCED], 1,
+                 K_FOREVER);
+    k_poll_signal_reset(&connect_signalling.connect_signals[CONNECTED_SYNCED]);
+    return 0;
+}
+
+int sync_uwb_parameters(uint16_t id) {
+    struct bt_conn **central_conn;
+    struct beluga_uwb_params config;
+    int ret, disconnect_ret;
+    bool ble_stopped = false;
+    LOG_DBG("Searching for node");
+
+    k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
+                        (int)id);
+
+    prep_configs(&config);
+    ret = wait_connection(&ble_stopped);
+    if (ret != 0) {
+        if (ble_stopped) {
+            goto finish;
+        }
+        return ret;
+    }
+
+    ret = perform_gatt_exchange(&config);
+
+    LOG_DBG("Now attempting to disconnect");
+    central_conn = get_central_connection_obj();
+    disconnect_ret =
+            bt_conn_disconnect(*central_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+
+    if (disconnect_ret) {
+        LOG_ERR("Disconnect failed: %d", ret);
+    }
+
+    if (ret == 0 && disconnect_ret != 0) {
+        ret = disconnect_ret;
+    }
+
+    finish:
+    // TODO temp_restart_ble();
+
+    return ret;
 }
