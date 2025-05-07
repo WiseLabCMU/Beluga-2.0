@@ -16,25 +16,11 @@
 #ifndef BELUGA_LIST_MONITOR_H
 #define BELUGA_LIST_MONITOR_H
 
+#include <ble/ble_app.h>
 #include <serial/comms.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
-
-/**
- * The maximum length needed for the advertising name
- */
-#define NAME_LEN 30
-
-/**
- * Beluga scan data
- */
-struct ble_data {
-    uint16_t uuid;                      ///< The node ID
-    uint8_t manufacturerData[NAME_LEN]; ///< The manufacturer data for the node
-    bool beluga_node; ///< Flag indicating that the scanned device is a Beluga
-    ///< node
-};
 
 /**
  * @brief Set the timeout value for node eviction.

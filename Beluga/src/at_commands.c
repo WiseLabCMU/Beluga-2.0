@@ -19,7 +19,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <ctype.h>
 #include <errno.h>
 

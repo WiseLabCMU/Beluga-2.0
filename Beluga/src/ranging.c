@@ -19,7 +19,7 @@
 
 #include <app_leds.h>
 #include <beluga_message.h>
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <deca_device_api.h>
 #include <init_resp_common.h>
 #include <initiator.h>

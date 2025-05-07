@@ -18,7 +18,7 @@
 #ifndef BELUGA_BELUGA_MESSAGE_H
 #define BELUGA_BELUGA_MESSAGE_H
 
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <stdint.h>
 
 /**

@@ -11,7 +11,7 @@
 
 #include <app_leds.h>
 #include <app_version.h>
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <debug.h>
 #include <initiator.h>
 #include <led_config.h>

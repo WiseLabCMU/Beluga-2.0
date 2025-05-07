@@ -14,7 +14,7 @@
  */
 
 #include <beluga_message.h>
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <initiator.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>

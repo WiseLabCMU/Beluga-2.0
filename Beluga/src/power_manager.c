@@ -3,7 +3,7 @@
 //
 
 #include <app_leds.h>
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <list_neighbors.h>
 #include <power_manager.h>
 #include <ranging.h>
