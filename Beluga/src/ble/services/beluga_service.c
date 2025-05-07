@@ -14,8 +14,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
 
-#include <services/beluga_service.h>
-#include <services/beluga_service_common.h>
+#include <ble/services/beluga_client.h>
+#include <ble/services/beluga_service.h>
 
 LOG_MODULE_REGISTER(beluga_service);
 

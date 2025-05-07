@@ -12,8 +12,8 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/uuid.h>
 
-#include <services/beluga_client.h>
-#include <services/beluga_service.h>
+#include <ble/services/beluga_client.h>
+#include <ble/services/beluga_service.h>
 
 #include <zephyr/logging/log.h>
 

@@ -8,7 +8,7 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#include <services/beluga_service_common.h>
+#include <ble/services/beluga_service_common.h>
 #include <zephyr/kernel.h>
 
 #define BT_BELUGA_SVC_SYNC_TWR_BYTE        0
