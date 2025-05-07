@@ -24,6 +24,8 @@
 #include <range_extension.h>
 #include <settings.h>
 
+LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
+
 K_SEM_DEFINE(ble_state, 1, 1);
 
 static uint16_t NODE_UUID = 0;
@@ -34,6 +36,7 @@ struct bt_connect connect_signalling;
 struct uwb_sync_configs sync_configs;
 static struct bt_beluga_client client;
 static bool bluetooth_on = false;
+struct node seen_list[MAX_ANCHOR_COUNT];
 
 /**
  * Updates the neighbor list by either, updating or inserting the scanned node

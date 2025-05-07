@@ -22,7 +22,7 @@
 #include <ble/scan.h>
 #include <ble/services/beluga_service.h>
 
-LOG_MODULE_REGISTER(ble_test, LOG_LEVEL_DBG);
+LOG_MODULE_DECLARE(ble_app);
 
 #define NCONN_ADV_IDX      0
 #define CONN_ADV_IDX       1

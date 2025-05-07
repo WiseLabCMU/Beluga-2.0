@@ -4,6 +4,7 @@
 
 #include <app_leds.h>
 #include <ble/ble_app.h>
+#include <deca_device_api.h>
 #include <list_neighbors.h>
 #include <power_manager.h>
 #include <ranging.h>

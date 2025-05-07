@@ -18,6 +18,8 @@
 
 #include <zephyr/logging/log.h>
 
+LOG_MODULE_DECLARE(ble_app);
+
 #define UUID16_EXTRACT(DST, SRC)                                               \
     do {                                                                       \
         (*(DST)) = (SRC)[1];                                                   \
