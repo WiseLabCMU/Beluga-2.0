@@ -13,6 +13,7 @@
 #include <zephyr/logging/log.h>
 
 #include <ble/adv.h>
+#include <ble/ble_app.h>
 #include <ble/ble_app_internal.h>
 #include <ble/scan.h>
 
@@ -426,4 +427,30 @@ int disable_bluetooth(void) {
     }
     k_sem_give(&ble_state);
     return retVal;
+}
+
+void update_node_id(uint16_t uuid) {
+    NODE_UUID = uuid;
+    update_adv_name(uuid);
+}
+
+uint16_t get_NODE_UUID(void) { return NODE_UUID; }
+
+bool check_ble_enabled(void) { return bluetooth_on; }
+
+bool save_and_disable_bluetooth(void) {
+    bool ret;
+    k_sem_take(&ble_state, K_FOREVER);
+    ret = bluetooth_on;
+    if (bluetooth_on) {
+        _disable_bluetooth();
+    }
+    return ret;
+}
+
+void restore_bluetooth(bool state) {
+    if (state) {
+        _enable_bluetooth();
+    }
+    k_sem_give(&ble_state);
 }
