@@ -13,9 +13,13 @@ set(SERIAL_SRC
         src/serial/comms.c
         src/serial/comms_uart.c)
 set(SERVICE_SRC
-        src/services/beluga_service.c
-        src/services/beluga_client.c
-        src/services/beluga_service_common.c)
+        src/ble/services/beluga_service.c
+        src/ble/services/beluga_client.c
+        src/ble/services/beluga_service_common.c)
+set(BLE_SRC
+        src/ble/adv.c
+        src/ble/scan.c
+        src/ble/ble_app.c)
 file(GLOB DECAWAVE_SRC "DecaDriver/src/*.c")
 
 include_directories(include DecaDriver/include)
@@ -25,6 +29,7 @@ target_sources(app PRIVATE
     ${SERIAL_SRC}
     ${DECAWAVE_SRC}
     ${SERVICE_SRC}
+    ${BLE_SRC}
 )
 target_sources_ifdef(CONFIG_MCUMGR_TRANSPORT_COMMS app PRIVATE
         src/serial/smp_comms.c
