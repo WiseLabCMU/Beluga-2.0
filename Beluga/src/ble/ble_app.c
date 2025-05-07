@@ -8,16 +8,18 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#include <ble/ble_app_internal.h>
 #include <bluetooth/gatt_dm.h>
-#include <list_monitor.h>
 #include <zephyr/bluetooth/gatt.h>
+#include <zephyr/logging/log.h>
+
+#include <ble/adv.h>
+#include <ble/ble_app_internal.h>
+#include <ble/scan.h>
 
 #include <ble/services/beluga_client.h>
 #include <ble/services/beluga_service.h>
 
-#include <zephyr/logging/log.h>
-
+#include <list_monitor.h>
 #include <settings.h>
 
 static uint16_t NODE_UUID = 0;
@@ -26,6 +28,7 @@ static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
 
 struct bt_connect connect_signalling;
 struct uwb_sync_configs sync_configs;
+static struct bt_beluga_client client;
 
 /**
  * Updates the neighbor list by either, updating or inserting the scanned node
@@ -85,8 +88,6 @@ void update_seen_list(struct ble_data *data, int8_t rssi,
         update_seen_neighbor(data, rssi, polling);
     }
 }
-
-static struct bt_beluga_client client;
 
 static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
     int err;
@@ -162,7 +163,7 @@ static void beluga_uwb_settings_synced(struct bt_beluga_client *bt_client,
 
 static int init_beluga_client(void) {
     struct bt_beluga_client_cb cb = {
-            .synced = beluga_uwb_settings_synced,
+        .synced = beluga_uwb_settings_synced,
     };
     int err = bt_beluga_client_init(&client, &cb);
     if (err) {
@@ -204,13 +205,13 @@ static int wait_connection(bool *stopped) {
     if (ret != 0) {
         // Timed out
         k_poll_signal_reset(
-                &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+            &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
         LOG_ERR("Search timed out");
         return -EAGAIN;
     }
 
     k_poll_signal_reset(
-            &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND]);
+        &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND]);
 
     LOG_DBG("Found node. Stopping advertising and scanning");
     // TODO internal stop ble
@@ -279,7 +280,7 @@ int sync_uwb_parameters(uint16_t id) {
     LOG_DBG("Now attempting to disconnect");
     central_conn = get_central_connection_obj();
     disconnect_ret =
-            bt_conn_disconnect(*central_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+        bt_conn_disconnect(*central_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 
     if (disconnect_ret) {
         LOG_ERR("Disconnect failed: %d", ret);
@@ -289,7 +290,7 @@ int sync_uwb_parameters(uint16_t id) {
         ret = disconnect_ret;
     }
 
-    finish:
+finish:
     // TODO temp_restart_ble();
 
     return ret;
@@ -316,7 +317,7 @@ static int sync_uwb_settings(struct bt_conn *conn,
 
 static int init_beluga_service(void) {
     struct beluga_service_cb cb = {
-            .sync = sync_uwb_settings,
+        .sync = sync_uwb_settings,
     };
 
     k_poll_signal_init(&sync_configs.ready_sig);
@@ -324,4 +325,33 @@ static int init_beluga_service(void) {
                       K_POLL_MODE_NOTIFY_ONLY, &sync_configs.ready_sig);
 
     return beluga_service_init(&cb);
+}
+
+int init_bt_stack(void) {
+    int32_t err;
+
+    err = bt_enable(NULL);
+    if (err) {
+        return err;
+    }
+    LOG_INF("Bluetooth stack loaded");
+
+    err = init_beluga_service();
+    if (err) {
+        return err;
+    }
+
+    err = init_beluga_client();
+    if (err != 0 && err != -EALREADY) {
+        return err;
+    }
+
+    return 0;
+}
+
+int deinit_bt_stack(void) {
+    stop_advertising();
+    stop_scanning();
+
+    return bt_disable();
 }
