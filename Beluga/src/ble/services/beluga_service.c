@@ -17,7 +17,7 @@
 #include <ble/services/beluga_client.h>
 #include <ble/services/beluga_service.h>
 
-LOG_MODULE_REGISTER(beluga_service);
+LOG_MODULE_REGISTER(beluga_service, LOG_LEVEL_DBG);
 
 static struct beluga_service_cb service_cb;
 

@@ -17,7 +17,7 @@
 
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(beluga_client, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(beluga_client, LOG_LEVEL_DBG);
 
 enum {
     BELUGA_C_INITIALIZED,
