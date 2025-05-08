@@ -11,6 +11,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/uuid.h>
+#include <zephyr/bluetooth/hci.h>
 #include <zephyr/kernel.h>
 
 #include <zephyr/logging/log.h>
@@ -22,14 +23,24 @@
 #include <ble/scan.h>
 #include <ble/services/beluga_service.h>
 
-LOG_MODULE_DECLARE(ble_app);
+LOG_MODULE_DECLARE(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
 #define NCONN_ADV_IDX      0
 #define CONN_ADV_IDX       1
 
-#define ADV_NAME_IDX       1
-#define SCAN_MANF_DATA_IDX 0
-#define SCAN_UUID_IDX      1
+#define NCONN_ADV_NAME_IDX       1
+#define NCONN_SCAN_MANF_DATA_IDX 0
+#define NCONN_SCAN_UUID_IDX      1
+
+#define CONN_ADV_UUID_IDX 2
+#define CONN_ADV_MANF_DATA_IDX 3
+#define CONN_SCAN_NAME_IDX 0
+
+enum advertising_state {
+    ADVERTISING_OFF,
+    ADVERTISING_NO_CONNECT,
+    ADVERTISING_CONNECTABLE,
+};
 
 ////////////////////////////////////////////////////////////////
 
@@ -68,6 +79,7 @@ static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
 static char const m_target_peripheral_name[] = "BN ";
 static char adv_name[10];
 static uint8_t uuid_encoded[sizeof(uint16_t)];
+static enum advertising_state adv_state = ADVERTISING_OFF;
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -84,9 +96,9 @@ static const struct bt_le_ext_adv_cb adv_cb = {
 };
 
 static void connectable_adv_start(void) {
-    // TODO: Update advertising mode
     int err =
         bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
+    adv_state = (err == 0 || err == -EALREADY) ? ADVERTISING_CONNECTABLE : adv_state;
     if (err) {
         LOG_ERR("Failed to start connectable advertising (%d)", err);
     }
@@ -103,13 +115,13 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
     struct bt_conn_info info;
 
     if (conn_err) {
-        LOG_ERR("Failed to connect (%u)", err);
+        LOG_ERR("Failed to connect (%u) %s", conn_err, bt_hci_err_to_str(conn_err));
 
         if (conn == central_conn) {
             bt_conn_unref(conn);
             central_conn = NULL;
-            start_passive_scanning();
         }
+        start_active_scanning();
         k_poll_signal_raise(
             &connect_signalling.connect_signals[CONNECT_CONNECTED], 1);
         return;
@@ -125,7 +137,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
         LOG_INF("Connected as central");
         gatt_discover(conn);
     } else {
-        // TODO: Update advertising mode
+        adv_state = ADVERTISING_NO_CONNECT;
         LOG_INF("Connected as peripheral");
     }
 }
@@ -144,7 +156,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
     if (info.role == BT_CONN_ROLE_CENTRAL) {
         bt_conn_unref(central_conn);
         central_conn = NULL;
-        start_passive_scanning();
+        start_active_scanning();
     } else {
         bt_le_scan_stop();
         k_work_submit(&advertising_work);
@@ -238,7 +250,6 @@ int stop_advertising(void) {
 }
 
 int start_advertising(void) {
-    // TODO Check advertising mode
     int err;
 
     err = bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX],
@@ -354,13 +365,44 @@ void update_adv_name(uint16_t uuid) {
         .data_len = len,
     };
 
-    // TODO internal_stop_ble();
-    nconn_ad_data[ADV_NAME_IDX] = name_data;
-    conn_ad_data[ADV_NAME_IDX] = name_data;
-    scan_data[SCAN_UUID_IDX] = uuid_data;
-    // TODO internal_start_ble();
+    internal_stop_ble();
+    nconn_ad_data[NCONN_ADV_NAME_IDX] = name_data;
+    conn_sd_data[CONN_SCAN_NAME_IDX] = name_data;
+    nconn_sd_data[NCONN_SCAN_UUID_IDX] = uuid_data;
+    conn_ad_data[CONN_ADV_UUID_IDX] = uuid_data;
+
+    refresh_advertising_data();
+
+    internal_start_ble();
 }
 
 struct bt_conn **get_central_connection_obj(void) {
     return &central_conn;
+}
+
+void internal_stop_ble(void) {
+    bt_le_ext_adv_stop(ext_adv[CONN_ADV_IDX]);
+    bt_le_ext_adv_stop(ext_adv[NCONN_ADV_IDX]);
+    stop_scanning();
+}
+
+void internal_start_ble(void) {
+    switch(adv_state) {
+        case ADVERTISING_CONNECTABLE: {
+            bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
+            bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
+            start_active_scanning();
+            break;
+        }
+        case ADVERTISING_NO_CONNECT: {
+            bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
+            start_passive_scanning();
+            break;
+        }
+        case ADVERTISING_OFF:
+            // Do nothing
+            break;
+        default:
+            __ASSERT_UNREACHABLE;
+    }
 }
