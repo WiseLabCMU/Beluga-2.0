@@ -62,14 +62,19 @@ static struct bt_data nconn_ad_data[] = {
 
 static struct bt_data conn_ad_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR),
-    BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME),
     BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_BELUGA_SVC_VAL),
+    BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(0x1234)),
+    BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
 };
 
-static struct bt_data scan_data[] = {
+static struct bt_data nconn_sd_data[] = {
     BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, "\x59\x00\x30"),
     BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(0x1234)),
     BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_BELUGA_SVC_VAL),
+};
+
+static struct bt_data conn_sd_data[] = {
+        BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME),
 };
 
 static struct bt_conn *central_conn;
@@ -196,7 +201,7 @@ static int advertising_set_create(struct bt_le_ext_adv **adv,
 static int non_connectable_adv_create(void) {
     int err = advertising_set_create(&ext_adv[NCONN_ADV_IDX], nconn_adv_param,
                                      nconn_ad_data, ARRAY_SIZE(nconn_ad_data),
-                                     scan_data, ARRAY_SIZE(scan_data));
+                                     nconn_sd_data, ARRAY_SIZE(nconn_sd_data));
 
     if (err) {
         LOG_ERR("Failed to create a non-connectable advertising set (%d)", err);
@@ -208,8 +213,8 @@ static int non_connectable_adv_create(void) {
 
 static int connectable_adv_create(void) {
     int err = advertising_set_create(&ext_adv[CONN_ADV_IDX], conn_adv_param,
-                                     conn_ad_data, ARRAY_SIZE(nconn_ad_data),
-                                     NULL, 0);
+                                     conn_ad_data, ARRAY_SIZE(conn_ad_data),
+                                     conn_sd_data, ARRAY_SIZE(conn_sd_data));
 
     if (err) {
         LOG_ERR("Failed to create a connectable advertising set (%d)", err);
@@ -267,6 +272,22 @@ int start_advertising(void) {
     }
 
     return 0;
+}
+
+static void refresh_advertising_data(void) {
+    int err;
+
+    err = bt_le_ext_adv_set_data(ext_adv[NCONN_ADV_IDX], nconn_ad_data, ARRAY_SIZE(nconn_ad_data), nconn_sd_data,
+                                 ARRAY_SIZE(nconn_sd_data));
+    if (err) {
+        LOG_ERR("Unable to update non-connectable advertising data (%d)", err);
+    }
+
+    err = bt_le_ext_adv_set_data(ext_adv[CONN_ADV_IDX], conn_ad_data, ARRAY_SIZE(conn_ad_data), conn_sd_data,
+                                 ARRAY_SIZE(conn_sd_data));
+    if (err) {
+        LOG_ERR("Unable to update connectable advertising data (%d)", err);
+    }
 }
 
 static inline void set_ble_pan(uint16_t pan) {
@@ -338,15 +359,18 @@ static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
 
 void advertising_reconfig(struct advertising_info *uwb_metadata) {
     struct bt_data manf_info;
-    // TODO internal_stop_ble();
+    internal_stop_ble();
 
     update_manufacturer_info(uwb_metadata);
     manf_info.type = BT_DATA_MANUFACTURER_DATA;
     manf_info.data = beluga_manufacturer_data;
     manf_info.data_len = sizeof(beluga_manufacturer_data);
-    scan_data[SCAN_MANF_DATA_IDX] = manf_info;
+    nconn_sd_data[NCONN_SCAN_MANF_DATA_IDX] = manf_info;
+    conn_ad_data[CONN_ADV_MANF_DATA_IDX] = manf_info;
 
-    // TODO internal_start_ble();
+    refresh_advertising_data();
+
+    internal_start_ble();
 }
 
 void update_adv_name(uint16_t uuid) {
