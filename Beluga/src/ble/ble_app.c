@@ -43,10 +43,8 @@ struct node seen_list[MAX_ANCHOR_COUNT];
  * @param[in] data The BLE scan data
  * @param[in] rssi The RSSI of the scanned node
  */
-void update_seen_list(struct ble_data *data, int8_t rssi,
-                      const bt_addr_le_t *addr) {
+void update_seen_list(struct ble_data *data, int8_t rssi) {
     bool polling;
-    int ret;
     if (data->uuid == NODE_UUID) {
         return;
     }
@@ -68,22 +66,6 @@ void update_seen_list(struct ble_data *data, int8_t rssi,
         UWB_ACTIVE_MASK;
 #endif
 
-    ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_ID], 1,
-                 K_NO_WAIT);
-    if (ret == 0) {
-        int signaled, search_id;
-        k_poll_signal_check(
-            &connect_signalling.connect_signals[CONNECT_SEARCH_ID], &signaled,
-            &search_id);
-        if (signaled && search_id == (int)data->uuid) {
-            k_poll_signal_reset(
-                &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
-            bt_addr_le_copy(&connect_signalling.addr, addr);
-            k_poll_signal_raise(
-                &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND], 0);
-        }
-    }
-
     if (memcmp(data->manufacturerData, beluga_manufacturer_data,
                sizeof(beluga_manufacturer_data)) != 0) {
         // UWB parameters do not match
@@ -94,6 +76,23 @@ void update_seen_list(struct ble_data *data, int8_t rssi,
         insert_into_seen_list(data, rssi, polling);
     } else {
         update_seen_neighbor(data, rssi, polling);
+    }
+}
+
+void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr) {
+    int ret, signaled, search_id;
+    ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_ID], 1,
+                 K_NO_WAIT);
+
+    if (ret != 0) {
+        return;
+    }
+
+    k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_SEARCH_ID], &signaled,&search_id);
+    if (signaled && search_id == (int)data->uuid) {
+        k_poll_signal_reset(&connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+        bt_addr_le_copy(&connect_signalling.addr, addr);
+        k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_SEARCH_FOUND], 0);
     }
 }
 
@@ -222,7 +221,7 @@ static int wait_connection(bool *stopped) {
         &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND]);
 
     LOG_DBG("Found node. Stopping advertising and scanning");
-    // TODO internal stop ble
+    internal_stop_ble();
     *stopped = true;
 
     LOG_DBG("Attempting to establish a connection");
@@ -299,8 +298,7 @@ int sync_uwb_parameters(uint16_t id) {
     }
 
 finish:
-    // TODO temp_restart_ble();
-
+    internal_start_ble();
     return ret;
 }
 

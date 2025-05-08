@@ -74,8 +74,8 @@ struct bt_connect {
     struct k_poll_event connect_events[CONNECT_LAST_ENUMERATOR];
 };
 
-void update_seen_list(struct ble_data *data, int8_t rssi,
-                      const bt_addr_le_t *addr);
+void update_seen_list(struct ble_data *data, int8_t rssi);
+void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr);
 int gatt_discover(struct bt_conn *conn);
 void update_adv_name(uint16_t uuid);
 

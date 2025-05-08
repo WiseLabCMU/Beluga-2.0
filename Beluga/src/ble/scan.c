@@ -18,7 +18,7 @@
 
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_DECLARE(ble_app);
+LOG_MODULE_DECLARE(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
 #define UUID16_EXTRACT(DST, SRC)                                               \
     do {                                                                       \
@@ -57,13 +57,16 @@ static bool data_cb(struct bt_data *data, void *user_data) {
 
 static void device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
                          struct net_buf_simple *adv_info) {
-    struct ble_data data_;
+    struct ble_data data_ = {0};
     bt_data_parse(adv_info, data_cb, &data_);
 
     if (data_.beluga_node && type == BT_GAP_ADV_TYPE_SCAN_RSP) {
-        LOG_DBG("Found node advertising Beluga service: 0x%" PRIX16,
+        LOG_DBG("Found node advertising Beluga service: %d",
                 data_.uuid);
-        update_seen_list(&data_, rssi, addr);
+        update_seen_list(&data_, rssi);
+    } else if (data_.beluga_node && type == BT_GAP_ADV_TYPE_ADV_IND) {
+        LOG_DBG("Found connectable node: %d", data_.uuid);
+        check_advertiser(&data_, addr);
     }
 }
 
