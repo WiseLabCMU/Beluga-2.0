@@ -12,7 +12,6 @@
 #define BELUGA_DTS_SCAN_H
 
 int start_active_scanning(void);
-int start_passive_scanning(void);
 int stop_scanning(void);
 
 #endif // BELUGA_DTS_SCAN_H

@@ -591,6 +591,7 @@ int main(void) {
     for (;;) {
         enum led_state uwb_led_state;
         k_poll(&sync_configs.ready, 1, K_FOREVER);
+        wait_ble_disconnect(K_FOREVER);
         uwb_led_state = get_uwb_led_state();
         if (uwb_led_state == LED_ON) {
             update_uwb_state(false);
