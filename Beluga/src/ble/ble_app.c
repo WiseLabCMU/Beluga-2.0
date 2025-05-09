@@ -368,7 +368,7 @@ int deinit_bt_stack(void) {
 }
 
 static int _enable_bluetooth(void) {
-
+    LOG_DBG("_enable_bluetooth()");
     int err = start_advertising();
     if (err != 0) {
         return err;
@@ -386,6 +386,7 @@ static int _enable_bluetooth(void) {
 
 static int _disable_bluetooth(void) {
     int err;
+    LOG_DBG("_disable_bluetooth()");
 
     err = stop_advertising();
     if (err) {
@@ -418,7 +419,7 @@ int enable_bluetooth(void) {
 }
 
 int disable_bluetooth(void) {
-    int retVal = 1;
+    int retVal = -EALREADY;
     k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
         retVal = _disable_bluetooth();

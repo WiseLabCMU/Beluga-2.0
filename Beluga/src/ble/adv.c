@@ -101,11 +101,12 @@ static const struct bt_le_ext_adv_cb adv_cb = {
 };
 
 static void connectable_adv_start(void) {
+    LOG_DBG("Starting connectable advertising from work");
     int err =
         bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
     adv_state = (err == 0 || err == -EALREADY) ? ADVERTISING_CONNECTABLE : adv_state;
     if (err) {
-        LOG_ERR("Failed to start connectable advertising (%d)", err);
+        LOG_ERR("Advertising work: Failed to start connectable advertising (%d)", err);
     }
     start_active_scanning();
 }
@@ -256,6 +257,7 @@ int stop_advertising(void) {
 
 int start_advertising(void) {
     int err;
+    LOG_DBG("Attempting to start advertising");
 
     err = bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX],
                               BT_LE_EXT_ADV_START_DEFAULT);
@@ -359,6 +361,8 @@ static void update_manufacturer_info(struct advertising_info *uwb_metadata) {
 
 void advertising_reconfig(struct advertising_info *uwb_metadata) {
     struct bt_data manf_info;
+
+    LOG_DBG("Reconfiguring the manufacturer data");
     internal_stop_ble();
 
     update_manufacturer_info(uwb_metadata);
@@ -374,6 +378,7 @@ void advertising_reconfig(struct advertising_info *uwb_metadata) {
 }
 
 void update_adv_name(uint16_t uuid) {
+    LOG_DBG("Updating advertising name");
     size_t len;
     memcpy(uuid_encoded, &uuid, sizeof(uuid));
     len = snprintk(adv_name, sizeof(adv_name), "%s%d", m_target_peripheral_name,
