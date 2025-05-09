@@ -180,6 +180,8 @@ void update_ble_service(uint16_t uuid, float range);
 
 int sync_uwb_parameters(uint16_t id);
 
+int wait_ble_disconnect(k_timeout_t timeout);
+
 /**
  * The neighbor list
  */

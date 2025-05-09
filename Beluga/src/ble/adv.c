@@ -44,8 +44,13 @@ enum advertising_state {
 
 ////////////////////////////////////////////////////////////////
 
+K_SEM_DEFINE(ble_connect_status, 1, 1);
+
 static void advertising_work_handle(struct k_work *work);
 static K_WORK_DEFINE(advertising_work, advertising_work_handle);
+
+static void restart_ble_work_handle(struct k_work *work);
+static K_WORK_DEFINE(restart_ble_work, restart_ble_work_handle);
 
 static struct bt_le_ext_adv *ext_adv[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static const struct bt_le_adv_param *nconn_adv_param =
@@ -144,6 +149,7 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
         gatt_discover(conn);
     } else {
         adv_state = ADVERTISING_NO_CONNECT;
+        k_sem_take(&ble_connect_status, K_NO_WAIT);
         LOG_INF("Connected as peripheral");
     }
 }
@@ -162,10 +168,11 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
     if (info.role == BT_CONN_ROLE_CENTRAL) {
         bt_conn_unref(central_conn);
         central_conn = NULL;
-        start_active_scanning();
+        k_work_submit(&restart_ble_work);
     } else {
         bt_le_scan_stop();
         k_work_submit(&advertising_work);
+        k_sem_give(&ble_connect_status);
     }
 }
 
@@ -237,15 +244,16 @@ int init_advertising(void) {
 
 int stop_advertising(void) {
     int err;
+    LOG_DBG("Attempting to stop advertising");
 
-    err = bt_le_ext_adv_stop(ext_adv[NCONN_ADV_IDX]);
+    err = bt_le_ext_adv_stop(ext_adv[CONN_ADV_IDX]);
     if (err) {
         LOG_ERR("Unable to stop advertising for the non-connectable set (%d)",
                 err);
         return err;
     }
 
-    err = bt_le_ext_adv_stop(ext_adv[CONN_ADV_IDX]);
+    err = bt_le_ext_adv_stop(ext_adv[NCONN_ADV_IDX]);
     if (err) {
         LOG_ERR("Unable to stop advertising for the non-connectable set (%d)",
                 err);
@@ -265,6 +273,7 @@ int start_advertising(void) {
         LOG_ERR("Unable to start non-connectable advertising (%d)", err);
         return err;
     }
+    adv_state = ADVERTISING_NO_CONNECT;
 
     err =
         bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
@@ -272,6 +281,7 @@ int start_advertising(void) {
         LOG_ERR("Unable to start connectable advertising (%d)", err);
         return err;
     }
+    adv_state = ADVERTISING_CONNECTABLE;
 
     return 0;
 }
@@ -410,28 +420,49 @@ struct bt_conn **get_central_connection_obj(void) {
 }
 
 void internal_stop_ble(void) {
+    LOG_DBG("Stopping BLE");
     bt_le_ext_adv_stop(ext_adv[CONN_ADV_IDX]);
     bt_le_ext_adv_stop(ext_adv[NCONN_ADV_IDX]);
     stop_scanning();
 }
 
 void internal_start_ble(void) {
+    LOG_DBG("Resuming BLE");
     switch(adv_state) {
         case ADVERTISING_CONNECTABLE: {
+            LOG_DBG("Starting connectable and non-connectable advertising");
             bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
             bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
             start_active_scanning();
             break;
         }
         case ADVERTISING_NO_CONNECT: {
+            LOG_DBG("Starting non-connectable advertising");
             bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
-            start_passive_scanning();
+            start_active_scanning();
             break;
         }
         case ADVERTISING_OFF:
-            // Do nothing
+            LOG_DBG("Doing nothing since advertising is off");
             break;
         default:
             __ASSERT_UNREACHABLE;
     }
+}
+
+static void restart_ble_work_handle(struct k_work *work) {
+    ARG_UNUSED(work);
+    stop_advertising();
+    stop_scanning();
+    start_advertising();
+    start_active_scanning();
+}
+
+int wait_ble_disconnect(k_timeout_t timeout) {
+    int ret = k_sem_take(&ble_connect_status, timeout);
+    if (ret) {
+        return ret;
+    }
+    k_sem_give(&ble_connect_status);
+    return 0;
 }
