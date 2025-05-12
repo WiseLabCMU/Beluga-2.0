@@ -77,13 +77,32 @@ struct bt_connect {
 void update_seen_list(struct ble_data *data, int8_t rssi);
 void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr);
 int gatt_discover(struct bt_conn *conn);
+
+/**
+ * Updates the advertising name with the new UUID
+ * @param[in] uuid The new UUID
+ */
 void update_adv_name(uint16_t uuid);
 
+/**
+ * Stops advertising and scanning without updating the advertising state
+ */
 void internal_stop_ble(void);
+
+/**
+ * Restores advertising and scanning according to the current advertising state
+ */
 void internal_start_ble(void);
 
+/**
+ * Retrieves a reference central connection object
+ * @return reference to the central connection object
+ */
 struct bt_conn **get_central_connection_obj(void);
 
+/**
+ * Terminates the peripheral connection, if one exists
+ */
 void disconnect_ble_connections(void);
 
 extern struct bt_connect connect_signalling;

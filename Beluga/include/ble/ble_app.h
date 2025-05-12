@@ -143,9 +143,8 @@ void update_node_id(uint16_t uuid);
 uint16_t get_NODE_UUID(void);
 
 /**
- * Update the advertising data to indicate that the node is polling UWB or not
- * @param[in] change If 0, updates the advertising data to indicate that the
- * node has stopped polling; otherwise, indicates that the node is polling UWB
+ * Updates the BLE manufacturer data with the new UWB metadata
+ * @param[in] uwb_metadata The new UWB metadata
  */
 void advertising_reconfig(struct advertising_info *uwb_metadata);
 
@@ -180,6 +179,13 @@ void update_ble_service(uint16_t uuid, float range);
 
 int sync_uwb_parameters(uint16_t id);
 
+/**
+ * Wait until a BLE disconnection occurs.
+ * @param[in] timeout The maximum time to wait for a BLE disconnection to occur
+ * @return 0 if BLE connection disconnected
+ * @return -EBUSY if returned without waiting
+ * @return -EAGAIN if timed out
+ */
 int wait_ble_disconnect(k_timeout_t timeout);
 
 /**
