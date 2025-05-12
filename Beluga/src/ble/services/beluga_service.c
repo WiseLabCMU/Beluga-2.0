@@ -1,7 +1,7 @@
 /**
  * @file beluga_service.c
  *
- * @brief
+ * @brief Server side of the Beluga Service.
  *
  * @date 5/1/25
  *
@@ -17,10 +17,21 @@
 #include <ble/services/beluga_client.h>
 #include <ble/services/beluga_service.h>
 
-LOG_MODULE_REGISTER(beluga_service, LOG_LEVEL_DBG);
+/**
+ * Logger for the Beluga service
+ */
+LOG_MODULE_REGISTER(beluga_service, CONFIG_BELUGA_SERVICE_LOG_LEVEL);
 
+/**
+ * Beluga Service callbacks for various actions.
+ */
 static struct beluga_service_cb service_cb;
 
+/**
+ * Handler for indicating the ranging notification status has changed.
+ * @param[in] attr GATT attributes.
+ * @param[in] value The new configuration value.
+ */
 static void bs_ccc_ranging_cfg_changed(const struct bt_gatt_attr *attr,
                                        uint16_t value) {
     ARG_UNUSED(attr);
@@ -33,6 +44,17 @@ static void bs_ccc_ranging_cfg_changed(const struct bt_gatt_attr *attr,
     }
 }
 
+/**
+ * Handles UWB sync write requests.
+ * @param[in] conn The BLE connection that received the write request
+ * @param[in] attr BLE GATT attributes
+ * @param[in] buf The serial data for the GATT write request
+ * @param[in] len The length of the data
+ * @param[in] offset The offset of the data
+ * @param[in] flags Flags associated with the request
+ * @return len upon success
+ * @return negative ATT error otherwise
+ */
 static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
                                  const struct bt_gatt_attr *attr,
                                  const void *buf, uint16_t len, uint16_t offset,
@@ -69,6 +91,11 @@ static ssize_t bs_write_uwb_sync(struct bt_conn *conn,
     return len;
 }
 
+/**
+ * Handles range sent events.
+ * @param[in] conn The BLE connection the range was sent on
+ * @param[in] user_data The data that was sent in the notification
+ */
 static void on_range_sent(struct bt_conn *conn, void *user_data) {
     ARG_UNUSED(user_data);
 
@@ -79,6 +106,9 @@ static void on_range_sent(struct bt_conn *conn, void *user_data) {
     }
 }
 
+/**
+ * Beluga Service declaration
+ */
 BT_GATT_SERVICE_DEFINE(
     beluga_svc, BT_GATT_PRIMARY_SERVICE(BT_UUID_BELUGA_SVC),
     BT_GATT_CHARACTERISTIC(BT_UUID_BELUGA_RANGE, BT_GATT_CHRC_NOTIFY,
@@ -89,6 +119,13 @@ BT_GATT_SERVICE_DEFINE(
                            BT_GATT_PERM_WRITE, NULL, bs_write_uwb_sync,
                            NULL), );
 
+/**
+ * Initializes the service.
+ *
+ * @param[in] cb Struct with function pointers to callbacks for service events.
+ * @return 0 upon success
+ * @return -EINVAL if no callbacks are specified
+ */
 int beluga_service_init(struct beluga_service_cb *cb) {
     if (cb == NULL || cb->sync == NULL) {
         return -EINVAL;
@@ -99,6 +136,16 @@ int beluga_service_init(struct beluga_service_cb *cb) {
     return 0;
 }
 
+/**
+ * @brief Sends a range notification.
+ *
+ * @param[in] conn Pointer to connection object, or NULL to send to all
+ * connected peers.
+ * @param[in] id The id of the node ranged to.
+ * @param[in] range The measured distance between the nodes.
+ * @return 0 if the data is sent.
+ * @return negative error code otherwise.
+ */
 int range_notify(struct bt_conn *conn, uint16_t id, float range) {
     struct bt_gatt_notify_params params = {0};
     const struct bt_gatt_attr *attr = &beluga_svc.attrs[2];

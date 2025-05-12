@@ -1,7 +1,7 @@
 /**
  * @file beluga_service.h
  *
- * @brief
+ * @brief Server side of the Beluga Service.
  *
  * @date 5/1/25
  *

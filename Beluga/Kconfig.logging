@@ -2,6 +2,18 @@ menu "Logger configurations"
 
 comment "All of these configurations depend on LOG"
 
+menu "Beluga Service Client"
+module = BELUGA_SERVICE_CLIENT
+module-str = Beluga Service Client
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
+menu "Beluga Service"
+module = BELUGA_SERVICE
+module-str = Beluga Service
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 menu "Serial"
 menu "Serial Comms"
 module = COMMS
@@ -121,12 +133,6 @@ endmenu
 menu "Watchdog"
 module = WATCHDOG_MODULE
 module-str = watchdog module
-source "subsys/logging/Kconfig.template.log_config"
-endmenu
-
-menu "Beluga Service Client"
-module = BELUGA_SERVICE_CLIENT
-module-str = Beluga Service Client
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
