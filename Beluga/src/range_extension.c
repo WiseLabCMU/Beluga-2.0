@@ -284,7 +284,6 @@ int init_range_extension(void) {
  */
 int update_power_mode(enum power_mode mode) {
     int ret = 0, uwb_pa = ((uint8_t)mode) & UINT8_C(1);
-    bool ble_state = save_and_disable_bluetooth();
 
     switch (mode) {
     case POWER_MODE_EXTERNAL_AMPS_OFF:
@@ -309,8 +308,6 @@ int update_power_mode(enum power_mode mode) {
         break;
     }
 
-    restore_bluetooth(ble_state);
-
     if (ret == 0 || ret == -ENODEV) {
         TOGGLE_UWB_AMP(uwb_pa);
     }
@@ -329,7 +326,6 @@ int update_power_mode(enum power_mode mode) {
  */
 int select_antenna(int32_t antenna) {
 #if ANTENNA_SELECT
-    bool ble_state = save_and_disable_bluetooth();
     int err = 0;
 
     switch (antenna) {
@@ -343,8 +339,6 @@ int select_antenna(int32_t antenna) {
         err = -EINVAL;
         break;
     }
-
-    restore_bluetooth(ble_state);
 
     if (err == 0) {
         LOG_ERR("Could not change antenna (%d)", err);

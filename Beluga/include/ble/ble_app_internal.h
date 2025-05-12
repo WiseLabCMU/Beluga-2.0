@@ -84,6 +84,8 @@ void internal_start_ble(void);
 
 struct bt_conn **get_central_connection_obj(void);
 
+void disconnect_ble_connections(void);
+
 extern struct bt_connect connect_signalling;
 
 #endif // BELUGA_DTS_BLE_APP_INTERNAL_H

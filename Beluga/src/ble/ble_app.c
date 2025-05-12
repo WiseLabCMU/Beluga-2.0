@@ -423,6 +423,7 @@ int disable_bluetooth(void) {
     k_sem_take(&ble_state, K_FOREVER);
     if (bluetooth_on) {
         retVal = _disable_bluetooth();
+        disconnect_ble_connections();
         if (!retVal && update_fem_shutdown_state(true) != 0) {
             retVal = -EFAULT;
         }

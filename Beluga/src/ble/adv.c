@@ -83,6 +83,7 @@ static struct bt_data conn_sd_data[] = {
 };
 
 static struct bt_conn *central_conn;
+static struct bt_conn *peripheral_conn;
 
 static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
 
@@ -150,6 +151,8 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
     } else {
         adv_state = ADVERTISING_NO_CONNECT;
         k_sem_take(&ble_connect_status, K_NO_WAIT);
+        peripheral_conn = conn;
+        bt_conn_ref(conn);
         LOG_INF("Connected as peripheral");
     }
 }
@@ -172,6 +175,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason) {
     } else {
         bt_le_scan_stop();
         k_work_submit(&advertising_work);
+        bt_conn_unref(peripheral_conn);
+        peripheral_conn = NULL;
         k_sem_give(&ble_connect_status);
     }
 }
@@ -465,4 +470,21 @@ int wait_ble_disconnect(k_timeout_t timeout) {
     }
     k_sem_give(&ble_connect_status);
     return 0;
+}
+
+void disconnect_ble_connections(void) {
+    int ret;
+    if (k_sem_take(&ble_connect_status, K_NO_WAIT) == 0) {
+        k_sem_give(&ble_connect_status);
+        return;
+    }
+    __ASSERT_NO_MSG(peripheral_conn != NULL);
+    ret = bt_conn_disconnect(peripheral_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    if (ret) {
+        LOG_ERR("Failed to disconnect (%d)", ret);
+        k_panic();
+    }
+    wait_ble_disconnect(K_FOREVER);
+    stop_advertising();
+    stop_scanning();
 }
