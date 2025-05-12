@@ -1,7 +1,7 @@
 /**
  * @file beluga_client.h
  *
- * @brief
+ * @brief Client API for the Beluga Service.
  *
  * @date 5/1/25
  *

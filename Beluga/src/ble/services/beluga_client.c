@@ -1,7 +1,7 @@
 /**
  * @file beluga_client.c
  *
- * @brief
+ * @brief Client API for the Beluga Service.
  *
  * @date 5/1/25
  *
@@ -17,14 +17,29 @@
 
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(beluga_client, LOG_LEVEL_DBG);
+/**
+ * Logger for the Beluga service client
+ */
+LOG_MODULE_REGISTER(beluga_client, CONFIG_BELUGA_SERVICE_CLIENT_LOG_LEVEL);
 
+/**
+ * Client state bits
+ */
 enum {
-    BELUGA_C_INITIALIZED,
-    BELUGA_C_RANGING_NOTIF_ENABLED,
-    BELUGA_C_SYNC_PENDING,
+    BELUGA_C_INITIALIZED,           ///< Client initialized
+    BELUGA_C_RANGING_NOTIF_ENABLED, ///< Ranging notifications enabled
+    BELUGA_C_SYNC_PENDING,          ///< Synchronization is pending
 };
 
+/**
+ * Handler for receiving ranging notifications
+ * @param[in] conn The BLE connection that received the range
+ * @param[in] params The GATT subscription parameters
+ * @param[in] data The received data
+ * @param[in] length The amount of bytes received
+ * @return BT_GATT_ITER_STOP to stop receiving notifications (unsubscribing)
+ * @return BT_GATT_ITER_CONTINUE to continue receiving notifications
+ */
 static uint8_t on_received(struct bt_conn *conn,
                            struct bt_gatt_subscribe_params *params,
                            const void *data, uint16_t length) {
@@ -54,6 +69,12 @@ static uint8_t on_received(struct bt_conn *conn,
     return BT_GATT_ITER_CONTINUE;
 }
 
+/**
+ * Handler for indicating that sync data got sent
+ * @param[in] conn The connection that data was sent on
+ * @param[in] err The error from the operation
+ * @param[in] params The GATT write parameters
+ */
 static void on_sent(struct bt_conn *conn, uint8_t err,
                     struct bt_gatt_write_params *params) {
     ARG_UNUSED(conn);
@@ -73,6 +94,14 @@ static void on_sent(struct bt_conn *conn, uint8_t err,
     }
 }
 
+/**
+ * @brief Initializes the beluga client module.
+ *
+ * @param[in,out] client The Beluga client instance.
+ * @param[in] callbacks Beluga client application callbacks.
+ * @return 0 if the instantiation is successful
+ * @return negative error code otherwise
+ */
 int bt_beluga_client_init(struct bt_beluga_client *client,
                           const struct bt_beluga_client_cb *callbacks) {
     if (!client || !callbacks) {
@@ -87,6 +116,13 @@ int bt_beluga_client_init(struct bt_beluga_client *client,
     return 0;
 }
 
+/**
+ * @brief Sync the server UWB configurations with the client UWB configurations
+ * @param[in,out] client The Beluga client instance.
+ * @param[in] config Pointer to the UWB parameters to send to the server.
+ * @return 0 if operation was successful
+ * @return negative error code otherwise
+ */
 int bt_beluga_client_sync(struct bt_beluga_client *client,
                           const struct beluga_uwb_params *config) {
     int err;
@@ -123,6 +159,22 @@ int bt_beluga_client_sync(struct bt_beluga_client *client,
     return err;
 }
 
+/**
+ * @brief Assign handles to the Beluga client instance.
+ *
+ * This function should be called when a link with a peer has been established
+ * to associate the link to this instance of the module. This makes it
+ * possible to handle several links and associate each link to a particular
+ * instance of this module. The GATT attribute handles are provided by the
+ * GATT DB discovery module.
+ *
+ * @param[in] dm Discovery object
+ * @param[in,out] client Beluga client instance.
+ * @return 0 If the operation was successful.
+ * @return (-ENOTSUP) Special error code used when UUID of the service does not
+ * match the expected UUID.
+ * @return negative error code otherwise.
+ */
 int bt_beluga_client_assign(struct bt_gatt_dm *dm,
                             struct bt_beluga_client *client) {
     const struct bt_gatt_dm_attr *gatt_service_attr;
@@ -187,6 +239,13 @@ int bt_beluga_client_assign(struct bt_gatt_dm *dm,
     return 0;
 }
 
+/**
+ * @brief Request the peer to start sending notifications for the range
+ * characteristic.
+ * @param[in,out] client Beluga client instance.
+ * @return 0 if the operation was successful
+ * @return negative error code otherwise.
+ */
 int bt_beluga_client_subscribe_ranging(struct bt_beluga_client *client) {
     int err;
 

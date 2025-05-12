@@ -124,4 +124,10 @@ module-str = watchdog module
 source "subsys/logging/Kconfig.template.log_config"
 endmenu
 
+menu "Beluga Service Client"
+module = BELUGA_SERVICE_CLIENT
+module-str = Beluga Service Client
+source "subsys/logging/Kconfig.template.log_config"
+endmenu
+
 endmenu

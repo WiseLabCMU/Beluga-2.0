@@ -450,6 +450,7 @@ bool save_and_disable_bluetooth(void) {
     ret = bluetooth_on;
     if (bluetooth_on) {
         _disable_bluetooth();
+        disconnect_ble_connections();
     }
     return ret;
 }
