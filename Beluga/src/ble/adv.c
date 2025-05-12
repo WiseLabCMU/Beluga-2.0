@@ -10,8 +10,8 @@
 
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
-#include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/uuid.h>
 #include <zephyr/kernel.h>
 
 #include <zephyr/logging/log.h>
@@ -25,16 +25,16 @@
 
 LOG_MODULE_DECLARE(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
-#define NCONN_ADV_IDX      0
-#define CONN_ADV_IDX       1
+#define NCONN_ADV_IDX            0
+#define CONN_ADV_IDX             1
 
 #define NCONN_ADV_NAME_IDX       1
 #define NCONN_SCAN_MANF_DATA_IDX 0
 #define NCONN_SCAN_UUID_IDX      1
 
-#define CONN_ADV_UUID_IDX 2
-#define CONN_ADV_MANF_DATA_IDX 3
-#define CONN_SCAN_NAME_IDX 0
+#define CONN_ADV_UUID_IDX        2
+#define CONN_ADV_MANF_DATA_IDX   3
+#define CONN_SCAN_NAME_IDX       0
 
 enum advertising_state {
     ADVERTISING_OFF,
@@ -79,7 +79,7 @@ static struct bt_data nconn_sd_data[] = {
 };
 
 static struct bt_data conn_sd_data[] = {
-        BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME),
+    BT_DATA_BYTES(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME),
 };
 
 static struct bt_conn *central_conn;
@@ -110,9 +110,12 @@ static void connectable_adv_start(void) {
     LOG_DBG("Starting connectable advertising from work");
     int err =
         bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
-    adv_state = (err == 0 || err == -EALREADY) ? ADVERTISING_CONNECTABLE : adv_state;
+    adv_state =
+        (err == 0 || err == -EALREADY) ? ADVERTISING_CONNECTABLE : adv_state;
     if (err) {
-        LOG_ERR("Advertising work: Failed to start connectable advertising (%d)", err);
+        LOG_ERR(
+            "Advertising work: Failed to start connectable advertising (%d)",
+            err);
     }
     start_active_scanning();
 }
@@ -127,7 +130,8 @@ static void connected(struct bt_conn *conn, uint8_t conn_err) {
     struct bt_conn_info info;
 
     if (conn_err) {
-        LOG_ERR("Failed to connect (%u) %s", conn_err, bt_hci_err_to_str(conn_err));
+        LOG_ERR("Failed to connect (%u) %s", conn_err,
+                bt_hci_err_to_str(conn_err));
 
         if (conn == central_conn) {
             bt_conn_unref(conn);
@@ -294,13 +298,15 @@ int start_advertising(void) {
 static void refresh_advertising_data(void) {
     int err;
 
-    err = bt_le_ext_adv_set_data(ext_adv[NCONN_ADV_IDX], nconn_ad_data, ARRAY_SIZE(nconn_ad_data), nconn_sd_data,
+    err = bt_le_ext_adv_set_data(ext_adv[NCONN_ADV_IDX], nconn_ad_data,
+                                 ARRAY_SIZE(nconn_ad_data), nconn_sd_data,
                                  ARRAY_SIZE(nconn_sd_data));
     if (err) {
         LOG_ERR("Unable to update non-connectable advertising data (%d)", err);
     }
 
-    err = bt_le_ext_adv_set_data(ext_adv[CONN_ADV_IDX], conn_ad_data, ARRAY_SIZE(conn_ad_data), conn_sd_data,
+    err = bt_le_ext_adv_set_data(ext_adv[CONN_ADV_IDX], conn_ad_data,
+                                 ARRAY_SIZE(conn_ad_data), conn_sd_data,
                                  ARRAY_SIZE(conn_sd_data));
     if (err) {
         LOG_ERR("Unable to update connectable advertising data (%d)", err);
@@ -433,25 +439,27 @@ void internal_stop_ble(void) {
 
 void internal_start_ble(void) {
     LOG_DBG("Resuming BLE");
-    switch(adv_state) {
-        case ADVERTISING_CONNECTABLE: {
-            LOG_DBG("Starting connectable and non-connectable advertising");
-            bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
-            bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
-            start_active_scanning();
-            break;
-        }
-        case ADVERTISING_NO_CONNECT: {
-            LOG_DBG("Starting non-connectable advertising");
-            bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
-            start_active_scanning();
-            break;
-        }
-        case ADVERTISING_OFF:
-            LOG_DBG("Doing nothing since advertising is off");
-            break;
-        default:
-            __ASSERT_UNREACHABLE;
+    switch (adv_state) {
+    case ADVERTISING_CONNECTABLE: {
+        LOG_DBG("Starting connectable and non-connectable advertising");
+        bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX],
+                            BT_LE_EXT_ADV_START_DEFAULT);
+        bt_le_ext_adv_start(ext_adv[CONN_ADV_IDX], BT_LE_EXT_ADV_START_DEFAULT);
+        start_active_scanning();
+        break;
+    }
+    case ADVERTISING_NO_CONNECT: {
+        LOG_DBG("Starting non-connectable advertising");
+        bt_le_ext_adv_start(ext_adv[NCONN_ADV_IDX],
+                            BT_LE_EXT_ADV_START_DEFAULT);
+        start_active_scanning();
+        break;
+    }
+    case ADVERTISING_OFF:
+        LOG_DBG("Doing nothing since advertising is off");
+        break;
+    default:
+        __ASSERT_UNREACHABLE;
     }
 }
 

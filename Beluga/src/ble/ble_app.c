@@ -88,11 +88,14 @@ void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr) {
         return;
     }
 
-    k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_SEARCH_ID], &signaled,&search_id);
+    k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
+                        &signaled, &search_id);
     if (signaled && search_id == (int)data->uuid) {
-        k_poll_signal_reset(&connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+        k_poll_signal_reset(
+            &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
         bt_addr_le_copy(&connect_signalling.addr, addr);
-        k_poll_signal_raise(&connect_signalling.connect_signals[CONNECT_SEARCH_FOUND], 0);
+        k_poll_signal_raise(
+            &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND], 0);
     }
 }
 
