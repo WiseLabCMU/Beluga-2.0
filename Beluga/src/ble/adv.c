@@ -16,6 +16,7 @@
 
 #include <zephyr/logging/log.h>
 
+#include <list_monitor.h>
 #include <range_extension.h>
 
 #include <ble/ble_app.h>
@@ -182,6 +183,11 @@ static uint8_t uuid_encoded[sizeof(uint16_t)];
  * The current advertising state
  */
 static enum advertising_state adv_state = ADVERTISING_OFF;
+
+/**
+ * The node's unique ID on the network.
+ */
+static uint16_t NODE_UUID = 0;
 
 /**
  * Handler for when the advertising set connects as a peripheral
@@ -582,7 +588,7 @@ void advertising_reconfig(struct advertising_info *uwb_metadata) {
  * Updates the advertising name with the new UUID
  * @param[in] uuid The new UUID
  */
-void update_adv_name(uint16_t uuid) {
+static void update_adv_name(uint16_t uuid) {
     LOG_DBG("Updating advertising name");
     size_t len;
     memcpy(uuid_encoded, &uuid, sizeof(uuid));
@@ -704,3 +710,71 @@ void disconnect_ble_connections(void) {
     stop_advertising();
     stop_scanning();
 }
+
+/**
+ * Updates the neighbor list by either, updating or inserting the scanned node
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
+void update_seen_list(struct ble_data *data, int8_t rssi) {
+    bool polling;
+    if (data->uuid == NODE_UUID) {
+        return;
+    }
+
+    // Check if node is polling
+    polling = (data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] &
+               UWB_POLLING_MASK) != 0;
+
+    // Filter out nodes that do not have the same settings
+    data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] &= ~UWB_POLLING_MASK;
+    data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] |=
+        beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
+        UWB_POLLING_MASK;
+#if !defined(CONFIG_RANGE_TO_ACTIVE_ONLY)
+    // Range to everything advertising
+    data->manufacturerData[BLE_UWB_METADATA_ACTIVE_BYTE] &= ~UWB_ACTIVE_MASK;
+    data->manufacturerData[BLE_UWB_METADATA_ACTIVE_BYTE] |=
+        beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
+        UWB_ACTIVE_MASK;
+#endif
+
+    if (memcmp(data->manufacturerData, beluga_manufacturer_data,
+               sizeof(beluga_manufacturer_data)) != 0) {
+        // UWB parameters do not match
+        return;
+    }
+
+    if (!in_seen_list(data->uuid)) {
+        insert_into_seen_list(data, rssi, polling);
+    } else {
+        update_seen_neighbor(data, rssi, polling);
+    }
+}
+
+void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr) {
+    int ret, signaled, search_id;
+    ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_ID], 1,
+                 K_NO_WAIT);
+
+    if (ret != 0) {
+        return;
+    }
+
+    k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
+                        &signaled, &search_id);
+    if (signaled && search_id == (int)data->uuid) {
+        k_poll_signal_reset(
+            &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
+        bt_addr_le_copy(&connect_signalling.addr, addr);
+        k_poll_signal_raise(
+            &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND], 0);
+    }
+}
+
+void update_node_id(uint16_t uuid) {
+    NODE_UUID = uuid;
+    update_adv_name(uuid);
+}
+
+uint16_t get_NODE_UUID(void) { return NODE_UUID; }

@@ -177,6 +177,14 @@ void update_ble_service(uint16_t uuid, float range);
 #define update_ble_service(x, y) (void)0
 #endif // defined(CONFIG_BELUGA_GATT)
 
+/**
+ * Searches for the given UUID when scanning for neighbors and syncs that
+ * neighbor's UWB settings to the current node's UWB settings.
+ *
+ * @param[in] id The neighbor ID to search for.
+ * @return 0 upon successfully syncing .
+ * @return negative error code otherwise.
+ */
 int sync_uwb_parameters(uint16_t id);
 
 /**
@@ -193,6 +201,9 @@ int wait_ble_disconnect(k_timeout_t timeout);
  */
 extern struct node seen_list[MAX_ANCHOR_COUNT];
 
+/**
+ * Synced UWB configurations.
+ */
 extern struct uwb_sync_configs sync_configs;
 
 #endif // BELUGA_DTS_BLE_APP_H

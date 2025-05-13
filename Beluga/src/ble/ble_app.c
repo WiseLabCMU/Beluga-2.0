@@ -20,85 +20,54 @@
 #include <ble/services/beluga_client.h>
 #include <ble/services/beluga_service.h>
 
-#include <list_monitor.h>
 #include <range_extension.h>
 #include <settings.h>
 
+/**
+ * Logger for the BLE application.
+ */
 LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
+/**
+ * Semaphore for not allowing 2 threads to modify the BLE state simultaneously.
+ */
 K_SEM_DEFINE(ble_state, 1, 1);
 
-static uint16_t NODE_UUID = 0;
-
-static uint8_t beluga_manufacturer_data[BLE_MANF_DATA_OVERHEAD] = {0};
-
+/**
+ * Synchronization signals for transferring UWB configurations from this node to
+ * the other connected node.
+ */
 struct bt_connect connect_signalling;
+
+/**
+ * Synced UWB configurations.
+ */
 struct uwb_sync_configs sync_configs;
+
+/**
+ * Beluga service client for UWB settings synchronization.
+ */
 static struct bt_beluga_client client;
+
+/**
+ * Overall Bluyetooth state
+ */
 static bool bluetooth_on = false;
+
+/**
+ * The neighbor list.
+ */
 struct node seen_list[MAX_ANCHOR_COUNT];
 
 /**
- * Updates the neighbor list by either, updating or inserting the scanned node
- * @param[in] data The BLE scan data
- * @param[in] rssi The RSSI of the scanned node
+ * @brief Discovery completed callback.
+ *
+ * The discovery procedure has completed successfully.
+ *
+ * @param[in,out] dm Discovery Manager instance
+ * @param[in,out] context The value passed to
+ *                @em gatt_db_discovery_start()
  */
-void update_seen_list(struct ble_data *data, int8_t rssi) {
-    bool polling;
-    if (data->uuid == NODE_UUID) {
-        return;
-    }
-
-    // Check if node is polling
-    polling = (data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] &
-               UWB_POLLING_MASK) != 0;
-
-    // Filter out nodes that do not have the same settings
-    data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] &= ~UWB_POLLING_MASK;
-    data->manufacturerData[BLE_UWB_METADATA_POLLING_BYTE] |=
-        beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
-        UWB_POLLING_MASK;
-#if !defined(CONFIG_RANGE_TO_ACTIVE_ONLY)
-    // Range to everything advertising
-    data->manufacturerData[BLE_UWB_METADATA_ACTIVE_BYTE] &= ~UWB_ACTIVE_MASK;
-    data->manufacturerData[BLE_UWB_METADATA_ACTIVE_BYTE] |=
-        beluga_manufacturer_data[BLE_UWB_METADATA_POLLING_BYTE] &
-        UWB_ACTIVE_MASK;
-#endif
-
-    if (memcmp(data->manufacturerData, beluga_manufacturer_data,
-               sizeof(beluga_manufacturer_data)) != 0) {
-        // UWB parameters do not match
-        return;
-    }
-
-    if (!in_seen_list(data->uuid)) {
-        insert_into_seen_list(data, rssi, polling);
-    } else {
-        update_seen_neighbor(data, rssi, polling);
-    }
-}
-
-void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr) {
-    int ret, signaled, search_id;
-    ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_ID], 1,
-                 K_NO_WAIT);
-
-    if (ret != 0) {
-        return;
-    }
-
-    k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
-                        &signaled, &search_id);
-    if (signaled && search_id == (int)data->uuid) {
-        k_poll_signal_reset(
-            &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
-        bt_addr_le_copy(&connect_signalling.addr, addr);
-        k_poll_signal_raise(
-            &connect_signalling.connect_signals[CONNECT_SEARCH_FOUND], 0);
-    }
-}
-
 static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
     int err;
     struct bt_beluga_client *bsc = context;
@@ -126,6 +95,15 @@ static void discovery_completed_cb(struct bt_gatt_dm *dm, void *context) {
     LOG_INF("Client data updated");
 }
 
+/**
+ * @brief Service not found callback.
+ *
+ * The targeted service could not be found during the discovery.
+ *
+ * @param[in,out] conn Connection object.
+ * @param[in,out] context The value passed to
+ *                @em gatt_db_discovery_start()
+ */
 static void discovery_not_found_cb(struct bt_conn *conn, void *context) {
     ARG_UNUSED(conn);
     ARG_UNUSED(context);
@@ -134,6 +112,16 @@ static void discovery_not_found_cb(struct bt_conn *conn, void *context) {
                         1);
 }
 
+/**
+ * @brief Discovery error found callback.
+ *
+ * The discovery procedure has failed.
+ *
+ * @param[in,out] conn Connection object.
+ * @param[in]     err The error code.
+ * @param[in,out] context The value passed to
+ *                @em gatt_db_discovery_start()
+ */
 static void discovery_error_found_cb(struct bt_conn *conn, int err,
                                      void *context) {
     ARG_UNUSED(conn);
@@ -144,12 +132,21 @@ static void discovery_error_found_cb(struct bt_conn *conn, int err,
                         1);
 }
 
+/**
+ * Callbacks for tracking the result of a discovery.
+ */
 static const struct bt_gatt_dm_cb discovery_cb = {
     .completed = discovery_completed_cb,
     .service_not_found = discovery_not_found_cb,
     .error_found = discovery_error_found_cb,
 };
 
+/**
+ * Starts the GATT discovery procedure for the client connection.
+ * @param[in] conn The connection object to start discovery for.
+ * @return 0 upon success.
+ * @return negative error code otherwise.
+ */
 int gatt_discover(struct bt_conn *conn) {
     int err =
         bt_gatt_dm_start(conn, BT_UUID_BELUGA_SVC, &discovery_cb, &client);
@@ -161,6 +158,12 @@ int gatt_discover(struct bt_conn *conn) {
     return err;
 }
 
+/**
+ * Callback for indicating that the UWB settings transfer was sent.
+ * @param[in] bt_client The client that was synced.
+ * @param[in] err The ATT error that occurred (if any).
+ * @param[in] config The configurations that were sent.
+ */
 static void beluga_uwb_settings_synced(struct bt_beluga_client *bt_client,
                                        uint8_t err,
                                        const struct beluga_uwb_params *config) {
@@ -171,6 +174,11 @@ static void beluga_uwb_settings_synced(struct bt_beluga_client *bt_client,
                         0);
 }
 
+/**
+ * Initializes the Beluga client.
+ * @return 0 upon success.
+ * @return negative error code otherwise.
+ */
 static int init_beluga_client(void) {
     struct bt_beluga_client_cb cb = {
         .synced = beluga_uwb_settings_synced,
@@ -190,6 +198,10 @@ static int init_beluga_client(void) {
     return bt_beluga_client_init(&client, &cb);
 }
 
+/**
+ * Helper for prepping the UWB data for transfer.
+ * @param[in,out] config The structure to store the configurations in.
+ */
 static void prep_configs(struct beluga_uwb_params *config) {
     LOG_DBG("Loading UWB settings");
     config->TX_POWER = retrieveSetting(BELUGA_TX_POWER);
@@ -204,6 +216,13 @@ static void prep_configs(struct beluga_uwb_params *config) {
     config->PULSE_RATE = (bool)retrieveSetting(BELUGA_UWB_PULSE_RATE);
 }
 
+/**
+ * Helper for waiting for a BLE central connection to occur.
+ * @param[out] stopped Flag indicating that BLE advertising was stopped.
+ * @return 0 upon success.
+ * @return -EAGAIN if scanning timed out.
+ * @return negative error code otherwise.
+ */
 static int wait_connection(bool *stopped) {
     struct bt_conn **central_conn;
     int ret;
@@ -239,6 +258,13 @@ static int wait_connection(bool *stopped) {
     return ret;
 }
 
+/**
+ * Helper function for exchanging UWB data.
+ * @param[in] config The UWB configurations to send.
+ * @return 0 upon success.
+ * @return -ENOTCONN if GATT exchange failed.
+ * @return negative error code otherwise.
+ */
 static int perform_gatt_exchange(struct beluga_uwb_params *config) {
     int ret, set, val;
     LOG_DBG("Waiting for GATT exchange");
@@ -266,6 +292,14 @@ static int perform_gatt_exchange(struct beluga_uwb_params *config) {
     return 0;
 }
 
+/**
+ * Searches for the given UUID when scanning for neighbors and syncs that
+ * neighbor's UWB settings to the current node's UWB settings.
+ *
+ * @param[in] id The neighbor ID to search for.
+ * @return 0 upon successfully syncing .
+ * @return negative error code otherwise.
+ */
 int sync_uwb_parameters(uint16_t id) {
     struct bt_conn **central_conn;
     struct beluga_uwb_params config;
@@ -305,6 +339,13 @@ finish:
     return ret;
 }
 
+/**
+ * Handles UWB settings writes over BLE (receives data).
+ * @param[in] conn The connection that received the UWB settings
+ * @param[in] configs The received UWB settings
+ * @return 0 upon success.
+ * @return -EAGAIN if the ready signal is set already.
+ */
 static int sync_uwb_settings(struct bt_conn *conn,
                              const struct beluga_uwb_params *configs) {
     ARG_UNUSED(conn);
@@ -324,6 +365,11 @@ static int sync_uwb_settings(struct bt_conn *conn,
     return 0;
 }
 
+/**
+ * Initializes the Beluga service.
+ * @return 0 upon success.
+ * @return negative error code otherwise.
+ */
 static int init_beluga_service(void) {
     struct beluga_service_cb cb = {
         .sync = sync_uwb_settings,
@@ -336,6 +382,11 @@ static int init_beluga_service(void) {
     return beluga_service_init(&cb);
 }
 
+/**
+ * Initializes the Bluetooth stack
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 int init_bt_stack(void) {
     int32_t err;
 
@@ -363,6 +414,11 @@ int init_bt_stack(void) {
     return 0;
 }
 
+/**
+ * Stops Bluetooth scanning and advertising and unloads the bluetooth stack
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 int deinit_bt_stack(void) {
     stop_advertising();
     stop_scanning();
@@ -370,6 +426,11 @@ int deinit_bt_stack(void) {
     return bt_disable();
 }
 
+/**
+ * Starts Bluetooth advertising and scanning and marks the Bluetooth as active
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 static int _enable_bluetooth(void) {
     LOG_DBG("_enable_bluetooth()");
     int err = start_advertising();
@@ -387,6 +448,11 @@ static int _enable_bluetooth(void) {
     return 0;
 }
 
+/**
+ * Stops Bluetooth scanning and advertising
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 static int _disable_bluetooth(void) {
     int err;
     LOG_DBG("_disable_bluetooth()");
@@ -407,6 +473,14 @@ static int _disable_bluetooth(void) {
     return 0;
 }
 
+/**
+ * Starts the Bluetooth FEM (if applicable) and starts Bluetooth
+ * scanning/advertising
+ * @return 0 upon success
+ * @return 1 if already on
+ * @return -EFAULT if unable to start the FEM
+ * @return negative error code otherwise
+ */
 int enable_bluetooth(void) {
     int retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
@@ -421,6 +495,13 @@ int enable_bluetooth(void) {
     return retVal;
 }
 
+/**
+ * Stops Bluetooth advertising/scanning and powers down the Bluetooth FEM
+ * @return 0 upon success
+ * @return 1 if Bluetooth is already off
+ * @return -EFAULT if unable to power down the Bluetooth FEM
+ * @return negative error code otherwise
+ */
 int disable_bluetooth(void) {
     int retVal = -EALREADY;
     k_sem_take(&ble_state, K_FOREVER);
@@ -435,15 +516,19 @@ int disable_bluetooth(void) {
     return retVal;
 }
 
-void update_node_id(uint16_t uuid) {
-    NODE_UUID = uuid;
-    update_adv_name(uuid);
-}
-
-uint16_t get_NODE_UUID(void) { return NODE_UUID; }
-
+/**
+ * Checks if Bluetooth is currently advertising/scanning
+ * @return `true` if advertising/scanning
+ * @return `false` otherwise
+ */
 bool check_ble_enabled(void) { return bluetooth_on; }
 
+/**
+ * Returns the current Bluetooth state and disables scanning/advertising.
+ * Additionally, blocks other threads from enabling Bluetooth until the state is
+ * restored. See `restore_bluetooth()`
+ * @return The current Bluetooth state
+ */
 bool save_and_disable_bluetooth(void) {
     bool ret;
     k_sem_take(&ble_state, K_FOREVER);
@@ -455,6 +540,12 @@ bool save_and_disable_bluetooth(void) {
     return ret;
 }
 
+/**
+ * Restores the Bluetooth state to its original setting. Additionally, releases
+ * the Bluetooth lock to allow other threads to update the Bluetooth state. See
+ * `save_and_disable-bluetooth()`
+ * @param[in] state The saved Bluetooth state
+ */
 void restore_bluetooth(bool state) {
     if (state) {
         _enable_bluetooth();

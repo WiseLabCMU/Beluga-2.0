@@ -79,12 +79,6 @@ void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr);
 int gatt_discover(struct bt_conn *conn);
 
 /**
- * Updates the advertising name with the new UUID
- * @param[in] uuid The new UUID
- */
-void update_adv_name(uint16_t uuid);
-
-/**
  * Stops advertising and scanning without updating the advertising state
  */
 void internal_stop_ble(void);
