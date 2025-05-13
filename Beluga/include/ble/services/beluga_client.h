@@ -61,8 +61,12 @@ struct bt_beluga_client_cb {
      * @return BT_GATT_ITER_CONTINUE to keep notifications enabled.
      * @return BT_GATT_ITER_STOP to disable notifications.
      */
+<<<<<<< HEAD
     uint8_t (*range)(struct bt_beluga_client *client, uint16_t id,
                      double range);
+=======
+    uint8_t (*range)(struct bt_beluga_client *client, uint16_t id, float range);
+>>>>>>> master
 
     /**
      * @brief UWB configurations synced callback.
