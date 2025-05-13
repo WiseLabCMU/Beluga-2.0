@@ -67,6 +67,15 @@ LOG_MODULE_DECLARE(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 #define CONN_SCAN_NAME_IDX 0
 
 /**
+ * Helper macro for setting UWB metadata in the manufacturer data.
+ * @param[in] meta The struct that contains the metadata.
+ * @param[in] field The struct field being encoded.
+ */
+#define SET_UWB_METADATA(meta, field)                                          \
+    set_uwb_metadata(BLE_UWB_METADATA_##field##_BYTE, UWB_##field##_MASK,      \
+                     UWB_##field##_SHIFT, (meta)->field)
+
+/**
  * Advertising states for the BLE
  */
 enum advertising_state {

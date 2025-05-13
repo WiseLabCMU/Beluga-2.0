@@ -43,18 +43,24 @@ enum node_eviction_policy {
     EVICT_POLICY_INVALID       ///< Last enumerator
 };
 
+/**
+ * UWB metadata to be advertised
+ */
 struct advertising_info {
-    uint8_t CHANNEL;
-    bool TWR;
-    bool SFD;
-    uint8_t DATARATE;
-    bool PULSERATE;
-    bool PHR;
-    uint8_t PAC;
-    bool ACTIVE;
-    uint16_t pan;
-    uint32_t preamble;
-    uint32_t poll_rate;
+    uint8_t CHANNEL; ///< The UWB channel.
+    bool TWR; ///< The ranging mode. `true` for DS-TWR, `false` for SS-TWR.
+    bool SFD; ///< Start Frame Delimiter mode. `true` for non-standard SFD,
+              ///< `false` for standard SFD.
+    uint8_t DATARATE; ///< The UWB data rate.
+    bool PULSERATE;   ///< The UWB pulse repetition frequency. `true` if 64MHz,
+                      ///< `false` for 16MHz.
+    bool PHR; ///< Physical header mode. `true` for extended mode, `false` for
+              ///< standard mode.
+    uint8_t PAC;  ///< UWB Packet Acquisition Chunk Size.
+    bool ACTIVE;  ///< `true` if UWB is turned on, `false` if UWB is turned off.
+    uint16_t pan; ///< UWB PAN ID.
+    uint32_t preamble;  ///< UWB Preamble length.
+    uint32_t poll_rate; ///< UWB poll rate.
 };
 
 /**
