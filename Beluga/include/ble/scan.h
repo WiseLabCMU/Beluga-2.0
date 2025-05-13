@@ -11,7 +11,19 @@
 #ifndef BELUGA_DTS_SCAN_H
 #define BELUGA_DTS_SCAN_H
 
+/**
+ * Starts scanning for other BLE devices.
+ * @return 0 upon success.
+ * @return negative error code on error.
+ * @note This must be called after advertising is started.
+ */
 int start_active_scanning(void);
+
+/**
+ * Stops scanning for other BLE devices.
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 int stop_scanning(void);
 
 #endif // BELUGA_DTS_SCAN_H
