@@ -580,7 +580,7 @@ void restore_bluetooth(bool state) {
 }
 
 #if defined(CONFIG_BELUGA_GATT)
-void update_ble_service(uint16_t uuid, float range) {
+void update_ble_service(uint16_t uuid, double range) {
     if (!atomic_test_bit(&_ble_state, RANGE_NOTIF_ENABLED)) {
         return;
     }
