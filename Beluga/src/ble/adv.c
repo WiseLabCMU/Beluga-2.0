@@ -777,7 +777,10 @@ void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr) {
 
     k_poll_signal_check(&connect_signalling.connect_signals[CONNECT_SEARCH_ID],
                         &signaled, &search_id);
-    if (signaled && search_id == (int)data->uuid) {
+    if (signaled && search_id == (int)data->uuid &&
+        memcmp(beluga_manufacturer_data + BLE_PAN_OFFSET,
+               data->manufacturerData + BLE_PAN_OFFSET,
+               BLE_PAN_OVERHEAD) == 0) {
         k_poll_signal_reset(
             &connect_signalling.connect_signals[CONNECT_SEARCH_ID]);
         bt_addr_le_copy(&connect_signalling.addr, addr);
