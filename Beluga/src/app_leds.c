@@ -100,6 +100,7 @@ static inline void update_led(uint8_t bit, uint32_t led, enum led_state state) {
     case LED_OFF: {
         ledState &= ~bit;
         APP_LED_OFF(led);
+        break;
     }
     default:
         __ASSERT_UNREACHABLE;

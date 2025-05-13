@@ -19,7 +19,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <ctype.h>
 #include <errno.h>
 
@@ -171,9 +171,7 @@ AT_CMD_DEFINE(STARTUWB) {
     enum power_mode pwramp =
         (enum power_mode)retrieveSetting(BELUGA_RANGE_EXTEND);
     update_power_mode(pwramp);
-    k_sem_give(&k_sus_resp);
-    k_sem_give(&k_sus_init);
-    update_led_state(LED_UWB, LED_ON);
+    update_uwb_state(true);
     AT_OK(comms, "Started UWB");
 }
 AT_CMD_REGISTER(STARTUWB);
@@ -191,9 +189,7 @@ AT_CMD_DEFINE(STOPUWB) {
     if (get_uwb_led_state() == LED_OFF) {
         ERROR(comms, "UWB is not running");
     }
-    k_sem_take(&k_sus_resp, K_FOREVER);
-    k_sem_take(&k_sus_init, K_FOREVER);
-    update_led_state(LED_UWB, LED_OFF);
+    update_uwb_state(false);
     AT_OK(comms, "Stopped UWB");
 }
 AT_CMD_REGISTER(STOPUWB);
@@ -329,8 +325,6 @@ AT_CMD_DEFINE(RATE) {
     updateSetting(BELUGA_POLL_RATE, rate);
     set_rate(rate);
 
-    // reconfig ble data
-    advertising_reconfig(rate != 0);
     AT_OK(comms, "Rate: %d", rate);
 }
 AT_CMD_REGISTER(RATE);
@@ -1001,12 +995,11 @@ AT_CMD_DEFINE(PANID) {
         ERROR(comms, "Invalid PAN ID");
     }
 
-    retVal = set_initiator_pan_id((uint16_t)pan_id);
+    retVal = set_uwb_pan_id((uint16_t)pan_id);
 
     if (retVal != 0) {
         ERROR(comms, "Cannot set PAN ID: UWB Active");
     }
-    set_responder_pan_id((uint16_t)pan_id);
     updateSetting(BELUGA_PAN_ID, pan_id);
     AT_OK(comms, "PAN ID: 0x%04X", (uint16_t)pan_id);
 }
@@ -1109,3 +1102,31 @@ AT_CMD_DEFINE(VERSION) {
     OK(comms, APP_VERSION_STRING);
 }
 AT_CMD_REGISTER(VERSION);
+
+AT_CMD_DEFINE(SYNC) {
+    LOG_INF("Running SYNC command");
+    CHECK_ARGC(comms, argc, 2);
+    int32_t id;
+    int ret;
+
+    if (!strtoint32(argv[1], &id)) {
+        ERROR(comms, "Invalid Sync ID");
+    }
+
+    if (id > (int32_t)UINT16_MAX) {
+        ERROR(comms, "Invalid Sync ID");
+    }
+
+    if (get_ble_led_state() == LED_OFF) {
+        ERROR(comms,
+              "BLE must be on before attempting to sync a node's settings");
+    }
+
+    ret = sync_uwb_parameters((uint16_t)id);
+
+    if (ret) {
+        ERROR(comms, "Could not sync UWB parameters");
+    }
+    AT_OK(comms, "Updated the UWB parameters for node %" PRId32, id);
+}
+AT_CMD_REGISTER(SYNC);

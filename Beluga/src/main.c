@@ -11,7 +11,7 @@
 
 #include <app_leds.h>
 #include <app_version.h>
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <debug.h>
 #include <initiator.h>
 #include <led_config.h>
@@ -216,9 +216,7 @@ static void load_bootmode(const struct comms *comms) {
         k_sem_give(&print_list_sem);
         enable_bluetooth();
         update_led_state(LED_BLE, LED_ON);
-        k_sem_give(&k_sus_resp);
-        k_sem_give(&k_sus_init);
-        update_led_state(LED_UWB, LED_ON);
+        update_uwb_state(true);
     case 0:
         break;
     default:
@@ -241,7 +239,6 @@ static void load_poll_rate(const struct comms *comms) {
     }
 
     set_rate(rate);
-    advertising_reconfig(rate != 0);
     SETTINGS_PRINT(comms, "UWB Polling Rate: %d", rate);
 }
 
@@ -364,8 +361,7 @@ static void load_sfd_mode(const struct comms *comms) {
 static void load_pan_id(const struct comms *comms) {
     int32_t pan_id = retrieveSetting(BELUGA_PAN_ID);
     CUSTOM_INIT_MSG(comms, print_pan_id, pan_id);
-    set_initiator_pan_id((uint16_t)pan_id);
-    set_responder_pan_id((uint16_t)pan_id);
+    set_uwb_pan_id((uint16_t)pan_id);
 }
 
 /**
@@ -472,6 +468,99 @@ static void load_settings(const struct comms *comms) {
 }
 
 /**
+ * Updates the UWB transmit power and saves the setting to flash.
+ * @param[in] power The new TX power
+ */
+static void update_uwb_tx_power(uint32_t power) {
+    struct uwb_tx_power_config config;
+    config.mode = UWB_TX_PWR_CONFIG_RAW;
+    config.raw_power = power;
+    (void)set_tx_power(&config);
+    updateSetting(BELUGA_TX_POWER, (int32_t)power);
+}
+
+/**
+ * Updates the UWB preamble and saves the setting to flash.
+ * @param[in] preamble The new preamble
+ */
+static void update_uwb_preamble(uint16_t preamble) {
+    uwb_set_preamble(preamble);
+    updateSetting(BELUGA_UWB_PREAMBLE, preamble);
+}
+
+/**
+ * Updates the UWB channel and saves the setting to flash.
+ * @param[in] channel The new channel.
+ */
+static void update_uwb_channel(uint8_t channel) {
+    set_uwb_channel(channel);
+    updateSetting(BELUGA_UWB_CHANNEL, channel);
+}
+
+/**
+ * Updates the UWB ranging protocol and saves the setting to flash.
+ * @param[in] twr The new ranging protocol
+ */
+static void update_uwb_twr(bool twr) {
+    set_twr_mode(twr);
+    updateSetting(BELUGA_TWR, twr);
+}
+
+/**
+ * Updates the UWB PHR and saves the setting to flash.
+ * @param[in] phr The new PHR
+ */
+static void update_uwb_phr(bool phr) {
+    uwb_set_phr_mode(phr);
+    updateSetting(BELUGA_UWB_PHR, phr);
+}
+
+/**
+ * Updates the UWB SFD and saves the settings to flash.
+ * @param[in] sfd THe new SFD
+ */
+static void update_uwb_sfd(bool sfd) {
+    set_sfd_mode(sfd);
+    updateSetting(BELUGA_UWB_NSSFD, sfd);
+}
+
+/**
+ * Updates the UWB data rate and saves the setting to flash
+ * @param[in] rate The new data rate
+ */
+static void update_uwb_data_rate(uint8_t rate) {
+    uwb_set_datarate(rate);
+    updateSetting(BELUGA_UWB_DATA_RATE, rate);
+}
+
+/**
+ * Updates the UWB PAC and saves the setting to flash
+ * @param[in] pac The new PAC
+ */
+static void update_uwb_pac(uint8_t pac) {
+    set_pac_size(pac);
+    updateSetting(BELUGA_UWB_PAC, pac);
+}
+
+/**
+ * Updates the UWB pulse rate and saves the setting to flash
+ * @param[in] pulse_rate The new pulse rate
+ */
+static void update_uwb_pulse_rate(bool pulse_rate) {
+    uwb_set_pulse_rate(pulse_rate);
+    updateSetting(BELUGA_UWB_PULSE_RATE, pulse_rate);
+}
+
+/**
+ * Updates the external power amp mode and saves the setting to flash.
+ * @param[in] pwramp The new power amp mode
+ */
+static void update_power_mode_(uint8_t pwramp) {
+    update_power_mode(pwramp);
+    updateSetting(BELUGA_RANGE_EXTEND, pwramp);
+}
+
+/**
  * @brief Main entry point of the application
  * @return 1 on error
  */
@@ -540,7 +629,29 @@ int main(void) {
     init_monitor_thread();
 
     for (;;) {
-        k_sleep(K_FOREVER);
+        enum led_state uwb_led_state;
+        k_poll(&sync_configs.ready, 1, K_FOREVER);
+        wait_ble_disconnect(K_FOREVER);
+        uwb_led_state = get_uwb_led_state();
+        if (uwb_led_state == LED_ON) {
+            update_uwb_state(false);
+        }
+
+        update_uwb_tx_power(sync_configs.config.TX_POWER);
+        update_uwb_preamble(sync_configs.config.PREAMBLE);
+        update_uwb_channel(sync_configs.config.CHANNEL);
+        update_uwb_twr(sync_configs.config.TWR);
+        update_uwb_phr(sync_configs.config.PHR);
+        update_uwb_sfd(sync_configs.config.SFD);
+        update_uwb_data_rate(sync_configs.config.DATA_RATE);
+        update_uwb_pac(sync_configs.config.PAC);
+        update_uwb_pulse_rate(sync_configs.config.PULSE_RATE);
+        update_power_mode_(sync_configs.config.POWER_AMP);
+
+        if (uwb_led_state == LED_ON) {
+            update_uwb_state(true);
+        }
+        k_poll_signal_reset(&sync_configs.ready_sig);
     }
 
     return 1;

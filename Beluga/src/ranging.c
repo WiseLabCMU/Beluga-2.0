@@ -19,7 +19,7 @@
 
 #include <app_leds.h>
 #include <beluga_message.h>
-#include <ble_app.h>
+#include <ble/ble_app.h>
 #include <deca_device_api.h>
 #include <init_resp_common.h>
 #include <initiator.h>
@@ -149,6 +149,24 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
     do {                                                                       \
         k_sem_give(&k_sus_init);                                               \
         k_sem_give(&k_sus_resp);                                               \
+    } while (0)
+
+static struct advertising_info uwb_metadata = {
+    .CHANNEL = 5,
+    .PULSERATE = 1,
+    .preamble = 128,
+    .PAC = 0,
+    .DATARATE = 0,
+    .SFD = 0,
+    .PHR = 0,
+    .TWR = 1,
+    .poll_rate = 100,
+};
+
+#define UPDATE_ADV_DATA(setting_, val_)                                        \
+    do {                                                                       \
+        uwb_metadata.setting_ = val_;                                          \
+        advertising_reconfig(&uwb_metadata);                                   \
     } while (0)
 
 /**
@@ -333,6 +351,9 @@ int uwb_set_phr_mode(enum uwb_phr_mode mode) {
     }
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(PHR, mode);
+
     return 0;
 }
 
@@ -426,6 +447,9 @@ int uwb_set_datarate(enum uwb_datarate rate) {
 
     dwt_configure(&config);
     set_freq_offset_multiplier(rate == UWB_DR_110K);
+
+    UPDATE_ADV_DATA(DATARATE, rate);
+
     return 0;
 }
 
@@ -451,6 +475,9 @@ int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
     }
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(PULSERATE, rate);
+
     return 0;
 }
 
@@ -496,6 +523,9 @@ int uwb_set_preamble(enum uwb_preamble_length length) {
         SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(preamble, length);
+
     return 0;
 }
 
@@ -530,6 +560,9 @@ int set_pac_size(enum uwb_pac pac) {
         SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(PAC, pac);
+
     return 0;
 }
 
@@ -558,6 +591,9 @@ int set_sfd_mode(enum uwb_sfd mode) {
         SFD_TO(get_preamble_length(), get_sfd_length(), get_pac_size());
 
     dwt_configure(&config);
+
+    UPDATE_ADV_DATA(SFD, config.nsSFD);
+
     return 0;
 }
 
@@ -600,6 +636,9 @@ int set_uwb_channel(uint32_t channel) {
     dwt_configure(&config);
     dwt_configuretxrf(&config_tx);
     set_hertz_to_ppm_multiplier((uint8_t)channel);
+
+    UPDATE_ADV_DATA(CHANNEL, channel);
+
     return 0;
 }
 
@@ -685,7 +724,11 @@ uint32_t get_tx_power(void) { return config_tx.power; }
  * @param[in] value The ranging mode. If `true`, use two-way ranging, if
  * `false`, use single-sided ranging
  */
-void set_twr_mode(bool value) { twr_mode = value; }
+void set_twr_mode(bool value) {
+    twr_mode = value;
+
+    UPDATE_ADV_DATA(TWR, value);
+}
 
 /**
  * @brief Set the rate the initiator sends polling messages
@@ -699,7 +742,38 @@ int set_rate(uint32_t rate) {
         return -EINVAL;
     }
     initiator_freq = (int32_t)rate;
+
+    UPDATE_ADV_DATA(poll_rate, rate);
+
     return 0;
+}
+
+int set_uwb_pan_id(uint32_t pan) {
+    if (!IN_RANGE(pan, 0, UINT16_MAX)) {
+        return -EINVAL;
+    }
+    if (set_initiator_pan_id(pan) < 0) {
+        return -EBUSY;
+    }
+    set_responder_pan_id(pan);
+
+    UPDATE_ADV_DATA(pan, pan);
+
+    return 0;
+}
+
+void update_uwb_state(bool active) {
+    if (active) {
+        k_sem_give(&k_sus_resp);
+        k_sem_give(&k_sus_init);
+        update_led_state(LED_UWB, LED_ON);
+    } else {
+        k_sem_take(&k_sus_resp, K_FOREVER);
+        k_sem_take(&k_sus_init, K_FOREVER);
+        update_led_state(LED_UWB, LED_OFF);
+    }
+
+    UPDATE_ADV_DATA(ACTIVE, active);
 }
 
 /**
@@ -773,8 +847,8 @@ static void initiate_ranging(const struct comms *comms) {
     double range;
     uint32_t exchange;
     int32_t sleep_for = (time_left < CONFIG_POLLING_REFRESH_PERIOD)
-                        ? time_left
-                        : CONFIG_POLLING_REFRESH_PERIOD;
+                            ? time_left
+                            : CONFIG_POLLING_REFRESH_PERIOD;
     ARG_UNUSED(comms);
 
     k_sleep(K_MSEC(sleep_for));

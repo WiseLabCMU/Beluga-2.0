@@ -1,21 +1,35 @@
-/*! ----------------------------------------------------------------------------
- *  @file   ble_app.h
+/**
+ * @file ble_app.h
  *
- *  @brief  Nordic BLE advertising and scanning application codes --Header file
+ * @brief
  *
- *  @date   2020/07
+ * @date 5/7/25
  *
- *  @author WiseLab-CMU
+ * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef _BLE_APP_
-#define _BLE_APP_
+#ifndef BELUGA_DTS_BLE_APP_H
+#define BELUGA_DTS_BLE_APP_H
 
+#include <ble/services/beluga_service_common.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
 
-#include <deca_device_api.h>
+/**
+ * The maximum length needed for the advertising name
+ */
+#define NAME_LEN 30
+
+/**
+ * Beluga scan data
+ */
+struct ble_data {
+    uint16_t uuid;                      ///< The node ID
+    uint8_t manufacturerData[NAME_LEN]; ///< The manufacturer data for the node
+    bool beluga_node; ///< Flag indicating that the scanned device is a Beluga
+    ///< node
+};
 
 /**
  * Eviction policies for when the neighbor list is full
@@ -27,6 +41,26 @@ enum node_eviction_policy {
     EVICT_POLICY_BLE_TS = 3,   ///< Least recently scanned node
     EVICT_POLICY_RANGE_TS = 4, ///< Least recently updated range
     EVICT_POLICY_INVALID       ///< Last enumerator
+};
+
+/**
+ * UWB metadata to be advertised
+ */
+struct advertising_info {
+    uint8_t CHANNEL; ///< The UWB channel.
+    bool TWR; ///< The ranging mode. `true` for DS-TWR, `false` for SS-TWR.
+    bool SFD; ///< Start Frame Delimiter mode. `true` for non-standard SFD,
+              ///< `false` for standard SFD.
+    uint8_t DATARATE; ///< The UWB data rate.
+    bool PULSERATE;   ///< The UWB pulse repetition frequency. `true` if 64MHz,
+                      ///< `false` for 16MHz.
+    bool PHR; ///< Physical header mode. `true` for extended mode, `false` for
+              ///< standard mode.
+    uint8_t PAC;  ///< UWB Packet Acquisition Chunk Size.
+    bool ACTIVE;  ///< `true` if UWB is turned on, `false` if UWB is turned off.
+    uint16_t pan; ///< UWB PAN ID.
+    uint32_t preamble;  ///< UWB Preamble length.
+    uint32_t poll_rate; ///< UWB poll rate.
 };
 
 /**
@@ -49,15 +83,16 @@ struct node {
 #endif
 };
 
+struct uwb_sync_configs {
+    struct beluga_uwb_params config;
+    struct k_poll_signal ready_sig;
+    struct k_poll_event ready;
+};
+
 /**
  * Neighbor list size
  */
 #define MAX_ANCHOR_COUNT CONFIG_BELUGA_NETWORK_SIZE
-
-/**
- * The neighbor list
- */
-extern struct node seen_list[MAX_ANCHOR_COUNT];
 
 /**
  * Checks if specified neighbor is in the neighbor list
@@ -114,11 +149,10 @@ void update_node_id(uint16_t uuid);
 uint16_t get_NODE_UUID(void);
 
 /**
- * Update the advertising data to indicate that the node is polling UWB or not
- * @param[in] change If 0, updates the advertising data to indicate that the
- * node has stopped polling; otherwise, indicates that the node is polling UWB
+ * Updates the BLE manufacturer data with the new UWB metadata
+ * @param[in] uwb_metadata The new UWB metadata
  */
-void advertising_reconfig(int32_t change);
+void advertising_reconfig(struct advertising_info *uwb_metadata);
 
 /**
  * Checks if Bluetooth is currently advertising/scanning
@@ -149,39 +183,33 @@ void update_ble_service(uint16_t uuid, float range);
 #define update_ble_service(x, y) (void)0
 #endif // defined(CONFIG_BELUGA_GATT)
 
-#if defined(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
 /**
- * Updates the eviction policy
- * @param[in] policy The new policy
+ * Searches for the given UUID when scanning for neighbors and syncs that
+ * neighbor's UWB settings to the current node's UWB settings.
+ *
+ * @param[in] id The neighbor ID to search for.
+ * @return 0 upon successfully syncing .
+ * @return negative error code otherwise.
  */
-void set_node_eviction_policy(enum node_eviction_policy new_policy);
+int sync_uwb_parameters(uint16_t id);
 
 /**
- * Prints the eviction policy in human readable text
- * @param[in] comms Pointer to the comms instance
- * @return 0 upon success
- * @return -EINVAL if input parameters are invalid
- * @return -EFAULT if the current eviction policy is unknown
- * @return negative error code otherwise
+ * Wait until a BLE disconnection occurs.
+ * @param[in] timeout The maximum time to wait for a BLE disconnection to occur
+ * @return 0 if BLE connection disconnected
+ * @return -EBUSY if returned without waiting
+ * @return -EAGAIN if timed out
  */
-int print_eviction_scheme(const struct comms *comms);
-#else
-/**
- * Updates the eviction policy
- * @param[in] policy The new policy
- */
-#define set_node_eviction_policy(...) (void)0
+int wait_ble_disconnect(k_timeout_t timeout);
 
 /**
- * Prints the eviction policy in human readable text
- * @param[in] comms Pointer to the comms instance
- * @return 0 upon success
- * @return -EINVAL if input parameters are invalid
- * @return -EFAULT if the current eviction policy is unknown
- * @return -ENOTSUP if disabled
- * @return negative error code otherwise
+ * The neighbor list
  */
-#define print_eviction_scheme(...)    (-ENOTSUP)
-#endif
+extern struct node seen_list[MAX_ANCHOR_COUNT];
 
-#endif
+/**
+ * Synced UWB configurations.
+ */
+extern struct uwb_sync_configs sync_configs;
+
+#endif // BELUGA_DTS_BLE_APP_H

@@ -3,11 +3,11 @@
 //
 
 #include <app_leds.h>
-#include <ble_app.h>
-#include <initiator.h>
+#include <ble/ble_app.h>
+#include <deca_device_api.h>
 #include <list_neighbors.h>
 #include <power_manager.h>
-#include <responder.h>
+#include <ranging.h>
 #include <spi.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
@@ -78,8 +78,7 @@ static void configure_wake_source(void) {
 static void sleep_dw1000(void) {
     if (get_uwb_led_state() == LED_ON) {
         // Stop UWB tasks
-        k_sem_take(&k_sus_resp, K_FOREVER);
-        k_sem_take(&k_sus_init, K_FOREVER);
+        update_uwb_state(false);
     }
 
     dwt_configuresleep(0, DWT_SLP_EN | DWT_WAKE_CS);
