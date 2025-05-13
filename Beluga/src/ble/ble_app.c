@@ -34,7 +34,6 @@ LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 K_SEM_DEFINE(ble_state, 1, 1);
 
 /**
-<<<<<<< HEAD
  * Different BLE states
  */
 enum ble_states {
@@ -43,8 +42,6 @@ enum ble_states {
 };
 
 /**
-=======
->>>>>>> master
  * Synchronization signals for transferring UWB configurations from this node to
  * the other connected node.
  */
@@ -61,7 +58,6 @@ struct uwb_sync_configs sync_configs;
 static struct bt_beluga_client client;
 
 /**
-<<<<<<< HEAD
  * BLE State tracker.
  */
 static atomic_t _ble_state;
