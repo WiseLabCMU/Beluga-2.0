@@ -58,11 +58,11 @@ static uint8_t on_received(struct bt_conn *conn,
     }
 
     LOG_DBG("[NOTIFICATION] data %p length %u", data, length);
-    if (client->cb.range && length == (sizeof(uint16_t) + sizeof(float))) {
+    if (client->cb.range && length == (sizeof(uint16_t) + sizeof(double))) {
         uint16_t id;
-        float range;
+        double range;
         memcpy(&id, data, sizeof(uint16_t));
-        memcpy(&range, (char *)data + sizeof(uint16_t), sizeof(float));
+        memcpy(&range, (char *)data + sizeof(uint16_t), sizeof(double));
         return client->cb.range(client, id, range);
     }
 

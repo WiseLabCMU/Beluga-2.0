@@ -132,6 +132,6 @@ int beluga_service_init(struct beluga_service_cb *cb);
  * @return 0 if the data is sent.
  * @return negative error code otherwise.
  */
-int range_notify(struct bt_conn *conn, uint16_t id, float range);
+int range_notify(struct bt_conn *conn, uint16_t id, double range);
 
 #endif // BELUGA_DTS_BELUGA_SERVICE_H

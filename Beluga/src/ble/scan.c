@@ -21,6 +21,11 @@
 LOG_MODULE_DECLARE(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 
 /**
+ * Semaphore for locking the neighbor list.
+ */
+K_SEM_DEFINE(scanning_allowed, 1, 1);
+
+/**
  * Extracts a 16-bit UUID from a buffer.
  * @param[in] DST Pointer to the integer to store the result in.
  * @param[in] SRC The buffer that contains the 16-bit UUID.
@@ -86,7 +91,13 @@ static void device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
 
     if (data_.beluga_node && type == BT_GAP_ADV_TYPE_SCAN_RSP) {
         LOG_DBG("Found node advertising Beluga service: %d", data_.uuid);
+
+        if (k_sem_take(&scanning_allowed, K_NO_WAIT)) {
+            return;
+        }
+
         update_seen_list(&data_, rssi);
+        k_sem_give(&scanning_allowed);
     } else if (data_.beluga_node && type == BT_GAP_ADV_TYPE_ADV_IND) {
         LOG_DBG("Found connectable node: %d", data_.uuid);
         check_advertiser(&data_, addr);
@@ -121,3 +132,13 @@ int stop_scanning(void) {
     }
     return err;
 }
+
+/**
+ * Suspends neighbor list updates from BLE.
+ */
+void suspend_scanning(void) { k_sem_take(&scanning_allowed, K_FOREVER); }
+
+/**
+ * Resumes neighbor list updates from BLE.
+ */
+void resume_scanning(void) { k_sem_give(&scanning_allowed); }

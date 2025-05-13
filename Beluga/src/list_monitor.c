@@ -15,6 +15,7 @@
 
 #include <beluga_message.h>
 #include <ble/ble_app.h>
+#include <ble/scan.h>
 #include <initiator.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
@@ -45,12 +46,12 @@ LOG_MODULE_REGISTER(list_monitor, CONFIG_LIST_MONITOR_LOG_LEVEL);
 /**
  * Routine to suspend neighbor scanning
  */
-#define SUSPEND_NEIGHBOR_SCANNING() disable_bluetooth()
+#define SUSPEND_NEIGHBOR_SCANNING() suspend_scanning()
 
 /**
  * Routine to resume neighbor scanning
  */
-#define RESUME_NEIGHBOR_SCANNING() enable_bluetooth()
+#define RESUME_NEIGHBOR_SCANNING() resume_scanning()
 
 /**
  * Number of milliseconds allowed to elapse before evicting a neighbor
