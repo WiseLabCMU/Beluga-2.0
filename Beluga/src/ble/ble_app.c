@@ -34,6 +34,14 @@ LOG_MODULE_REGISTER(ble_app, CONFIG_BLE_APP_LOG_LEVEL);
 K_SEM_DEFINE(ble_state, 1, 1);
 
 /**
+ * Different BLE states
+ */
+enum ble_states {
+    BLE_ENABLED, ///< BLE enabled
+    RANGE_NOTIF_ENABLED, ///< BLE notifications enabled
+};
+
+/**
  * Synchronization signals for transferring UWB configurations from this node to
  * the other connected node.
  */
@@ -50,9 +58,9 @@ struct uwb_sync_configs sync_configs;
 static struct bt_beluga_client client;
 
 /**
- * Overall Bluyetooth state
+ * BLE State tracker.
  */
-static bool bluetooth_on = false;
+static atomic_t _ble_state;
 
 /**
  * The neighbor list.
@@ -365,6 +373,22 @@ static int sync_uwb_settings(struct bt_conn *conn,
     return 0;
 }
 
+#if defined(CONFIG_BELUGA_GATT)
+static void send_range_enabled(enum bt_beluga_service_range_send_status status) {
+    switch(status) {
+        case BT_BELUGA_SERVICE_STATUS_ENABLED:
+            atomic_set_bit(&_ble_state, RANGE_NOTIF_ENABLED);
+            break;
+        case BT_BELUGA_SERVICE_STATUS_DISABLED:
+            atomic_clear_bit(&_ble_state, RANGE_NOTIF_ENABLED);
+            break;
+        default:
+            __ASSERT_UNREACHABLE;
+            break;
+    }
+}
+#endif  // defined(CONFIG_BELUGA_GATT)
+
 /**
  * Initializes the Beluga service.
  * @return 0 upon success.
@@ -373,6 +397,9 @@ static int sync_uwb_settings(struct bt_conn *conn,
 static int init_beluga_service(void) {
     struct beluga_service_cb cb = {
         .sync = sync_uwb_settings,
+#if defined(CONFIG_BELUGA_GATT)
+        .send_range_enabled = send_range_enabled,
+#endif  // defined(CONFIG_BELUGA_GATT)
     };
 
     k_poll_signal_init(&sync_configs.ready_sig);
@@ -443,8 +470,7 @@ static int _enable_bluetooth(void) {
         stop_advertising();
         return err;
     }
-
-    bluetooth_on = true;
+    atomic_set_bit(&_ble_state, BLE_ENABLED);
     return 0;
 }
 
@@ -469,7 +495,7 @@ static int _disable_bluetooth(void) {
         return err;
     }
 
-    bluetooth_on = false;
+    atomic_clear_bit(&_ble_state, BLE_ENABLED);
     return 0;
 }
 
@@ -484,7 +510,7 @@ static int _disable_bluetooth(void) {
 int enable_bluetooth(void) {
     int retVal = 1;
     k_sem_take(&ble_state, K_FOREVER);
-    if (!bluetooth_on) {
+    if (!atomic_test_bit(&_ble_state, BLE_ENABLED)) {
         if (update_fem_shutdown_state(false) != 0) {
             retVal = -EFAULT;
         } else {
@@ -505,7 +531,7 @@ int enable_bluetooth(void) {
 int disable_bluetooth(void) {
     int retVal = -EALREADY;
     k_sem_take(&ble_state, K_FOREVER);
-    if (bluetooth_on) {
+    if (atomic_test_bit(&_ble_state, BLE_ENABLED)) {
         retVal = _disable_bluetooth();
         disconnect_ble_connections();
         if (!retVal && update_fem_shutdown_state(true) != 0) {
@@ -521,7 +547,7 @@ int disable_bluetooth(void) {
  * @return `true` if advertising/scanning
  * @return `false` otherwise
  */
-bool check_ble_enabled(void) { return bluetooth_on; }
+bool check_ble_enabled(void) { return atomic_test_bit(&_ble_state, BLE_ENABLED); }
 
 /**
  * Returns the current Bluetooth state and disables scanning/advertising.
@@ -532,8 +558,8 @@ bool check_ble_enabled(void) { return bluetooth_on; }
 bool save_and_disable_bluetooth(void) {
     bool ret;
     k_sem_take(&ble_state, K_FOREVER);
-    ret = bluetooth_on;
-    if (bluetooth_on) {
+    ret = atomic_test_and_clear_bit(&_ble_state, BLE_ENABLED);
+    if (ret) {
         _disable_bluetooth();
         disconnect_ble_connections();
     }
@@ -552,3 +578,13 @@ void restore_bluetooth(bool state) {
     }
     k_sem_give(&ble_state);
 }
+
+#if defined(CONFIG_BELUGA_GATT)
+void update_ble_service(uint16_t uuid, float range) {
+    if (!atomic_test_bit(&_ble_state, RANGE_NOTIF_ENABLED)) {
+        return;
+    }
+
+    (void) range_notify(NULL, uuid, range);
+}
+#endif // defined(CONFIG_BELUGA_GATT)
