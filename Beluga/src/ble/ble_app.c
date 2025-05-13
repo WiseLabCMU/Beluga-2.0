@@ -37,7 +37,7 @@ K_SEM_DEFINE(ble_state, 1, 1);
  * Different BLE states
  */
 enum ble_states {
-    BLE_ENABLED, ///< BLE enabled
+    BLE_ENABLED,         ///< BLE enabled
     RANGE_NOTIF_ENABLED, ///< BLE notifications enabled
 };
 
@@ -374,20 +374,21 @@ static int sync_uwb_settings(struct bt_conn *conn,
 }
 
 #if defined(CONFIG_BELUGA_GATT)
-static void send_range_enabled(enum bt_beluga_service_range_send_status status) {
-    switch(status) {
-        case BT_BELUGA_SERVICE_STATUS_ENABLED:
-            atomic_set_bit(&_ble_state, RANGE_NOTIF_ENABLED);
-            break;
-        case BT_BELUGA_SERVICE_STATUS_DISABLED:
-            atomic_clear_bit(&_ble_state, RANGE_NOTIF_ENABLED);
-            break;
-        default:
-            __ASSERT_UNREACHABLE;
-            break;
+static void
+send_range_enabled(enum bt_beluga_service_range_send_status status) {
+    switch (status) {
+    case BT_BELUGA_SERVICE_STATUS_ENABLED:
+        atomic_set_bit(&_ble_state, RANGE_NOTIF_ENABLED);
+        break;
+    case BT_BELUGA_SERVICE_STATUS_DISABLED:
+        atomic_clear_bit(&_ble_state, RANGE_NOTIF_ENABLED);
+        break;
+    default:
+        __ASSERT_UNREACHABLE;
+        break;
     }
 }
-#endif  // defined(CONFIG_BELUGA_GATT)
+#endif // defined(CONFIG_BELUGA_GATT)
 
 /**
  * Initializes the Beluga service.
@@ -399,7 +400,7 @@ static int init_beluga_service(void) {
         .sync = sync_uwb_settings,
 #if defined(CONFIG_BELUGA_GATT)
         .send_range_enabled = send_range_enabled,
-#endif  // defined(CONFIG_BELUGA_GATT)
+#endif // defined(CONFIG_BELUGA_GATT)
     };
 
     k_poll_signal_init(&sync_configs.ready_sig);
@@ -547,7 +548,9 @@ int disable_bluetooth(void) {
  * @return `true` if advertising/scanning
  * @return `false` otherwise
  */
-bool check_ble_enabled(void) { return atomic_test_bit(&_ble_state, BLE_ENABLED); }
+bool check_ble_enabled(void) {
+    return atomic_test_bit(&_ble_state, BLE_ENABLED);
+}
 
 /**
  * Returns the current Bluetooth state and disables scanning/advertising.
@@ -585,6 +588,6 @@ void update_ble_service(uint16_t uuid, double range) {
         return;
     }
 
-    (void) range_notify(NULL, uuid, range);
+    (void)range_notify(NULL, uuid, range);
 }
 #endif // defined(CONFIG_BELUGA_GATT)

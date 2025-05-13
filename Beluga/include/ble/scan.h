@@ -26,4 +26,14 @@ int start_active_scanning(void);
  */
 int stop_scanning(void);
 
+/**
+ * Suspends neighbor list updates from BLE.
+ */
+void suspend_scanning(void);
+
+/**
+ * Resumes neighbor list updates from BLE.
+ */
+void resume_scanning(void);
+
 #endif // BELUGA_DTS_SCAN_H
