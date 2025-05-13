@@ -65,11 +65,6 @@ static struct bt_beluga_client client;
  * BLE State tracker.
  */
 static atomic_t _ble_state;
-=======
- * Overall Bluyetooth state
- */
-static bool bluetooth_on = false;
->>>>>>> master
 
 /**
  * The neighbor list.
@@ -595,6 +590,11 @@ void restore_bluetooth(bool state) {
 }
 
 #if defined(CONFIG_BELUGA_GATT)
+/**
+ * Publish a range to the connected peers.
+ * @param[in] uuid The node that was ranged to.
+ * @param[in] range The distance between self and the ranged to node.
+ */
 void update_ble_service(uint16_t uuid, double range) {
     if (!atomic_test_bit(&_ble_state, RANGE_NOTIF_ENABLED)) {
         return;

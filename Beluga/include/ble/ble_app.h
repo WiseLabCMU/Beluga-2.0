@@ -178,8 +178,18 @@ bool save_and_disable_bluetooth(void);
 void restore_bluetooth(bool state);
 
 #if defined(CONFIG_BELUGA_GATT)
+/**
+ * Publish a range to the connected peers.
+ * @param[in] uuid The node that was ranged to.
+ * @param[in] range The distance between self and the ranged to node.
+ */
 void update_ble_service(uint16_t uuid, double range);
 #else
+/**
+ * Publish a range to the connected peers.
+ * @param[in] uuid The node that was ranged to.
+ * @param[in] range The distance between self and the ranged to node.
+ */
 #define update_ble_service(x, y) (void)0
 #endif // defined(CONFIG_BELUGA_GATT)
 
