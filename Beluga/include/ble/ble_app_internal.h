@@ -74,8 +74,26 @@ struct bt_connect {
     struct k_poll_event connect_events[CONNECT_LAST_ENUMERATOR];
 };
 
+/**
+ * Updates the neighbor list by either, updating or inserting the scanned node
+ * @param[in] data The BLE scan data
+ * @param[in] rssi The RSSI of the scanned node
+ */
 void update_seen_list(struct ble_data *data, int8_t rssi);
+
+/**
+ * Helper function for finding a neighbor node to connect to.
+ * @param[in] data The found node data.
+ * @param[in] addr The BLE address of the scanned node.
+ */
 void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr);
+
+/**
+ * Starts the GATT discovery procedure for the client connection.
+ * @param[in] conn The connection object to start discovery for.
+ * @return 0 upon success.
+ * @return negative error code otherwise.
+ */
 int gatt_discover(struct bt_conn *conn);
 
 /**
@@ -99,6 +117,10 @@ struct bt_conn **get_central_connection_obj(void);
  */
 void disconnect_ble_connections(void);
 
+/**
+ * Synchronization signals for transferring UWB configurations from this node to
+ * the other connected node.
+ */
 extern struct bt_connect connect_signalling;
 
 #endif // BELUGA_DTS_BLE_APP_INTERNAL_H

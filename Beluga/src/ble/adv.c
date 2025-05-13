@@ -752,6 +752,11 @@ void update_seen_list(struct ble_data *data, int8_t rssi) {
     }
 }
 
+/**
+ * Helper function for finding a neighbor node to connect to.
+ * @param[in] data The found node data.
+ * @param[in] addr The BLE address of the scanned node.
+ */
 void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr) {
     int ret, signaled, search_id;
     ret = k_poll(&connect_signalling.connect_events[CONNECT_SEARCH_ID], 1,
@@ -772,9 +777,18 @@ void check_advertiser(struct ble_data *data, const bt_addr_le_t *addr) {
     }
 }
 
+/**
+ * Updates the node ID and publishes the update to the Bluetooth advertising
+ * data
+ * @param[in] uuid The new node ID
+ */
 void update_node_id(uint16_t uuid) {
     NODE_UUID = uuid;
     update_adv_name(uuid);
 }
 
+/**
+ * Retrieves the current node ID
+ * @return The current node ID
+ */
 uint16_t get_NODE_UUID(void) { return NODE_UUID; }
