@@ -1045,30 +1045,15 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
 }
 
 #if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_RANGING)
-/**
- * Ranging task's stack allocation
- */
-K_THREAD_STACK_DEFINE(ranging_stack, CONFIG_RANGING_STACK_SIZE);
-
-/**
- * Ranging task's thread data
- */
-static struct k_thread ranging_task_data;
-
-/**
- * Thread ID of the ranging task
- */
-static k_tid_t ranging_task_id;
+K_THREAD_DEFINE(ranging_task, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
+                NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, K_FP_REGS, -1);
 
 /**
  * @brief Creates the ranging thread and initiates its data
  */
 void init_ranging_thread(void) {
-    ranging_task_id =
-        k_thread_create(&ranging_task_data, ranging_stack,
-                        K_THREAD_STACK_SIZEOF(ranging_stack), rangingTask, NULL,
-                        NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, 0, K_NO_WAIT);
-    k_thread_name_set(ranging_task_id, "Ranging task");
+    k_thread_name_set(ranging_task, "Ranging task");
+    k_thread_start(ranging_task);
     LOG_INF("Started ranging");
 }
 #else
@@ -1080,30 +1065,16 @@ void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
        // defined(CONFIG_ENABLE_RANGING)
 
 #if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_RESPONDER)
-/**
- * Responder task's stack allocation
- */
-K_THREAD_STACK_DEFINE(responder_stack, CONFIG_RESPONDER_STACK_SIZE);
-
-/**
- * Responder task's thread data
- */
-static struct k_thread responder_data;
-
-/**
- * Thread ID of the responder task
- */
-static k_tid_t responder_task_id;
+K_THREAD_DEFINE(responder_task, CONFIG_RESPONDER_STACK_SIZE,
+                responder_task_function, NULL, NULL, NULL,
+                CONFIG_BELUGA_RESPONDER_PRIO, K_FP_REGS, -1);
 
 /**
  * @brief Creates the responder thread and initiates its data
  */
 void init_responder_thread(void) {
-    responder_task_id = k_thread_create(
-        &responder_data, responder_stack,
-        K_THREAD_STACK_SIZEOF(responder_stack), responder_task_function, NULL,
-        NULL, NULL, CONFIG_BELUGA_RESPONDER_PRIO, 0, K_NO_WAIT);
-    k_thread_name_set(responder_task_id, "Responder task");
+    k_thread_name_set(responder_task, "Responder task");
+    k_thread_start(responder_task);
     LOG_INF("Started responder");
 }
 #else
