@@ -909,6 +909,8 @@ static void initiate_ranging(const struct comms *comms) {
         }
 
         if (!drop && RANGE_CONDITION(range)) {
+            dwt_readdiagnostics(&seen_list[current_neighbor].uwb_diagnostics);
+            dwt_readeventcounters(&seen_list[current_neighbor].uwb_counts);
             seen_list[current_neighbor].update_flag = true;
             seen_list[current_neighbor].range = (float)range;
             seen_list[current_neighbor].time_stamp = k_uptime_get();
