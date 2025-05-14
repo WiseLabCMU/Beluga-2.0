@@ -41,6 +41,20 @@
  */
 LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+#define START_EVENT_COUNTERS() dwt_configeventcounters(1)
+#define STOP_EVENT_COUNTERS()  dwt_configeventcounters(0)
+#define POPULATE_UWB_DIAGNOSTICS(_list, _index)                                \
+    do {                                                                       \
+        dwt_readdiagnostics(&(_list)[_index].uwb_diagnostics);                 \
+        dwt_readeventcounters(&(_list)[_index].uwb_counts);                    \
+    } while (0)
+#else
+#define START_EVENT_COUNTERS()        (void)0
+#define STOP_EVENT_COUNTERS()         (void)0
+#define POPULATE_UWB_DIAGNOSTICS(...) (void)0
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+
 /**
  * The delay from the end of the frame transmission to the enable of the
  * receiver, as programmed for the DW1000's wait for response feature.
@@ -883,6 +897,7 @@ static void initiate_ranging(const struct comms *comms) {
     if (!search_broken) {
         int err;
 
+        START_EVENT_COUNTERS();
         if (twr_mode) {
             err = ds_init_run(seen_list[current_neighbor].UUID, &range,
                               &exchange);
@@ -892,6 +907,7 @@ static void initiate_ranging(const struct comms *comms) {
                               &exchange);
             LOG_INF("Single sided ranging returned %d", err);
         }
+        STOP_EVENT_COUNTERS();
 
         if (err != 0) {
 #if defined(CONFIG_REPORT_UWB_DROPS)
@@ -909,8 +925,7 @@ static void initiate_ranging(const struct comms *comms) {
         }
 
         if (!drop && RANGE_CONDITION(range)) {
-            dwt_readdiagnostics(&seen_list[current_neighbor].uwb_diagnostics);
-            dwt_readeventcounters(&seen_list[current_neighbor].uwb_counts);
+            POPULATE_UWB_DIAGNOSTICS(seen_list, current_neighbor);
             seen_list[current_neighbor].update_flag = true;
             seen_list[current_neighbor].range = (float)range;
             seen_list[current_neighbor].time_stamp = k_uptime_get();

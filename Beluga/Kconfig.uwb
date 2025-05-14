@@ -118,4 +118,12 @@ config REPORT_UWB_DROPS
     bool "Report dropped UWB ranging estimates"
     default n
 
+config UWB_DIAGNOSTICS
+    bool "Record UWB diagnostics with the ranging estimates"
+    default n
+    help
+        This allows the DW1000 to record its diagnostics information after each successful
+        ranging attempt. WARNING: The more nodes that are on the network, the more heap
+        memory is required to report the data.
+
 endmenu

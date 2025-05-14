@@ -81,10 +81,11 @@ struct node {
 
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
     uint32_t exchange_id; /** Ranging exchange ID (Logic clock) */
-#endif
-
+#endif                    // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
     dwt_rxdiag_t uwb_diagnostics;
     dwt_deviceentcnts_t uwb_counts;
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 };
 
 struct uwb_sync_configs {
