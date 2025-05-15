@@ -21,7 +21,8 @@ class BelugaNeighbor:
 
     def __iter__(self):
         return iter(
-            [("RANGE", self._range), ("RSSI", self._rssi), ("TIMESTAMP", self._time), ("EXCHANGE", self._exchange_id)])
+            [("RANGE", self._range), ("RSSI", self._rssi), ("TIMESTAMP", self._time), ("EXCHANGE", self._exchange_id),
+             ("DIAGNOSTICS", self._uwb_diagnostics), ("EVENTS", self._uwb_events)])
 
     @property
     def id(self) -> int:

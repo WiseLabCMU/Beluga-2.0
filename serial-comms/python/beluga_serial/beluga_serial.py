@@ -920,7 +920,7 @@ class BelugaSerial:
             ret = False
         return ret, list_
 
-    def get_ranges(self) -> Dict[int, Dict[str, Union[int, float]]]:
+    def get_ranges(self) -> Dict[int, Dict[str, Optional[Union[int, float, dict[str, int]]]]]:
         """
         Retrieves the updated ranges of the list.
 
