@@ -82,7 +82,6 @@ LOG_MODULE_REGISTER(beluga_message_logger, CONFIG_BELUGA_MESSAGE_LOG_LEVEL);
         (_buf)[MSG_FOOTER_OFFSET(_payload_len)] = BELUGA_MSG_FOOTER;           \
     } while (0)
 
-#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 struct uwb_diagnostics {
     uint32_t MAX_NOISE;
     uint32_t FIRST_PATH_AMP1;
@@ -93,22 +92,6 @@ struct uwb_diagnostics {
     uint32_t RX_PREAMBLE_CNT;
     uint32_t FIRST_PATH;
 };
-
-struct uwb_counts {
-    uint32_t PHE;
-    uint32_t RSL;
-    uint32_t CRCG;
-    uint32_t CRCB;
-    uint32_t ARFE;
-    uint32_t OVER;
-    uint32_t SFDTO;
-    uint32_t PTO;
-    uint32_t RTO;
-    uint32_t TXF;
-    uint32_t HPW;
-    uint32_t TXW;
-};
-#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 
 /**
  * JSON payload data for encoding data
@@ -224,7 +207,9 @@ static const struct json_obj_descr uwb_diagnostics_json[] = {
                         JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, FIRST_PATH, JSON_TOK_NUMBER),
 };
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 
+#if defined(CONFIG_REPORT_UWB_DROPS) || IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 static const struct json_obj_descr uwb_counts_json[] = {
     JSON_OBJ_DESCR_PRIM(struct uwb_counts, PHE, JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct uwb_counts, RSL, JSON_TOK_NUMBER),
@@ -239,7 +224,7 @@ static const struct json_obj_descr uwb_counts_json[] = {
     JSON_OBJ_DESCR_PRIM(struct uwb_counts, HPW, JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct uwb_counts, TXW, JSON_TOK_NUMBER),
 };
-#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+#endif // defined(CONFIG_REPORT_UWB_DROPS) || IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 
 /**
  * Mapping JSON types to attributes of node_json_struct
@@ -291,6 +276,8 @@ static const struct json_obj_descr json_dropped_communication_event[] = {
                               JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM_NAMED(struct dropped_packet_event, "STAGE", sequence,
                               JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_OBJECT_NAMED(struct dropped_packet_event, "COUNTS", events,
+                                uwb_counts_json),
 };
 #endif // defined(CONFIG_REPORT_UWB_DROPS)
 

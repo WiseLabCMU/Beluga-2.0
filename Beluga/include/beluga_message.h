@@ -19,6 +19,7 @@
 #define BELUGA_BELUGA_MESSAGE_H
 
 #include <ble/ble_app.h>
+#include <deca_device_api.h>
 #include <stdint.h>
 
 /**
@@ -69,12 +70,51 @@ struct ranging_event {
     int64_t timestamp;    ///< The time the ranging event was recorded
 };
 
+struct uwb_counts {
+    uint32_t PHE;
+    uint32_t RSL;
+    uint32_t CRCG;
+    uint32_t CRCB;
+    uint32_t ARFE;
+    uint32_t OVER;
+    uint32_t SFDTO;
+    uint32_t PTO;
+    uint32_t RTO;
+    uint32_t TXF;
+    uint32_t HPW;
+    uint32_t TXW;
+};
+
+static inline void copy_event_counts(struct uwb_counts *dest,
+                                     const dwt_deviceentcnts_t *src) {
+    // Need to do this because the deca api uses 16 bit ints instead of
+    // 32 bit ints. The JSON library treats all number fields as 32 bit ints,
+    // unless it is specified that it is a 64-bit int. This is true for ncs
+    // v2.9.1, but it looks like it may have changed in v3.0.0. I refuse to
+    // update to v3.0.0 because Nordic requires you to install their toolchain
+    // through fucking VS code, and the toolchain installer through VS code
+    // doesn't fucking work...
+    dest->PHE = src->PHE;
+    dest->RSL = src->RSL;
+    dest->CRCG = src->CRCG;
+    dest->CRCB = src->CRCB;
+    dest->ARFE = src->ARFE;
+    dest->OVER = src->OVER;
+    dest->SFDTO = src->SFDTO;
+    dest->PTO = src->PTO;
+    dest->RTO = src->RTO;
+    dest->TXF = src->TXF;
+    dest->HPW = src->HPW;
+    dest->TXW = src->TXW;
+}
+
 /**
  * Structure for describing dropped packets
  */
 struct dropped_packet_event {
-    uint32_t id;       ///< Responder's ID
-    uint32_t sequence; ///< The stage the packet was dropped in
+    uint32_t id;              ///< Responder's ID
+    uint32_t sequence;        ///< The stage the packet was dropped in
+    struct uwb_counts events; ///< DW1000 device events
 };
 
 /**

@@ -41,7 +41,7 @@
  */
 LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 
-#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS) || IS_ENABLED(CONFIG_REPORT_UWB_DROPS)
 #define START_EVENT_COUNTERS() dwt_configeventcounters(1)
 #define STOP_EVENT_COUNTERS()  dwt_configeventcounters(0)
 #define POPULATE_UWB_DIAGNOSTICS(_list, _index)                                \
@@ -53,7 +53,7 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #define START_EVENT_COUNTERS()        (void)0
 #define STOP_EVENT_COUNTERS()         (void)0
 #define POPULATE_UWB_DIAGNOSTICS(...) (void)0
-#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS) || IS_ENABLED(CONFIG_REPORT_UWB_DROPS)
 
 /**
  * The delay from the end of the frame transmission to the enable of the
@@ -907,10 +907,10 @@ static void initiate_ranging(const struct comms *comms) {
                               &exchange);
             LOG_INF("Single sided ranging returned %d", err);
         }
-        STOP_EVENT_COUNTERS();
 
         if (err != 0) {
 #if defined(CONFIG_REPORT_UWB_DROPS)
+            dwt_deviceentcnts_t counts;
             struct dropped_packet_event event = {
                 .id = seen_list[current_neighbor].UUID,
                 .sequence = dropped_stage(),
@@ -919,6 +919,10 @@ static void initiate_ranging(const struct comms *comms) {
                 .type = UWB_RANGING_DROP,
                 .payload.drop_event = &event,
             };
+
+            dwt_readeventcounters(&counts);
+            copy_event_counts(&event.events, &counts);
+
             comms_write_msg(comms, &msg);
 #endif // defined(CONFIG_REPORT_UWB_DROPS)
             drop = true;
