@@ -96,9 +96,13 @@ class BelugaGui:
             for sample in self._captured_data:
                 for id_ in sample:
                     if str(id_) in samples:
-                        samples[str(id_)].append({"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE']})
+                        samples[str(id_)].append({"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE'],
+                                                  "UWB_DIAGNOSTICS": sample[id_]["DIAGNOSTICS"],
+                                                  "EVENTS": sample[id_]["EVENTS"]})
                     else:
-                        samples[str(id_)] = [{"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE']}]
+                        samples[str(id_)] = [{"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE'],
+                                              "UWB_DIAGNOSTICS": sample[id_]["DIAGNOSTICS"],
+                                              "EVENTS": sample[id_]["EVENTS"]}]
             json_dict["samples"] = samples
 
             with open(self._file, 'w') as f:
