@@ -79,6 +79,9 @@ static uint8 tx_report_msg[REPORT_MSG_LEN] = {
  */
 static uint8 rx_buffer[RX_BUF_LEN];
 
+static uint64 tx_delay = 16436;
+static uint64 rx_delay = 16436;
+
 #if !defined(CONFIG_POLL_RX_TO_RESP_TX_DLY)
 /**
  * Delay between frames, in UWB microseconds.
@@ -108,6 +111,18 @@ int set_responder_id(uint16_t id) {
     set_dest_id(id, rx_final_msg);
     set_src_id(id, tx_report_msg);
 
+    return 0;
+}
+
+int set_responder_antenna_rx_delay(uint16_t delay) {
+    CHECK_UWB_ACTIVE();
+    rx_delay = (uint64)delay;
+    return 0;
+}
+
+int set_responder_antenna_tx_delay(uint16_t delay) {
+    CHECK_UWB_ACTIVE();
+    tx_delay = (uint64)delay;
     return 0;
 }
 
@@ -396,7 +411,7 @@ static int ss_respond(void) {
         (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
-    resp_tx_ts = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+    resp_tx_ts = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + tx_delay;
 
     msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
     msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
