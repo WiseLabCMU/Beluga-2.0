@@ -53,7 +53,8 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #define START_EVENT_COUNTERS()        (void)0
 #define STOP_EVENT_COUNTERS()         (void)0
 #define POPULATE_UWB_DIAGNOSTICS(...) (void)0
-#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS) || IS_ENABLED(CONFIG_REPORT_UWB_DROPS)
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS) ||
+       // IS_ENABLED(CONFIG_REPORT_UWB_DROPS)
 
 /**
  * The delay from the end of the frame transmission to the enable of the

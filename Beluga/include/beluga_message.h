@@ -52,6 +52,9 @@
  */
 #define BELUGA_MSG_FOOTER_OVERHEAD 1
 
+/**
+ * Beluga message types
+ */
 enum beluga_msg_type {
     COMMAND_RESPONSE, ///< Responding to command
     NEIGHBOR_UPDATES, ///< Sending the neighbor list
@@ -70,21 +73,30 @@ struct ranging_event {
     int64_t timestamp;    ///< The time the ranging event was recorded
 };
 
+/**
+ * Structure for describing UWB event counts in 32-bit integers.
+ */
 struct uwb_counts {
-    uint32_t PHE;
-    uint32_t RSL;
-    uint32_t CRCG;
-    uint32_t CRCB;
-    uint32_t ARFE;
-    uint32_t OVER;
-    uint32_t SFDTO;
-    uint32_t PTO;
-    uint32_t RTO;
-    uint32_t TXF;
-    uint32_t HPW;
-    uint32_t TXW;
+    uint32_t PHE;   ///< Number of received header errors.
+    uint32_t RSL;   ///< Number of received frame sync loss events.
+    uint32_t CRCG;  ///< Number of good CRC received frames.
+    uint32_t CRCB;  ///< Number of bad CRC (CRC error) received frames.
+    uint32_t ARFE;  ///< Number of address filter errors.
+    uint32_t OVER;  ///< Number of receiver overflows (used in
+                    ///< double buffer mode).
+    uint32_t SFDTO; ///< SFD timeouts.
+    uint32_t PTO;   ///< Preamble timeouts.
+    uint32_t RTO;   ///< RX frame wait timeouts.
+    uint32_t TXF;   ///< Number of transmitted frames.
+    uint32_t HPW;   ///< Half period warn.
+    uint32_t TXW;   ///< Power up warn.
 };
 
+/**
+ * Translates the dwt_deviceentcnts_t struct into a uwb_counts struct.
+ * @param[in,out] dest The uwb_counts struct to copy the data into.
+ * @param[in] src The dwt_deviceentcnts_t struct to copy the data from.
+ */
 static inline void copy_event_counts(struct uwb_counts *dest,
                                      const dwt_deviceentcnts_t *src) {
     // Need to do this because the deca api uses 16 bit ints instead of
@@ -94,6 +106,9 @@ static inline void copy_event_counts(struct uwb_counts *dest,
     // update to v3.0.0 because Nordic requires you to install their toolchain
     // through fucking VS code, and the toolchain installer through VS code
     // doesn't fucking work...
+    if (dest == NULL || src == NULL) {
+        return;
+    }
     dest->PHE = src->PHE;
     dest->RSL = src->RSL;
     dest->CRCG = src->CRCG;
