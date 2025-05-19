@@ -96,9 +96,13 @@ class BelugaGui:
             for sample in self._captured_data:
                 for id_ in sample:
                     if str(id_) in samples:
-                        samples[str(id_)].append({"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE']})
+                        samples[str(id_)].append({"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE'],
+                                                  "UWB_DIAGNOSTICS": sample[id_]["DIAGNOSTICS"],
+                                                  "EVENTS": sample[id_]["EVENTS"]})
                     else:
-                        samples[str(id_)] = [{"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE']}]
+                        samples[str(id_)] = [{"RSSI": sample[id_]['RSSI'], "RANGE": sample[id_]['RANGE'],
+                                              "UWB_DIAGNOSTICS": sample[id_]["DIAGNOSTICS"],
+                                              "EVENTS": sample[id_]["EVENTS"]}]
             json_dict["samples"] = samples
 
             with open(self._file, 'w') as f:
@@ -115,12 +119,22 @@ class BelugaGui:
             if len(self._captured_data) < self._max_length:
                 if drop['ID'] not in self._dropped_exchanges:
                     self._dropped_exchanges[drop['ID']] = {
-                        0: 0,
-                        1: 0,
-                        2: 0,
-                        3: 0
+                        0: {"count": 0,
+                            "events": {"PHE": 0, "RSL": 0, "CRCG": 0, "CRCB": 0, "ARFE": 0, "OVER": 0, "SFDTO": 0,
+                                       "PTO": 0, "RTO": 0, "TXF": 0, "HPW": 0, "TXW": 0}},
+                        1: {"count": 0,
+                            "events": {"PHE": 0, "RSL": 0, "CRCG": 0, "CRCB": 0, "ARFE": 0, "OVER": 0, "SFDTO": 0,
+                                       "PTO": 0, "RTO": 0, "TXF": 0, "HPW": 0, "TXW": 0}},
+                        2: {"count": 0,
+                            "events": {"PHE": 0, "RSL": 0, "CRCG": 0, "CRCB": 0, "ARFE": 0, "OVER": 0, "SFDTO": 0,
+                                       "PTO": 0, "RTO": 0, "TXF": 0, "HPW": 0, "TXW": 0}},
+                        3: {"count": 0,
+                            "events": {"PHE": 0, "RSL": 0, "CRCG": 0, "CRCB": 0, "ARFE": 0, "OVER": 0, "SFDTO": 0,
+                                       "PTO": 0, "RTO": 0, "TXF": 0, "HPW": 0, "TXW": 0}},
                     }
-                self._dropped_exchanges[drop['ID']][drop['STAGE']] += 1
+                self._dropped_exchanges[drop['ID']][drop['STAGE']]["count"] += 1
+                for key in self._dropped_exchanges[drop['ID']][drop['STAGE']]["events"]:
+                    self._dropped_exchanges[drop['ID']][drop['STAGE']]["events"][key] += drop["COUNTS"][key]
 
         def capture_sample(self, sample):
             self._captured_data.append(sample)
@@ -233,7 +247,6 @@ class BelugaGui:
             self._data_capture.save(configs)
         self._data_capture = None
         self._capturing_data = False
-
 
     def record_sample(self, sample):
         if self._capturing_data:

@@ -12,6 +12,7 @@
 #define BELUGA_DTS_BLE_APP_H
 
 #include <ble/services/beluga_service_common.h>
+#include <deca_device_api.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
@@ -80,7 +81,13 @@ struct node {
 
 #if IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
     uint32_t exchange_id; /** Ranging exchange ID (Logic clock) */
-#endif
+#endif                    // IS_ENABLED(CONFIG_UWB_LOGIC_CLK)
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+    dwt_rxdiag_t uwb_diagnostics;   ///< UWB diagnostic information from the
+                                    ///< last successful ranging run.
+    dwt_deviceentcnts_t uwb_counts; ///< UWB event counts from the last
+                                    ///< successful ranging run.
+#endif                              // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 };
 
 struct uwb_sync_configs {

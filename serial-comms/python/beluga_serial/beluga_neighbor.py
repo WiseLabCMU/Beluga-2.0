@@ -15,11 +15,14 @@ class BelugaNeighbor:
         self._time: int = 0
         self._exchange_id: int = 0
         self._updated = False
+        self._uwb_diagnostics: dict[str, int] | None = None
+        self._uwb_events: dict[str, int] | None = None
         self.update(neighbor)
 
     def __iter__(self):
         return iter(
-            [("RANGE", self._range), ("RSSI", self._rssi), ("TIMESTAMP", self._time), ("EXCHANGE", self._exchange_id)])
+            [("RANGE", self._range), ("RSSI", self._rssi), ("TIMESTAMP", self._time), ("EXCHANGE", self._exchange_id),
+             ("DIAGNOSTICS", self._uwb_diagnostics), ("EVENTS", self._uwb_events)])
 
     @property
     def id(self) -> int:
@@ -49,12 +52,24 @@ class BelugaNeighbor:
     def updated(self, update: bool):
         self._updated = update
 
+    @property
+    def uwb_diagnostics(self) -> dict[str, int] | None:
+        return self._uwb_diagnostics
+
+    @property
+    def uwb_event_counts(self) -> dict[str, int] | None:
+        return self._uwb_events
+
     def update(self, neighbor: dict):
         self._range = neighbor["RANGE"]
         self._rssi = neighbor["RSSI"]
         self._time = neighbor["TIMESTAMP"]
         if "EXCHANGE" in neighbor.keys():
             self._exchange_id = neighbor["EXCHANGE"]
+        if "UWB_DIAGNOSTICS" in neighbor.keys():
+            self._uwb_diagnostics = neighbor["UWB_DIAGNOSTICS"]
+        if "UWB_COUNTS" in neighbor.keys():
+            self._uwb_events = neighbor["UWB_COUNTS"]
         self._updated = True
 
 

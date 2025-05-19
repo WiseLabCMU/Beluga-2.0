@@ -16,6 +16,7 @@
  */
 
 #include <beluga_message.h>
+#include <deca_device_api.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr/data/json.h>
@@ -82,6 +83,20 @@ LOG_MODULE_REGISTER(beluga_message_logger, CONFIG_BELUGA_MESSAGE_LOG_LEVEL);
     } while (0)
 
 /**
+ * UWB diagnostic information
+ */
+struct uwb_diagnostics {
+    uint32_t MAX_NOISE;       ///< LDE max value of noise.
+    uint32_t FIRST_PATH_AMP1; ///< Amplitude at floor(index FP) + 1.
+    uint32_t STD_NOISE;       ///< Standard deviation of noise.
+    uint32_t FIRST_PATH_AMP2; ///< Amplitude at floor(index FP) + 2.
+    uint32_t FIRST_PATH_AMP3; ///< Amplitude at floor(index FP) + 3.
+    uint32_t MAX_GROWTH_CIR;  ///< Channel Impulse Response max growth CIR.
+    uint32_t RX_PREAMBLE_CNT; ///< Count of preamble symbols accumulated.
+    uint32_t FIRST_PATH;      ///< First path index.
+};
+
+/**
  * JSON payload data for encoding data
  *
  * @note The JSON uses 32-bit and 64-bit integers. Cannot
@@ -96,6 +111,10 @@ struct node_json_struct {
     int64_t TIMESTAMP;  ///< Timestamp of last successful range measurement
     char str_RANGE[32]; ///< String representation of the range
     struct json_obj_token RANGE; ///< The JSON object token for the range
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+    struct uwb_diagnostics UWB_DIAGNOSTICS; ///< UWB diagnostic information
+    struct uwb_counts UWB_COUNTS;           ///< UWB event counts
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 };
 
 /**
@@ -115,6 +134,69 @@ struct node_json_struct {
         (json_obj).float_container.start = (json_obj).str_##float_container;   \
     } while (0)
 
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS) || defined(CONFIG_REPORT_UWB_DROPS)
+/**
+ * Helper macro for copying UWB diagnostic info from the node into the JSON
+ * field for the UWB diagnostic info.
+ *
+ * @param[out] json_diag The JSON diagnostic information.
+ * @param[in] node_diag The neighbor node being copied from.
+ */
+#define COPY_DIAGNOSTICS(json_diag, node_diag)                                 \
+    do {                                                                       \
+        (json_diag).MAX_NOISE = (node_diag).maxNoise;                          \
+        (json_diag).FIRST_PATH_AMP1 = (node_diag).firstPathAmp1;               \
+        (json_diag).STD_NOISE = (node_diag).stdNoise;                          \
+        (json_diag).FIRST_PATH_AMP2 = (node_diag).firstPathAmp2;               \
+        (json_diag).FIRST_PATH_AMP3 = (node_diag).firstPathAmp3;               \
+        (json_diag).MAX_GROWTH_CIR = (node_diag).maxGrowthCIR;                 \
+        (json_diag).RX_PREAMBLE_CNT = (node_diag).rxPreamCount;                \
+        (json_diag).FIRST_PATH = (node_diag).firstPath;                        \
+    } while (0)
+
+/**
+ * Helper macro for copying UWB event counts into the JSON field for the UWB
+ * event counts.
+ *
+ * @param[out] json_cnts The JSON UWB event counts information.
+ * @param[in] node_cnts The UWB event counts to copy into the JSON struct.
+ */
+#define COPY_COUNTS(json_cnts, node_cnts)                                      \
+    do {                                                                       \
+        (json_cnts).PHE = (node_cnts).PHE;                                     \
+        (json_cnts).RSL = (node_cnts).RSL;                                     \
+        (json_cnts).CRCG = (node_cnts).CRCG;                                   \
+        (json_cnts).CRCB = (node_cnts).CRCB;                                   \
+        (json_cnts).ARFE = (node_cnts).ARFE;                                   \
+        (json_cnts).OVER = (node_cnts).OVER;                                   \
+        (json_cnts).SFDTO = (node_cnts).SFDTO;                                 \
+        (json_cnts).PTO = (node_cnts).PTO;                                     \
+        (json_cnts).RTO = (node_cnts).RTO;                                     \
+        (json_cnts).TXF = (node_cnts).TXF;                                     \
+        (json_cnts).HPW = (node_cnts).HPW;                                     \
+        (json_cnts).TXW = (node_cnts).TXW;                                     \
+    } while (0)
+
+#else
+/**
+ * Helper macro for copying UWB diagnostic info from the node into the JSON
+ * field for the UWB diagnostic info.
+ *
+ * @param[out] json_diag The JSON diagnostic information.
+ * @param[in] node_diag The neighbor node being copied from.
+ */
+#define COPY_DIAGNOSTICS(json_diag, node_diag) (void)0
+
+/**
+ * Helper macro for copying UWB event counts into the JSON field for the UWB
+ * event counts.
+ *
+ * @param[out] json_cnts The JSON UWB event counts information.
+ * @param[in] node_cnts The UWB event counts to copy into the JSON struct.
+ */
+#define COPY_COUNTS(json_cnts, node_cnts)      (void)0
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS) || defined(CONFIG_REPORT_UWB_DROPS)
+
 /**
  * Copies neighbor data into the node JSON struct
  *
@@ -128,6 +210,8 @@ struct node_json_struct {
         (json_node).TIMESTAMP = (node).time_stamp;                             \
         COPY_FLOAT(json_node, RANGE, (node).range);                            \
         (json_node).EXCHANGE = (int32_t)(node).exchange_id;                    \
+        COPY_DIAGNOSTICS((json_node).UWB_DIAGNOSTICS, (node).uwb_diagnostics); \
+        COPY_COUNTS((json_node).UWB_COUNTS, (node).uwb_counts);                \
     } while (0)
 
 /**
@@ -138,6 +222,47 @@ struct neighbor_list_json_struct {
     struct node_json_struct neighbors[MAX_ANCHOR_COUNT];
     size_t neighbors_len;
 };
+
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+/**
+ * Mapping JSON types to attributes of uwb_diagnostics.
+ */
+static const struct json_obj_descr uwb_diagnostics_json[] = {
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, MAX_NOISE, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, FIRST_PATH_AMP1,
+                        JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, STD_NOISE, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, FIRST_PATH_AMP2,
+                        JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, FIRST_PATH_AMP3,
+                        JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, MAX_GROWTH_CIR,
+                        JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, RX_PREAMBLE_CNT,
+                        JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_diagnostics, FIRST_PATH, JSON_TOK_NUMBER),
+};
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+
+#if defined(CONFIG_REPORT_UWB_DROPS) || IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+/**
+ * Mapping JSON types to attributes of uwb_counts.
+ */
+static const struct json_obj_descr uwb_counts_json[] = {
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, PHE, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, RSL, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, CRCG, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, CRCB, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, ARFE, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, OVER, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, SFDTO, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, PTO, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, RTO, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, TXF, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, HPW, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct uwb_counts, TXW, JSON_TOK_NUMBER),
+};
+#endif // defined(CONFIG_REPORT_UWB_DROPS) || IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 
 /**
  * Mapping JSON types to attributes of node_json_struct
@@ -151,6 +276,11 @@ static const struct json_obj_descr neighbor_json[] = {
 #if defined(CONFIG_UWB_LOGIC_CLK)
     JSON_OBJ_DESCR_PRIM(struct node_json_struct, EXCHANGE, JSON_TOK_NUMBER),
 #endif // defined(CONFIG_UWB_LOGIC_CLK)
+#if IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
+    JSON_OBJ_DESCR_OBJECT(struct node_json_struct, UWB_DIAGNOSTICS,
+                          uwb_diagnostics_json),
+    JSON_OBJ_DESCR_OBJECT(struct node_json_struct, UWB_COUNTS, uwb_counts_json),
+#endif // IS_ENABLED(CONFIG_UWB_DIAGNOSTICS)
 };
 
 /**
@@ -184,6 +314,8 @@ static const struct json_obj_descr json_dropped_communication_event[] = {
                               JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM_NAMED(struct dropped_packet_event, "STAGE", sequence,
                               JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_OBJECT_NAMED(struct dropped_packet_event, "COUNTS", events,
+                                uwb_counts_json),
 };
 #endif // defined(CONFIG_REPORT_UWB_DROPS)
 

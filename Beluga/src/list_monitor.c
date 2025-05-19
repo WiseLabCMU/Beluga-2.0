@@ -241,30 +241,15 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
 }
 
 #if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_MONITOR)
-/**
- * List monitor stack allocation
- */
-K_THREAD_STACK_DEFINE(monitor_stack, CONFIG_MONITOR_STACK_SIZE);
-
-/**
- * Thread data for the list monitor
- */
-static struct k_thread monitor_data;
-
-/**
- * List monitor thread ID
- */
-static k_tid_t monitor_task_id;
+K_THREAD_DEFINE(monitor_task, CONFIG_MONITOR_STACK_SIZE, monitor_task_function,
+                NULL, NULL, NULL, CONFIG_BELUGA_MONITOR_PRIO, 0, -1);
 
 /**
  * @brief Initializes and starts the list monitor thread
  */
 void init_monitor_thread(void) {
-    monitor_task_id = k_thread_create(&monitor_data, monitor_stack,
-                                      K_THREAD_STACK_SIZEOF(monitor_stack),
-                                      monitor_task_function, NULL, NULL, NULL,
-                                      CONFIG_BELUGA_MONITOR_PRIO, 0, K_NO_WAIT);
-    k_thread_name_set(monitor_task_id, "Neighbors monitor");
+    k_thread_name_set(monitor_task, "Neighbors monitor");
+    k_thread_start(monitor_task);
     LOG_INF("Started monitor");
 }
 #else

@@ -92,30 +92,15 @@ NO_RETURN static void list_task_function(void *p1, void *p2, void *p3) {
 }
 
 #if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_LIST)
-
-/**
- * Neighbor list reporter stack allocation
- */
-K_THREAD_STACK_DEFINE(list_stack, CONFIG_LIST_STACK_SIZE);
-
-/**
- * Thread data for the neighbor list reporter
- */
-static struct k_thread list_thread_data;
-
-/**
- * Thread ID for the neighbor list reporter
- */
-static k_tid_t print_list_task_id;
+K_THREAD_DEFINE(list_task, CONFIG_LIST_STACK_SIZE, list_task_function, NULL,
+                NULL, NULL, CONFIG_BELUGA_LIST_PRIO, 0, -1);
 
 /**
  * @brief Initializes the task that prints the neighbor list.
  */
 void init_print_list_task(void) {
-    print_list_task_id = k_thread_create(&list_thread_data, list_stack,
-                                         K_THREAD_STACK_SIZEOF(list_stack),
-                                         list_task_function, NULL, NULL, NULL,
-                                         CONFIG_BELUGA_LIST_PRIO, 0, K_NO_WAIT);
+    k_thread_name_set(list_task, "Print neighbors");
+    k_thread_start(list_task);
     LOG_INF("Started neighbors list");
 }
 #else

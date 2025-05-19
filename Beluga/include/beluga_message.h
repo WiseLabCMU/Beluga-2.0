@@ -19,6 +19,7 @@
 #define BELUGA_BELUGA_MESSAGE_H
 
 #include <ble/ble_app.h>
+#include <deca_device_api.h>
 #include <stdint.h>
 
 /**
@@ -51,6 +52,9 @@
  */
 #define BELUGA_MSG_FOOTER_OVERHEAD 1
 
+/**
+ * Beluga message types
+ */
 enum beluga_msg_type {
     COMMAND_RESPONSE, ///< Responding to command
     NEIGHBOR_UPDATES, ///< Sending the neighbor list
@@ -70,11 +74,62 @@ struct ranging_event {
 };
 
 /**
+ * Structure for describing UWB event counts in 32-bit integers.
+ */
+struct uwb_counts {
+    uint32_t PHE;   ///< Number of received header errors.
+    uint32_t RSL;   ///< Number of received frame sync loss events.
+    uint32_t CRCG;  ///< Number of good CRC received frames.
+    uint32_t CRCB;  ///< Number of bad CRC (CRC error) received frames.
+    uint32_t ARFE;  ///< Number of address filter errors.
+    uint32_t OVER;  ///< Number of receiver overflows (used in
+                    ///< double buffer mode).
+    uint32_t SFDTO; ///< SFD timeouts.
+    uint32_t PTO;   ///< Preamble timeouts.
+    uint32_t RTO;   ///< RX frame wait timeouts.
+    uint32_t TXF;   ///< Number of transmitted frames.
+    uint32_t HPW;   ///< Half period warn.
+    uint32_t TXW;   ///< Power up warn.
+};
+
+/**
+ * Translates the dwt_deviceentcnts_t struct into a uwb_counts struct.
+ * @param[in,out] dest The uwb_counts struct to copy the data into.
+ * @param[in] src The dwt_deviceentcnts_t struct to copy the data from.
+ */
+static inline void copy_event_counts(struct uwb_counts *dest,
+                                     const dwt_deviceentcnts_t *src) {
+    // Need to do this because the deca api uses 16 bit ints instead of
+    // 32 bit ints. The JSON library treats all number fields as 32 bit ints,
+    // unless it is specified that it is a 64-bit int. This is true for ncs
+    // v2.9.1, but it looks like it may have changed in v3.0.0. I refuse to
+    // update to v3.0.0 because Nordic requires you to install their toolchain
+    // through fucking VS code, and the toolchain installer through VS code
+    // doesn't fucking work...
+    if (dest == NULL || src == NULL) {
+        return;
+    }
+    dest->PHE = src->PHE;
+    dest->RSL = src->RSL;
+    dest->CRCG = src->CRCG;
+    dest->CRCB = src->CRCB;
+    dest->ARFE = src->ARFE;
+    dest->OVER = src->OVER;
+    dest->SFDTO = src->SFDTO;
+    dest->PTO = src->PTO;
+    dest->RTO = src->RTO;
+    dest->TXF = src->TXF;
+    dest->HPW = src->HPW;
+    dest->TXW = src->TXW;
+}
+
+/**
  * Structure for describing dropped packets
  */
 struct dropped_packet_event {
-    uint32_t id;       ///< Responder's ID
-    uint32_t sequence; ///< The stage the packet was dropped in
+    uint32_t id;              ///< Responder's ID
+    uint32_t sequence;        ///< The stage the packet was dropped in
+    struct uwb_counts events; ///< DW1000 device events
 };
 
 /**

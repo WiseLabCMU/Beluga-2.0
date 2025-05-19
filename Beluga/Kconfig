@@ -38,9 +38,8 @@ config UWB_LOGIC_CLK
     default n
 
 config BELUGA_GATT
-    bool "Beluga GATT service [EXPERIMENTAL]"
+    bool "Beluga GATT service"
     default n
-    select EXPERIMENTAL
 
 rsource "./Kconfig.beluga_debug"
 
