@@ -64,7 +64,9 @@
     FUNC(UWB_NSSFD, 0)                                                         \
     FUNC(PAN_ID, 0xDECA)                                                       \
     FUNC(EVICTION_SCHEME, 1)                                                   \
-    FUNC(VERBOSE, 0)
+    FUNC(VERBOSE, 0)                                                           \
+    FUNC(RX_ANT_DELAY, 16436)                                                  \
+    FUNC(TX_ANT_DELAY, 16436)
 
 /**
  * Helper for generating the enumerators for beluga settings
