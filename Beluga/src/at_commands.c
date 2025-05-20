@@ -1159,7 +1159,7 @@ AT_CMD_DEFINE(CALIBRATE) {
 
         OK(comms,
            "RX Antenna Delays (16MHz/64MHz): %" PRIu32 "/%" PRIu32
-           "\nTX Antenna Delays (16MHz/64MHz): %" PRId32 "/%" PRId32,
+           ", TX Antenna Delays (16MHz/64MHz): %" PRId32 "/%" PRId32,
            rx_dly_16, rx_dly_64, tx_dly_16, tx_dly_64);
     }
     CHECK_ARGC(comms, argc, 3);
