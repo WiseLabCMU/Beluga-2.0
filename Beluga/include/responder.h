@@ -42,7 +42,7 @@ int set_responder_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay);
 
 int set_responder_prf(enum uwb_pulse_rate prf);
 
-int set_responder_power_mode(bool enable);
+void set_responder_power_mode(bool enable);
 
 /**
  * @brief Sets the source IDs for the messages that the responder sends and the

@@ -165,13 +165,10 @@ int set_responder_prf(enum uwb_pulse_rate prf) {
     return 0;
 }
 
-int set_responder_power_mode(bool enable) {
-    CHECK_UWB_ACTIVE();
+void set_responder_power_mode(bool enable) {
     external_power_amp = enable;
     tx_delay =
         external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
-
-    return 0;
 }
 
 /**

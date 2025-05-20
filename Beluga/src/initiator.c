@@ -227,9 +227,7 @@ int set_initiator_prf(enum uwb_pulse_rate prf) {
     return 0;
 }
 
-int set_initiator_power_mode(bool enable) {
-    CHECK_UWB_ACTIVE();
-
+void set_initiator_power_mode(bool enable) {
     external_power_amp = enable;
 
     tx_delay =
@@ -237,8 +235,6 @@ int set_initiator_power_mode(bool enable) {
 
     dwt_setrxantennadelay((uint16)rx_delay);
     dwt_settxantennadelay((uint16)tx_delay);
-
-    return 0;
 }
 
 /**
