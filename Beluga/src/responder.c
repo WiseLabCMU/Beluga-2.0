@@ -149,6 +149,21 @@ int set_responder_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     return 0;
 }
 
+int set_responder_prf(enum uwb_pulse_rate prf) {
+    CHECK_UWB_ACTIVE();
+
+    if (prf != UWB_PR_64M && prf != UWB_PR_16M) {
+        return -EINVAL;
+    }
+
+    current_prf = prf;
+
+    rx_delay = rx_delays[prf];
+    tx_delay = tx_delays[prf];
+
+    return 0;
+}
+
 /**
  * @brief Sets the personal area network (PAN) ID for the responder messages
  *

@@ -46,6 +46,8 @@ int set_initiator_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay);
 
 int set_initiator_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay);
 
+int set_initiator_prf(enum uwb_pulse_rate prf);
+
 /**
  * @brief Sets the personal area network (PAN) ID for the initiator messages
  *

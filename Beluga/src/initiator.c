@@ -202,6 +202,24 @@ int set_initiator_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     return 0;
 }
 
+int set_initiator_prf(enum uwb_pulse_rate prf) {
+    CHECK_UWB_ACTIVE();
+
+    if (prf != UWB_PR_64M && prf != UWB_PR_16M) {
+        return -EINVAL;
+    }
+
+    current_prf = prf;
+
+    rx_delay = rx_delays[prf];
+    tx_delay = tx_delays[prf];
+
+    dwt_setrxantennadelay((uint16)rx_delay);
+    dwt_settxantennadelay((uint16)tx_delay);
+
+    return 0;
+}
+
 /**
  * @brief Sets the personal area network (PAN) ID for the initiator messages
  *
