@@ -79,13 +79,29 @@ static uint8 tx_report_msg[REPORT_MSG_LEN] = {
  */
 static uint8 rx_buffer[RX_BUF_LEN];
 
+/**
+ * Transmit antenna delays for 16MHz PRF and 64MHz PRF
+ */
 static uint64 tx_delays[2] = {DEFAULT_TX_ANT_DLY, DEFAULT_TX_ANT_DLY};
+
+/**
+ * Receive antenna delays for 16MHz PRF and 64MHz PRF
+ */
 static uint64 rx_delays[2] = {DEFAULT_RX_ANT_DLY, DEFAULT_RX_ANT_DLY};
 
+/**
+ * The transmit antenna delay for the current PRF
+ */
 static uint64 tx_delay = DEFAULT_TX_ANT_DLY;
 
+/**
+ * The current PRF
+ */
 static enum uwb_pulse_rate current_prf = UWB_PR_64M;
 
+/**
+ * The UWB power amplifier state
+ */
 static bool external_power_amp = false;
 
 #if !defined(CONFIG_POLL_RX_TO_RESP_TX_DLY)
