@@ -17,6 +17,7 @@
 #define BELUGA_SETTINGS_H
 
 #include <deca_regs.h>
+#include <port_platform.h>
 #include <stdint.h>
 
 /**
@@ -40,6 +41,12 @@
  * - UWB PAC size
  * - UWB SFD length option
  * - UWB PAN ID
+ * - Neighbor Eviction Scheme
+ * - Verbose mode
+ * - UWB Receive Antenna Delay at 16 MHz PRF
+ * - UWB Transmit Antenna Delay at 16 MHz PRF
+ * - UWB Receive Antenna Delay at 64 MHz PRF
+ * - UWB Transmit Antenna Delay at 64 MHz PRF
  * .
  *
  * Format: setting name, default value
@@ -65,8 +72,10 @@
     FUNC(PAN_ID, 0xDECA)                                                       \
     FUNC(EVICTION_SCHEME, 1)                                                   \
     FUNC(VERBOSE, 0)                                                           \
-    FUNC(RX_ANT_DELAY, 16436)                                                  \
-    FUNC(TX_ANT_DELAY, 16436)
+    FUNC(RX_ANT_DELAY_16, DEFAULT_RX_ANT_DLY)                                  \
+    FUNC(TX_ANT_DELAY_16, DEFAULT_TX_ANT_DLY)                                  \
+    FUNC(RX_ANT_DELAY_64, DEFAULT_RX_ANT_DLY)                                  \
+    FUNC(TX_ANT_DELAY_64, DEFAULT_TX_ANT_DLY)
 
 /**
  * Helper for generating the enumerators for beluga settings

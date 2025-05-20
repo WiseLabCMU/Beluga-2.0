@@ -36,17 +36,8 @@ performing range measurements.
 */
 
 /* Default antenna delay values for 64 MHz PRF.*/
-#if defined(CONFIG_TX_ANT_DLY)
-#define TX_ANT_DLY CONFIG_TX_ANT_DLY
-#else
-#define TX_ANT_DLY 16436
-#endif // defined(CONFIG_TX_ANT_DLY)
-
-#if defined(CONFIG_RX_ANT_DLY)
-#define RX_ANT_DLY CONFIG_RX_ANT_DLY
-#else
-#define RX_ANT_DLY 16436
-#endif // defined(CONFIG_RX_ANT_DLY)
+#define DEFAULT_TX_ANT_DLY 16436
+#define DEFAULT_RX_ANT_DLY 16436
 
 /**
  * Types definitions

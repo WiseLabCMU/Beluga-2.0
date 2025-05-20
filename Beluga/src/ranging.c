@@ -820,8 +820,8 @@ void init_uwb(void) {
     dwt_configuretxrf(&config_tx);
 
     /* Apply default antenna delay value. See NOTE 2 below. */
-    dwt_setrxantennadelay(RX_ANT_DLY);
-    dwt_settxantennadelay(TX_ANT_DLY);
+    dwt_setrxantennadelay(DEFAULT_RX_ANT_DLY);
+    dwt_settxantennadelay(DEFAULT_TX_ANT_DLY);
 
     /* Set expected response's timeout. (keep listening so timeout is 0) */
     dwt_setrxtimeout(0);
