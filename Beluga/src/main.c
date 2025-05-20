@@ -422,6 +422,27 @@ static void load_verbose(const struct comms *comms) {
 }
 
 /**
+ * Load the antenna calibrations. No need to print the calibration values.
+ */
+static void load_antenna_calibrations(void) {
+    int32_t calibration = retrieveSetting(BELUGA_RX_ANT_DELAY_16);
+    set_initiator_antenna_rx_delay(UWB_PR_16M, calibration);
+    set_responder_antenna_rx_delay(UWB_PR_16M, calibration);
+
+    calibration = retrieveSetting(BELUGA_RX_ANT_DELAY_64);
+    set_initiator_antenna_rx_delay(UWB_PR_64M, calibration);
+    set_responder_antenna_rx_delay(UWB_PR_64M, calibration);
+
+    calibration = retrieveSetting(BELUGA_TX_ANT_DELAY_16);
+    set_initiator_antenna_tx_delay(UWB_PR_16M, calibration);
+    set_responder_antenna_tx_delay(UWB_PR_16M, calibration);
+
+    calibration = retrieveSetting(BELUGA_TX_ANT_DELAY_64);
+    set_initiator_antenna_tx_delay(UWB_PR_64M, calibration);
+    set_responder_antenna_tx_delay(UWB_PR_64M, calibration);
+}
+
+/**
  * Load all the settings, initialize all the states, and display what the
  * settings are
  */
@@ -449,6 +470,7 @@ static void load_settings(const struct comms *comms) {
     load_pac_size(comms);
     load_sfd_mode(comms);
     load_pan_id(comms);
+    load_antenna_calibrations();
 
     // Restore UWB state in the LEDs
     update_led_state(LED_UWB, uwb_state);
