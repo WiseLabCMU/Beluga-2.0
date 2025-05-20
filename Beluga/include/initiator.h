@@ -26,6 +26,7 @@
 #define BELUGA_INITIATOR_H
 
 #include <deca_types.h>
+#include <ranging.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
@@ -41,9 +42,9 @@
  */
 int set_initiator_id(uint16_t id);
 
-int set_initiator_antenna_rx_delay(uint16_t delay);
+int set_initiator_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay);
 
-int set_initiator_antenna_tx_delay(uint16_t delay);
+int set_initiator_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay);
 
 /**
  * @brief Sets the personal area network (PAN) ID for the initiator messages

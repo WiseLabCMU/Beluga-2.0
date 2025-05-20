@@ -24,6 +24,7 @@
 #ifndef BELUGA_RESPONDER_H
 #define BELUGA_RESPONDER_H
 
+#include <ranging.h>
 #include <zephyr/kernel.h>
 
 /**
@@ -35,9 +36,9 @@
  */
 int set_responder_pan_id(uint16_t id);
 
-int set_responder_antenna_rx_delay(uint16_t delay);
+int set_responder_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay);
 
-int set_responder_antenna_tx_delay(uint16_t delay);
+int set_responder_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay);
 
 /**
  * @brief Sets the source IDs for the messages that the responder sends and the
