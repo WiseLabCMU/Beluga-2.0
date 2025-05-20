@@ -94,6 +94,8 @@ static uint64 rx_delay = DEFAULT_RX_ANT_DLY;
 
 static enum uwb_pulse_rate current_prf = UWB_PR_64M;
 
+static bool external_power_amp = false;
+
 /**
  * Multiplication factor to convert carrier integrator value to a frequency
  * offset in Hertz.
@@ -213,6 +215,20 @@ int set_initiator_prf(enum uwb_pulse_rate prf) {
 
     rx_delay = rx_delays[prf];
     tx_delay = tx_delays[prf];
+
+    dwt_setrxantennadelay((uint16)rx_delay);
+    dwt_settxantennadelay((uint16)tx_delay);
+
+    return 0;
+}
+
+int set_initiator_power_mode(bool enable) {
+    CHECK_UWB_ACTIVE();
+
+    external_power_amp = enable;
+
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
 
     dwt_setrxantennadelay((uint16)rx_delay);
     dwt_settxantennadelay((uint16)tx_delay);

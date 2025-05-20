@@ -87,6 +87,8 @@ static uint64 rx_delay = DEFAULT_RX_ANT_DLY;
 
 static enum uwb_pulse_rate current_prf = UWB_PR_64M;
 
+static bool external_power_amp = false;
+
 #if !defined(CONFIG_POLL_RX_TO_RESP_TX_DLY)
 /**
  * Delay between frames, in UWB microseconds.
@@ -160,6 +162,15 @@ int set_responder_prf(enum uwb_pulse_rate prf) {
 
     rx_delay = rx_delays[prf];
     tx_delay = tx_delays[prf];
+
+    return 0;
+}
+
+int set_responder_power_mode(bool enable) {
+    CHECK_UWB_ACTIVE();
+    external_power_amp = enable;
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
 
     return 0;
 }
