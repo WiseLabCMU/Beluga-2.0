@@ -83,7 +83,6 @@ static uint64 tx_delays[2] = {DEFAULT_TX_ANT_DLY, DEFAULT_TX_ANT_DLY};
 static uint64 rx_delays[2] = {DEFAULT_RX_ANT_DLY, DEFAULT_RX_ANT_DLY};
 
 static uint64 tx_delay = DEFAULT_TX_ANT_DLY;
-static uint64 rx_delay = DEFAULT_RX_ANT_DLY;
 
 static enum uwb_pulse_rate current_prf = UWB_PR_64M;
 
@@ -129,9 +128,8 @@ int set_responder_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     }
 
     rx_delays[prf] = (uint64)delay;
-    if (prf != current_prf) {
-        rx_delay = delay;
-    }
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
 
     return 0;
 }
@@ -145,7 +143,8 @@ int set_responder_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
 
     tx_delays[prf] = (uint64)delay;
     if (prf != current_prf) {
-        tx_delay = delay;
+        tx_delay = external_power_amp ? tx_delays[current_prf]
+                                      : rx_delays[current_prf];
     }
 
     return 0;
@@ -160,8 +159,8 @@ int set_responder_prf(enum uwb_pulse_rate prf) {
 
     current_prf = prf;
 
-    rx_delay = rx_delays[prf];
-    tx_delay = tx_delays[prf];
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
 
     return 0;
 }

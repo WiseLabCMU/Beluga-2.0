@@ -180,9 +180,12 @@ int set_initiator_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     }
 
     rx_delays[prf] = (uint64)delay;
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
     if (prf != current_prf) {
         rx_delay = delay;
         dwt_setrxantennadelay(delay);
+        dwt_settxantennadelay((uint16)tx_delay);
     }
 
     return 0;
@@ -197,7 +200,8 @@ int set_initiator_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
 
     tx_delays[prf] = (uint64)delay;
     if (prf != current_prf) {
-        tx_delay = delay;
+        tx_delay = external_power_amp ? tx_delays[current_prf]
+                                      : rx_delays[current_prf];
         dwt_settxantennadelay(delay);
     }
 
@@ -214,7 +218,8 @@ int set_initiator_prf(enum uwb_pulse_rate prf) {
     current_prf = prf;
 
     rx_delay = rx_delays[prf];
-    tx_delay = tx_delays[prf];
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
 
     dwt_setrxantennadelay((uint16)rx_delay);
     dwt_settxantennadelay((uint16)tx_delay);
