@@ -489,6 +489,9 @@ int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
         return -EINVAL;
     }
 
+    set_initiator_prf(rate);
+    set_responder_prf(rate);
+
     dwt_configure(&config);
 
     UPDATE_ADV_DATA(PULSERATE, rate);
