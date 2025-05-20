@@ -172,6 +172,16 @@ int set_initiator_id(uint16_t id) {
     return 0;
 }
 
+/**
+ * @brief Set the antenna RX delay calibration value for the given pulse
+ * repetition frequency.
+ *
+ * @param[in] prf Pulse repetition frequency associated with the value.
+ * @param[in] delay The antenna dealy calibration value.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
 int set_initiator_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     CHECK_UWB_ACTIVE();
 
@@ -191,6 +201,16 @@ int set_initiator_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     return 0;
 }
 
+/**
+ * @brief Set the antenna TX delay calibration value for the given pulse
+ * repetition frequency.
+ *
+ * @param[in] prf Pulse repetition frequency associated with the value.
+ * @param[in] delay The antenna dealy calibration value.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
 int set_initiator_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     CHECK_UWB_ACTIVE();
 
@@ -208,6 +228,13 @@ int set_initiator_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
     return 0;
 }
 
+/**
+ * Set the pulse repetition frequency that is being used.
+ * @param[in] prf The current PRF.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
 int set_initiator_prf(enum uwb_pulse_rate prf) {
     CHECK_UWB_ACTIVE();
 
@@ -227,6 +254,10 @@ int set_initiator_prf(enum uwb_pulse_rate prf) {
     return 0;
 }
 
+/**
+ * Set the power amp state in the module.
+ * @param[in] enable The current power amplifier state.
+ */
 void set_initiator_power_mode(bool enable) {
     external_power_amp = enable;
 
