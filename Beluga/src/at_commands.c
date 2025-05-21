@@ -159,7 +159,7 @@ static bool strtoint32(const char *str, int32_t *result) {
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(STARTUWB) {
+AT_COMMAND(STARTUWB) {
     LOG_INF("Running STARTUWB command");
     if (get_ble_led_state() == LED_OFF) {
         // Avoid undefined behavior
@@ -174,7 +174,6 @@ AT_CMD_DEFINE(STARTUWB) {
     update_uwb_state(true);
     AT_OK(comms, "Started UWB");
 }
-AT_CMD_REGISTER(STARTUWB);
 
 /**
  * The STOPUWB AT command
@@ -184,7 +183,7 @@ AT_CMD_REGISTER(STARTUWB);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(STOPUWB) {
+AT_COMMAND(STOPUWB) {
     LOG_INF("Running STOPUWB command");
     if (get_uwb_led_state() == LED_OFF) {
         ERROR(comms, "UWB is not running");
@@ -192,7 +191,6 @@ AT_CMD_DEFINE(STOPUWB) {
     update_uwb_state(false);
     AT_OK(comms, "Stopped UWB");
 }
-AT_CMD_REGISTER(STOPUWB);
 
 /**
  * The STARTBLE AT command
@@ -202,7 +200,7 @@ AT_CMD_REGISTER(STOPUWB);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(STARTBLE) {
+AT_COMMAND(STARTBLE) {
     LOG_INF("Running STARTBLE) command");
     if (get_NODE_UUID() == 0) {
         ERROR(comms, "Cannot start BLE: Node ID is not set");
@@ -218,7 +216,6 @@ AT_CMD_DEFINE(STARTBLE) {
     update_led_state(LED_BLE, LED_ON);
     AT_OK(comms, "Started BLE");
 }
-AT_CMD_REGISTER(STARTBLE);
 
 /**
  * The STOPBLE AT command
@@ -228,7 +225,7 @@ AT_CMD_REGISTER(STARTBLE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(STOPBLE) {
+AT_COMMAND(STOPBLE) {
     LOG_INF("Running STOPBLE command");
     if (get_ble_led_state() == LED_OFF) {
         ERROR(comms, "BLE is already off");
@@ -241,7 +238,6 @@ AT_CMD_DEFINE(STOPBLE) {
     update_led_state(LED_BLE, LED_OFF);
     AT_OK(comms, "Stopped BLE");
 }
-AT_CMD_REGISTER(STOPBLE);
 
 /**
  * The ID AT command
@@ -252,7 +248,7 @@ AT_CMD_REGISTER(STOPBLE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(ID) {
+AT_COMMAND(ID) {
     LOG_INF("Running ID command");
     READ_SETTING(comms, argc, 2, BELUGA_ID, "ID");
     int32_t newID;
@@ -272,7 +268,6 @@ AT_CMD_DEFINE(ID) {
     updateSetting(BELUGA_ID, newID);
     AT_OK(comms, "ID: %d", newID);
 }
-AT_CMD_REGISTER(ID);
 
 /**
  * The BOOTMODE AT command
@@ -283,7 +278,7 @@ AT_CMD_REGISTER(ID);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(BOOTMODE) {
+AT_COMMAND(BOOTMODE) {
     LOG_INF("Running BOOTMODE command");
     READ_SETTING(comms, argc, 2, BELUGA_BOOTMODE, "Bootmode");
     int32_t mode;
@@ -300,7 +295,6 @@ AT_CMD_DEFINE(BOOTMODE) {
     updateSetting(BELUGA_BOOTMODE, mode);
     AT_OK(comms, "Bootmode: %d", mode);
 }
-AT_CMD_REGISTER(BOOTMODE);
 
 /**
  * The RATE AT command
@@ -312,7 +306,7 @@ AT_CMD_REGISTER(BOOTMODE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(RATE) {
+AT_COMMAND(RATE) {
     LOG_INF("Running RATE command");
     READ_SETTING(comms, argc, 2, BELUGA_POLL_RATE, "Rate");
     int32_t rate;
@@ -327,7 +321,6 @@ AT_CMD_DEFINE(RATE) {
 
     AT_OK(comms, "Rate: %d", rate);
 }
-AT_CMD_REGISTER(RATE);
 
 /**
  * The CHANNEL AT command
@@ -339,7 +332,7 @@ AT_CMD_REGISTER(RATE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(CHANNEL) {
+AT_COMMAND(CHANNEL) {
     LOG_INF("Running CHANNEL command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_CHANNEL, "Channel");
     int32_t channel, pwramp;
@@ -373,7 +366,6 @@ AT_CMD_DEFINE(CHANNEL) {
     updateSetting(BELUGA_UWB_CHANNEL, channel);
     AT_OK(comms, "Channel: %d", channel);
 }
-AT_CMD_REGISTER(CHANNEL);
 
 /**
  * The RESET AT command
@@ -385,12 +377,11 @@ AT_CMD_REGISTER(CHANNEL);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(RESET) {
+AT_COMMAND(RESET) {
     LOG_INF("Running RESET command");
     resetBelugaSettings();
     OK(comms, "Reset");
 }
-AT_CMD_REGISTER(RESET);
 
 /**
  * The TIMEOUT AT command
@@ -403,7 +394,7 @@ AT_CMD_REGISTER(RESET);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(TIMEOUT) {
+AT_COMMAND(TIMEOUT) {
     LOG_INF("Running TIMEOUT command");
     READ_SETTING(comms, argc, 2, BELUGA_BLE_TIMEOUT, "Timeout");
     int32_t timeout;
@@ -417,7 +408,6 @@ AT_CMD_DEFINE(TIMEOUT) {
     set_node_timeout(timeout);
     AT_OK(comms, "Timeout: %d", timeout);
 }
-AT_CMD_REGISTER(TIMEOUT);
 
 /**
  * The TXPOWER AT command
@@ -429,7 +419,7 @@ AT_CMD_REGISTER(TIMEOUT);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(TXPOWER) {
+AT_COMMAND(TXPOWER) {
     LOG_INF("Running TXPOWER command");
     READ_SETTING_HEX(comms, argc, 2, BELUGA_TX_POWER, "TX Power", "08");
     struct uwb_tx_power_config tx_power;
@@ -465,7 +455,6 @@ AT_CMD_DEFINE(TXPOWER) {
     updateSetting(BELUGA_TX_POWER, (int32_t)power);
     AT_OK(comms, "TX Power: 0x%08X", power);
 }
-AT_CMD_REGISTER(TXPOWER);
 
 /**
  * The STREAMMODE AT command
@@ -477,7 +466,7 @@ AT_CMD_REGISTER(TXPOWER);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(STREAMMODE) {
+AT_COMMAND(STREAMMODE) {
     LOG_INF("Running STREAMMODE command");
     READ_SETTING(comms, argc, 2, BELUGA_STREAMMODE, "Stream Mode");
     int32_t mode;
@@ -490,7 +479,6 @@ AT_CMD_DEFINE(STREAMMODE) {
     }
     ERROR(comms, "Stream mode parameter input error");
 }
-AT_CMD_REGISTER(STREAMMODE);
 
 /**
  * The TWRMODE AT command
@@ -502,7 +490,7 @@ AT_CMD_REGISTER(STREAMMODE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(TWRMODE) {
+AT_COMMAND(TWRMODE) {
     LOG_INF("Running TWRMODE command");
     READ_SETTING(comms, argc, 2, BELUGA_TWR, "TWR");
     int32_t twr;
@@ -515,7 +503,6 @@ AT_CMD_DEFINE(TWRMODE) {
     }
     ERROR(comms, "TWR mode parameter input error");
 }
-AT_CMD_REGISTER(TWRMODE);
 
 /**
  * The LEDMODE AT command
@@ -527,7 +514,7 @@ AT_CMD_REGISTER(TWRMODE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(LEDMODE) {
+AT_COMMAND(LEDMODE) {
     LOG_INF("Running LEDMODE command");
     READ_SETTING(comms, argc, 2, BELUGA_LEDMODE, "LED Mode");
     int32_t mode;
@@ -546,7 +533,6 @@ AT_CMD_DEFINE(LEDMODE) {
 
     AT_OK(comms, "LED mode: %d", mode);
 }
-AT_CMD_REGISTER(LEDMODE);
 
 /**
  * The REBOOT AT command
@@ -556,13 +542,12 @@ AT_CMD_REGISTER(LEDMODE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(REBOOT) {
+AT_COMMAND(REBOOT) {
     LOG_INF("Running REBOOT command");
     AT_OK_NOW(comms, "Rebooting");
     disable_bluetooth();
     sys_reboot(SYS_REBOOT_COLD);
 }
-AT_CMD_REGISTER(REBOOT);
 
 /**
  * Performs a strict check on the UWB channel used. If the UWB channel falls
@@ -623,7 +608,7 @@ AT_CMD_REGISTER(REBOOT);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(PWRAMP) {
+AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), PWRAMP) {
     LOG_INF("Running PWRAMP command");
     READ_SETTING(comms, argc, 2, BELUGA_RANGE_EXTEND, "Range Extension");
     int32_t pwramp;
@@ -692,7 +677,6 @@ AT_CMD_DEFINE(PWRAMP) {
     }
     ERROR(comms, "Power amplifier error occurred: %d", err);
 }
-AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), PWRAMP);
 
 /**
  * The ANTENNA AT command
@@ -702,7 +686,7 @@ AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), PWRAMP);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(ANTENNA) {
+AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), ANTENNA) {
     LOG_INF("Running ANTENNA command");
     CHECK_ARGC(comms, argc, 2);
     int32_t antenna;
@@ -725,7 +709,6 @@ AT_CMD_DEFINE(ANTENNA) {
         ERROR(comms, "Unknown error occurred: %d", err);
     }
 }
-AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), ANTENNA);
 
 /**
  * The TIME AT command
@@ -735,11 +718,10 @@ AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RANGE_EXTENSION), ANTENNA);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(TIME) {
+AT_COMMAND(TIME) {
     LOG_INF("Running TIME command");
     OK(comms, "Time: %" PRId64, k_uptime_get());
 }
-AT_CMD_REGISTER(TIME);
 
 /**
  * The FORMAT AT command
@@ -750,7 +732,7 @@ AT_CMD_REGISTER(TIME);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(FORMAT) {
+AT_COMMAND(FORMAT) {
     LOG_INF("Running FORMAT command");
     READ_SETTING(comms, argc, 2, BELUGA_OUT_FORMAT, "Format Mode");
     int32_t mode;
@@ -764,7 +746,6 @@ AT_CMD_DEFINE(FORMAT) {
     set_format(comms, (enum comms_out_format_mode)mode);
     AT_OK(comms, "Format Mode: %d", mode);
 }
-AT_CMD_REGISTER(FORMAT);
 
 /**
  * The DEEPSLEEP AT command
@@ -774,12 +755,11 @@ AT_CMD_REGISTER(FORMAT);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(DEEPSLEEP) {
+AT_COMMAND(DEEPSLEEP) {
     LOG_INF("Running DEEPSLEEP command");
     AT_OK_NOW(comms, "Entering into deep sleep");
     enter_deep_sleep();
 }
-AT_CMD_REGISTER(DEEPSLEEP);
 
 /**
  * The PHR AT command
@@ -790,7 +770,7 @@ AT_CMD_REGISTER(DEEPSLEEP);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(PHR) {
+AT_COMMAND(PHR) {
     LOG_INF("Running PHR command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_PHR, "UWB PHR mode");
     int32_t phr;
@@ -811,7 +791,6 @@ AT_CMD_DEFINE(PHR) {
     updateSetting(BELUGA_UWB_PHR, phr);
     AT_OK(comms, "UWB PHR mode %d", phr);
 }
-AT_CMD_REGISTER(PHR);
 
 /**
  * The DATARATE AT command
@@ -823,7 +802,7 @@ AT_CMD_REGISTER(PHR);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(DATARATE) {
+AT_COMMAND(DATARATE) {
     LOG_INF("Running DATARATE command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_DATA_RATE, "UWB data rate");
     int32_t rate;
@@ -844,7 +823,6 @@ AT_CMD_DEFINE(DATARATE) {
     updateSetting(BELUGA_UWB_DATA_RATE, rate);
     AT_OK(comms, "UWB data rate %d", rate);
 }
-AT_CMD_REGISTER(DATARATE);
 
 /**
  * The PULSERATE AT command
@@ -855,7 +833,7 @@ AT_CMD_REGISTER(DATARATE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(PULSERATE) {
+AT_COMMAND(PULSERATE) {
     LOG_INF("Running PULSERATE command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_PULSE_RATE, "Pulse Rate");
     int32_t rate;
@@ -876,7 +854,6 @@ AT_CMD_DEFINE(PULSERATE) {
     updateSetting(BELUGA_UWB_PULSE_RATE, rate);
     AT_OK(comms, "Pulse rate: %d", rate);
 }
-AT_CMD_REGISTER(PULSERATE);
 
 /**
  * The PREAMBLE AT command
@@ -887,7 +864,7 @@ AT_CMD_REGISTER(PULSERATE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(PREAMBLE) {
+AT_COMMAND(PREAMBLE) {
     LOG_INF("Running PREAMBLE command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_PREAMBLE, "Preamble length");
     int32_t preamble;
@@ -908,7 +885,6 @@ AT_CMD_DEFINE(PREAMBLE) {
     updateSetting(BELUGA_UWB_PREAMBLE, preamble);
     AT_OK(comms, "Preamble length: %d", preamble);
 }
-AT_CMD_REGISTER(PREAMBLE);
 
 /**
  * The PAC AT command
@@ -920,7 +896,7 @@ AT_CMD_REGISTER(PREAMBLE);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(PAC) {
+AT_COMMAND(PAC) {
     LOG_INF("Running PAC command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_PAC, "PAC Size");
     int32_t pac_size;
@@ -941,7 +917,6 @@ AT_CMD_DEFINE(PAC) {
     updateSetting(BELUGA_UWB_PAC, pac_size);
     AT_OK(comms, "PAC size: %d", pac_size);
 }
-AT_CMD_REGISTER(PAC);
 
 /**
  * The SFD AT command
@@ -952,7 +927,7 @@ AT_CMD_REGISTER(PAC);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(SFD) {
+AT_COMMAND(SFD) {
     LOG_INF("Running SFD command");
     READ_SETTING(comms, argc, 2, BELUGA_UWB_NSSFD, "Nonstandard SFD");
     int32_t sfd;
@@ -973,7 +948,6 @@ AT_CMD_DEFINE(SFD) {
     updateSetting(BELUGA_UWB_NSSFD, sfd);
     AT_OK(comms, "Nonstandard SFD: %d", sfd);
 }
-AT_CMD_REGISTER(SFD);
 
 /**
  * The PANID AT command
@@ -984,7 +958,7 @@ AT_CMD_REGISTER(SFD);
  * @param[in] argc The argument count
  * @param[in] argv The parsed arguments
  */
-AT_CMD_DEFINE(PANID) {
+AT_COMMAND(PANID) {
     LOG_INF("Running PANID command");
     READ_SETTING_HEX(comms, argc, 2, BELUGA_PAN_ID, "PAN ID", "04");
     int32_t pan_id;
@@ -1003,7 +977,6 @@ AT_CMD_DEFINE(PANID) {
     updateSetting(BELUGA_PAN_ID, pan_id);
     AT_OK(comms, "PAN ID: 0x%04X", (uint16_t)pan_id);
 }
-AT_CMD_REGISTER(PANID);
 
 /**
  * The EVICT AT command
@@ -1013,7 +986,8 @@ AT_CMD_REGISTER(PANID);
  * @return 0 upon success
  * @return 1 upon error
  */
-AT_CMD_DEFINE(EVICT) {
+AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT),
+                         EVICT) {
     LOG_INF("Running EVICTION command");
     READ_SETTING(comms, argc, 2, BELUGA_EVICTION_SCHEME, "Eviction Scheme");
     int32_t scheme;
@@ -1028,7 +1002,6 @@ AT_CMD_DEFINE(EVICT) {
     updateSetting(BELUGA_EVICTION_SCHEME, scheme);
     AT_OK(comms, "Eviction scheme: %d", scheme);
 }
-AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT), EVICT);
 
 /**
  * Sets the verbosity for the commands
@@ -1038,7 +1011,7 @@ AT_CMD_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT), EVICT);
  * @return 0 upon success
  * @return 1 upon error
  */
-AT_CMD_DEFINE(VERBOSE) {
+AT_COMMAND(VERBOSE) {
     LOG_INF("Running VERBOSE command");
     READ_SETTING(comms, argc, 2, BELUGA_VERBOSE, "Verbose");
     int32_t mode;
@@ -1053,7 +1026,6 @@ AT_CMD_DEFINE(VERBOSE) {
 
     AT_OK(comms, "Verbose: %d", mode);
 }
-AT_CMD_REGISTER(VERBOSE);
 
 /**
  * Retrieves the status information for Beluga. This includes build info, board
@@ -1073,7 +1045,7 @@ AT_CMD_REGISTER(VERBOSE);
  *
  * @internal Please update bits above if updating this command
  */
-AT_CMD_DEFINE(STATUS) {
+AT_COMMAND(STATUS) {
     LOG_INF("Running STATUS command");
     const uint32_t settable_evict_algo =
         IS_ENABLED(CONFIG_BELUGA_EVICT_RUNTIME_SELECT) << 11;
@@ -1087,7 +1059,6 @@ AT_CMD_DEFINE(STATUS) {
         settable_evict_algo | antenna | uwb_state | ble_state | board;
     OK(comms, "Status: 0x%08" PRIX32, status);
 }
-AT_CMD_REGISTER(STATUS);
 
 /**
  * Retrieves the current firmware version of the Beluga node.
@@ -1097,13 +1068,12 @@ AT_CMD_REGISTER(STATUS);
  * @param[in] argv The arguments
  * @return 0 upon success
  */
-AT_CMD_DEFINE(VERSION) {
+AT_COMMAND(VERSION) {
     LOG_INF("Running version command");
     OK(comms, APP_VERSION_STRING);
 }
-AT_CMD_REGISTER(VERSION);
 
-AT_CMD_DEFINE(SYNC) {
+AT_COMMAND(SYNC) {
     LOG_INF("Running SYNC command");
     CHECK_ARGC(comms, argc, 2);
     int32_t id;
@@ -1129,4 +1099,3 @@ AT_CMD_DEFINE(SYNC) {
     }
     AT_OK(comms, "Updated the UWB parameters for node %" PRId32, id);
 }
-AT_CMD_REGISTER(SYNC);
