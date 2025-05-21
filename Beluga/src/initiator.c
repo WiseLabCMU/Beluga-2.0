@@ -173,6 +173,11 @@ uint8_t failed_stage = 0;
 #endif
 
 /**
+ * The frame filter used for ranging.
+ */
+#define FRAME_FILTER (DWT_FF_COORD_EN | DWT_FF_DATA_EN)
+
+/**
  * @brief Sets the source IDs for the messages that the initiator sends and the
  * destination ID for the messages the initiator receives
  *
@@ -188,6 +193,9 @@ int set_initiator_id(uint16_t id) {
     set_dest_id(id, rx_resp_msg);
     set_src_id(id, tx_final_msg);
     set_dest_id(id, rx_report_msg);
+
+    dwt_setaddress16(id);
+    dwt_enableframefilter(FRAME_FILTER);
 
     return 0;
 }
@@ -302,6 +310,9 @@ int set_initiator_pan_id(uint16_t id) {
     set_pan_id(id, rx_resp_msg);
     set_pan_id(id, tx_final_msg);
     set_pan_id(id, rx_report_msg);
+
+    dwt_setpanid(id);
+    dwt_enableframefilter(FRAME_FILTER);
 
     return 0;
 }

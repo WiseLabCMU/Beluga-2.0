@@ -1329,11 +1329,13 @@ void dwt_otpread(uint32 address, uint32 *array, uint8 length);
  * @param - bitmask - enables/disables the frame filtering options according to
  *      DWT_FF_NOTYPE_EN        0x000   no frame types allowed
  *      DWT_FF_COORD_EN         0x002   behave as coordinator (can receive
- * frames with no destination address (PAN ID has to match)) DWT_FF_BEACON_EN
- * 0x004   beacon frames allowed DWT_FF_DATA_EN          0x008   data frames
- * allowed DWT_FF_ACK_EN           0x010   ack frames allowed DWT_FF_MAC_EN
- * 0x020   mac control frames allowed DWT_FF_RSVD_EN          0x040   reserved
- * frame types allowed
+ *                                      frames with no destination address
+ *                                      (PAN ID has to match))
+ *      DWT_FF_BEACON_EN        0x004   beacon frames allowed
+ *      DWT_FF_DATA_EN          0x008   data frames allowed
+ *      DWT_FF_ACK_EN           0x010   ack frames allowed
+ *      DWT_FF_MAC_EN           0x020   mac control frames allowed
+ *      DWT_FF_RSVD_EN          0x040   reserved frame types allowed
  *
  * output parameters
  *
