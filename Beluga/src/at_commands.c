@@ -1073,6 +1073,14 @@ AT_COMMAND(VERSION) {
     OK(comms, APP_VERSION_STRING);
 }
 
+/**
+ * Tells the specified node to synchronize settings with the current node.
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ */
 AT_COMMAND(SYNC) {
     LOG_INF("Running SYNC command");
     CHECK_ARGC(comms, argc, 2);
@@ -1098,4 +1106,85 @@ AT_COMMAND(SYNC) {
         ERROR(comms, "Could not sync UWB parameters");
     }
     AT_OK(comms, "Updated the UWB parameters for node %" PRId32, id);
+}
+
+/**
+ * Calibrate command for calibrating the UWB TRX antenna delays
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ */
+AT_COMMAND(CALIBRATE) {
+    LOG_INF("Running CALIBRATE command");
+    if (argc < 2) {
+        // Display settings
+        uint32_t rx_dly_16, tx_dly_16, rx_dly_64, tx_dly_64;
+        rx_dly_16 = retrieveSetting(BELUGA_RX_ANT_DELAY_16);
+        rx_dly_64 = retrieveSetting(BELUGA_RX_ANT_DELAY_64);
+        tx_dly_16 = retrieveSetting(BELUGA_TX_ANT_DELAY_16);
+        tx_dly_64 = retrieveSetting(BELUGA_TX_ANT_DELAY_64);
+
+        OK(comms,
+           "RX Antenna Delays (16MHz/64MHz): %" PRIu32 "/%" PRIu32
+           ", TX Antenna Delays (16MHz/64MHz): %" PRId32 "/%" PRId32,
+           rx_dly_16, rx_dly_64, tx_dly_16, tx_dly_64);
+    }
+    CHECK_ARGC(comms, argc, 3);
+    int32_t id, delay;
+    enum beluga_setting setting;
+    int ret;
+
+    if (!strtoint32(argv[1], &id)) {
+        ERROR(comms, "Invalid delay ID");
+    }
+
+    if (!strtoint32(argv[2], &delay)) {
+        ERROR(comms, "Invalid delay value");
+    }
+
+    if (delay < 0 || delay > (int32_t)UINT16_MAX) {
+        ERROR(comms, "The delay value must be between 0 and 65535");
+    }
+
+    // UWB needs to be disabled before setting these. Error codes in
+    // setter functions will reflect that...
+    switch (id) {
+    case 0: {
+        ret = set_initiator_antenna_rx_delay(UWB_PR_16M, delay);
+        ret = set_responder_antenna_rx_delay(UWB_PR_16M, delay);
+        setting = BELUGA_RX_ANT_DELAY_16;
+        break;
+    }
+    case 1: {
+        ret = set_initiator_antenna_rx_delay(UWB_PR_64M, delay);
+        ret = set_responder_antenna_rx_delay(UWB_PR_64M, delay);
+        setting = BELUGA_RX_ANT_DELAY_64;
+        break;
+    }
+    case 2: {
+        ret = set_initiator_antenna_tx_delay(UWB_PR_16M, delay);
+        ret = set_responder_antenna_tx_delay(UWB_PR_16M, delay);
+        setting = BELUGA_TX_ANT_DELAY_16;
+        break;
+    }
+    case 3: {
+        ret = set_initiator_antenna_tx_delay(UWB_PR_64M, delay);
+        ret = set_responder_antenna_tx_delay(UWB_PR_64M, delay);
+        setting = BELUGA_TX_ANT_DELAY_64;
+        break;
+    }
+    default:
+        ERROR(comms, "Delay ID is out of range");
+        break;
+    }
+
+    if (ret != 0) {
+        ERROR(comms, "UWB must be disabled before calibration");
+    }
+
+    updateSetting(setting, delay);
+
+    AT_OK(comms, "Delay %" PRId32 " = %" PRId32, id, delay);
 }

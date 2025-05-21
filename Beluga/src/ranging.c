@@ -489,6 +489,9 @@ int uwb_set_pulse_rate(enum uwb_pulse_rate rate) {
         return -EINVAL;
     }
 
+    set_initiator_prf(rate);
+    set_responder_prf(rate);
+
     dwt_configure(&config);
 
     UPDATE_ADV_DATA(PULSERATE, rate);
@@ -820,8 +823,8 @@ void init_uwb(void) {
     dwt_configuretxrf(&config_tx);
 
     /* Apply default antenna delay value. See NOTE 2 below. */
-    dwt_setrxantennadelay(RX_ANT_DLY);
-    dwt_settxantennadelay(TX_ANT_DLY);
+    dwt_setrxantennadelay(DEFAULT_RX_ANT_DLY);
+    dwt_settxantennadelay(DEFAULT_TX_ANT_DLY);
 
     /* Set expected response's timeout. (keep listening so timeout is 0) */
     dwt_setrxtimeout(0);

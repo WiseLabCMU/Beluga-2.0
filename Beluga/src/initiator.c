@@ -87,6 +87,36 @@ static uint8 rx_report_msg[REPORT_MSG_LEN] = {
 static uint8 rx_buffer[RX_BUF_LEN];
 
 /**
+ * Transmit antenna delays for 16MHz PRF and 64MHz PRF
+ */
+static uint64 tx_delays[2] = {DEFAULT_TX_ANT_DLY, DEFAULT_TX_ANT_DLY};
+
+/**
+ * Receive antenna delays for 16MHz PRF and 64MHz PRF
+ */
+static uint64 rx_delays[2] = {DEFAULT_RX_ANT_DLY, DEFAULT_RX_ANT_DLY};
+
+/**
+ * The transmit antenna delay for the current PRF
+ */
+static uint64 tx_delay = DEFAULT_TX_ANT_DLY;
+
+/**
+ * The receive antenna delay for the current PRF
+ */
+static uint64 rx_delay = DEFAULT_RX_ANT_DLY;
+
+/**
+ * The current PRF
+ */
+static enum uwb_pulse_rate current_prf = UWB_PR_64M;
+
+/**
+ * The UWB power amplifier state
+ */
+static bool external_power_amp = false;
+
+/**
  * Multiplication factor to convert carrier integrator value to a frequency
  * offset in Hertz.
  */
@@ -160,6 +190,102 @@ int set_initiator_id(uint16_t id) {
     set_dest_id(id, rx_report_msg);
 
     return 0;
+}
+
+/**
+ * @brief Set the antenna RX delay calibration value for the given pulse
+ * repetition frequency.
+ *
+ * @param[in] prf Pulse repetition frequency associated with the value.
+ * @param[in] delay The antenna dealy calibration value.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
+int set_initiator_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
+    CHECK_UWB_ACTIVE();
+
+    if (prf != UWB_PR_64M && prf != UWB_PR_16M) {
+        return -EINVAL;
+    }
+
+    rx_delays[prf] = (uint64)delay;
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
+    if (prf != current_prf) {
+        rx_delay = delay;
+        dwt_setrxantennadelay(delay);
+        dwt_settxantennadelay((uint16)tx_delay);
+    }
+
+    return 0;
+}
+
+/**
+ * @brief Set the antenna TX delay calibration value for the given pulse
+ * repetition frequency.
+ *
+ * @param[in] prf Pulse repetition frequency associated with the value.
+ * @param[in] delay The antenna dealy calibration value.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
+int set_initiator_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay) {
+    CHECK_UWB_ACTIVE();
+
+    if (prf != UWB_PR_64M && prf != UWB_PR_16M) {
+        return -EINVAL;
+    }
+
+    tx_delays[prf] = (uint64)delay;
+    if (prf != current_prf) {
+        tx_delay = external_power_amp ? tx_delays[current_prf]
+                                      : rx_delays[current_prf];
+        dwt_settxantennadelay(delay);
+    }
+
+    return 0;
+}
+
+/**
+ * Set the pulse repetition frequency that is being used.
+ * @param[in] prf The current PRF.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
+int set_initiator_prf(enum uwb_pulse_rate prf) {
+    CHECK_UWB_ACTIVE();
+
+    if (prf != UWB_PR_64M && prf != UWB_PR_16M) {
+        return -EINVAL;
+    }
+
+    current_prf = prf;
+
+    rx_delay = rx_delays[prf];
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
+
+    dwt_setrxantennadelay((uint16)rx_delay);
+    dwt_settxantennadelay((uint16)tx_delay);
+
+    return 0;
+}
+
+/**
+ * Set the power amp state in the module.
+ * @param[in] enable The current power amplifier state.
+ */
+void set_initiator_power_mode(bool enable) {
+    external_power_amp = enable;
+
+    tx_delay =
+        external_power_amp ? tx_delays[current_prf] : rx_delays[current_prf];
+
+    dwt_setrxantennadelay((uint16)rx_delay);
+    dwt_settxantennadelay((uint16)tx_delay);
 }
 
 /**
@@ -358,7 +484,7 @@ static int send_final(void) {
         (resp_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
-    ts_replyA_end = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+    ts_replyA_end = (((uint64)(resp_tx_time & 0xFFFFFFFEUL)) << 8) + tx_delay;
 
     msg_set_ts(&tx_final_msg[RESP_MSG_POLL_RX_TS_IDX], poll_tx_ts);
     msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);

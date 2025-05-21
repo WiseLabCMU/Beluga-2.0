@@ -4,26 +4,6 @@ config ENABLE_BELUGA_UWB
     bool "Enables DecaDriver library for UWB"
     default y
 
-config TX_ANT_DLY
-    int "Transmitter Antenna Delay [DEPRECATED]"
-    default 16436
-    depends on ENABLE_BELUGA_UWB
-    help
-        The sum of the values is the TX to RX antenna delay.
-        This should be experimentally determined by a calibration process.
-        This configuration is deprecated as it should be something that
-        is calibrated and saved in flash for each device.
-
-config RX_ANT_DLY
-    int "Receiver Antenna Delay [DEPRECATED]"
-    default 16436
-    depends on ENABLE_BELUGA_UWB
-    help
-        The sum of the values is the TX to RX antenna delay.
-        This should be experimentally determined by a calibration process.
-        This configuration is deprecated as it should be something that
-        is calibrated and saved in flash for each device.
-
 config UWB_BOOT_BANNER
     bool "UWB Boot Banner"
     default n

@@ -37,6 +37,8 @@ LOG_MODULE_REGISTER(range_ext_logger, CONFIG_RANGE_EXTENSION_LOG_LEVEL);
 #if defined(CONFIG_BELUGA_RANGE_EXTENSION) && DT_NODE_EXISTS(SKY_GPIOS)
 #include <ble/ble_app.h>
 #include <deca_device_api.h>
+#include <initiator.h>
+#include <responder.h>
 #include <zephyr/drivers/gpio.h>
 
 /**
@@ -247,6 +249,8 @@ int init_range_extension(void) {
         } else {                                                               \
             dwt_setfinegraintxseq(true);                                       \
         }                                                                      \
+        set_initiator_power_mode(uwb_pa_);                                     \
+        set_responder_power_mode(uwb_pa_);                                     \
     } while (0)
 
 /**

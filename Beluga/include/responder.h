@@ -24,6 +24,7 @@
 #ifndef BELUGA_RESPONDER_H
 #define BELUGA_RESPONDER_H
 
+#include <ranging.h>
 #include <zephyr/kernel.h>
 
 /**
@@ -34,6 +35,45 @@
  * @return -EBUSY if UWB is active
  */
 int set_responder_pan_id(uint16_t id);
+
+/**
+ * @brief Set the antenna RX delay calibration value for the given pulse
+ * repetition frequency.
+ *
+ * @param[in] prf Pulse repetition frequency associated with the value.
+ * @param[in] delay The antenna dealy calibration value.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
+int set_responder_antenna_rx_delay(enum uwb_pulse_rate prf, uint16_t delay);
+
+/**
+ * @brief Set the antenna TX delay calibration value for the given pulse
+ * repetition frequency.
+ *
+ * @param[in] prf Pulse repetition frequency associated with the value.
+ * @param[in] delay The antenna dealy calibration value.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
+int set_responder_antenna_tx_delay(enum uwb_pulse_rate prf, uint16_t delay);
+
+/**
+ * Set the pulse repetition frequency that is being used.
+ * @param[in] prf The current PRF.
+ * @return 0 upon success.
+ * @return -EBUSY if UWB is active.
+ * @return -EINVAL if prf argument is invalid
+ */
+int set_responder_prf(enum uwb_pulse_rate prf);
+
+/**
+ * Set the power amp state in the module.
+ * @param[in] enable The current power amplifier state.
+ */
+void set_responder_power_mode(bool enable);
 
 /**
  * @brief Sets the source IDs for the messages that the responder sends and the
