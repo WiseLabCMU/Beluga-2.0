@@ -205,7 +205,7 @@ Building and Flashing
 AT Commands
 ===========
 The following AT commands can help users to access and modify DWM1001-DEV firmware to meet specific need.
-There are a total of 26 commands, and certain configurations will be saved in flash memory to restore user
+There are a total of 30 commands, and certain configurations will be saved in flash memory to restore user
 settings after the system reboots.
 
 Commands:
@@ -238,6 +238,8 @@ Commands:
 26. `SFD <#sfd>`_
 27. `EVICT <#evict>`_
 28. `VERBOSE <#verbose>`_
+29. `SYNC <#sync>`_
+30. `CALIBRATE <#calibrate>`_
 
 ID
 --
@@ -856,6 +858,44 @@ This setting is saved in flash.
 +-------------+-----------------------------+
 | 1           | Verbose mode turned on      |
 +-------------+-----------------------------+
+
+SYNC
+----
+.. code-block::
+
+    AT+SYNC <node ID>
+
+Connects to the node with the specified ID and sends its UWB
+settings to the connected node for UWB reconfiguration. The two
+nodes must have the same PAN address.
+
+CALIBRATE
+---------
+.. code-block::
+
+    AT+CALIBRATE <delay id> <calibration value>
+    AT+CALIBRATE
+
+Calibrates the UWB antenna delays.
+No argument will return all the current calibration values.
+These settings are saved in flash.
+
++----------+--------+-----------+
+| Delay ID | PRF    | Direction |
++==========+========+===========+
+| 0        | 16 MHz |           |
++----------+--------+  Receive  |
+| 1        | 64 MHz |           |
++----------+--------+-----------+
+| 2        | 16 MHz |           |
++----------+--------+  Transmit |
+| 3        | 64 MHz |           |
++----------+--------+-----------+
+
+.. note::
+    When the UWB amplifier is turned off, the receive antenna delay values are used as the transmit antenna
+    delay values too. The transmit antenna delays are different from the receive antenna delays when the
+    external power amplifier is on (since it is taking a different path to the antenna when transmitting).
 
 Appendix
 ========
