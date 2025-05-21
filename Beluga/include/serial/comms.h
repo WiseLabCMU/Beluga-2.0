@@ -69,18 +69,9 @@ struct at_command_static_entry {
  *
  * @param[in] _command The name of the AT command
  */
-#define AT_CMD_DEFINE(_command)                                                \
-    __attribute__((unused)) static int at_##_command(                          \
-        const struct comms *comms, size_t argc, char const *const *argv)
-
-/**
- * @brief Macro for defining and adding an AT command.
- *
- * @note Each command shall have a unique name.
- *
- * @param[in] _command The name of the AT command (for example: TIME).
- */
-#define AT_CMD_REGISTER(_command)                                              \
+#define AT_COMMAND(_command)                                                   \
+    static int at_##_command(const struct comms *comms, size_t argc,           \
+                             char const *const *argv);                         \
     static const struct at_command_static_entry UTIL_CAT(_comms_,              \
                                                          _command) = {         \
         .command = (const char *)STRINGIFY(_command),                          \
@@ -88,12 +79,15 @@ struct at_command_static_entry {
     };                                                                         \
     static const TYPE_SECTION_ITERABLE(                                        \
         union at_command_entry, UTIL_CAT(at_cmd_, _command), shell_root_cmds,  \
-        UTIL_CAT(at_cmd_, _command)) = {.entry = &UTIL_CAT(_comms_, _command)}
+        UTIL_CAT(at_cmd_, _command)) = {.entry =                               \
+                                            &UTIL_CAT(_comms_, _command)};     \
+    __attribute__((unused)) static int at_##_command(                          \
+        const struct comms *comms, size_t argc, char const *const *argv)
 
 /**
  * @brief Macro for defining and adding a conditional AT command.
  *
- * @see AT_CMD_REGISTER for details.
+ * @see AT_COMMAND for details.
  *
  * Macro can be used to create a command which can be conditionally present.
  * It is an alternative to \#ifdefs around the command registration and command
@@ -103,8 +97,11 @@ struct at_command_static_entry {
  * exists and equals to 1.
  * @param[in] _command The name of the AT command (for example: TIME).
  */
-#define AT_CMD_COND_REGISTER(_flag, _command)                                  \
-    IF_ENABLED(_flag, (AT_CMD_REGISTER(_command)))
+#define AT_COMMAND_COND_REGISTER(_flag, _command)                              \
+    COND_CODE_1(                                                               \
+        _flag, (AT_COMMAND(_command)),                                         \
+        (__attribute__((unused)) static int at_##_command(                     \
+            const struct comms *comms, size_t argc, char const *const *argv)))
 
 /**
  * Cannot use with shell
