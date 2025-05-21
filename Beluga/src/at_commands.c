@@ -1116,7 +1116,7 @@ AT_COMMAND(SYNC) {
  * @param[in] argv The arguments
  * @return 0 upon success
  */
-AT_CMD_DEFINE(CALIBRATE) {
+AT_COMMAND(CALIBRATE) {
     LOG_INF("Running CALIBRATE command");
     if (argc < 2) {
         // Display settings
@@ -1188,4 +1188,3 @@ AT_CMD_DEFINE(CALIBRATE) {
 
     AT_OK(comms, "Delay %" PRId32 " = %" PRId32, id, delay);
 }
-AT_CMD_REGISTER(CALIBRATE);
