@@ -194,8 +194,10 @@ int set_initiator_id(uint16_t id) {
     set_src_id(id, tx_final_msg);
     set_dest_id(id, rx_report_msg);
 
+#if IS_ENABLED(CONFIG_UWB_FRAME_FILTER)
     dwt_setaddress16(id);
     dwt_enableframefilter(FRAME_FILTER);
+#endif // IS_ENABLED(CONFIG_UWB_FRAME_FILTER)
 
     return 0;
 }
@@ -311,8 +313,10 @@ int set_initiator_pan_id(uint16_t id) {
     set_pan_id(id, tx_final_msg);
     set_pan_id(id, rx_report_msg);
 
+#if IS_ENABLED(CONFIG_UWB_FRAME_FILTER)
     dwt_setpanid(id);
     dwt_enableframefilter(FRAME_FILTER);
+#endif // IS_ENABLED(CONFIG_UWB_FRAME_FILTER)
 
     return 0;
 }

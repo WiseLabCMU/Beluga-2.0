@@ -106,4 +106,9 @@ config UWB_DIAGNOSTICS
         ranging attempt. WARNING: The more nodes that are on the network, the more heap
         memory is required to report the data.
 
+config UWB_FRAME_FILTER
+    bool "Filter frames on the DW1000 [Experimental]"
+    default n
+    select EXPERIMENTAL
+
 endmenu
