@@ -65,7 +65,8 @@ struct at_command_static_entry {
 };
 
 /**
- * Macro for defining an AT command entry
+ * Macro for defining and registering an AT command entry. This is the
+ * only thing needed to create a new AT command.
  *
  * @param[in] _command The name of the AT command
  */

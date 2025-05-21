@@ -49,6 +49,9 @@
  * - UWB Transmit Antenna Delay at 64 MHz PRF
  * .
  *
+ * @internal This is the only thing that needs modification when adding new
+ * settings. Note that the setting enums start with "BELUGA_"
+ *
  * Format: setting name, default value
  */
 #define FOREACH_BELUGA_SETTING(FUNC)                                           \
