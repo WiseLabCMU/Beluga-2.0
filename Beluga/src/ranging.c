@@ -766,6 +766,12 @@ int set_rate(uint32_t rate) {
     return 0;
 }
 
+/**
+ * Sets the PAN address for the UWB network
+ * @param[in] pan The new PAN ID
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 int set_uwb_pan_id(uint32_t pan) {
     if (!IN_RANGE(pan, 0, UINT16_MAX)) {
         return -EINVAL;
@@ -780,6 +786,10 @@ int set_uwb_pan_id(uint32_t pan) {
     return 0;
 }
 
+/**
+ * Updates the UWB to be enabled or disabled.
+ * @param[in] active `true` if enabled and `false` if disabled.
+ */
 void update_uwb_state(bool active) {
     if (active) {
         k_sem_give(&k_sus_resp);

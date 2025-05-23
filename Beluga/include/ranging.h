@@ -326,8 +326,18 @@ int set_tx_power(const struct uwb_tx_power_config *tx_power);
  */
 uint32_t get_tx_power(void);
 
+/**
+ * Sets the PAN address for the UWB network
+ * @param[in] pan The new PAN ID
+ * @return 0 upon success
+ * @return negative error code otherwise
+ */
 int set_uwb_pan_id(uint32_t pan);
 
+/**
+ * Updates the UWB to be enabled or disabled.
+ * @param[in] active `true` if enabled and `false` if disabled.
+ */
 void update_uwb_state(bool active);
 
 /**
