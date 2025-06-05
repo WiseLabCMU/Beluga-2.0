@@ -98,12 +98,13 @@ bool clock_init(enum clk_cntrl clk_subsys) {
 #if defined(CONFIG_BELUGA_RESET_REASON)
 #include <zephyr/drivers/hwinfo.h>
 
+static uint32_t reason = 0u;
+
 /**
  * @brief Retrieve the reason why the hardware reset and indicate it to the
  * logger. Additionally, clears the reset reason for the next run.
  */
-void get_reset_cause(void) {
-    uint32_t reason;
+void init_reset_cause(void) {
     hwinfo_get_reset_cause(&reason);
     hwinfo_clear_reset_cause();
 
@@ -152,5 +153,9 @@ void get_reset_cause(void) {
     if (reason & RESET_TEMPERATURE) {
         LOG_INF("Temperature reset\n");
     }
+}
+
+uint32_t get_reset_cause(void) {
+    return reason;
 }
 #endif // defined(CONFIG_BELUGA_RESET_REASON)

@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <utils.h>
 #include <zephyr/logging/log.h>
+#include <debug.h>
 
 /**
  * Logger for the AT commands
@@ -1187,4 +1188,17 @@ AT_COMMAND(CALIBRATE) {
     updateSetting(setting, delay);
 
     AT_OK(comms, "Delay %" PRId32 " = %" PRId32, id, delay);
+}
+
+/**
+ * Retrieve the reset reason.
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success
+ */
+AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RESET_REASON), REASON) {
+    uint32_t reason = get_reset_cause();
+    OK(comms, "Reset reason: %" PRIu32, reason);
 }

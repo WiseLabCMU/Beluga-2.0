@@ -64,18 +64,26 @@ bool clock_init(enum clk_cntrl clk_subsys);
  * @brief Retrieve the reason why the hardware reset and indicate it to the
  * logger. Additionally, clears the reset reason for the next run.
  */
-void get_reset_cause(void);
+void init_reset_cause(void);
+
+/**
+ * Get the reset cause
+ * @return The reset cause
+ */
+uint32_t get_reset_cause(void);
 
 /**
  * Get the reset cause a log it
  */
-#define RESET_CAUSE() get_reset_cause()
+#define RESET_CAUSE() init_reset_cause()
 #else
 
 /**
  * Get the reset cause a log it
  */
 #define RESET_CAUSE() (void)0
+
+static inline uint32_t get_reset_cause(void) { return 0u; }
 #endif
 
 #endif // BELUGA_DEBUG_H
