@@ -103,9 +103,27 @@
  * ({}) are used on this like a loop, then code can be ran inside like a loop
  * while the condition is not met.
  *
- * @param[in] cond The condition that needs to be met before continuing
+ * @param[in] cond The condition that needs to be met before continuing.
+ * @param[in] timeout The maximum amount of time in milliseconds to wait for the
+ * condition to be met. If no timeout is desired, then this should be -1.
+ * @param[in] wait_expr The expression to execute while waiting.
+ * @param[in] timeout_expr The expression to execute if a timeout occurs.
  */
-#define UWB_WAIT(cond) while (!(cond))
+#define UWB_WAIT(cond, timeout, wait_expr, timeout_expr)                       \
+    do {                                                                       \
+        uint32_t _wf_cycle_count = k_ms_to_cyc_ceil32(timeout);                \
+        uint32_t _wf_start = k_cycle_get_32();                                 \
+        while (true) {                                                         \
+            if (cond) {                                                        \
+                break;                                                         \
+            } else if (!(_wf_cycle_count > (k_cycle_get_32() - _wf_start))) {  \
+                timeout_expr;                                                  \
+            } else {                                                           \
+                wait_expr;                                                     \
+                break;                                                         \
+            }                                                                  \
+        }                                                                      \
+    } while (0)
 
 /**
  * The byte offset of the frame control byte field
