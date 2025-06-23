@@ -118,9 +118,9 @@
                 break;                                                         \
             } else if (!(_wf_cycle_count > (k_cycle_get_32() - _wf_start))) {  \
                 timeout_expr;                                                  \
+                break;                                                         \
             } else {                                                           \
                 wait_expr;                                                     \
-                break;                                                         \
             }                                                                  \
         }                                                                      \
     } while (0)
