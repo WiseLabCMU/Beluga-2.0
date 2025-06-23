@@ -35,6 +35,7 @@
 #include <watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/reboot.h>
 
 /**
  * Logging module for the ranging module
@@ -227,8 +228,8 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 /**
  * The watchdog timer instance for the ranging.
  */
-static struct task_wdt_attr watchdogAttr = {.period =
-                                                2 * CONFIG_MAX_POLLING_RATE};
+static struct task_wdt_attr ranging_watchdog_attr = {
+    .period = 3 * CONFIG_MAX_POLLING_RATE};
 
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
@@ -795,10 +796,16 @@ void update_uwb_state(bool active) {
         k_sem_give(&k_sus_resp);
         k_sem_give(&k_sus_init);
         update_led_state(LED_UWB, LED_ON);
+        if (spawn_task_watchdog(&ranging_watchdog_attr) < 0) {
+            LOG_ERR("Unable to spawn watchdog for ranging");
+        }
     } else {
         k_sem_take(&k_sus_resp, K_FOREVER);
         k_sem_take(&k_sus_init, K_FOREVER);
         update_led_state(LED_UWB, LED_OFF);
+        if (kill_task_watchdog(&ranging_watchdog_attr) < 0) {
+            LOG_ERR("Unable to kill ranging watchdog");
+        }
     }
 
     UPDATE_ADV_DATA(ACTIVE, active);
@@ -824,8 +831,7 @@ void init_uwb(void) {
 
     if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR) {
         LOG_ERR("Failed to load UWB code");
-        while (true)
-            ;
+        sys_reboot(SYS_REBOOT_COLD);
     }
 
     port_set_dw1000_fastrate();
@@ -1010,14 +1016,8 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
 
-    if (spawn_task_watchdog(&watchdogAttr) < 0) {
-        LOG_ERR("Unable to spawn ranging watchdog");
-        while (1)
-            ;
-    }
-
     while (true) {
-        watchdog_red_rocket(&watchdogAttr);
+        watchdog_red_rocket(&ranging_watchdog_attr);
 
         if (initiator_freq > 0) {
             initiate_ranging(comms);
@@ -1047,6 +1047,9 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     int ret;
     const struct comms *comms = comms_backend_uart_get_ptr();
     struct beluga_msg msg = {.type = RANGING_EVENT};
+    struct task_wdt_attr responder_wdt = {
+        .period = CONFIG_RESPONDER_TIMEOUT * 3,
+    };
 
     if (are_leds_on()) {
         dwt_setleds(DWT_LEDS_ENABLE);
@@ -1054,8 +1057,13 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
         dwt_setleds(DWT_LEDS_DISABLE);
     }
 
+    if (spawn_task_watchdog(&responder_wdt) < 0) {
+        LOG_ERR("Unable to spawn responder wdt");
+        sys_reboot(SYS_REBOOT_COLD);
+    }
+
     while (true) {
-        watchdog_red_rocket(&watchdogAttr);
+        watchdog_red_rocket(&responder_wdt);
 
         // Check if responding is suspended, return 0 means suspended
         unsigned int suspend_start = k_sem_count_get(&k_sus_resp);

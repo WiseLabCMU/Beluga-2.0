@@ -111,4 +111,8 @@ config UWB_FRAME_FILTER
     default n
     select EXPERIMENTAL
 
+config RESPONDER_TIMEOUT
+    int "UWB Responder task timeout (ms)"
+    default 1000
+
 endmenu

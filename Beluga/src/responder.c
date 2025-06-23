@@ -236,6 +236,16 @@ int set_responder_pan_id(uint16_t id) {
     return 0;
 }
 
+#define INIT_WAIT_EXPR                                                         \
+    do {                                                                       \
+        if (k_sem_count_get(&k_sus_resp) == 0) {                               \
+            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);           \
+            dwt_rxreset();                                                     \
+            LOG_INF("Responder suspended");                                    \
+            return -EBUSY;                                                     \
+        }                                                                      \
+    } while (0)
+
 /**
  * @brief Waits for and attempts to receive a poll message from the initiator
  *
@@ -253,15 +263,8 @@ static int wait_poll_message(uint16_t *src_id, uint32_t *logic_clk) {
 
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-        (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)) {
-
-        if (k_sem_count_get(&k_sus_resp) == 0) {
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
-            dwt_rxreset();
-            LOG_INF("Responder suspended");
-            return -EBUSY;
-        }
-    }
+            (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
+        CONFIG_RESPONDER_TIMEOUT, INIT_WAIT_EXPR, return -ETIMEDOUT);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -319,7 +322,8 @@ static int ds_respond(uint64_t *poll_rx_ts) {
         return -EBADMSG;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
+             CONFIG_RESPONDER_TIMEOUT, (void)0, return -ETIMEDOUT);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -344,14 +348,8 @@ static int wait_final(uint64 *tof_dtu, const uint64_t *poll_rx_ts) {
 
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-        (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)) {
-        if (k_sem_count_get(&k_sus_resp) == 0) {
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);
-            dwt_rxreset();
-            LOG_INF("Responder got suspended");
-            return -EBUSY;
-        }
-    }
+            (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
+        CONFIG_RESPONDER_TIMEOUT, INIT_WAIT_EXPR, return -ETIMEDOUT);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -421,7 +419,8 @@ static int send_report(uint64 tof_dtu) {
         return -EBADMSG;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
+             CONFIG_RESPONDER_TIMEOUT, (void)0, return -ETIMEDOUT);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -484,6 +483,14 @@ int ds_resp_run(uint16_t *id, uint32_t *logic_clk) {
     return 0;
 }
 
+#define SS_INIT_EXPR                                                           \
+    do {                                                                       \
+        if (0 == k_sem_count_get(&k_sus_resp)) {                               \
+            dwt_forcetrxoff();                                                 \
+            return -EBUSY;                                                     \
+        }                                                                      \
+    } while (0)
+
 /**
  * @brief Sends a response to the initiator assuming single-sided TWR is being
  * used.
@@ -518,13 +525,8 @@ static int ss_respond(void) {
         return -EBADMSG;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS) {
-        if (0 == k_sem_count_get(&k_sus_resp)) {
-            dwt_forcetrxoff();
-            return -EBUSY;
-        }
-    }
-
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
+             CONFIG_RESPONDER_TIMEOUT, SS_INIT_EXPR, return -ETIMEDOUT);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
