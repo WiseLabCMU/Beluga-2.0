@@ -629,21 +629,9 @@ int main(void) {
     LOG_INF("Module initialization done. Waiting for DTR to be asserted");
     wait_comms_ready(comms);
 
-    struct task_wdt_attr task_watchdog = {.period = 2000};
-
-    LOG_INF(
-        "Spawning a task watchdog timer for starting UWB and loading settings");
-    if (spawn_task_watchdog(&task_watchdog) != 0) {
-        LOG_ERR("Unable to start watchdog");
-        return 1;
-    }
-
     init_uwb();
 
     load_settings(comms);
-
-    kill_task_watchdog(&task_watchdog);
-    LOG_INF("Killed task watchdog. Now running application");
 
     init_responder_thread();
     init_print_list_task();

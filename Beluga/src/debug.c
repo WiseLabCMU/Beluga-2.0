@@ -155,7 +155,5 @@ void init_reset_cause(void) {
     }
 }
 
-uint32_t get_reset_cause(void) {
-    return reason;
-}
+uint32_t get_reset_cause(void) { return reason; }
 #endif // defined(CONFIG_BELUGA_RESET_REASON)

@@ -24,6 +24,7 @@
 #include <errno.h>
 
 #include <app_leds.h>
+#include <debug.h>
 #include <list_monitor.h>
 #include <list_neighbors.h>
 #include <power_manager.h>
@@ -34,7 +35,6 @@
 #include <stdlib.h>
 #include <utils.h>
 #include <zephyr/logging/log.h>
-#include <debug.h>
 
 /**
  * Logger for the AT commands
