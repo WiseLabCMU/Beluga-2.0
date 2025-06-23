@@ -436,7 +436,8 @@ static int send_poll(void) {
         return -EBADMSG;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS, -1, (void)0,
+             k_fatal_halt(K_ERR_KERNEL_PANIC));
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -453,8 +454,10 @@ static int send_poll(void) {
 static int ds_rx_response(void) {
     uint32 status_reg, frame_len;
 
-    UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
+    UWB_WAIT(
+        (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+            (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
+        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -515,7 +518,8 @@ static int send_final(void) {
         return -ETIMEDOUT;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS);
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS, -1, (void)0,
+             k_fatal_halt(K_ERR_KERNEL_PANIC));
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -537,8 +541,10 @@ static int rx_report(double *distance) {
     uint32_t msg_tof_dtu;
     double tof;
 
-    UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
+    UWB_WAIT(
+        (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+            (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
+        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -637,8 +643,10 @@ static int ss_rx_response(double *distance) {
     float clockOffsetRatio;
     double tof;
 
-    UWB_WAIT((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
-             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR));
+    UWB_WAIT(
+        (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
+            (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
+        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
