@@ -99,9 +99,7 @@
     } while (0)
 
 /**
- * Stalls a task until a certain condition is met. Additionally, if curly braces
- * ({}) are used on this like a loop, then code can be ran inside like a loop
- * while the condition is not met.
+ * Stalls a task until a certain condition is met.
  *
  * @param[in] cond The condition that needs to be met before continuing.
  * @param[in] timeout The maximum amount of time in milliseconds to wait for the
@@ -123,6 +121,25 @@
                 wait_expr;                                                     \
             }                                                                  \
         }                                                                      \
+    } while (0)
+
+/**
+ * The expression to execute upon a receiver timeout when waiting for UWB.
+ */
+#define RX_TIMEOUT_EXPR                                                        \
+    do {                                                                       \
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);               \
+        dwt_rxreset();                                                         \
+        return -ETIMEDOUT;                                                     \
+    } while (0)
+
+/**
+ * The expression to execute upon a transmitter timeout when waiting for UWB.
+ */
+#define TX_TIMEOUT_EXPR                                                        \
+    do {                                                                       \
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);                    \
+        return -ETIMEDOUT;                                                     \
     } while (0)
 
 /**

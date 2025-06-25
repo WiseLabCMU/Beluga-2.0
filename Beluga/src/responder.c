@@ -264,7 +264,7 @@ static int wait_poll_message(uint16_t *src_id, uint32_t *logic_clk) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        CONFIG_RESPONDER_TIMEOUT, INIT_WAIT_EXPR, return -ETIMEDOUT);
+        CONFIG_RESPONDER_TIMEOUT, INIT_WAIT_EXPR, RX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -323,7 +323,7 @@ static int ds_respond(uint64_t *poll_rx_ts) {
     }
 
     UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
-             CONFIG_RESPONDER_TIMEOUT, (void)0, return -ETIMEDOUT);
+             CONFIG_RESPONDER_TIMEOUT, (void)0, TX_TIMEOUT_EXPR);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -349,7 +349,7 @@ static int wait_final(uint64 *tof_dtu, const uint64_t *poll_rx_ts) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        CONFIG_RESPONDER_TIMEOUT, INIT_WAIT_EXPR, return -ETIMEDOUT);
+        CONFIG_RESPONDER_TIMEOUT, INIT_WAIT_EXPR, TX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,

@@ -436,8 +436,8 @@ static int send_poll(void) {
         return -EBADMSG;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS, -1, (void)0,
-             k_fatal_halt(K_ERR_KERNEL_PANIC));
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
+             CONFIG_INITIATOR_TIMEOUT, (void)0, TX_TIMEOUT_EXPR);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -457,7 +457,7 @@ static int ds_rx_response(void) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
+        CONFIG_INITIATOR_TIMEOUT, (void)0, RX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -518,8 +518,8 @@ static int send_final(void) {
         return -ETIMEDOUT;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS, -1, (void)0,
-             k_fatal_halt(K_ERR_KERNEL_PANIC));
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
+             CONFIG_INITIATOR_TIMEOUT, (void)0, TX_TIMEOUT_EXPR);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -544,7 +544,7 @@ static int rx_report(double *distance) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
+        CONFIG_INITIATOR_TIMEOUT, (void)0, RX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -646,7 +646,7 @@ static int ss_rx_response(double *distance) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
+        CONFIG_INITIATOR_TIMEOUT, (void)0, RX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
