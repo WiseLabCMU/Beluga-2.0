@@ -106,6 +106,8 @@ static uint64 tx_delay = DEFAULT_TX_ANT_DLY;
  */
 static uint64 rx_delay = DEFAULT_RX_ANT_DLY;
 
+static uint8 seq_cnt = 0u;
+
 /**
  * The current PRF
  */
@@ -347,12 +349,12 @@ void set_hertz_to_ppm_multiplier(uint8_t channel) {
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
         break;
     case 2:
+    case 4:
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
         break;
     case 3:
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
         break;
-    case 4:
     case 5:
     case 7:
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
@@ -425,6 +427,7 @@ static void set_exchange_id(void) {
  * @return -EBADMSG if transmission failed
  */
 static int send_poll(void) {
+    tx_poll_msg[SEQ_CNT_OFFSET] = seq_cnt++;
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
     dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg, 0);
     dwt_writetxfctrl(sizeof(tx_poll_msg), 0, 1);
@@ -474,7 +477,7 @@ static int ds_rx_response(void) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    rx_buffer[SEQ_CNT_OFFSET] = 0;
+    rx_resp_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     if (!(memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
@@ -507,6 +510,8 @@ static int send_final(void) {
     msg_set_ts(&tx_final_msg[RESP_MSG_POLL_RX_TS_IDX], poll_tx_ts);
     msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);
     msg_set_ts(&tx_final_msg[FINAL_MSG_FINAL_TX_TS_IDX], ts_replyA_end);
+
+    tx_final_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0);
     dwt_writetxfctrl(sizeof(tx_final_msg), 0, 1);
@@ -560,7 +565,7 @@ static int rx_report(double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    rx_buffer[SEQ_CNT_OFFSET] = 0;
+    rx_report_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     if (!(memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
@@ -662,7 +667,7 @@ static int ss_rx_response(double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    rx_buffer[SEQ_CNT_OFFSET] = 0;
+    rx_resp_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     if (!(memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
         dwt_rxreset();

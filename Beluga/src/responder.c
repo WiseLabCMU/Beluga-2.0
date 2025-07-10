@@ -94,6 +94,8 @@ static uint64 rx_delays[2] = {DEFAULT_RX_ANT_DLY, DEFAULT_RX_ANT_DLY};
  */
 static uint64 tx_delay = DEFAULT_TX_ANT_DLY;
 
+static uint8 seq_cnt = 0u;
+
 /**
  * The current PRF
  */
@@ -280,6 +282,7 @@ static int wait_poll_message(uint16_t *src_id, uint32_t *logic_clk) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
+    seq_cnt = rx_buffer[SEQ_CNT_OFFSET] + 1;
     rx_buffer[SEQ_CNT_OFFSET] = 0;
     *src_id = get_src_id(rx_buffer);
     rx_buffer[SRC_OFFSET] = 0;
@@ -312,6 +315,7 @@ static int ds_respond(uint64_t *poll_rx_ts) {
         (*poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
     dwt_setdelayedtrxtime(resp_tx_time);
 
+    tx_resp_msg[SEQ_CNT_OFFSET] = seq_cnt++;
     dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg, 0);
     dwt_writetxfctrl(sizeof(tx_resp_msg), 0, 1);
 
@@ -365,7 +369,7 @@ static int wait_final(uint64 *tof_dtu, const uint64_t *poll_rx_ts) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    rx_buffer[SEQ_CNT_OFFSET] = 0;
+    rx_final_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     if (!(memcmp(rx_buffer, rx_final_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
@@ -409,6 +413,7 @@ static int send_report(uint64 tof_dtu) {
 
     msg_set_ts(&tx_report_msg[RESP_MSG_POLL_RX_TS_IDX], tof_dtu);
 
+    tx_report_msg[SEQ_CNT_OFFSET] = seq_cnt;
     dwt_writetxdata(sizeof(tx_report_msg), tx_report_msg, 0);
     dwt_writetxfctrl(sizeof(tx_report_msg), 0, 1);
     ret = dwt_starttx(DWT_START_TX_IMMEDIATE);
@@ -515,6 +520,7 @@ static int ss_respond(void) {
     msg_set_ts(&tx_resp_msg[RESP_MSG_POLL_RX_TS_IDX], poll_rx_ts);
     msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
 
+    tx_resp_msg[SEQ_CNT_OFFSET] = seq_cnt;
     dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg, 0);
     dwt_writetxfctrl(sizeof(tx_resp_msg), 0, 1);
 
