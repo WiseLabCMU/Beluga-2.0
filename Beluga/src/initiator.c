@@ -134,7 +134,7 @@ static double hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
  * This is the delay from Frame RX timestamp to TX reply timestamp used for
  * calculating/setting the DW1000's delayed TX function.
  */
-#define POLL_RX_TO_RESP_TX_DLY_UUS 2000
+#define POLL_RX_TO_RESP_TX_DLY_UUS UINT64_C(2000)
 
 /**
  * This is the delay from the end of the frame transmission to the enable of the
@@ -572,7 +572,7 @@ static int rx_report(double *distance) {
     }
 
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
-    tof = msg_tof_dtu * DWT_TIME_UNITS;
+    tof = (double)msg_tof_dtu * DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
     return 0;
 }

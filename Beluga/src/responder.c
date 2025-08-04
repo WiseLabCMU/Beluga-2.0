@@ -115,7 +115,7 @@ static bool external_power_amp = false;
 /**
  * Delay between frames, in UWB microseconds.
  */
-#define POLL_RX_TO_RESP_TX_DLY_UUS CONFIG_POLL_RX_TO_RESP_TX_DLY
+#define POLL_RX_TO_RESP_TX_DLY_UUS CONCAT(CONFIG_POLL_RX_TO_RESP_TX_DLY, UINT64_C())
 #endif
 
 /**
@@ -390,7 +390,7 @@ static int wait_final(uint64 *tof_dtu, const uint64_t *poll_rx_ts) {
     roundA = (double)(resp_rx_ts - poll_tx_ts);
     replyA = (double)(final_tx_ts - resp_rx_ts);
 
-    if ((roundA * roundB - replyA * replyB) <= 0) {
+    if ((roundA * roundB - replyA * replyB) <= 0.0) {
         LOG_INF("Bad TOF response");
         return -EINVAL;
     }
@@ -456,25 +456,27 @@ int ds_resp_run(uint16_t *id, uint32_t *logic_clk) {
         return err;
     }
 
+    SCHED_LOCK_ENTER();
+
     set_dest_id(src_id, tx_resp_msg);
     SET_EXCHANGE_ID(tx_resp_msg + LOGIC_CLK_OFFSET, _logic_clk);
 
     if ((err = ds_respond(&poll_rx_ts)) < 0) {
-        return err;
+        SCHED_LOCK_ERROR(err);
     }
 
     set_src_id(src_id, rx_final_msg);
     SET_EXCHANGE_ID(rx_final_msg + LOGIC_CLK_OFFSET, _logic_clk);
 
     if ((err = wait_final(&tof_dtu, &poll_rx_ts)) < 0) {
-        return err;
+        SCHED_LOCK_ERROR(err);
     }
 
     set_dest_id(src_id, tx_report_msg);
     SET_EXCHANGE_ID(tx_report_msg + LOGIC_CLK_OFFSET, _logic_clk);
 
     if ((err = send_report(tof_dtu)) < 0) {
-        return err;
+        SCHED_LOCK_ERROR(err);
     }
 
     if (logic_clk != NULL) {
@@ -484,6 +486,8 @@ int ds_resp_run(uint16_t *id, uint32_t *logic_clk) {
     if (id != NULL) {
         *id = src_id;
     }
+
+    SCHED_LOCK_EXIT();
 
     return 0;
 }

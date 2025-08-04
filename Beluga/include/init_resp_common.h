@@ -230,7 +230,45 @@
  * UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion
  * factor. 1 uus = 512 / 499.2 ?s and 1 ?s = 499.2 * 128 dtu.
  */
-#define UUS_TO_DWT_TIME 65536
+#define UUS_TO_DWT_TIME UINT64_C(65536)
+
+#if IS_ENABLED(CONFIG_RESP_SUSPEND_SCHED)
+/**
+ * Lock the scheduler.
+ */
+#define SCHED_LOCK_ENTER() k_sched_lock()
+
+/**
+ * Unlock the scheduler and return the function with the given error code.
+ * @param[in] _err The error code to return.
+ */
+#define SCHED_LOCK_ERROR(_err)                                                 \
+    do {                                                                       \
+        k_sched_unlock();                                                      \
+        return _err;                                                           \
+    } while (0)
+
+/**
+ * Unlock the scheduler.
+ */
+#define SCHED_LOCK_EXIT() k_sched_unlock()
+#else
+/**
+ * Lock the scheduler.
+ */
+#define SCHED_LOCK_ENTER()     (void)0
+
+/**
+ * Unlock the scheduler and return the function with the given error code.
+ * @param[in] _err The error code to return.
+ */
+#define SCHED_LOCK_ERROR(_err) return _err;
+
+/**
+ * Unlock the scheduler.
+ */
+#define SCHED_LOCK_EXIT()      (void)0
+#endif // IS_ENABLED(CONFIG_RESP_SUSPEND_SCHED)
 
 /**
  * @Brief Sets the source ID byte field to the specified UUID
