@@ -115,7 +115,8 @@ static bool external_power_amp = false;
 /**
  * Delay between frames, in UWB microseconds.
  */
-#define POLL_RX_TO_RESP_TX_DLY_UUS CONCAT(CONFIG_POLL_RX_TO_RESP_TX_DLY, UINT64_C())
+#define POLL_RX_TO_RESP_TX_DLY_UUS                                             \
+    CONCAT(CONFIG_POLL_RX_TO_RESP_TX_DLY, UINT64_C())
 #endif
 
 /**
