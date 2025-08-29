@@ -365,8 +365,9 @@ void Beluga::__time_sync() { _time_sync(); }
 
 #define CALLBACK_DEF(name_)                                                    \
     {                                                                          \
-#name_, std::bind(&BelugaSerial::BelugaSerial::name_, &this->_serial,  \
-                          std::placeholders::_1)                               \
+#name_, std::bind(                                                     \
+                    &BelugaSerial::BelugaSerial <NEIGHBOR_LIST_CLASS>::name_,  \
+                    &this->_serial, std::placeholders::_1)                     \
     }
 
 constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{

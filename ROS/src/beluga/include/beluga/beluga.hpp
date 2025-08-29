@@ -50,6 +50,11 @@
     std::bind(&Beluga::publish_exchange, this, std::placeholders::_1)
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_RANGE_EVENTS_PUBLISHER)
 
+/**
+ * Class to use for the neighbor list. Leave empty to use default class.
+ */
+#define NEIGHBOR_LIST_CLASS
+
 using namespace std::chrono_literals;
 
 /// ROS2 Node for Beluga
@@ -163,7 +168,7 @@ class Beluga : public rclcpp::Node {
     publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ranges);
     void publish_exchange(const BelugaSerial::RangeEvent &event);
 
-    BelugaSerial::BelugaSerial _serial;
+    BelugaSerial::BelugaSerial<NEIGHBOR_LIST_CLASS> _serial;
 
     void _setup();
 

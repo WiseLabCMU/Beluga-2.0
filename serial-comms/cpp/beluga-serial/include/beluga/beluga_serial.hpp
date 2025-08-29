@@ -16,6 +16,13 @@
 namespace BelugaSerial {
 template <typename NeighborList = BelugaNeighborList>
 class BelugaSerial : public BelugaSerialBase {
+    static_assert(std::is_base_of<BelugaNeighborListBase, NeighborList>::value,
+                  "NeighborList must derive from BelugaNeighborListBase");
+
+  public:
+    explicit BelugaSerial(const BelugaSerialAttributes &attr)
+        : BelugaSerialBase(attr) {}
+
   private:
     NeighborList _neighbors;
 
