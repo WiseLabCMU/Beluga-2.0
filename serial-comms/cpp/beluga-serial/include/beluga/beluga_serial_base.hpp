@@ -432,11 +432,11 @@ class BelugaSerialBase {
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
     std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
-            nullptr;
+        nullptr;
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
     std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
-            nullptr;
+        nullptr;
 
   private:
     std::function<int(const char *, va_list)> _logger_cb = nullptr;

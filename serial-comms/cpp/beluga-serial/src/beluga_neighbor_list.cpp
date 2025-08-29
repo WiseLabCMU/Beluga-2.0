@@ -39,6 +39,16 @@ void BelugaNeighbor::update(const BelugaFrame::NeighborUpdate &neighbor) {
     _updated = true;
 }
 
+BelugaNeighborListBase::~BelugaNeighborListBase() = default;
+
+bool BelugaNeighborListBase::neighbor_updates() const noexcept {
+    return _neighbors_update;
+}
+
+bool BelugaNeighborListBase::range_updates() const noexcept {
+    return _range_update;
+}
+
 void BelugaNeighborList::update(
     const std::vector<BelugaFrame::NeighborUpdate> &updates) {
     for (auto neighbor : updates) {
@@ -84,13 +94,5 @@ void BelugaNeighborList::clear() noexcept {
         _neighbors_update = true;
         _range_update = false;
     }
-}
-
-bool BelugaNeighborList::neighbor_updates() const noexcept {
-    return _neighbors_update;
-}
-
-bool BelugaNeighborList::range_updates() const noexcept {
-    return _range_update;
 }
 } // namespace BelugaSerial
