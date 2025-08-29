@@ -431,8 +431,12 @@ class BelugaSerialBase {
     virtual void _clear_neighbor_list() = 0;
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
+    std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
+            nullptr;
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
+    std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
+            nullptr;
 
   private:
     std::function<int(const char *, va_list)> _logger_cb = nullptr;
@@ -443,12 +447,6 @@ class BelugaSerialBase {
 
     // Private because we don't want to get car-bombed by the user
     std::string format(const std::string &mode = "");
-
-    std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
-        nullptr;
-
-    std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
-        nullptr;
 
     BelugaQueue<RangeEvent, 1, true> _range_event_queue;
     std::function<void(const RangeEvent &)> _range_event_cb = nullptr;

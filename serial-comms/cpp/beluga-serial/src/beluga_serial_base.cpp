@@ -113,30 +113,6 @@ void BelugaSerialBase::_log(const char *msg, ...) {
     }
 }
 
-// void BelugaSerialBase::_publish_neighbor_update() {
-//     if (_neighbors.neighbor_updates()) {
-//         std::vector<BelugaNeighbor> updates;
-//         _neighbors.get_neighbors(updates);
-//         if (_neighbor_cb != nullptr) {
-//             _neighbor_cb(updates);
-//         } else {
-//             _neighbor_queue.put(updates, false);
-//         }
-//     }
-// }
-
-// void BelugaSerialBase::_publish_range_update() {
-//     if (_neighbors.range_updates()) {
-//         std::vector<BelugaNeighbor> updates;
-//         _neighbors.get_updates(updates);
-//         if (_range_cb != nullptr) {
-//             _range_cb(updates);
-//         } else {
-//             _range_queue.put(updates, false);
-//         }
-//     }
-// }
-
 void BelugaSerialBase::_publish_range_event(RangeEvent event) {
     if (_range_event_cb != nullptr) {
         _range_event_cb(event);
