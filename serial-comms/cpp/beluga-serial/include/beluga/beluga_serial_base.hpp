@@ -121,8 +121,8 @@ struct BelugaSerialAttributes {
         report_uwb_drops_cb = nullptr;
 };
 
-/// Manager for serial communication with Beluga nodes
-class BelugaSerial {
+/// Base manager for serial communication with Beluga nodes
+class BelugaSerialBase {
   public:
     /**
      * Manufacturer and Product pair for Beluga devices
@@ -132,18 +132,18 @@ class BelugaSerial {
     /**
      * Default constructor
      */
-    BelugaSerial();
+    BelugaSerialBase();
 
     /**
      * Constructor with attributes
      * @param[in] attr The attributes to use
      */
-    explicit BelugaSerial(const BelugaSerialAttributes &attr);
+    explicit BelugaSerialBase(const BelugaSerialAttributes &attr);
 
     /**
      * Destructor
      */
-    ~BelugaSerial();
+    ~BelugaSerialBase();
 
     /**
      * Register a callback for resynchronizing time
@@ -421,22 +421,32 @@ class BelugaSerial {
      */
     RangeEvent get_range_event();
 
+  protected:
+    virtual void _publish_neighbor_update() = 0;
+    virtual void _publish_range_update() = 0;
+
+    virtual void _update_neighbor_list(
+        const std::vector<BelugaFrame::NeighborUpdate> &updates) = 0;
+    virtual void _remove_from_neighbor_list(uint32_t id) = 0;
+    virtual void _clear_neighbor_list() = 0;
+
+    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
+
+    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
+
   private:
     std::function<int(const char *, va_list)> _logger_cb = nullptr;
     Serial::Serial _serial;
     std::chrono::milliseconds _timeout{};
-    BelugaNeighborList _neighbors;
     bool _usbRemainsOpen = false;
     uint16_t _id{};
 
     // Private because we don't want to get car-bombed by the user
     std::string format(const std::string &mode = "");
 
-    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
     std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
         nullptr;
 
-    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
     std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
         nullptr;
 
@@ -448,8 +458,6 @@ class BelugaSerial {
 
     void _log(const char *msg, ...);
 
-    void _publish_neighbor_update();
-    void _publish_range_update();
     void _publish_range_event(RangeEvent event);
     void _publish_response(std::string &response);
     void _publish_uwb_exchange_drop(BelugaFrame::DroppedUwbExchange &drop_info);
