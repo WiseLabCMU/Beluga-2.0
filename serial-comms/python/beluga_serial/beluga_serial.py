@@ -8,7 +8,7 @@
 
 import serial
 import serial.tools.list_ports as list_ports
-from typing import List, Dict, Optional, Union, Callable, Any, Tuple, SupportsIndex
+from typing import List, Dict, Optional, Union, Callable, Any, Tuple, SupportsIndex, Type
 import queue
 import time
 from dataclasses import dataclass
@@ -130,6 +130,7 @@ class BelugaSerialAttr:
         range_event_cb (Optional[Callable[[dict], None]]): A callback function that gets called when a range event occurs. Defaults to None.
         logger_cb (Optional[Callable[[Any], None]]): A callback function for logging messages. Defaults to None.
         auto_connect (bool): A flag indicating whether to automatically connect to the serial port. Defaults to True.
+        neighbor_list_impl (Type[BelugaNeighborList]): The Beluga Neighbor List implementation to use. Defaults to BelugaNeighborList.
     """
     port: Optional[str] = None
     baud: int = 115200
@@ -140,6 +141,7 @@ class BelugaSerialAttr:
     range_event_cb: Optional[Callable[[dict], None]] = None
     logger_cb: Optional[Callable[[Any], None]] = None
     auto_connect: bool = True
+    neighbor_list_impl: Type[BelugaNeighborList] = BelugaNeighborList
 
 
 class BelugaSerial:
@@ -205,7 +207,10 @@ class BelugaSerial:
         self._range_cb = attr.range_update_cb
         self._range_event_cb = attr.range_event_cb
 
-        self._neighbors = BelugaNeighborList()
+        if not issubclass(attr.neighbor_list_impl, BelugaNeighborList):
+            raise ValueError(f"{attr.neighbor_list_impl.__name__} must be a subclass of BelugaNeighborList")
+
+        self._neighbors = attr.neighbor_list_impl()
         self._usb_remains_open = False
         self._id = 0
 
