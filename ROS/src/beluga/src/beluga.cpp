@@ -363,11 +363,9 @@ void Beluga::_resync_time_cb() {
 
 void Beluga::__time_sync() { _time_sync(); }
 
-#define CALLBACK_DEF(name_)                                                    \
-    {                                                                          \
-#name_, std::bind(                                                     \
-                    &BelugaSerial::BelugaSerial <NEIGHBOR_LIST_CLASS>::name_,  \
-                    &this->_serial, std::placeholders::_1)                     \
+#define CALLBACK_DEF(name_)                                                                                      \
+    {                                                                                                            \
+#name_, [ObjectPtr = &this->_serial](auto && PH1) { return ObjectPtr->name_(std::forward<decltype(PH1)>(PH1)); } \
     }
 
 constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{
@@ -409,7 +407,7 @@ void Beluga::_setup() {
         _serial.swap_port(this->get_parameter("port").as_string());
     }
 
-    _serial.register_resync_cb(std::bind(&Beluga::_resync_time_cb, this));
+    _serial.register_resync_cb([this] { _resync_time_cb(); });
     _serial.start();
 
     std::map<std::string, std::function<std::string(const std::string &)>>
