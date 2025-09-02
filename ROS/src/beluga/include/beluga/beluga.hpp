@@ -15,6 +15,7 @@
 #include <beluga_messages/msg/beluga_exchange.hpp>
 #include <beluga_messages/msg/beluga_neighbors.hpp>
 #include <beluga_messages/msg/beluga_ranges.hpp>
+#include <beluga_messages/msg/beluga_unexpected_reboot.hpp>
 #include <beluga_messages/srv/beluga_at_command.hpp>
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
@@ -47,7 +48,7 @@
 #define RANGE_EVENT_UPDATE_CB nullptr
 #else
 #define RANGE_EVENT_UPDATE_CB                                                  \
-    std::bind(&Beluga::publish_exchange, this, std::placeholders::_1)
+    [this](auto &&PH1) { publish_exchange(std::forward<decltype(PH1)>(PH1)); }
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_RANGE_EVENTS_PUBLISHER)
 
 /**
@@ -66,10 +67,14 @@ class Beluga : public rclcpp::Node {
         .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
         .range_updates_cb = RANGE_UPDATE_CB,
         .range_event_cb = RANGE_EVENT_UPDATE_CB,
-        .logger_cb = std::bind(&Beluga::serial_logger, this,
-                               std::placeholders::_1, std::placeholders::_2)};
+        .logger_cb = [this](auto &&PH1, auto &&PH2) {
+            return serial_logger(std::forward<decltype(PH1)>(PH1),
+                                 std::forward<decltype(PH2)>(PH2));
+        }};
 
   public:
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-avoid-bind"
     /**
      * Constructor
      */
@@ -89,13 +94,15 @@ class Beluga : public rclcpp::Node {
         this->declare_parameter("port", "");
         this->declare_parameter("config", "");
 
+        this->declare_parameter("reboot_topic", "unexpected_beluga_reboot");
+
         // Timer period for neighbor list publisher (if using the timed
         // publisher)
-        this->declare_parameter("neighbor_period", 100);
+        this->declare_parameter("neighbor_period", 30);
 
         // Timer period for range updates publisher (if using the timed
         // publisher)
-        this->declare_parameter("ranging_period", 100);
+        this->declare_parameter("ranging_period", 30);
 
         // Timer period for range events publisher (if using the timed
         // publisher)
@@ -117,6 +124,9 @@ class Beluga : public rclcpp::Node {
         ranging_event_publisher =
             this->create_publisher<beluga_messages::msg::BelugaExchange>(
                 this->get_parameter("exchange_name").as_string(), qos);
+        unexpected_reboot = this->create_publisher<
+            beluga_messages::msg::BelugaUnexpectedReboot>(
+            this->get_parameter("reboot_topic").as_string(), qos);
 
         _setup();
 
@@ -127,13 +137,13 @@ class Beluga : public rclcpp::Node {
         int64_t neighbor_period =
             this->get_parameter("neighbor_period").as_int();
         neighbor_timer = this->create_wall_timer(
-            std::chrono::milliseconds(neighbor_period),
+            std::chrono::seconds(neighbor_period),
             std::bind(&Beluga::timer_callback_neighbors, this));
 #endif // defined(TIMED_NEIGHBOR_PUBLISHER)
 #if defined(TIMED_RANGES_PUBLISHER)
         int64_t ranges_period = this->get_parameter("ranging_period").as_int();
         ranges_timer = this->create_wall_timer(
-            std::chrono::milliseconds(ranges_period),
+            std::chrono::seconds(ranges_period),
             std::bind(&Beluga::timer_callback_ranges, this));
 #endif // defined(TIMED_RANGES_PUBLISHER)
 #if defined(TIMED_RANGE_EVENTS_PUBLISHER)
@@ -143,6 +153,7 @@ class Beluga : public rclcpp::Node {
             std::bind(&Beluga::timer_callback_range_events, this));
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
     }
+#pragma clang diagnostic pop
 
   private:
     rclcpp::Publisher<beluga_messages::msg::BelugaNeighbors>::SharedPtr
@@ -153,6 +164,8 @@ class Beluga : public rclcpp::Node {
         at_command_service;
     rclcpp::Publisher<beluga_messages::msg::BelugaExchange>::SharedPtr
         ranging_event_publisher;
+    rclcpp::Publisher<beluga_messages::msg::BelugaUnexpectedReboot>::SharedPtr
+        unexpected_reboot;
 
     rclcpp::TimerBase::SharedPtr sync_timer;
 
