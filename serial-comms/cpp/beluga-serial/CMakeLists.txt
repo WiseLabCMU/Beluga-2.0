@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 add_library(beluga-serial)
 
+set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/_deps)
+
 include( FetchContent )
 FetchContent_Declare(
         daw_json_link
