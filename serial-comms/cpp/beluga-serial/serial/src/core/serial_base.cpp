@@ -148,7 +148,7 @@ uint32_t SerialBase::inter_byte_timeout() const noexcept {
 }
 
 void SerialBase::inter_byte_timeout(uint32_t ic_timeout) {
-    _inter_byte_timeout = ic_timeout;
+    _inter_byte_timeout = (int32_t)ic_timeout;
     _reconfigure_port();
 }
 
@@ -209,7 +209,7 @@ size_t SerialBase::read_until(std::vector<uint8_t> &b,
             bytes_read++;
             if (bytes_read >= expected.size()) {
                 if (std::equal(expected.begin(), expected.end(),
-                               b.end() - expected.size())) {
+                               b.end() - (long)expected.size())) {
                     break;
                 }
             }

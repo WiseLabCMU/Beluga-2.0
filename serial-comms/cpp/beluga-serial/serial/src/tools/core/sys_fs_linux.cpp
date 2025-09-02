@@ -125,7 +125,7 @@ static std::vector<std::string> _glob(const char *pattern) {
 
     if (glob(pattern, 0, NULL, &glob_result) == 0) {
         for (size_t i = 0; i < glob_result.gl_pathc; i++) {
-            results.push_back(std::string(glob_result.gl_pathv[i]));
+            results.emplace_back(glob_result.gl_pathv[i]);
         }
         globfree(&glob_result);
     }
@@ -139,7 +139,7 @@ static std::vector<std::string> _glob(const char *pattern) {
 #define UPDATE_VECTOR(attr, _destination, _source, _pattern)                   \
     do {                                                                       \
         if (attr) {                                                            \
-            _source = _glob(_pattern);                                         \
+            (_source) = _glob(_pattern);                                       \
             APPEND_VECTOR(_destination, _source);                              \
         }                                                                      \
     } while (false)
@@ -157,8 +157,8 @@ std::vector<SysFsLinux> comports(const SysFsLinuxScanAttr &attr) {
     UPDATE_VECTOR(attr.ttyAP, devices, results, "/dev/ttyAP*");
     UPDATE_VECTOR(attr.ttyGS, devices, results, "/dev/ttyGS*");
 
-    for (size_t i = 0; i < devices.size(); i++) {
-        SysFsLinux dev(devices[i]);
+    for (const auto &device : devices) {
+        SysFsLinux dev(device);
         if (dev.subsystem() != "platform") {
             ret.push_back(dev);
         }

@@ -26,12 +26,12 @@ class BelugaSerial : public BelugaSerialBase {
   private:
     NeighborList _neighbors;
 
-    void _publish_neighbor_update();
-    void _publish_range_update();
+    void _publish_neighbor_update() override;
+    void _publish_range_update() override;
     void _update_neighbor_list(
-        const std::vector<BelugaFrame::NeighborUpdate> &updates);
-    void _remove_from_neighbor_list(uint32_t id);
-    void _clear_neighbor_list();
+        const std::vector<BelugaFrame::NeighborUpdate> &updates) override;
+    void _remove_from_neighbor_list(uint32_t id) override;
+    void _clear_neighbor_list() override;
 };
 
 template <typename NeighborList>

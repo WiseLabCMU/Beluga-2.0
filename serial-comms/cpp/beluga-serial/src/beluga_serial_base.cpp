@@ -811,8 +811,7 @@ void BelugaSerialBase::__reconnect() {
 
 void BelugaSerialBase::_reconnect() {
     std::lock_guard<std::recursive_mutex> lock(_serial_lock);
-    std::packaged_task<void()> task(
-        std::bind(&BelugaSerialBase::__reconnect, this));
+    std::packaged_task<void()> task([this] { __reconnect(); });
     auto future = task.get_future();
     std::thread t(std::move(task));
     if (future.wait_for(30s) != std::future_status::timeout) {
