@@ -100,6 +100,7 @@ void BelugaSerialBase::_initialize(const BelugaSerialAttributes &attr) {
     _range_cb = attr.range_updates_cb;
     _range_event_cb = attr.range_event_cb;
     _report_uwb_drops = attr.report_uwb_drops_cb;
+    _unexpected_reboot_event_cb = attr.unexpected_reboot_event;
 }
 
 BelugaSerialBase::~BelugaSerialBase() { this->close(); }
@@ -272,6 +273,9 @@ void BelugaSerialBase::_read_serial() {
                 if (_time_resync) {
                     std::thread t_(_time_resync);
                     t_.detach();
+                }
+                if (_unexpected_reboot_event_cb) {
+                    _unexpected_reboot_event_cb();
                 }
             } catch (const std::runtime_error &exc) {
                 _log(exc.what());

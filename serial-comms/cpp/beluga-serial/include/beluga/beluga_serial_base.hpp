@@ -119,6 +119,14 @@ struct BelugaSerialAttributes {
      */
     std::function<void(const BelugaFrame::DroppedUwbExchange &)>
         report_uwb_drops_cb = nullptr;
+
+    /**
+     * Callback for reporting unexpected reboots.
+     * Default is nullptr
+     * @note If this is left unset, then the library will not report
+     * unexpected reboots.
+     */
+    std::function<void()> unexpected_reboot_event = nullptr;
 };
 
 /// Base manager for serial communication with Beluga nodes
@@ -148,7 +156,7 @@ class BelugaSerialBase {
     /**
      * Register a callback for resynchronizing time
      * @param[in] cb The callback function to call to resync time. To unregister
-     * a function, pass int nullptr.
+     * a function, pass in nullptr.
      */
     void register_resync_cb(std::function<void()> cb);
 
@@ -450,6 +458,8 @@ class BelugaSerialBase {
 
     BelugaQueue<RangeEvent, 1, true> _range_event_queue;
     std::function<void(const RangeEvent &)> _range_event_cb = nullptr;
+
+    std::function<void()> _unexpected_reboot_event_cb = nullptr;
 
     void
     _initialize(const BelugaSerialAttributes &attr = BelugaSerialAttributes{});

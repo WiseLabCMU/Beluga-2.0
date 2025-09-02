@@ -67,10 +67,13 @@ class Beluga : public rclcpp::Node {
         .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
         .range_updates_cb = RANGE_UPDATE_CB,
         .range_event_cb = RANGE_EVENT_UPDATE_CB,
-        .logger_cb = [this](auto &&PH1, auto &&PH2) {
-            return serial_logger(std::forward<decltype(PH1)>(PH1),
-                                 std::forward<decltype(PH2)>(PH2));
-        }};
+        .logger_cb =
+            [this](auto &&PH1, auto &&PH2) {
+                return serial_logger(std::forward<decltype(PH1)>(PH1),
+                                     std::forward<decltype(PH2)>(PH2));
+            },
+        .unexpected_reboot_event = [this]() { unexpected_reboot_event(); },
+    };
 
   public:
 #pragma clang diagnostic push
@@ -213,6 +216,8 @@ class Beluga : public rclcpp::Node {
     rclcpp::TimerBase::SharedPtr range_events_timer;
     void timer_callback_range_events();
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
+
+    void unexpected_reboot_event();
 };
 
 #endif // BELUGA_BELUGA_HPP

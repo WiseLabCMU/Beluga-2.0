@@ -447,12 +447,13 @@ void Beluga::_setup() {
         if (setting == "Invalid AT command") {
             std::string key_ = key;
             std::transform(key_.begin(), key_.end(), key_.begin(), ::toupper);
-            RCLCPP_INFO(this->get_logger(), "AT+%s is disabled int firmware",
+            RCLCPP_INFO(this->get_logger(), "AT+%s is disabled in firmware",
                         key_.c_str());
             continue;
         }
 
         if (int_setting != configs[key]) {
+            // TODO: TXPOWER is always going to be different
             RCLCPP_INFO(this->get_logger(),
                         "Difference in %s setting. Now setting %s to %" PRId64,
                         key, key, configs[key]);
@@ -539,3 +540,9 @@ void Beluga::timer_callback_range_events() {
     }
 }
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
+
+void Beluga::unexpected_reboot_event() {
+    auto message = beluga_messages::msg::BelugaUnexpectedReboot();
+    message.timestamp = this->get_clock()->now();
+    this->unexpected_reboot->publish(message);
+}
