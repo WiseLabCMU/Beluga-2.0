@@ -368,19 +368,22 @@ void Beluga::_time_sync_helper() { _time_sync(); }
 #name_, [ObjectPtr = &this->_serial](auto && PH1) { return ObjectPtr->name_(std::forward<decltype(PH1)>(PH1)); } \
     }
 
-constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{
+constexpr std::array<std::pair<const char *, int64_t>, 15> DEFAULT_CONFIGS = {{
     {"bootmode", 2},
     {"rate", 100},
-    {"channel", 5},
+    {"channel", 4},
     {"timeout", 9000},
     {"txpower", 0},
     {"streammode", 1},
     {"twrmode", 1},
     {"ledmode", 0},
-    {"pwramp", 0},
-    {"datarate", 0},
-    {"preamble", 128},
+    {"pwramp", 5},
+    {"datarate", 1},
+    {"preamble", 512},
     {"pulserate", 1},
+    {"phr", 0},
+    {"pac", 2},
+    {"sfd", 1},
 }};
 
 constexpr std::array<const char *, 18> settingPriorities = {
@@ -407,7 +410,6 @@ void Beluga::_setup() {
         _serial.swap_port(this->get_parameter("port").as_string());
     }
 
-    _serial.register_resync_cb([this] { _resync_time_cb(); });
     _serial.start();
 
     std::map<std::string, std::function<std::string(const std::string &)>>
@@ -473,6 +475,7 @@ void Beluga::_setup() {
     RCLCPP_INFO(this->get_logger(), "Done rebooting");
 
     _init_time_sync();
+    _serial.register_resync_cb([this] { _resync_time_cb(); });
 
     RCLCPP_INFO(this->get_logger(), "Ready");
 }
