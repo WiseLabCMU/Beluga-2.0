@@ -80,7 +80,7 @@ class ZeroDivisionError : std::exception {
 
 using beluga_messages::srv::BelugaATCommand;
 
-void Beluga::run_at_command(
+void Beluga::_run_at_command(
     const std::shared_ptr<beluga_messages::srv::BelugaATCommand::Request>
         request,
     std::shared_ptr<beluga_messages::srv::BelugaATCommand::Response> response) {
@@ -183,7 +183,7 @@ void Beluga::run_at_command(
     }
 }
 
-void Beluga::publish_neighbor_list(
+void Beluga::_publish_neighbor_list(
     const std::vector<BelugaSerial::BelugaNeighbor> &neighbors) {
     auto message = beluga_messages::msg::BelugaNeighbors();
     for (const auto &it : neighbors) {
@@ -195,11 +195,11 @@ void Beluga::publish_neighbor_list(
         neighbor.timestamp = _beluga_to_ros_time(it.time());
         message.neighbors.push_back(neighbor);
     }
-    neighbor_list_publisher->publish(message);
+    _neighbor_list_publisher->publish(message);
     PRINT_NEIGHBORS(message);
 }
 
-void Beluga::publish_ranges(
+void Beluga::_publish_ranges(
     const std::vector<BelugaSerial::BelugaNeighbor> &ranges) {
     auto message = beluga_messages::msg::BelugaRanges();
     for (const auto &it : ranges) {
@@ -210,16 +210,16 @@ void Beluga::publish_ranges(
         range.timestamp = _beluga_to_ros_time(it.time());
         message.ranges.push_back(range);
     }
-    range_updates_publisher->publish(message);
+    _range_updates_publisher->publish(message);
     PRINT_RANGES(message);
 }
 
-void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
+void Beluga::_publish_exchange(const BelugaSerial::RangeEvent &event) {
     auto message = beluga_messages::msg::BelugaExchange();
     message.id = event.ID;
     message.exchange = event.EXCHANGE;
     message.timestamp = _beluga_to_ros_time(event.TIMESTAMP);
-    ranging_event_publisher->publish(message);
+    _ranging_event_publisher->publish(message);
     PRINT_EXCHANGE(message);
 }
 
@@ -227,22 +227,22 @@ void Beluga::_time_sync(bool first) {
     std::unique_lock<std::mutex> lock(_timestamp_sync, std::defer_lock);
     int retries = 5;
     while (retries > 0) {
-        auto [t1_, req1, resp1] = _time_sync_get_measurement();
+        auto [t_1, req1, resp1] = _time_sync_get_measurement();
         int64_t delta = (resp1 - req1).nanoseconds() / 2;
         auto map1 = req1 + rclcpp::Duration(std::chrono::nanoseconds(delta));
 
         // Wait 100ms
         this->get_clock()->sleep_until(resp1 + rclcpp::Duration(100ms));
 
-        auto [t2_, req2, resp2] = _time_sync_get_measurement();
+        auto [t_2, req2, resp2] = _time_sync_get_measurement();
         delta = (resp2 - req2).nanoseconds() / 2;
         auto map2 = req2 + rclcpp::Duration(std::chrono::nanoseconds(delta));
 
         int64_t t1, t2, t_diff;
         auto map_diff = map2 - map1;
         try {
-            t1 = extract_number(t1_);
-            t2 = extract_number(t2_);
+            t1 = _extract_number(t_1);
+            t2 = _extract_number(t_2);
             t_diff = t2 - t1;
             if (t_diff == 0) {
                 throw ZeroDivisionError();
@@ -256,8 +256,8 @@ void Beluga::_time_sync(bool first) {
             retries--;
             if (retries > 0) {
                 RCLCPP_ERROR(this->get_logger(),
-                             "Unable to sync time: t1: %s, t2: %s", t1_.c_str(),
-                             t2_.c_str());
+                             "Unable to sync time: t1: %s, t2: %s", t_1.c_str(),
+                             t_2.c_str());
             } else {
                 RCLCPP_ERROR(this->get_logger(),
                              "Unable to sync time. Will retry in 10 minutes");
@@ -303,7 +303,7 @@ Beluga::_time_sync_get_measurement() {
     return {t, req, req};
 }
 
-int64_t Beluga::extract_number(const std::string &s) {
+int64_t Beluga::_extract_number(const std::string &s) {
     std::string s_num;
     int base = 10;
     int (*check_digit)(int) = isdigit;
@@ -356,12 +356,12 @@ void Beluga::_init_time_sync() {
 }
 
 void Beluga::_resync_time_cb() {
-    this->sync_timer->cancel();
+    this->_sync_timer->cancel();
     _init_time_sync();
-    this->sync_timer->reset();
+    this->_sync_timer->reset();
 }
 
-void Beluga::__time_sync() { _time_sync(); }
+void Beluga::_time_sync_helper() { _time_sync(); }
 
 #define CALLBACK_DEF(name_)                                                                                      \
     {                                                                                                            \
@@ -397,7 +397,7 @@ void Beluga::_setup() {
     if (!this->get_parameter("config").as_string().empty()) {
         // Splice custom configs with default ones
         auto file_configs =
-            read_configs(this->get_parameter("config").as_string());
+            _read_configs(this->get_parameter("config").as_string());
         for (const auto &[key, value] : file_configs) {
             configs[key] = value;
         }
@@ -435,7 +435,7 @@ void Beluga::_setup() {
                     setting.c_str());
         int64_t int_setting;
         try {
-            int_setting = extract_number(setting);
+            int_setting = _extract_number(setting);
         } catch (ValueError &exc) {
             int_setting = -1;
         }
@@ -477,7 +477,8 @@ void Beluga::_setup() {
     RCLCPP_INFO(this->get_logger(), "Ready");
 }
 
-std::map<std::string, int64_t> Beluga::read_configs(const std::string &config) {
+std::map<std::string, int64_t>
+Beluga::_read_configs(const std::string &config) {
     std::ifstream file(config);
 
     if (file.fail()) {
@@ -490,7 +491,7 @@ std::map<std::string, int64_t> Beluga::read_configs(const std::string &config) {
     return daw::json::from_json<std::map<std::string, int64_t>>(json_str);
 }
 
-int Beluga::serial_logger(const char *msg, va_list args) {
+int Beluga::_serial_logger(const char *msg, va_list args) {
     va_list args_copy;
     va_copy(args_copy, args);
 
@@ -511,38 +512,38 @@ int Beluga::serial_logger(const char *msg, va_list args) {
 }
 
 #if defined(TIMED_NEIGHBOR_PUBLISHER)
-void Beluga::timer_callback_neighbors() {
+void Beluga::_timer_callback_neighbors() {
     std::vector<BelugaSerial::BelugaNeighbor> list;
     bool updated = _serial.get_neighbors(list);
 
     if (updated) {
-        publish_neighbor_list(list);
+        _publish_neighbor_list(list);
     }
 }
 #endif // defined(TIMED_NEIGHBOR_PUBLISHER)
 
 #if defined(TIMED_RANGES_PUBLISHER)
-void Beluga::timer_callback_ranges() {
+void Beluga::_timer_callback_ranges() {
     std::vector<BelugaSerial::BelugaNeighbor> list;
     _serial.get_ranges(list);
 
     if (!list.empty()) {
-        publish_ranges(list);
+        _publish_ranges(list);
     }
 }
 #endif // defined(TIMED_RANGES_PUBLISHER)
 
 #if defined(TIMED_RANGE_EVENTS_PUBLISHER)
-void Beluga::timer_callback_range_events() {
+void Beluga::_timer_callback_range_events() {
     BelugaSerial::RangeEvent event = _serial.get_range_event();
     if (event.ID != 0) {
-        publish_exchange(event);
+        _publish_exchange(event);
     }
 }
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
 
-void Beluga::unexpected_reboot_event() {
+void Beluga::_unexpected_reboot_event() {
     auto message = beluga_messages::msg::BelugaUnexpectedReboot();
     message.timestamp = this->get_clock()->now();
-    this->unexpected_reboot->publish(message);
+    this->_unexpected_reboot->publish(message);
 }

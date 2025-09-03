@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_BELUGA_HPP
-#define BELUGA_BELUGA_HPP
+#ifndef BELUGA_ROS_BELUGA_HPP
+#define BELUGA_ROS_BELUGA_HPP
 
 #include <beluga/beluga_serial.hpp>
 #include <beluga_messages/msg/beluga_exchange.hpp>
@@ -48,7 +48,7 @@
 #define RANGE_EVENT_UPDATE_CB nullptr
 #else
 #define RANGE_EVENT_UPDATE_CB                                                  \
-    [this](auto &&PH1) { publish_exchange(std::forward<decltype(PH1)>(PH1)); }
+    [this](auto &&PH1) { _publish_exchange(std::forward<decltype(PH1)>(PH1)); }
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_RANGE_EVENTS_PUBLISHER)
 
 /**
@@ -63,16 +63,16 @@ class Beluga : public rclcpp::Node {
     /**
      * Attributes for BelugaSerial
      */
-    const BelugaSerial::BelugaSerialAttributes attr = {
+    const BelugaSerial::BelugaSerialAttributes _attr = {
         .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
         .range_updates_cb = RANGE_UPDATE_CB,
         .range_event_cb = RANGE_EVENT_UPDATE_CB,
         .logger_cb =
-            [this](auto &&PH1, auto &&PH2) {
-                return serial_logger(std::forward<decltype(PH1)>(PH1),
-                                     std::forward<decltype(PH2)>(PH2));
+            [this](auto &&ph_1, auto &&ph_2) {
+                return _serial_logger(std::forward<decltype(ph_1)>(ph_1),
+                                      std::forward<decltype(ph_2)>(ph_2));
             },
-        .unexpected_reboot_event = [this]() { unexpected_reboot_event(); },
+        .unexpected_reboot_event = [this]() { _unexpected_reboot_event(); },
     };
 
   public:
@@ -81,7 +81,7 @@ class Beluga : public rclcpp::Node {
     /**
      * Constructor
      */
-    Beluga() : Node("beluga"), _serial(attr) {
+    Beluga() : Node("beluga"), _serial(_attr) {
         // Neighbor list publisher name
         this->declare_parameter("neighbors_name", "neighbor_list");
 
@@ -113,45 +113,45 @@ class Beluga : public rclcpp::Node {
 
         int64_t qos = this->get_parameter("history_depth").as_int();
 
-        neighbor_list_publisher =
+        _neighbor_list_publisher =
             this->create_publisher<beluga_messages::msg::BelugaNeighbors>(
                 this->get_parameter("neighbors_name").as_string(), qos);
-        range_updates_publisher =
+        _range_updates_publisher =
             this->create_publisher<beluga_messages::msg::BelugaRanges>(
                 this->get_parameter("ranges_name").as_string(), qos);
-        at_command_service =
+        _at_command_service =
             this->create_service<beluga_messages::srv::BelugaATCommand>(
                 this->get_parameter("service_topic").as_string(),
-                std::bind(&Beluga::run_at_command, this, std::placeholders::_1,
+                std::bind(&Beluga::_run_at_command, this, std::placeholders::_1,
                           std::placeholders::_2));
-        ranging_event_publisher =
+        _ranging_event_publisher =
             this->create_publisher<beluga_messages::msg::BelugaExchange>(
                 this->get_parameter("exchange_name").as_string(), qos);
-        unexpected_reboot = this->create_publisher<
+        _unexpected_reboot = this->create_publisher<
             beluga_messages::msg::BelugaUnexpectedReboot>(
             this->get_parameter("reboot_topic").as_string(), qos);
 
         _setup();
 
-        sync_timer = this->create_wall_timer(
-            300s, std::bind(&Beluga::__time_sync, this));
+        _sync_timer = this->create_wall_timer(
+            300s, std::bind(&Beluga::_time_sync_helper, this));
 
 #if defined(TIMED_NEIGHBOR_PUBLISHER)
         int64_t neighbor_period =
             this->get_parameter("neighbor_period").as_int();
-        neighbor_timer = this->create_wall_timer(
+        _neighbor_timer = this->create_wall_timer(
             std::chrono::seconds(neighbor_period),
-            std::bind(&Beluga::timer_callback_neighbors, this));
+            std::bind(&Beluga::_timer_callback_neighbors, this));
 #endif // defined(TIMED_NEIGHBOR_PUBLISHER)
 #if defined(TIMED_RANGES_PUBLISHER)
         int64_t ranges_period = this->get_parameter("ranging_period").as_int();
-        ranges_timer = this->create_wall_timer(
+        _ranges_timer = this->create_wall_timer(
             std::chrono::seconds(ranges_period),
-            std::bind(&Beluga::timer_callback_ranges, this));
+            std::bind(&Beluga::_timer_callback_ranges, this));
 #endif // defined(TIMED_RANGES_PUBLISHER)
 #if defined(TIMED_RANGE_EVENTS_PUBLISHER)
         int64_t events_period = this->get_parameter("events_period").as_int();
-        range_events_timer = this->create_wall_timer(
+        _range_events_timer = this->create_wall_timer(
             std::chrono::milliseconds(events_period),
             std::bind(&Beluga::timer_callback_range_events, this));
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
@@ -160,38 +160,38 @@ class Beluga : public rclcpp::Node {
 
   private:
     rclcpp::Publisher<beluga_messages::msg::BelugaNeighbors>::SharedPtr
-        neighbor_list_publisher;
+        _neighbor_list_publisher;
     rclcpp::Publisher<beluga_messages::msg::BelugaRanges>::SharedPtr
-        range_updates_publisher;
+        _range_updates_publisher;
     rclcpp::Service<beluga_messages::srv::BelugaATCommand>::SharedPtr
-        at_command_service;
+        _at_command_service;
     rclcpp::Publisher<beluga_messages::msg::BelugaExchange>::SharedPtr
-        ranging_event_publisher;
+        _ranging_event_publisher;
     rclcpp::Publisher<beluga_messages::msg::BelugaUnexpectedReboot>::SharedPtr
-        unexpected_reboot;
+        _unexpected_reboot;
 
-    rclcpp::TimerBase::SharedPtr sync_timer;
+    rclcpp::TimerBase::SharedPtr _sync_timer;
 
-    void run_at_command(
+    void _run_at_command(
         const std::shared_ptr<beluga_messages::srv::BelugaATCommand::Request>
             request,
         std::shared_ptr<beluga_messages::srv::BelugaATCommand::Response>
             response);
 
-    void publish_neighbor_list(
+    void _publish_neighbor_list(
         const std::vector<BelugaSerial::BelugaNeighbor> &neighbors);
     void
-    publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ranges);
-    void publish_exchange(const BelugaSerial::RangeEvent &event);
+    _publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ranges);
+    void _publish_exchange(const BelugaSerial::RangeEvent &event);
 
     BelugaSerial::BelugaSerial<NEIGHBOR_LIST_CLASS> _serial;
 
     void _setup();
 
-    static int64_t extract_number(const std::string &s);
+    static int64_t _extract_number(const std::string &s);
     void _init_time_sync();
     void _resync_time_cb();
-    void __time_sync();
+    void _time_sync_helper();
     void _time_sync(bool first = false);
     std::tuple<std::string, rclcpp::Time, rclcpp::Time>
     _time_sync_get_measurement();
@@ -201,23 +201,23 @@ class Beluga : public rclcpp::Node {
     std::mutex _timestamp_sync;
     rclcpp::Time _beluga_to_ros_time(int64_t t);
     static std::map<std::string, int64_t>
-    read_configs(const std::string &config);
-    int serial_logger(const char *msg, va_list args);
+    _read_configs(const std::string &config);
+    int _serial_logger(const char *msg, va_list args);
 
 #if defined(TIMED_NEIGHBOR_PUBLISHER)
-    rclcpp::TimerBase::SharedPtr neighbor_timer;
-    void timer_callback_neighbors();
+    rclcpp::TimerBase::SharedPtr _neighbor_timer;
+    void _timer_callback_neighbors();
 #endif // defined(TIMED_NEIGHBOR_PUBLISHER)
 #if defined(TIMED_RANGES_PUBLISHER)
-    rclcpp::TimerBase::SharedPtr ranges_timer;
-    void timer_callback_ranges();
+    rclcpp::TimerBase::SharedPtr _ranges_timer;
+    void _timer_callback_ranges();
 #endif // defined(TIMED_RANGES_PUBLISHER)
 #if defined(TIMED_RANGE_EVENTS_PUBLISHER)
-    rclcpp::TimerBase::SharedPtr range_events_timer;
-    void timer_callback_range_events();
+    rclcpp::TimerBase::SharedPtr _range_events_timer;
+    void _timer_callback_range_events();
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
 
-    void unexpected_reboot_event();
+    void _unexpected_reboot_event();
 };
 
-#endif // BELUGA_BELUGA_HPP
+#endif // BELUGA_ROS_BELUGA_HPP

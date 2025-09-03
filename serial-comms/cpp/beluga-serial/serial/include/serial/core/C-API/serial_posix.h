@@ -8,8 +8,8 @@
  * @author tom
  */
 
-#ifndef BELUGA_FRAME_SERIAL_POSIX_H
-#define BELUGA_FRAME_SERIAL_POSIX_H
+#ifndef BELUGA_SERIAL_SERIAL_POSIX_H
+#define BELUGA_SERIAL_SERIAL_POSIX_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -25,7 +25,7 @@ extern "C" {
 /**
  * Configuration attributes for a serial port on a POSIX system.
  */
-struct serial_posix_config {
+struct SerialPosixConfig {
     int fd;                     ///< File descriptor for the serial port
     enum BaudRate baudrate;     ///< Baud rate for the serial port
     enum Parity parity;         ///< Parity setting for the serial port
@@ -54,7 +54,7 @@ int open_port(const char *port);
  * @return -EINVAL if config is NULL
  * @return negative error code on failure
  */
-int configure_port(struct serial_posix_config *config);
+int configure_port(struct SerialPosixConfig *config);
 
 /**
  * @Brief Reads data from a serial port with a timeout.
@@ -190,4 +190,4 @@ int port_set_dtr_state(int fd, bool state);
 }
 #endif
 
-#endif // BELUGA_FRAME_SERIAL_POSIX_H
+#endif // BELUGA_SERIAL_SERIAL_POSIX_H

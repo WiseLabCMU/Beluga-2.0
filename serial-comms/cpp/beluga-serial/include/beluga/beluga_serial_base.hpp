@@ -10,8 +10,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_SERIAL_BELUGA_SERIAL_HPP
-#define BELUGA_SERIAL_BELUGA_SERIAL_HPP
+#ifndef BELUGA_SERIAL_BELUGA_SERIAL_BASE_HPP
+#define BELUGA_SERIAL_BELUGA_SERIAL_BASE_HPP
 
 #include <atomic>
 #include <beluga/beluga_event.hpp>
@@ -195,10 +195,10 @@ class BelugaSerialBase {
 
     /**
      * Sends a command for setting/getting the ID
-     * @param[in] id_ The ID to set. If empty, it will get the current ID
+     * @param[in] id The ID to set. If empty, it will get the current ID
      * @return The command response
      */
-    std::string id(const std::string &id_ = "");
+    std::string id(const std::string &id = "");
 
     /**
      * Sends a command for setting/getting the boot mode
@@ -210,18 +210,18 @@ class BelugaSerialBase {
 
     /**
      * Sends a command for setting/getting the rate
-     * @param[in] rate_ The rate to set. If empty, it will get the current rate
+     * @param[in] rate The rate to set. If empty, it will get the current rate
      * @return The command response
      */
-    std::string rate(const std::string &rate_ = "");
+    std::string rate(const std::string &rate = "");
 
     /**
      * Sends a command for setting/getting the channel
-     * @param[in] channel_ The channel to set. If empty, it will get the current
+     * @param[in] channel The channel to set. If empty, it will get the current
      * channel
      * @return The command response
      */
-    std::string channel(const std::string &channel_);
+    std::string channel(const std::string &channel);
 
     /**
      * Sends a command for resetting the device settings
@@ -231,11 +231,11 @@ class BelugaSerialBase {
 
     /**
      * Sends a command for setting/getting the timeout
-     * @param[in] timeout_ The timeout to set. If empty, it will get the current
+     * @param[in] timeout The timeout to set. If empty, it will get the current
      * timeout
      * @return The command response
      */
-    std::string timeout(const std::string &timeout_ = "");
+    std::string timeout(const std::string &timeout = "");
 
     /**
      * Sends a command for setting/getting the transmit power
@@ -302,11 +302,11 @@ class BelugaSerialBase {
 
     /**
      * Sends a command for setting/getting the data rate
-     * @param[in] rate_ The datarate to set. If empty, it will get the current
+     * @param[in] rate The datarate to set. If empty, it will get the current
      * data rate
      * @return The command response
      */
-    std::string datarate(const std::string &rate_ = "");
+    std::string datarate(const std::string &rate = "");
 
     /**
      * Sends a command for setting/getting the preamble length
@@ -326,10 +326,10 @@ class BelugaSerialBase {
 
     /**
      * Sends a command for setting/getting the PHR
-     * @param[in] phr_ The PHR to set. If empty, it will get the current PHR
+     * @param[in] phr The PHR to set. If empty, it will get the current PHR
      * @return The command response
      */
-    std::string phr(const std::string &phr_ = "");
+    std::string phr(const std::string &phr = "");
 
     /**
      * Sends a command for setting/getting the PAC size
@@ -435,14 +435,14 @@ class BelugaSerialBase {
      *
      * @note This method must be overridden.
      */
-    virtual void publish_neighbor_update() = 0;
+    virtual void publish_neighbor_update_() = 0;
 
     /**
      * Virtual method for publishing range updates.
      *
      * @note This method must be overridden.
      */
-    virtual void publish_range_update() = 0;
+    virtual void publish_range_update_() = 0;
 
     /**
      * Virtual method for updating the neighbor list.
@@ -450,7 +450,7 @@ class BelugaSerialBase {
      *
      * @note This method must be overridden.
      */
-    virtual void update_neighbor_list(
+    virtual void update_neighbor_list_(
         const std::vector<BelugaFrame::NeighborUpdate> &updates) = 0;
 
     /**
@@ -459,38 +459,38 @@ class BelugaSerialBase {
      *
      * @note This method must be overridden.
      */
-    virtual void remove_from_neighbor_list(uint32_t id) = 0;
+    virtual void remove_from_neighbor_list_(uint32_t id) = 0;
 
     /**
      * Virtual method for clearing the neighbor list.
      *
      * @note This method must be overridden.
      */
-    virtual void clear_neighbor_list() = 0;
+    virtual void clear_neighbor_list_() = 0;
 
     /**
      * Method for publishing neighbor updates to the appropriate location. This
-     * must be called within @ref publish_neighbor_update().
+     * must be called within @ref publish_neighbor_update_().
      * @param[in] updates The updates to publish.
      */
-    void _publish_neighbor_updates(std::vector<BelugaNeighbor> &updates);
+    void _publish_neighbor_updates_(std::vector<BelugaNeighbor> &updates);
 
     /**
      * Method for publishing range updates to the appropriate location. This
-     * must be called within @ref publish_range_update().
+     * must be called within @ref publish_range_update_().
      * @param[in] updates The updates to publish.
      */
-    void _publish_range_updates(std::vector<BelugaNeighbor> &updates);
+    void _publish_range_updates_(std::vector<BelugaNeighbor> &updates);
 
   private:
     std::function<int(const char *, va_list)> _logger_cb = nullptr;
     Serial::Serial _serial;
     std::chrono::milliseconds _timeout{};
-    bool _usbRemainsOpen = false;
+    bool _usb_remains_open = false;
     uint16_t _id{};
 
     // Private because we don't want to get car-bombed by the user
-    std::string format(const std::string &mode = "");
+    std::string _format(const std::string &mode = "");
 
     BelugaQueue<RangeEvent, 1, true> _range_event_queue;
     std::function<void(const RangeEvent &)> _range_event_cb = nullptr;
@@ -512,11 +512,11 @@ class BelugaSerialBase {
     _find_ports(const std::vector<target_pair> &valid,
                 std::map<target_pair, std::vector<std::string>> &avail_ports);
 
-    void __process_frames();
+    void _process_frames_helper();
     void _process_frames();
 
     void _process_rx_buffer(std::vector<uint8_t> &buf);
-    void __read_serial();
+    void _read_serial_helper();
     void _read_serial();
 
     BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
@@ -546,23 +546,23 @@ class BelugaSerialBase {
     _find_port_candidates(const std::vector<std::string> &skip_list);
     bool _open_port(std::string &port);
     std::string _get_id_from_device();
-    void __reconnect();
+    void _reconnect_helper();
     void _reconnect();
     void _reboot();
 
     std::string _send_command(const std::string &command);
 
-    struct task_t {
+    struct Task {
         std::packaged_task<void()> task;
         std::thread thread;
     };
 
     std::atomic_bool _tasks_running = false;
 
-    task_t _rx_task;
+    Task _rx_task;
     BelugaQueue<BelugaFrame::DecodedFrame, 10, true> _batch_queue;
 
-    task_t _processing_task;
+    Task _processing_task;
     BelugaQueue<std::string> _response_queue;
     Event _command_sent;
     Event _reboot_done;
@@ -576,4 +576,4 @@ class BelugaSerialBase {
 };
 } // namespace BelugaSerial
 
-#endif // BELUGA_SERIAL_BELUGA_SERIAL_HPP
+#endif // BELUGA_SERIAL_BELUGA_SERIAL_BASE_HPP

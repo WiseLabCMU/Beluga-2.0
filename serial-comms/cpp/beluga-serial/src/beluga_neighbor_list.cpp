@@ -42,11 +42,11 @@ void BelugaNeighbor::update(const BelugaFrame::NeighborUpdate &neighbor) {
 BelugaNeighborListBase::~BelugaNeighborListBase() = default;
 
 bool BelugaNeighborListBase::neighbor_updates() const noexcept {
-    return _neighbors_update;
+    return neighbors_update_;
 }
 
 bool BelugaNeighborListBase::range_updates() const noexcept {
-    return _range_update;
+    return range_update_;
 }
 
 void BelugaNeighborList::update(
@@ -54,11 +54,11 @@ void BelugaNeighborList::update(
     for (auto neighbor : updates) {
         if (_list.find(neighbor.ID) == _list.end()) {
             _list[neighbor.ID] = BelugaNeighbor(neighbor);
-            _range_update = true;
-            _neighbors_update = true;
+            range_update_ = true;
+            neighbors_update_ = true;
         } else {
             _list[neighbor.ID].update(neighbor);
-            _range_update = true;
+            range_update_ = true;
         }
     }
 }
@@ -66,7 +66,7 @@ void BelugaNeighborList::update(
 void BelugaNeighborList::remove(uint32_t node_id) {
     if (_list.find((uint16_t)node_id) != _list.end()) {
         _list.erase((uint16_t)node_id);
-        _neighbors_update = true;
+        neighbors_update_ = true;
     }
 }
 
@@ -78,21 +78,21 @@ void BelugaNeighborList::get_updates(std::vector<BelugaNeighbor> &updates) {
             value.updated(false);
         }
     }
-    _range_update = false;
+    range_update_ = false;
 }
 
 void BelugaNeighborList::get_neighbors(std::vector<BelugaNeighbor> &neighbors) {
     for (auto &[_, value] : _list) {
         neighbors.emplace_back(value);
     }
-    _neighbors_update = false;
+    neighbors_update_ = false;
 }
 
 void BelugaNeighborList::clear() noexcept {
     if (!_list.empty()) {
         _list.clear();
-        _neighbors_update = true;
-        _range_update = false;
+        neighbors_update_ = true;
+        range_update_ = false;
     }
 }
 } // namespace BelugaSerial

@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_DTS_BELUGA_SERIAL_HPP
-#define BELUGA_DTS_BELUGA_SERIAL_HPP
+#ifndef BELUGA_SERIAL_BELUGA_SERIAL_HPP
+#define BELUGA_SERIAL_BELUGA_SERIAL_HPP
 
 #include <beluga/beluga_serial_base.hpp>
 
@@ -26,47 +26,47 @@ class BelugaSerial : public BelugaSerialBase {
   private:
     NeighborList _neighbors;
 
-    void publish_neighbor_update() override;
-    void publish_range_update() override;
-    void update_neighbor_list(
+    void publish_neighbor_update_() override;
+    void publish_range_update_() override;
+    void update_neighbor_list_(
         const std::vector<BelugaFrame::NeighborUpdate> &updates) override;
-    void remove_from_neighbor_list(uint32_t id) override;
-    void clear_neighbor_list() override;
+    void remove_from_neighbor_list_(uint32_t id) override;
+    void clear_neighbor_list_() override;
 };
 
 template <typename NeighborList>
-void BelugaSerial<NeighborList>::publish_neighbor_update() {
+void BelugaSerial<NeighborList>::publish_neighbor_update_() {
     if (_neighbors.neighbor_updates()) {
         std::vector<BelugaNeighbor> updates;
         _neighbors.get_neighbors(updates);
-        _publish_neighbor_updates(updates);
+        _publish_neighbor_updates_(updates);
     }
 }
 
 template <typename NeighborList>
-void BelugaSerial<NeighborList>::publish_range_update() {
+void BelugaSerial<NeighborList>::publish_range_update_() {
     if (_neighbors.range_updates()) {
         std::vector<BelugaNeighbor> updates;
         _neighbors.get_updates(updates);
-        _publish_range_updates(updates);
+        _publish_range_updates_(updates);
     }
 }
 
 template <typename NeighborList>
-void BelugaSerial<NeighborList>::update_neighbor_list(
+void BelugaSerial<NeighborList>::update_neighbor_list_(
     const std::vector<BelugaFrame::NeighborUpdate> &updates) {
     _neighbors.update(updates);
 }
 
 template <typename NeighborList>
-void BelugaSerial<NeighborList>::remove_from_neighbor_list(uint32_t id) {
+void BelugaSerial<NeighborList>::remove_from_neighbor_list_(uint32_t id) {
     _neighbors.remove(id);
 }
 
 template <typename NeighborList>
-void BelugaSerial<NeighborList>::clear_neighbor_list() {
+void BelugaSerial<NeighborList>::clear_neighbor_list_() {
     _neighbors.clear();
 }
 }; // namespace BelugaSerial
 
-#endif // BELUGA_DTS_BELUGA_SERIAL_HPP
+#endif // BELUGA_SERIAL_BELUGA_SERIAL_HPP

@@ -189,8 +189,8 @@ class BelugaNeighborListBase {
     [[nodiscard]] bool range_updates() const noexcept;
 
   protected:
-    bool _neighbors_update = false;
-    bool _range_update = false;
+    bool neighbors_update_ = false;
+    bool range_update_ = false;
 };
 
 /// Class representing a list of Beluga neighbors

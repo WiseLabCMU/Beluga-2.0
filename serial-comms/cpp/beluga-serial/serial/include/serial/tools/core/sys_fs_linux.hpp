@@ -9,8 +9,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_SYS_FS_LINUX_HPP
-#define BELUGA_FRAME_SYS_FS_LINUX_HPP
+#ifndef BELUGA_SERIAL_SYS_FS_LINUX_HPP
+#define BELUGA_SERIAL_SYS_FS_LINUX_HPP
 
 #include <serial/tools/core/sys_fs_common.hpp>
 #include <vector>
@@ -86,4 +86,4 @@ std::vector<SysFsLinux>
 comports(const SysFsLinuxScanAttr &attr = SysFsLinuxScanAttr{});
 } // namespace SerialToolsInternal
 
-#endif // BELUGA_FRAME_SYS_FS_LINUX_HPP
+#endif // BELUGA_SERIAL_SYS_FS_LINUX_HPP

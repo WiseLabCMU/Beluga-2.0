@@ -9,8 +9,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_SYS_FS_COMMON_HPP
-#define BELUGA_FRAME_SYS_FS_COMMON_HPP
+#ifndef BELUGA_SERIAL_SYS_FS_COMMON_HPP
+#define BELUGA_SERIAL_SYS_FS_COMMON_HPP
 
 #include <filesystem>
 #include <string>
@@ -87,20 +87,20 @@ class SysFsBase {
     std::string usb_info();
 
   protected:
-    std::string _device;
-    std::string _name;
-    std::string _description;
-    std::string _hwid;
-    std::string _serial_number;
-    std::string _location;
-    std::string _manufacturer;
-    std::string _product;
-    std::string _interface;
-    uint64_t _vid;
-    uint64_t _pid;
+    std::string device_;
+    std::string name_;
+    std::string description_;
+    std::string hwid_;
+    std::string serial_number_;
+    std::string location_;
+    std::string manufacturer_;
+    std::string product_;
+    std::string interface_;
+    uint64_t vid_;
+    uint64_t pid_;
 
-    void _apply_usb_info();
+    void apply_usb_info_();
 };
 } // namespace SerialToolsInternal
 
-#endif // BELUGA_FRAME_SYS_FS_COMMON_HPP
+#endif // BELUGA_SERIAL_SYS_FS_COMMON_HPP

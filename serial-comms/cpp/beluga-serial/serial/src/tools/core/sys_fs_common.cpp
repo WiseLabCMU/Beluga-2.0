@@ -14,70 +14,70 @@
 namespace SerialToolsInternal {
 
 SysFsBase::SysFsBase(const fs::path &dev, bool skip_link_detection) {
-    _device = dev.string();
-    _name = dev.stem().string();
-    _description = "n/a";
-    _hwid = "n/a";
-    _serial_number = "";
-    _location = "";
-    _manufacturer = "";
-    _product = "";
-    _interface = "";
-    _vid = 0;
-    _pid = 0;
+    device_ = dev.string();
+    name_ = dev.stem().string();
+    description_ = "n/a";
+    hwid_ = "n/a";
+    serial_number_ = "";
+    location_ = "";
+    manufacturer_ = "";
+    product_ = "";
+    interface_ = "";
+    vid_ = 0;
+    pid_ = 0;
 
     if (!skip_link_detection && !dev.empty() && is_symlink(dev)) {
-        _hwid = "LINK=" + fs::canonical(dev).string();
+        hwid_ = "LINK=" + fs::canonical(dev).string();
     }
 }
 
-std::string SysFsBase::device() const noexcept { return _device; }
+std::string SysFsBase::device() const noexcept { return device_; }
 
-std::string SysFsBase::name() const noexcept { return _name; }
+std::string SysFsBase::name() const noexcept { return name_; }
 
-std::string SysFsBase::description() const noexcept { return _description; }
+std::string SysFsBase::description() const noexcept { return description_; }
 
-std::string SysFsBase::hwid() const noexcept { return _hwid; }
+std::string SysFsBase::hwid() const noexcept { return hwid_; }
 
-std::string SysFsBase::serial_number() const noexcept { return _serial_number; }
+std::string SysFsBase::serial_number() const noexcept { return serial_number_; }
 
-std::string SysFsBase::location() const noexcept { return _location; }
+std::string SysFsBase::location() const noexcept { return location_; }
 
-std::string SysFsBase::manufacturer() const noexcept { return _manufacturer; }
+std::string SysFsBase::manufacturer() const noexcept { return manufacturer_; }
 
-std::string SysFsBase::product() const noexcept { return _product; }
+std::string SysFsBase::product() const noexcept { return product_; }
 
-std::string SysFsBase::interface() const noexcept { return _interface; }
+std::string SysFsBase::interface() const noexcept { return interface_; }
 
 std::string SysFsBase::usb_description() {
-    if (!_interface.empty()) {
-        std::string description = _product + " - ";
-        return description + _interface;
-    } else if (!_product.empty()) {
-        return _product;
+    if (!interface_.empty()) {
+        std::string description = product_ + " - ";
+        return description + interface_;
+    } else if (!product_.empty()) {
+        return product_;
     }
-    return _name;
+    return name_;
 }
 
 std::string SysFsBase::usb_info() {
     std::ostringstream oss;
     oss << "USB VID:PID=" << std::setw(4) << std::setfill('0') << std::uppercase
-        << std::hex << _vid;
+        << std::hex << vid_;
     oss << ":" << std::setw(4) << std::setfill('0') << std::uppercase
-        << std::hex << _pid;
+        << std::hex << pid_;
     oss << " SER=";
-    if (!_serial_number.empty()) {
-        oss << _serial_number;
+    if (!serial_number_.empty()) {
+        oss << serial_number_;
     }
     oss << " LOCATION=";
-    if (!_location.empty()) {
-        oss << _location;
+    if (!location_.empty()) {
+        oss << location_;
     }
     return oss.str();
 }
 
-void SysFsBase::_apply_usb_info() {
-    _description = usb_description();
-    _hwid = usb_info();
+void SysFsBase::apply_usb_info_() {
+    description_ = usb_description();
+    hwid_ = usb_info();
 }
 } // namespace SerialToolsInternal

@@ -70,118 +70,118 @@ std::chrono::milliseconds Timeout::duration() const noexcept {
 }
 
 SerialBase::SerialBase(const SerialAttributes &attr) {
-    _is_open = false;
-    _port = attr.port;
-    _baudrate = attr.baudrate;
-    _bytesize = attr.bytesize;
-    _parity = attr.parity;
-    _stopbits = attr.stopbits;
-    _timeout = attr.timeout;
-    _write_timeout = attr.write_timeout;
-    _xonxoff = attr.xonxoff;
-    _rtscts = attr.rtscts;
-    _dsrdtr = attr.dsrdtr;
-    _inter_byte_timeout = attr.inter_byte_timeout;
-    _exclusive = attr.exclusive;
-    _rts_state = true;
-    _dtr_state = true;
+    is_open_ = false;
+    port_ = attr.port;
+    baudrate_ = attr.baudrate;
+    bytesize_ = attr.bytesize;
+    parity_ = attr.parity;
+    stopbits_ = attr.stopbits;
+    timeout_ = attr.timeout;
+    write_timeout_ = attr.write_timeout;
+    xonxoff_ = attr.xonxoff;
+    rtscts_ = attr.rtscts;
+    dsrdtr_ = attr.dsrdtr;
+    inter_byte_timeout_ = attr.inter_byte_timeout;
+    exclusive_ = attr.exclusive;
+    rts_state_ = true;
+    dtr_state_ = true;
 }
 
 SerialBase::~SerialBase() = default;
 
-std::string SerialBase::port() const noexcept { return _port; }
+std::string SerialBase::port() const noexcept { return port_; }
 
 void SerialBase::port(const std::string &portname) {
-    _port = portname;
-    _reconfigure_port();
+    port_ = portname;
+    reconfigure_port_();
 }
 
-enum BaudRate SerialBase::baudrate() const noexcept { return _baudrate; }
+enum BaudRate SerialBase::baudrate() const noexcept { return baudrate_; }
 
 void SerialBase::baudrate(enum BaudRate baud) {
-    _baudrate = baud;
-    _reconfigure_port();
+    baudrate_ = baud;
+    reconfigure_port_();
 }
 
-enum ByteSize SerialBase::bytesize() const noexcept { return _bytesize; }
+enum ByteSize SerialBase::bytesize() const noexcept { return bytesize_; }
 
 void SerialBase::bytesize(enum ByteSize size) {
-    _bytesize = size;
-    _reconfigure_port();
+    bytesize_ = size;
+    reconfigure_port_();
 }
 
-bool SerialBase::exclusive() const noexcept { return _exclusive; }
+bool SerialBase::exclusive() const noexcept { return exclusive_; }
 
 void SerialBase::exclusive(bool excl) {
-    _exclusive = excl;
-    _reconfigure_port();
+    exclusive_ = excl;
+    reconfigure_port_();
 }
 
-enum Parity SerialBase::parity() const noexcept { return _parity; }
+enum Parity SerialBase::parity() const noexcept { return parity_; }
 
 void SerialBase::parity(enum Parity par) {
-    _parity = par;
-    _reconfigure_port();
+    parity_ = par;
+    reconfigure_port_();
 }
 
-enum StopBits SerialBase::stopbits() const noexcept { return _stopbits; }
+enum StopBits SerialBase::stopbits() const noexcept { return stopbits_; }
 
 void SerialBase::stopbits(enum StopBits bits) {
-    _stopbits = bits;
-    _reconfigure_port();
+    stopbits_ = bits;
+    reconfigure_port_();
 }
 
-milliseconds SerialBase::timeout() const noexcept { return _timeout; }
+milliseconds SerialBase::timeout() const noexcept { return timeout_; }
 
-void SerialBase::timeout(const milliseconds &duration) { _timeout = duration; }
+void SerialBase::timeout(const milliseconds &duration) { timeout_ = duration; }
 
 milliseconds SerialBase::write_timeout() const noexcept {
-    return _write_timeout;
+    return write_timeout_;
 }
 
 void SerialBase::write_timeout(const milliseconds &duration) {
-    _write_timeout = duration;
+    write_timeout_ = duration;
 }
 
 uint32_t SerialBase::inter_byte_timeout() const noexcept {
-    return _inter_byte_timeout;
+    return inter_byte_timeout_;
 }
 
 void SerialBase::inter_byte_timeout(uint32_t ic_timeout) {
-    _inter_byte_timeout = (int32_t)ic_timeout;
-    _reconfigure_port();
+    inter_byte_timeout_ = (int32_t)ic_timeout;
+    reconfigure_port_();
 }
 
-bool SerialBase::xonxoff() const noexcept { return _xonxoff; }
+bool SerialBase::xonxoff() const noexcept { return xonxoff_; }
 
 void SerialBase::xonxoff(bool fc) {
-    _xonxoff = fc;
-    _reconfigure_port();
+    xonxoff_ = fc;
+    reconfigure_port_();
 }
 
-bool SerialBase::rtscts() const noexcept { return _rtscts; }
+bool SerialBase::rtscts() const noexcept { return rtscts_; }
 
 void SerialBase::rtscts(bool fc) {
-    _rtscts = fc;
-    _reconfigure_port();
+    rtscts_ = fc;
+    reconfigure_port_();
 }
 
-bool SerialBase::dsrdtr() const noexcept { return _dsrdtr; }
+bool SerialBase::dsrdtr() const noexcept { return dsrdtr_; }
 
-void SerialBase::dsrdtr(bool fc) { _dsrdtr = fc; }
+void SerialBase::dsrdtr(bool fc) { dsrdtr_ = fc; }
 
-bool SerialBase::rts() const noexcept { return _rts_state; }
+bool SerialBase::rts() const noexcept { return rts_state_; }
 
 void SerialBase::rts(bool state) {
-    _rts_state = state;
-    _update_rts_state();
+    rts_state_ = state;
+    update_rts_state_();
 }
 
-bool SerialBase::dtr() const noexcept { return _dtr_state; }
+bool SerialBase::dtr() const noexcept { return dtr_state_; }
 
 void SerialBase::dtr(bool state) {
-    _dtr_state = state;
-    _update_dtr_state();
+    dtr_state_ = state;
+    update_dtr_state_();
 }
 
 bool SerialBase::readable() noexcept { return true; }
@@ -200,7 +200,7 @@ size_t SerialBase::read_until(std::vector<uint8_t> &b,
     size_t byte_read;
     size_t bytes_read = 0;
     std::vector<uint8_t> temp;
-    Timeout timeout(_timeout);
+    Timeout timeout(timeout_);
 
     while (true) {
         byte_read = read(temp, 1);
@@ -228,7 +228,7 @@ size_t SerialBase::read_until(std::vector<uint8_t> &b,
     return bytes_read;
 }
 
-bool SerialBase::is_closed() const noexcept { return !_is_open; }
+bool SerialBase::is_closed() const noexcept { return !is_open_; }
 
-bool SerialBase::is_open() const noexcept { return _is_open; }
+bool SerialBase::is_open() const noexcept { return is_open_; }
 } // namespace SerialInternal

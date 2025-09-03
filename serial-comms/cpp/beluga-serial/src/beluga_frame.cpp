@@ -14,10 +14,10 @@
 #define BELUGA_MSG_HEADER          (uint8_t)'@'
 #define BELUGA_MSG_FOOTER          (uint8_t)'*'
 
-#define BELUGA_MSG_HEADER_OVERHEAD 1
-#define BELUGA_MSG_LEN_OVERHEAD    2
-#define BELUGA_MSG_TYPE_OVERHEAD   1
-#define BELUGA_MSG_FOOTER_OVERHEAD 1
+#define BELUGA_MSG_HEADER_OVERHEAD 1u
+#define BELUGA_MSG_LEN_OVERHEAD    2u
+#define BELUGA_MSG_TYPE_OVERHEAD   1u
+#define BELUGA_MSG_FOOTER_OVERHEAD 1u
 
 #define BELUGA_HEADER_OVERHEAD                                                 \
     (BELUGA_MSG_HEADER_OVERHEAD + BELUGA_MSG_LEN_OVERHEAD +                    \
@@ -25,7 +25,7 @@
 #define BELUGA_FRAME_OVERHEAD                                                  \
     (BELUGA_HEADER_OVERHEAD + BELUGA_MSG_FOOTER_OVERHEAD)
 
-#define MSG_HEADER_OFFSET  0
+#define MSG_HEADER_OFFSET  0u
 #define MSG_LEN_OFFSET     (MSG_HEADER_OFFSET + BELUGA_MSG_HEADER_OVERHEAD)
 #define MSG_TYPE_OFFSET    (MSG_LEN_OFFSET + BELUGA_MSG_LEN_OVERHEAD)
 #define MSG_PAYLOAD_OFFSET (MSG_TYPE_OFFSET + BELUGA_MSG_TYPE_OVERHEAD)
@@ -56,7 +56,7 @@ struct json_data_contract<BelugaSerial::BelugaFrame::DroppedUwbExchange> {
 };
 } // namespace daw::json
 
-BelugaSerial::BelugaFrame::BelugaFrame() { parsed_data.type = NO_TYPE; }
+BelugaSerial::BelugaFrame::BelugaFrame() { _parsed_data.type = NO_TYPE; }
 
 BelugaSerial::BelugaFrame::BelugaFrame(const std::vector<uint8_t> &str) {
     auto [start_index, length, bytes_left] =
@@ -93,34 +93,36 @@ void BelugaSerial::BelugaFrame::parse_frame(
         CONSTRUCT_PAYLOAD_LEN(serial_data, start_index + MSG_LEN_OFFSET);
     BelugaFrameType type =
         (BelugaFrameType)serial_data[start_index + MSG_TYPE_OFFSET];
-    std::string _payload = std::string(
-        serial_data.begin() + start_index + MSG_PAYLOAD_OFFSET,
-        serial_data.begin() + start_index + MSG_PAYLOAD_OFFSET + payload_len);
+    std::string a_payload = std::string(
+        serial_data.begin() + (int64_t)(start_index + MSG_PAYLOAD_OFFSET),
+        serial_data.begin() +
+            (int64_t)(start_index + MSG_PAYLOAD_OFFSET + payload_len));
     size_t last_index;
 
     try {
         switch (type) {
         case COMMAND_RESPONSE:
         case START_EVENT:
-            this->parsed_data.payload = _payload;
+            this->_parsed_data.payload = a_payload;
             break;
         case NEIGHBOR_UPDATE:
-            this->parsed_data.payload =
-                daw::json::from_json_array<NeighborUpdate>(_payload);
+            this->_parsed_data.payload =
+                daw::json::from_json_array<NeighborUpdate>(a_payload);
             break;
         case RANGING_EVENT:
-            this->parsed_data.payload =
-                daw::json::from_json<BelugaSerial::RangeEvent>(_payload);
+            this->_parsed_data.payload =
+                daw::json::from_json<BelugaSerial::RangeEvent>(a_payload);
             break;
         case NEIGHBOR_DROP:
-            this->parsed_data.payload = (uint32_t)stoull(_payload, &last_index);
+            this->_parsed_data.payload =
+                (uint32_t)stoull(a_payload, &last_index);
             if (last_index != payload_len) {
                 throw std::invalid_argument("");
             }
             break;
         case RANGING_DROP:
-            this->parsed_data.payload =
-                daw::json::from_json<DroppedUwbExchange>(_payload);
+            this->_parsed_data.payload =
+                daw::json::from_json<DroppedUwbExchange>(a_payload);
             break;
         default:
             type = NO_TYPE;
@@ -135,12 +137,12 @@ void BelugaSerial::BelugaFrame::parse_frame(
         throw BelugaFrameError("Integer passed in is out of range");
     }
 
-    this->parsed_data.type = type;
+    this->_parsed_data.type = type;
 }
 
 BelugaSerial::BelugaFrame::DecodedFrame
 BelugaSerial::BelugaFrame::get_parsed_data() const {
-    return this->parsed_data;
+    return this->_parsed_data;
 }
 
 std::tuple<ssize_t, ssize_t, ssize_t>
