@@ -143,13 +143,11 @@ void BelugaSerialBase::_process_reboot(const std::string &) {
     clear_neighbor_list_();
     if (_reboot_done.is_set()) {
         _log("Beluga rebooted unexpectedly");
-        if (_time_resync != nullptr) {
-            std::thread t(_time_resync);
-            t.detach();
-        }
+        _notify_unexpected_reboot();
     } else {
         _reboot_done.set();
     }
+    _resync_time();
 }
 
 void BelugaSerialBase::_find_ports(
@@ -270,13 +268,8 @@ void BelugaSerialBase::_read_serial() {
             try {
                 _log("Reconnect called from read serial");
                 _reconnect();
-                if (_time_resync) {
-                    std::thread t_(_time_resync);
-                    t_.detach();
-                }
-                if (_unexpected_reboot_event_cb) {
-                    _unexpected_reboot_event_cb();
-                }
+                clear_neighbor_list_();
+                _notify_unexpected_reboot();
             } catch (const std::runtime_error &exc) {
                 _log(exc.what());
                 std::abort();
@@ -784,8 +777,8 @@ void BelugaSerialBase::_reconnect_helper() {
             break;
         }
         case RECONNECT_CHECK_ID: {
-            uint16_t id_ = _extract_id(id_resp);
-            state = (id_ == _id) ? RECONNECT_DONE : RECONNECT_UPDATE_SKIPS;
+            uint16_t id = _extract_id(id_resp);
+            state = (id == _id) ? RECONNECT_DONE : RECONNECT_UPDATE_SKIPS;
             break;
         }
         case RECONNECT_SLEEP: {
@@ -824,6 +817,8 @@ void BelugaSerialBase::_reconnect() {
     } else {
         throw std::runtime_error("Reconnection timed out");
     }
+
+    _resync_time();
 }
 
 void BelugaSerialBase::_publish_neighbor_updates_(
@@ -841,6 +836,19 @@ void BelugaSerialBase::_publish_range_updates_(
         _range_cb(updates);
     } else {
         _range_queue.put(updates, false);
+    }
+}
+
+void BelugaSerialBase::_notify_unexpected_reboot() {
+    if (_unexpected_reboot_event_cb != nullptr) {
+        _unexpected_reboot_event_cb();
+    }
+}
+
+void BelugaSerialBase::_resync_time() {
+    if (_time_resync != nullptr) {
+        std::thread t(_time_resync);
+        t.detach();
     }
 }
 } // namespace BelugaSerial

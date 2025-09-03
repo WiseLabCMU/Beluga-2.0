@@ -549,6 +549,8 @@ class BelugaSerialBase {
     void _reconnect_helper();
     void _reconnect();
     void _reboot();
+    void _notify_unexpected_reboot();
+    void _resync_time();
 
     std::string _send_command(const std::string &command);
 
