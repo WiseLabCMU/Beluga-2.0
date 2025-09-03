@@ -430,21 +430,57 @@ class BelugaSerialBase {
     RangeEvent get_range_event();
 
   protected:
-    virtual void _publish_neighbor_update() = 0;
-    virtual void _publish_range_update() = 0;
+    /**
+     * Virtual method for publishing neighbor updates.
+     *
+     * @note This method must be overridden.
+     */
+    virtual void publish_neighbor_update() = 0;
 
-    virtual void _update_neighbor_list(
+    /**
+     * Virtual method for publishing range updates.
+     *
+     * @note This method must be overridden.
+     */
+    virtual void publish_range_update() = 0;
+
+    /**
+     * Virtual method for updating the neighbor list.
+     * @param[in] updates The updates to the neighbor list.
+     *
+     * @note This method must be overridden.
+     */
+    virtual void update_neighbor_list(
         const std::vector<BelugaFrame::NeighborUpdate> &updates) = 0;
-    virtual void _remove_from_neighbor_list(uint32_t id) = 0;
-    virtual void _clear_neighbor_list() = 0;
 
-    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
-    std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
-        nullptr;
+    /**
+     * Virtual method for removing a node from the neighbor list.
+     * @param[in] id The ID of the node being removed.
+     *
+     * @note This method must be overridden.
+     */
+    virtual void remove_from_neighbor_list(uint32_t id) = 0;
 
-    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
-    std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
-        nullptr;
+    /**
+     * Virtual method for clearing the neighbor list.
+     *
+     * @note This method must be overridden.
+     */
+    virtual void clear_neighbor_list() = 0;
+
+    /**
+     * Method for publishing neighbor updates to the appropriate location. This
+     * must be called within @ref publish_neighbor_update().
+     * @param[in] updates The updates to publish.
+     */
+    void _publish_neighbor_updates(std::vector<BelugaNeighbor> &updates);
+
+    /**
+     * Method for publishing range updates to the appropriate location. This
+     * must be called within @ref publish_range_update().
+     * @param[in] updates The updates to publish.
+     */
+    void _publish_range_updates(std::vector<BelugaNeighbor> &updates);
 
   private:
     std::function<int(const char *, va_list)> _logger_cb = nullptr;
@@ -482,6 +518,14 @@ class BelugaSerialBase {
     void _process_rx_buffer(std::vector<uint8_t> &buf);
     void __read_serial();
     void _read_serial();
+
+    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
+    std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
+        nullptr;
+
+    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
+    std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
+        nullptr;
 
     static uint16_t _extract_id(const std::string &s);
 

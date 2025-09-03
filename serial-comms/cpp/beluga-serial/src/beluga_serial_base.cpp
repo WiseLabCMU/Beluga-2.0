@@ -140,7 +140,7 @@ void BelugaSerialBase::_process_reboot(const std::string &) {
     _range_queue.clear();
     _neighbor_queue.clear();
     _range_event_queue.clear();
-    _clear_neighbor_list();
+    clear_neighbor_list();
     if (_reboot_done.is_set()) {
         _log("Beluga rebooted unexpectedly");
         if (_time_resync != nullptr) {
@@ -185,7 +185,7 @@ void BelugaSerialBase::__process_frames() {
 
         switch (frame.type) {
         case BelugaFrame::BelugaFrameType::NEIGHBOR_UPDATE:
-            _update_neighbor_list(
+            update_neighbor_list(
                 std::get<std::vector<BelugaFrame::NeighborUpdate>>(
                     frame.payload));
             break;
@@ -193,7 +193,7 @@ void BelugaSerialBase::__process_frames() {
             _publish_range_event(std::get<RangeEvent>(frame.payload));
             break;
         case BelugaFrame::BelugaFrameType::NEIGHBOR_DROP:
-            _remove_from_neighbor_list(std::get<uint32_t>(frame.payload));
+            remove_from_neighbor_list(std::get<uint32_t>(frame.payload));
             break;
         case BelugaFrame::BelugaFrameType::COMMAND_RESPONSE:
             _publish_response(std::get<std::string>(frame.payload));
@@ -209,8 +209,8 @@ void BelugaSerialBase::__process_frames() {
             _log("Invalid frame type");
             break;
         }
-        _publish_neighbor_update();
-        _publish_range_update();
+        publish_neighbor_update();
+        publish_range_update();
     }
 }
 
@@ -823,6 +823,24 @@ void BelugaSerialBase::_reconnect() {
         future.get();
     } else {
         throw std::runtime_error("Reconnection timed out");
+    }
+}
+
+void BelugaSerialBase::_publish_neighbor_updates(
+    std::vector<BelugaNeighbor> &updates) {
+    if (_neighbor_cb != nullptr) {
+        _neighbor_cb(updates);
+    } else {
+        _neighbor_queue.put(updates, false);
+    }
+}
+
+void BelugaSerialBase::_publish_range_updates(
+    std::vector<BelugaNeighbor> &updates) {
+    if (_range_cb != nullptr) {
+        _range_cb(updates);
+    } else {
+        _range_queue.put(updates, false);
     }
 }
 } // namespace BelugaSerial
