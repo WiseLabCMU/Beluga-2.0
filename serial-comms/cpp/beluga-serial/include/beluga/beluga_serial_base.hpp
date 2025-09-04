@@ -246,6 +246,27 @@ class BelugaSerialBase {
     std::string txpower(const std::string &power = "");
 
     /**
+     * UWB amplification stages
+     */
+    enum UwbAmplificationStage : uint32_t {
+        BOOST_NORM = 0u,
+        BOOSTP_500 = 1u,
+        BOOSTP_250 = 2u,
+        BOOSTP_125 = 3u,
+    };
+
+    /**
+     * Adjusts the UWB transmit power according to stage, coarse gain, and fine
+     * gain.
+     * @param[in] stage The amplification stage.
+     * @param[in] coarse The coarse gain.
+     * @param[in] fine The fine gain.
+     * @return The command response.
+     */
+    std::string txpower(UwbAmplificationStage stage, uint32_t coarse,
+                        uint32_t fine);
+
+    /**
      * Sends a command for setting/getting the stream mode
      * @param[in] updates_only The mode to set. If empty, it will get the
      * current mode

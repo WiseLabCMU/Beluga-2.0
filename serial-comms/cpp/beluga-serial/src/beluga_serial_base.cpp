@@ -365,6 +365,13 @@ std::string BelugaSerialBase::txpower(const std::string &power) {
     return _send_command(oss.str());
 }
 
+std::string BelugaSerialBase::txpower(UwbAmplificationStage stage,
+                                      uint32_t coarse, uint32_t fine) {
+    std::stringstream oss;
+    oss << "AT+TXPOWER " << stage << " " << coarse << " " << fine << "\r\n";
+    return _send_command(oss.str());
+}
+
 std::string BelugaSerialBase::streammode(const std::string &updates_only) {
     std::stringstream oss;
     oss << "AT+STREAMMODE " << updates_only << "\r\n";
