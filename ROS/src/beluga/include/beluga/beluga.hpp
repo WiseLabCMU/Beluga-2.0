@@ -17,6 +17,7 @@
 #include <beluga_messages/msg/beluga_ranges.hpp>
 #include <beluga_messages/msg/beluga_unexpected_reboot.hpp>
 #include <beluga_messages/srv/beluga_at_command.hpp>
+#include <beluga_messages/srv/beluga_power_control.hpp>
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
 #include <tuple>
@@ -99,6 +100,8 @@ class Beluga : public rclcpp::Node {
 
         this->declare_parameter("reboot_topic", "unexpected_beluga_reboot");
 
+        this->declare_parameter("power_control_topic", "power_control");
+
         // Timer period for neighbor list publisher (if using the timed
         // publisher)
         this->declare_parameter("neighbor_period", 30);
@@ -130,6 +133,11 @@ class Beluga : public rclcpp::Node {
         _unexpected_reboot = this->create_publisher<
             beluga_messages::msg::BelugaUnexpectedReboot>(
             this->get_parameter("reboot_topic").as_string(), qos);
+        _power_control_service =
+            this->create_service<beluga_messages::srv::BelugaPowerControl>(
+                this->get_parameter("power_control_topic").as_string(),
+                std::bind(&Beluga::_update_power_control, this,
+                          std::placeholders::_1, std::placeholders::_2));
 
         _setup();
 
@@ -169,6 +177,8 @@ class Beluga : public rclcpp::Node {
         _ranging_event_publisher;
     rclcpp::Publisher<beluga_messages::msg::BelugaUnexpectedReboot>::SharedPtr
         _unexpected_reboot;
+    rclcpp::Service<beluga_messages::srv::BelugaPowerControl>::SharedPtr
+        _power_control_service;
 
     rclcpp::TimerBase::SharedPtr _sync_timer;
 
@@ -176,6 +186,16 @@ class Beluga : public rclcpp::Node {
         const std::shared_ptr<beluga_messages::srv::BelugaATCommand::Request>
             request,
         std::shared_ptr<beluga_messages::srv::BelugaATCommand::Response>
+            response);
+
+    inline std::string pwr_control_cmd(
+        uint8_t stage,
+        const std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Request>
+            request);
+    void _update_power_control(
+        const std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Request>
+            request,
+        std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Response>
             response);
 
     void _publish_neighbor_list(

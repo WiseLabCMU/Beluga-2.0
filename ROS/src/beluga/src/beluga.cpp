@@ -550,3 +550,81 @@ void Beluga::_unexpected_reboot_event() {
     message.timestamp = this->get_clock()->now();
     this->_unexpected_reboot->publish(message);
 }
+
+constexpr uint8_t UWB_BIT = 0u;
+
+inline std::string Beluga::pwr_control_cmd(
+    uint8_t stage,
+    const std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Request>
+        request) {
+    BelugaSerial::BelugaSerial<NEIGHBOR_LIST_CLASS>::UwbAmplificationStage
+        amp_stage;
+
+    switch (stage) {
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTNORM:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOST_NORM;
+        break;
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTP500:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_500;
+        break;
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTP250:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_250;
+        break;
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTP125:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_125;
+        break;
+    default:
+        return "";
+    }
+
+    return _serial.txpower(amp_stage, request->coarse_gain[stage],
+                           request->fine_gain[stage]);
+}
+
+void Beluga::_update_power_control(
+    const std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Request>
+        request,
+    std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Response>
+        response) {
+    uint32_t amplifier = request->ble_amp_state;
+
+    if (request->uwb_amp_state) {
+        amplifier |= 1u << UWB_BIT;
+    } else {
+        amplifier &= ~(1u << UWB_BIT);
+    }
+
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_EXTERNAL_AMP] =
+        _serial.pwramp(std::to_string(amplifier));
+
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTNORM] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTNORM,
+                        request);
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTP500] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTP500,
+                        request);
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTP250] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTP250,
+                        request);
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTP125] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTP125,
+                        request);
+    response->set_power = _serial.txpower();
+}
