@@ -1,5 +1,6 @@
 FORMAT_FILES=include/beluga/*.hpp \
-	src/*.cpp
+	src/*.cpp \
+	include/beluga/*.h
 
 
 format:
