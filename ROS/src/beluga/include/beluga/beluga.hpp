@@ -207,6 +207,7 @@ class Beluga : public rclcpp::Node {
     BelugaSerial::BelugaSerial<NEIGHBOR_LIST_CLASS> _serial;
 
     void _setup();
+    std::string _set_txpower(const std::string &power);
 
     static int64_t _extract_number(const std::string &s);
     void _init_time_sync();

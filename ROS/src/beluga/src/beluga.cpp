@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <beluga/beluga.hpp>
+#include <beluga/utils.h>
 #include <beluga_messages/srv/beluga_at_command.hpp>
 #include <cinttypes>
 #include <daw/json/daw_json_link.h>
@@ -363,17 +364,58 @@ void Beluga::_resync_time_cb() {
 
 void Beluga::_time_sync_helper() { _time_sync(); }
 
-#define CALLBACK_DEF(name_)                                                                                      \
+std::string Beluga::_set_txpower(const std::string &power) {
+    if (power.empty()) {
+        return _serial.txpower();
+    }
+    constexpr uint32_t coarse_gain_shift = 5;
+    constexpr size_t stages = 4;
+    constexpr uint32_t stage_mask = UINT8_MAX;
+    constexpr uint32_t coarse_gain_mask = 7;
+
+    uint32_t txpower = std::stoul(power);
+
+    for (size_t stage = 0; stage < stages; stage++) {
+        uint32_t mask = stage_mask << (uint32_t)CHAR_BIT * stage;
+        uint32_t stage_setting =
+            (txpower & mask) >> ((uint32_t)CHAR_BIT * stage);
+        uint32_t coarse_gain_inv = stage_setting >> coarse_gain_shift;
+        uint32_t coarse_gain = ~coarse_gain_inv & coarse_gain_mask;
+        uint32_t fine_gain =
+            stage_setting ^ (coarse_gain_inv << coarse_gain_shift);
+        _serial.txpower(BelugaSerial::BelugaSerial<
+                            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage(stage),
+                        coarse_gain, fine_gain);
+    }
+
+    RCLCPP_INFO(this->get_logger(), "%s", _serial.txpower().c_str());
+    return _serial.txpower();
+}
+
+#define _CALLBACK_DEF_SERIAL(name_)                                                                              \
     {                                                                                                            \
 #name_, [ObjectPtr = &this->_serial](auto && PH1) { return ObjectPtr->name_(std::forward<decltype(PH1)>(PH1)); } \
     }
+
+#define _CALLBACK_DEF_WRAPPER(_name, _func, ...)                               \
+    {                                                                          \
+#_name,                                                                \
+            [this](                                                            \
+                auto                                                           \
+                    &&PH1) { return _func(std::forward<decltype(PH1)>(PH1)); } \
+    }
+
+#define CALLBACK_DEF(_name, ...)                                               \
+    COND_CODE_0(IS_EMPTY(__VA_ARGS__),                                         \
+                (_CALLBACK_DEF_WRAPPER(_name, __VA_ARGS__)),                   \
+                (_CALLBACK_DEF_SERIAL(_name)))
 
 constexpr std::array<std::pair<const char *, int64_t>, 15> DEFAULT_CONFIGS = {{
     {"bootmode", 2},
     {"rate", 100},
     {"channel", 4},
     {"timeout", 9000},
-    {"txpower", 0},
+    {"txpower", 0x1F1F1F1F},
     {"streammode", 1},
     {"twrmode", 1},
     {"ledmode", 0},
@@ -416,7 +458,7 @@ void Beluga::_setup() {
         callbacks = {
             CALLBACK_DEF(id),         CALLBACK_DEF(bootmode),
             CALLBACK_DEF(rate),       CALLBACK_DEF(channel),
-            CALLBACK_DEF(timeout),    CALLBACK_DEF(txpower),
+            CALLBACK_DEF(timeout),    CALLBACK_DEF(txpower, _set_txpower),
             CALLBACK_DEF(streammode), CALLBACK_DEF(twrmode),
             CALLBACK_DEF(ledmode),    CALLBACK_DEF(pwramp),
             CALLBACK_DEF(antenna),    CALLBACK_DEF(phr),
@@ -455,7 +497,6 @@ void Beluga::_setup() {
         }
 
         if (int_setting != configs[key]) {
-            // TODO: TXPOWER is always going to be different
             RCLCPP_INFO(this->get_logger(),
                         "Difference in %s setting. Now setting %s to %" PRId64,
                         key, key, configs[key]);
