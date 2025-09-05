@@ -7,8 +7,8 @@
  *
  * @authro Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
-#ifndef _BELUGA_QUEUE
-#define _BELUGA_QUEUE
+#ifndef BELUGA_SERIAL_BELUGA_QUEUE_HPP
+#define BELUGA_SERIAL_BELUGA_QUEUE_HPP
 
 #include <atomic>
 #include <chrono>
@@ -34,19 +34,19 @@ class BelugaQueueException : public std::exception {
      * @param[in] reason The reason for the exception
      */
     explicit BelugaQueueException(const QueueExceptionReason &reason)
-        : reason_(reason) {
+        : _reason(reason) {
         switch (reason) {
         case QUEUE_EMPTY:
-            what_ = "Queue Empty";
+            _what = "Queue Empty";
             break;
         case QUEUE_FULL:
-            what_ = "Queue Full";
+            _what = "Queue Full";
             break;
         case QUEUE_TIMEOUT:
-            what_ = "Queue Timed Out";
+            _what = "Queue Timed Out";
             break;
         default:
-            what_ = "Unknown Queue Error";
+            _what = "Unknown Queue Error";
             break;
         }
     }
@@ -56,7 +56,7 @@ class BelugaQueueException : public std::exception {
      * @return The error reason
      */
     [[nodiscard]] const char *what() const noexcept override {
-        return what_.c_str();
+        return _what.c_str();
     }
 
     /**
@@ -64,12 +64,12 @@ class BelugaQueueException : public std::exception {
      * @return The reason for the exception
      */
     [[nodiscard]] QueueExceptionReason reason() const noexcept {
-        return reason_;
+        return _reason;
     }
 
   private:
-    QueueExceptionReason reason_;
-    std::string what_;
+    QueueExceptionReason _reason;
+    std::string _what;
 };
 
 /// Thread safe implementation of a queue. The template parameters indicate the
@@ -132,86 +132,86 @@ class BelugaQueue {
 
   private:
     Type _buffer[max_size];
-    size_t producer_index = 0;
-    size_t consumer_index = 0;
+    size_t _producer_index = 0;
+    size_t _consumer_index = 0;
     std::atomic_size_t _size = 0;
 
-    std::mutex lock_;
-    std::condition_variable not_empty_;
-    std::condition_variable space_available_;
+    std::mutex _lock;
+    std::condition_variable _not_empty;
+    std::condition_variable _space_available;
 };
 
 template <typename Type, size_t max_size, bool overwrite>
 void BelugaQueue<Type, max_size, overwrite>::put(
     Type &item, bool block, const std::chrono::milliseconds &timeout_ms) {
-    std::unique_lock<std::mutex> lock(lock_);
+    std::unique_lock<std::mutex> lock(_lock);
 
     if (!block) {
-        if (!space_available_.wait_for(lock, timeout_ms,
+        if (!_space_available.wait_for(lock, timeout_ms,
                                        [this]() { return !full(); })) {
             if (!overwrite) {
                 throw BelugaQueueException(BelugaQueueException::QUEUE_FULL);
             }
         }
     } else {
-        space_available_.wait(lock, [this]() { return !full(); });
+        _space_available.wait(lock, [this]() { return !full(); });
     }
 
-    _buffer[producer_index] = item;
-    producer_index = (producer_index + 1) % max_size;
+    _buffer[_producer_index] = item;
+    _producer_index = (_producer_index + 1) % max_size;
     _size.fetch_add(1);
     if (_size >= max_size) {
         _size = max_size;
     }
-    not_empty_.notify_one();
+    _not_empty.notify_one();
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 Type BelugaQueue<Type, max_size, overwrite>::get(
     bool block, const std::chrono::milliseconds &timeout_ms) {
     Type ret;
-    std::unique_lock<std::mutex> lock(lock_);
+    std::unique_lock<std::mutex> lock(_lock);
 
     if (!block) {
-        if (!not_empty_.wait_for(lock, timeout_ms,
+        if (!_not_empty.wait_for(lock, timeout_ms,
                                  [this]() { return !empty(); })) {
             throw BelugaQueueException(BelugaQueueException::QUEUE_EMPTY);
         }
     } else {
-        not_empty_.wait(lock, [this]() { return !empty(); });
+        _not_empty.wait(lock, [this]() { return !empty(); });
     }
 
-    ret = _buffer[consumer_index];
-    consumer_index = (consumer_index + 1) % max_size;
+    ret = _buffer[_consumer_index];
+    _consumer_index = (_consumer_index + 1) % max_size;
     _size.fetch_sub(1);
-    space_available_.notify_one();
+    _space_available.notify_one();
     return ret;
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 size_t BelugaQueue<Type, max_size, overwrite>::size() {
-    size_t size_ = _size;
-    return size_;
+    size_t size = _size;
+    return size;
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 bool BelugaQueue<Type, max_size, overwrite>::empty() {
-    size_t size_ = _size;
-    return size_ == 0;
+    size_t size = _size;
+    return size == 0;
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 bool BelugaQueue<Type, max_size, overwrite>::full() {
-    size_t size_ = _size;
-    return size_ == max_size;
+    size_t size = _size;
+    return size == max_size;
 }
 
 template <typename Type, size_t max_size, bool overwrite>
 void BelugaQueue<Type, max_size, overwrite>::clear() {
-    std::lock_guard<std::mutex> lock(lock_);
+    std::lock_guard<std::mutex> lock(_lock);
     _size = 0;
-    consumer_index = 0;
-    producer_index = 0;
+    _consumer_index = 0;
+    _producer_index = 0;
 }
 } // namespace BelugaSerial
 

@@ -33,6 +33,8 @@ set(msg_files
         "msg/BelugaRange.msg"
         "msg/BelugaRanges.msg"
         "msg/BelugaExchange.msg"
+        "msg/BelugaUnexpectedReboot.msg"
+        "srv/BelugaPowerControl.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

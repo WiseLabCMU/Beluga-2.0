@@ -1,0 +1,29 @@
+# BLE amplifier states
+uint8 POWER_CONTROL_BLE_AMP_OFF=0
+uint8 POWER_CONTROL_BLE_AMP_LOW=2
+uint8 POWER_CONTROL_BLE_AMP_HIGH=4
+
+# UWB external amplifier states
+bool POWER_CONTROL_UWB_AMP_OFF=false
+bool POWER_CONTROL_UWB_AMP_ON=true
+
+# Indices for the DW1000 power control stages
+uint8 POWER_CONTROL_BOOSTNORM=0
+uint8 POWER_CONTROL_BOOSTP500=1
+uint8 POWER_CONTROL_BOOSTP250=2
+uint8 POWER_CONTROL_BOOSTP125=3
+
+uint8 ble_amp_state
+bool uwb_amp_state
+uint8[4] coarse_gain
+uint8[4] fine_gain
+---
+# Indices for the AT command responses
+uint8 POWER_CONTROL_RESP_EXTERNAL_AMP=0
+uint8 POWER_CONTROL_RESP_BOOSTNORM=1
+uint8 POWER_CONTROL_RESP_BOOSTP500=2
+uint8 POWER_CONTROL_RESP_BOOSTP250=3
+uint8 POWER_CONTROL_RESP_BOOSTP125=4
+
+string[5] responses
+string set_power

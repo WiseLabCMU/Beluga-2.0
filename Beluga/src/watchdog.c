@@ -74,6 +74,12 @@ int configure_watchdog_timer(void) {
     }
 
     ret = task_wdt_init(wdt);
+
+    if (ret == -ENOTSUP) {
+        // Hardware watchdog disabled.
+        ret = 0;
+    }
+
     if (ret != 0) {
         LOG_ERR("Task wdt init failure: %d", ret);
     }

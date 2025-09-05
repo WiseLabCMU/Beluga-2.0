@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_SERIAL_POSIX_HPP
-#define BELUGA_FRAME_SERIAL_POSIX_HPP
+#ifndef BELUGA_SERIAL_SERIAL_POSIX_HPP
+#define BELUGA_SERIAL_SERIAL_POSIX_HPP
 
 #include <chrono>
 #include <serial/core/C-API/serial_common.h>
@@ -31,7 +31,7 @@ class SerialPosix : public SerialBase {
      */
     explicit SerialPosix(const SerialAttributes &attr = SerialAttributes{})
         : SerialBase(attr) {
-        if (!_port.empty()) {
+        if (!port_.empty()) {
             open();
         }
     }
@@ -127,13 +127,12 @@ class SerialPosix : public SerialBase {
     bool cd() override;
 
   private:
-    const size_t rw_chunk_size = 1024;
-    int fd = -1;
+    int _fd = -1;
 
     void _init_flow_control();
-    void _reconfigure_port() override;
-    void _update_rts_state() override;
-    void _update_dtr_state() override;
+    void reconfigure_port_() override;
+    void update_rts_state_() override;
+    void update_dtr_state_() override;
     void _reconfigure_port_internal();
     void _wait_write_timed(Timeout &timeout) const;
     void _wait_write_blocking() const;
@@ -143,4 +142,4 @@ class SerialPosix : public SerialBase {
 };
 } // namespace SerialInternal
 
-#endif // BELUGA_FRAME_SERIAL_POSIX_HPP
+#endif // BELUGA_SERIAL_SERIAL_POSIX_HPP

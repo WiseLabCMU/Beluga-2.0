@@ -99,9 +99,7 @@
     } while (0)
 
 /**
- * Stalls a task until a certain condition is met. Additionally, if curly braces
- * ({}) are used on this like a loop, then code can be ran inside like a loop
- * while the condition is not met.
+ * Stalls a task until a certain condition is met.
  *
  * @param[in] cond The condition that needs to be met before continuing.
  * @param[in] timeout The maximum amount of time in milliseconds to wait for the
@@ -123,6 +121,25 @@
                 wait_expr;                                                     \
             }                                                                  \
         }                                                                      \
+    } while (0)
+
+/**
+ * The expression to execute upon a receiver timeout when waiting for UWB.
+ */
+#define RX_TIMEOUT_EXPR                                                        \
+    do {                                                                       \
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_ERR);               \
+        dwt_rxreset();                                                         \
+        return -ETIMEDOUT;                                                     \
+    } while (0)
+
+/**
+ * The expression to execute upon a transmitter timeout when waiting for UWB.
+ */
+#define TX_TIMEOUT_EXPR                                                        \
+    do {                                                                       \
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);                    \
+        return -ETIMEDOUT;                                                     \
     } while (0)
 
 /**
@@ -213,7 +230,45 @@
  * UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion
  * factor. 1 uus = 512 / 499.2 ?s and 1 ?s = 499.2 * 128 dtu.
  */
-#define UUS_TO_DWT_TIME 65536
+#define UUS_TO_DWT_TIME UINT64_C(65536)
+
+#if IS_ENABLED(CONFIG_RESP_SUSPEND_SCHED)
+/**
+ * Lock the scheduler.
+ */
+#define SCHED_LOCK_ENTER() k_sched_lock()
+
+/**
+ * Unlock the scheduler and return the function with the given error code.
+ * @param[in] _err The error code to return.
+ */
+#define SCHED_LOCK_ERROR(_err)                                                 \
+    do {                                                                       \
+        k_sched_unlock();                                                      \
+        return _err;                                                           \
+    } while (0)
+
+/**
+ * Unlock the scheduler.
+ */
+#define SCHED_LOCK_EXIT() k_sched_unlock()
+#else
+/**
+ * Lock the scheduler.
+ */
+#define SCHED_LOCK_ENTER()     (void)0
+
+/**
+ * Unlock the scheduler and return the function with the given error code.
+ * @param[in] _err The error code to return.
+ */
+#define SCHED_LOCK_ERROR(_err) return _err;
+
+/**
+ * Unlock the scheduler.
+ */
+#define SCHED_LOCK_EXIT()      (void)0
+#endif // IS_ENABLED(CONFIG_RESP_SUSPEND_SCHED)
 
 /**
  * @Brief Sets the source ID byte field to the specified UUID

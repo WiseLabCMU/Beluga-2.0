@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_SERIAL_COMMON_H
-#define BELUGA_FRAME_SERIAL_COMMON_H
+#ifndef BELUGA_SERIAL_SERIAL_COMMON_H
+#define BELUGA_SERIAL_SERIAL_COMMON_H
 
 #if defined(__cplusplus)
 extern "C" {
@@ -94,4 +94,4 @@ enum StopBits {
 }
 #endif
 
-#endif // BELUGA_FRAME_SERIAL_COMMON_H
+#endif // BELUGA_SERIAL_SERIAL_COMMON_H

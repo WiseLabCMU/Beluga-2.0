@@ -10,8 +10,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_SERIAL_HPP
-#define BELUGA_FRAME_SERIAL_HPP
+#ifndef BELUGA_SERIAL_SERIAL_HPP
+#define BELUGA_SERIAL_SERIAL_HPP
 
 #include <serial/core/serial_posix.hpp>
 
@@ -42,4 +42,4 @@ class Serial : public SerialInternal::SerialPosix {
 };
 } // namespace Serial
 
-#endif // BELUGA_FRAME_SERIAL_HPP
+#endif // BELUGA_SERIAL_SERIAL_HPP

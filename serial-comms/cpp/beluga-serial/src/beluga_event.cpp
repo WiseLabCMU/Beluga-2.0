@@ -12,23 +12,23 @@
 
 namespace BelugaSerial {
 void Event::wait() {
-    std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [this]() { return signal; });
+    std::unique_lock<std::mutex> lock(_mtx);
+    _cv.wait(lock, [this]() { return _signal; });
 }
 
 void Event::set() {
-    std::lock_guard<std::mutex> lock(mtx);
-    signal = true;
-    cv.notify_all();
+    std::lock_guard<std::mutex> lock(_mtx);
+    _signal = true;
+    _cv.notify_all();
 }
 
 void Event::clear() {
-    std::lock_guard<std::mutex> lock(mtx);
-    signal = false;
+    std::lock_guard<std::mutex> lock(_mtx);
+    _signal = false;
 }
 
 bool Event::is_set() {
-    std::lock_guard<std::mutex> lock(mtx);
-    return signal;
+    std::lock_guard<std::mutex> lock(_mtx);
+    return _signal;
 }
 } // namespace BelugaSerial

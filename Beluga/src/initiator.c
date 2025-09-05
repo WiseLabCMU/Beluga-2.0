@@ -106,6 +106,8 @@ static uint64 tx_delay = DEFAULT_TX_ANT_DLY;
  */
 static uint64 rx_delay = DEFAULT_RX_ANT_DLY;
 
+static uint8 seq_cnt = 0u;
+
 /**
  * The current PRF
  */
@@ -132,7 +134,7 @@ static double hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
  * This is the delay from Frame RX timestamp to TX reply timestamp used for
  * calculating/setting the DW1000's delayed TX function.
  */
-#define POLL_RX_TO_RESP_TX_DLY_UUS 2000
+#define POLL_RX_TO_RESP_TX_DLY_UUS UINT64_C(2000)
 
 /**
  * This is the delay from the end of the frame transmission to the enable of the
@@ -347,12 +349,12 @@ void set_hertz_to_ppm_multiplier(uint8_t channel) {
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_1;
         break;
     case 2:
+    case 4:
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_2;
         break;
     case 3:
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_3;
         break;
-    case 4:
     case 5:
     case 7:
         hertz_to_ppm_multiplier = HERTZ_TO_PPM_MULTIPLIER_CHAN_5;
@@ -425,6 +427,7 @@ static void set_exchange_id(void) {
  * @return -EBADMSG if transmission failed
  */
 static int send_poll(void) {
+    tx_poll_msg[SEQ_CNT_OFFSET] = seq_cnt++;
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
     dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg, 0);
     dwt_writetxfctrl(sizeof(tx_poll_msg), 0, 1);
@@ -436,8 +439,8 @@ static int send_poll(void) {
         return -EBADMSG;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS, -1, (void)0,
-             k_fatal_halt(K_ERR_KERNEL_PANIC));
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
+             CONFIG_INITIATOR_TIMEOUT, (void)0, TX_TIMEOUT_EXPR);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -457,7 +460,7 @@ static int ds_rx_response(void) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
+        CONFIG_INITIATOR_TIMEOUT, (void)0, RX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -474,7 +477,7 @@ static int ds_rx_response(void) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    rx_buffer[SEQ_CNT_OFFSET] = 0;
+    rx_resp_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     if (!(memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
@@ -508,6 +511,8 @@ static int send_final(void) {
     msg_set_ts(&tx_final_msg[RESP_MSG_RESP_TX_TS_IDX], resp_rx_ts);
     msg_set_ts(&tx_final_msg[FINAL_MSG_FINAL_TX_TS_IDX], ts_replyA_end);
 
+    tx_final_msg[SEQ_CNT_OFFSET] = seq_cnt++;
+
     dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0);
     dwt_writetxfctrl(sizeof(tx_final_msg), 0, 1);
 
@@ -518,8 +523,8 @@ static int send_final(void) {
         return -ETIMEDOUT;
     }
 
-    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS, -1, (void)0,
-             k_fatal_halt(K_ERR_KERNEL_PANIC));
+    UWB_WAIT(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS,
+             CONFIG_INITIATOR_TIMEOUT, (void)0, TX_TIMEOUT_EXPR);
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
     return 0;
@@ -544,7 +549,7 @@ static int rx_report(double *distance) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
+        CONFIG_INITIATOR_TIMEOUT, (void)0, RX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -560,14 +565,14 @@ static int rx_report(double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    rx_buffer[SEQ_CNT_OFFSET] = 0;
+    rx_report_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     if (!(memcmp(rx_buffer, rx_report_msg, DW_BASE_LEN) == 0)) {
         return -EBADMSG;
     }
 
     msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &msg_tof_dtu);
-    tof = msg_tof_dtu * DWT_TIME_UNITS;
+    tof = (double)msg_tof_dtu * DWT_TIME_UNITS;
     *distance = tof * SPEED_OF_LIGHT;
     return 0;
 }
@@ -646,7 +651,7 @@ static int ss_rx_response(double *distance) {
     UWB_WAIT(
         (status_reg = dwt_read32bitreg(SYS_STATUS_ID)) &
             (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR),
-        -1, (void)0, k_fatal_halt(K_ERR_KERNEL_PANIC));
+        CONFIG_INITIATOR_TIMEOUT, (void)0, RX_TIMEOUT_EXPR);
 
     if (!(status_reg & SYS_STATUS_RXFCG)) {
         dwt_write32bitreg(SYS_STATUS_ID,
@@ -662,7 +667,7 @@ static int ss_rx_response(double *distance) {
         dwt_readrxdata(rx_buffer, frame_len, 0);
     }
 
-    rx_buffer[SEQ_CNT_OFFSET] = 0;
+    rx_resp_msg[SEQ_CNT_OFFSET] = seq_cnt++;
 
     if (!(memcmp(rx_buffer, rx_resp_msg, DW_BASE_LEN) == 0)) {
         dwt_rxreset();

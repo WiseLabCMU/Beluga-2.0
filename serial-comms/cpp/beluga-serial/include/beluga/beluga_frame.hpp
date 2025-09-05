@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_BELUGA_FRAME_HPP
-#define BELUGA_FRAME_BELUGA_FRAME_HPP
+#ifndef BELUGA_SERIAL_BELUGA_FRAME_HPP
+#define BELUGA_SERIAL_BELUGA_FRAME_HPP
 
 #include <exception>
 #include <string>
@@ -35,18 +35,18 @@ class BelugaFrameError : public std::exception {
      * Constructs a BelugaFrameError with a given error message
      * @param error
      */
-    explicit BelugaFrameError(std::string error) : message(std::move(error)) {}
+    explicit BelugaFrameError(std::string error) : _message(std::move(error)) {}
 
     /**
      * Error message indicating what went wrong
      * @return The error code
      */
     [[nodiscard]] const char *what() const noexcept override {
-        return message.c_str();
+        return _message.c_str();
     }
 
   private:
-    std::string message;
+    std::string _message;
 };
 
 /// Class for parsing Beluga frames
@@ -181,8 +181,8 @@ class BelugaFrame {
     [[nodiscard]] BelugaFrame::DecodedFrame get_parsed_data() const;
 
   private:
-    BelugaFrame::DecodedFrame parsed_data;
+    BelugaFrame::DecodedFrame _parsed_data;
 };
 }; // namespace BelugaSerial
 
-#endif // BELUGA_FRAME_BELUGA_FRAME_HPP
+#endif // BELUGA_SERIAL_BELUGA_FRAME_HPP

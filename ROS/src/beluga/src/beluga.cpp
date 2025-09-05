@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <beluga/beluga.hpp>
+#include <beluga/utils.h>
 #include <beluga_messages/srv/beluga_at_command.hpp>
 #include <cinttypes>
 #include <daw/json/daw_json_link.h>
@@ -80,7 +81,7 @@ class ZeroDivisionError : std::exception {
 
 using beluga_messages::srv::BelugaATCommand;
 
-void Beluga::run_at_command(
+void Beluga::_run_at_command(
     const std::shared_ptr<beluga_messages::srv::BelugaATCommand::Request>
         request,
     std::shared_ptr<beluga_messages::srv::BelugaATCommand::Response> response) {
@@ -183,7 +184,7 @@ void Beluga::run_at_command(
     }
 }
 
-void Beluga::publish_neighbor_list(
+void Beluga::_publish_neighbor_list(
     const std::vector<BelugaSerial::BelugaNeighbor> &neighbors) {
     auto message = beluga_messages::msg::BelugaNeighbors();
     for (const auto &it : neighbors) {
@@ -195,11 +196,11 @@ void Beluga::publish_neighbor_list(
         neighbor.timestamp = _beluga_to_ros_time(it.time());
         message.neighbors.push_back(neighbor);
     }
-    neighbor_list_publisher->publish(message);
+    _neighbor_list_publisher->publish(message);
     PRINT_NEIGHBORS(message);
 }
 
-void Beluga::publish_ranges(
+void Beluga::_publish_ranges(
     const std::vector<BelugaSerial::BelugaNeighbor> &ranges) {
     auto message = beluga_messages::msg::BelugaRanges();
     for (const auto &it : ranges) {
@@ -210,16 +211,16 @@ void Beluga::publish_ranges(
         range.timestamp = _beluga_to_ros_time(it.time());
         message.ranges.push_back(range);
     }
-    range_updates_publisher->publish(message);
+    _range_updates_publisher->publish(message);
     PRINT_RANGES(message);
 }
 
-void Beluga::publish_exchange(const struct BelugaSerial::RangeEvent &event) {
+void Beluga::_publish_exchange(const BelugaSerial::RangeEvent &event) {
     auto message = beluga_messages::msg::BelugaExchange();
     message.id = event.ID;
     message.exchange = event.EXCHANGE;
     message.timestamp = _beluga_to_ros_time(event.TIMESTAMP);
-    ranging_event_publisher->publish(message);
+    _ranging_event_publisher->publish(message);
     PRINT_EXCHANGE(message);
 }
 
@@ -227,22 +228,22 @@ void Beluga::_time_sync(bool first) {
     std::unique_lock<std::mutex> lock(_timestamp_sync, std::defer_lock);
     int retries = 5;
     while (retries > 0) {
-        auto [t1_, req1, resp1] = _time_sync_get_measurement();
+        auto [t_1, req1, resp1] = _time_sync_get_measurement();
         int64_t delta = (resp1 - req1).nanoseconds() / 2;
         auto map1 = req1 + rclcpp::Duration(std::chrono::nanoseconds(delta));
 
         // Wait 100ms
         this->get_clock()->sleep_until(resp1 + rclcpp::Duration(100ms));
 
-        auto [t2_, req2, resp2] = _time_sync_get_measurement();
+        auto [t_2, req2, resp2] = _time_sync_get_measurement();
         delta = (resp2 - req2).nanoseconds() / 2;
         auto map2 = req2 + rclcpp::Duration(std::chrono::nanoseconds(delta));
 
         int64_t t1, t2, t_diff;
         auto map_diff = map2 - map1;
         try {
-            t1 = extract_number(t1_);
-            t2 = extract_number(t2_);
+            t1 = _extract_number(t_1);
+            t2 = _extract_number(t_2);
             t_diff = t2 - t1;
             if (t_diff == 0) {
                 throw ZeroDivisionError();
@@ -256,8 +257,8 @@ void Beluga::_time_sync(bool first) {
             retries--;
             if (retries > 0) {
                 RCLCPP_ERROR(this->get_logger(),
-                             "Unable to sync time: t1: %s, t2: %s", t1_.c_str(),
-                             t2_.c_str());
+                             "Unable to sync time: t1: %s, t2: %s", t_1.c_str(),
+                             t_2.c_str());
             } else {
                 RCLCPP_ERROR(this->get_logger(),
                              "Unable to sync time. Will retry in 10 minutes");
@@ -303,7 +304,7 @@ Beluga::_time_sync_get_measurement() {
     return {t, req, req};
 }
 
-int64_t Beluga::extract_number(const std::string &s) {
+int64_t Beluga::_extract_number(const std::string &s) {
     std::string s_num;
     int base = 10;
     int (*check_digit)(int) = isdigit;
@@ -356,32 +357,75 @@ void Beluga::_init_time_sync() {
 }
 
 void Beluga::_resync_time_cb() {
-    this->sync_timer->cancel();
+    this->_sync_timer->cancel();
     _init_time_sync();
-    this->sync_timer->reset();
+    this->_sync_timer->reset();
 }
 
-void Beluga::__time_sync() { _time_sync(); }
+void Beluga::_time_sync_helper() { _time_sync(); }
 
-#define CALLBACK_DEF(name_)                                                    \
-    {                                                                          \
-#name_, std::bind(&BelugaSerial::BelugaSerial::name_, &this->_serial,  \
-                          std::placeholders::_1)                               \
+std::string Beluga::_set_txpower(const std::string &power) {
+    if (power.empty()) {
+        return _serial.txpower();
+    }
+    constexpr uint32_t coarse_gain_shift = 5;
+    constexpr size_t stages = 4;
+    constexpr uint32_t stage_mask = UINT8_MAX;
+    constexpr uint32_t coarse_gain_mask = 7;
+
+    uint32_t txpower = std::stoul(power);
+
+    for (size_t stage = 0; stage < stages; stage++) {
+        uint32_t mask = stage_mask << (uint32_t)CHAR_BIT * stage;
+        uint32_t stage_setting =
+            (txpower & mask) >> ((uint32_t)CHAR_BIT * stage);
+        uint32_t coarse_gain_inv = stage_setting >> coarse_gain_shift;
+        uint32_t coarse_gain = ~coarse_gain_inv & coarse_gain_mask;
+        uint32_t fine_gain =
+            stage_setting ^ (coarse_gain_inv << coarse_gain_shift);
+        _serial.txpower(BelugaSerial::BelugaSerial<
+                            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage(stage),
+                        coarse_gain, fine_gain);
     }
 
-constexpr std::array<std::pair<const char *, int64_t>, 12> DEFAULT_CONFIGS = {{
+    RCLCPP_INFO(this->get_logger(), "%s", _serial.txpower().c_str());
+    return _serial.txpower();
+}
+
+#define _CALLBACK_DEF_SERIAL(name_)                                                                              \
+    {                                                                                                            \
+#name_, [ObjectPtr = &this->_serial](auto && PH1) { return ObjectPtr->name_(std::forward<decltype(PH1)>(PH1)); } \
+    }
+
+#define _CALLBACK_DEF_WRAPPER(_name, _func, ...)                               \
+    {                                                                          \
+#_name,                                                                \
+            [this](                                                            \
+                auto                                                           \
+                    &&PH1) { return _func(std::forward<decltype(PH1)>(PH1)); } \
+    }
+
+#define CALLBACK_DEF(_name, ...)                                               \
+    COND_CODE_0(IS_EMPTY(__VA_ARGS__),                                         \
+                (_CALLBACK_DEF_WRAPPER(_name, __VA_ARGS__)),                   \
+                (_CALLBACK_DEF_SERIAL(_name)))
+
+constexpr std::array<std::pair<const char *, int64_t>, 15> DEFAULT_CONFIGS = {{
     {"bootmode", 2},
     {"rate", 100},
-    {"channel", 5},
+    {"channel", 4},
     {"timeout", 9000},
-    {"txpower", 0},
+    {"txpower", 0x1F1F1F1F},
     {"streammode", 1},
     {"twrmode", 1},
     {"ledmode", 0},
-    {"pwramp", 0},
-    {"datarate", 0},
-    {"preamble", 128},
+    {"pwramp", 5},
+    {"datarate", 1},
+    {"preamble", 512},
     {"pulserate", 1},
+    {"phr", 0},
+    {"pac", 2},
+    {"sfd", 1},
 }};
 
 constexpr std::array<const char *, 18> settingPriorities = {
@@ -398,7 +442,7 @@ void Beluga::_setup() {
     if (!this->get_parameter("config").as_string().empty()) {
         // Splice custom configs with default ones
         auto file_configs =
-            read_configs(this->get_parameter("config").as_string());
+            _read_configs(this->get_parameter("config").as_string());
         for (const auto &[key, value] : file_configs) {
             configs[key] = value;
         }
@@ -408,14 +452,13 @@ void Beluga::_setup() {
         _serial.swap_port(this->get_parameter("port").as_string());
     }
 
-    _serial.register_resync_cb(std::bind(&Beluga::_resync_time_cb, this));
     _serial.start();
 
     std::map<std::string, std::function<std::string(const std::string &)>>
         callbacks = {
             CALLBACK_DEF(id),         CALLBACK_DEF(bootmode),
             CALLBACK_DEF(rate),       CALLBACK_DEF(channel),
-            CALLBACK_DEF(timeout),    CALLBACK_DEF(txpower),
+            CALLBACK_DEF(timeout),    CALLBACK_DEF(txpower, _set_txpower),
             CALLBACK_DEF(streammode), CALLBACK_DEF(twrmode),
             CALLBACK_DEF(ledmode),    CALLBACK_DEF(pwramp),
             CALLBACK_DEF(antenna),    CALLBACK_DEF(phr),
@@ -436,7 +479,7 @@ void Beluga::_setup() {
                     setting.c_str());
         int64_t int_setting;
         try {
-            int_setting = extract_number(setting);
+            int_setting = _extract_number(setting);
         } catch (ValueError &exc) {
             int_setting = -1;
         }
@@ -448,7 +491,7 @@ void Beluga::_setup() {
         if (setting == "Invalid AT command") {
             std::string key_ = key;
             std::transform(key_.begin(), key_.end(), key_.begin(), ::toupper);
-            RCLCPP_INFO(this->get_logger(), "AT+%s is disabled int firmware",
+            RCLCPP_INFO(this->get_logger(), "AT+%s is disabled in firmware",
                         key_.c_str());
             continue;
         }
@@ -473,11 +516,13 @@ void Beluga::_setup() {
     RCLCPP_INFO(this->get_logger(), "Done rebooting");
 
     _init_time_sync();
+    _serial.register_resync_cb([this] { _resync_time_cb(); });
 
     RCLCPP_INFO(this->get_logger(), "Ready");
 }
 
-std::map<std::string, int64_t> Beluga::read_configs(const std::string &config) {
+std::map<std::string, int64_t>
+Beluga::_read_configs(const std::string &config) {
     std::ifstream file(config);
 
     if (file.fail()) {
@@ -490,7 +535,7 @@ std::map<std::string, int64_t> Beluga::read_configs(const std::string &config) {
     return daw::json::from_json<std::map<std::string, int64_t>>(json_str);
 }
 
-int Beluga::serial_logger(const char *msg, va_list args) {
+int Beluga::_serial_logger(const char *msg, va_list args) {
     va_list args_copy;
     va_copy(args_copy, args);
 
@@ -511,32 +556,116 @@ int Beluga::serial_logger(const char *msg, va_list args) {
 }
 
 #if defined(TIMED_NEIGHBOR_PUBLISHER)
-void Beluga::timer_callback_neighbors() {
+void Beluga::_timer_callback_neighbors() {
     std::vector<BelugaSerial::BelugaNeighbor> list;
     bool updated = _serial.get_neighbors(list);
 
     if (updated) {
-        publish_neighbor_list(list);
+        _publish_neighbor_list(list);
     }
 }
 #endif // defined(TIMED_NEIGHBOR_PUBLISHER)
 
 #if defined(TIMED_RANGES_PUBLISHER)
-void Beluga::timer_callback_ranges() {
+void Beluga::_timer_callback_ranges() {
     std::vector<BelugaSerial::BelugaNeighbor> list;
     _serial.get_ranges(list);
 
     if (!list.empty()) {
-        publish_ranges(list);
+        _publish_ranges(list);
     }
 }
 #endif // defined(TIMED_RANGES_PUBLISHER)
 
 #if defined(TIMED_RANGE_EVENTS_PUBLISHER)
-void Beluga::timer_callback_range_events() {
+void Beluga::_timer_callback_range_events() {
     BelugaSerial::RangeEvent event = _serial.get_range_event();
     if (event.ID != 0) {
-        publish_exchange(event);
+        _publish_exchange(event);
     }
 }
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
+
+void Beluga::_unexpected_reboot_event() {
+    auto message = beluga_messages::msg::BelugaUnexpectedReboot();
+    message.timestamp = this->get_clock()->now();
+    this->_unexpected_reboot->publish(message);
+}
+
+constexpr uint8_t UWB_BIT = 0u;
+
+inline std::string Beluga::pwr_control_cmd(
+    uint8_t stage,
+    const std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Request>
+        request) {
+    BelugaSerial::BelugaSerial<NEIGHBOR_LIST_CLASS>::UwbAmplificationStage
+        amp_stage;
+
+    switch (stage) {
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTNORM:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOST_NORM;
+        break;
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTP500:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_500;
+        break;
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTP250:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_250;
+        break;
+    case beluga_messages::srv::BelugaPowerControl::Request::
+        POWER_CONTROL_BOOSTP125:
+        amp_stage = BelugaSerial::BelugaSerial<
+            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_125;
+        break;
+    default:
+        return "";
+    }
+
+    return _serial.txpower(amp_stage, request->coarse_gain[stage],
+                           request->fine_gain[stage]);
+}
+
+void Beluga::_update_power_control(
+    const std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Request>
+        request,
+    std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Response>
+        response) {
+    uint32_t amplifier = request->ble_amp_state;
+
+    if (request->uwb_amp_state) {
+        amplifier |= 1u << UWB_BIT;
+    } else {
+        amplifier &= ~(1u << UWB_BIT);
+    }
+
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_EXTERNAL_AMP] =
+        _serial.pwramp(std::to_string(amplifier));
+
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTNORM] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTNORM,
+                        request);
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTP500] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTP500,
+                        request);
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTP250] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTP250,
+                        request);
+    response->responses[beluga_messages::srv::BelugaPowerControl_Response::
+                            POWER_CONTROL_RESP_BOOSTP125] =
+        pwr_control_cmd(beluga_messages::srv::BelugaPowerControl::Request::
+                            POWER_CONTROL_BOOSTP125,
+                        request);
+    response->set_power = _serial.txpower();
+}

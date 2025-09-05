@@ -89,16 +89,14 @@ static void device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
     struct ble_data data_ = {0};
     bt_data_parse(adv_info, data_cb, &data_);
 
-    if (data_.beluga_node && type == BT_GAP_ADV_TYPE_SCAN_RSP) {
+    if (data_.beluga_node && k_sem_take(&scanning_allowed, K_NO_WAIT) == 0) {
         LOG_DBG("Found node advertising Beluga service: %d", data_.uuid);
-
-        if (k_sem_take(&scanning_allowed, K_NO_WAIT)) {
-            return;
-        }
 
         update_seen_list(&data_, rssi);
         k_sem_give(&scanning_allowed);
-    } else if (data_.beluga_node && type == BT_GAP_ADV_TYPE_ADV_IND) {
+    }
+
+    if (type == BT_GAP_ADV_TYPE_ADV_IND) {
         LOG_DBG("Found connectable node: %d", data_.uuid);
         check_advertiser(&data_, addr);
     }
