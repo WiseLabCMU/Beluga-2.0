@@ -1,7 +1,7 @@
 /**
  * @file utils.h
  *
- * @brief
+ * @brief Adapted from Zephyr RTOS.
  *
  * @date 9/5/25
  *
