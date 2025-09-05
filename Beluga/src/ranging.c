@@ -681,7 +681,7 @@ static int set_advanced_tx_power(uint32_t stage, uint32_t coarse_gain,
     power = config_tx.power;
     mask <<= (uint32_t)CHAR_BIT * stage;
     power &= ~mask;
-    gain = coarse_gain << coarse_gain_shift;
+    gain = (~coarse_gain & 0x7) << coarse_gain_shift;
     gain |= fine_gain;
     gain <<= (uint32_t)CHAR_BIT * stage;
     power |= gain;
