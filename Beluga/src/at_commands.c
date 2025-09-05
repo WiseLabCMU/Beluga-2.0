@@ -436,6 +436,7 @@ AT_COMMAND(TXPOWER) {
         tx_power.mode = UWB_TX_PWR_CONFIG_SIMPLE;
         tx_power.simple_power = value;
     } else if (argc == 4) {
+        tx_power.mode = UWB_TX_PWR_CONFIG_ADVANCED;
         tx_power.advanced_power.stage = arg1;
         if (!strtoint32(argv[2], &tx_power.advanced_power.coarse)) {
             ERROR(comms, "Invalid TX coarse gain");

@@ -43,9 +43,9 @@ class Event {
     bool is_set();
 
   private:
-    std::mutex mtx;
-    std::condition_variable cv;
-    bool signal = false;
+    std::mutex _mtx;
+    std::condition_variable _cv;
+    bool _signal = false;
 };
 } // namespace BelugaSerial
 

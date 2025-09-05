@@ -229,7 +229,7 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
  * The watchdog timer instance for the ranging.
  */
 static struct task_wdt_attr ranging_watchdog_attr = {
-    .period = 3 * CONFIG_MAX_POLLING_RATE};
+    .period = 10 * CONFIG_POLLING_REFRESH_PERIOD};
 
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
@@ -681,7 +681,7 @@ static int set_advanced_tx_power(uint32_t stage, uint32_t coarse_gain,
     power = config_tx.power;
     mask <<= (uint32_t)CHAR_BIT * stage;
     power &= ~mask;
-    gain = coarse_gain << coarse_gain_shift;
+    gain = (~coarse_gain & 0x7) << coarse_gain_shift;
     gain |= fine_gain;
     gain <<= (uint32_t)CHAR_BIT * stage;
     power |= gain;
@@ -1048,7 +1048,7 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     const struct comms *comms = comms_backend_uart_get_ptr();
     struct beluga_msg msg = {.type = RANGING_EVENT};
     struct task_wdt_attr responder_wdt = {
-        .period = CONFIG_RESPONDER_TIMEOUT * 3,
+        .period = CONFIG_RESPONDER_TIMEOUT * 5,
     };
 
     if (are_leds_on()) {

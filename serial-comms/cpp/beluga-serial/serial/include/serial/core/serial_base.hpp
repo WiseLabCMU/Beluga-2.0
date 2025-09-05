@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_SERIAL_BASE_HPP
-#define BELUGA_FRAME_SERIAL_BASE_HPP
+#ifndef BELUGA_SERIAL_SERIAL_BASE_HPP
+#define BELUGA_SERIAL_SERIAL_BASE_HPP
 
 #include <chrono>
 #include <cstring>
@@ -29,13 +29,13 @@ class SerialException : public std::exception {
      * Construct a SerialException with a message
      * @param[in] message Description of the error
      */
-    explicit SerialException(const char *message) { _message = message; }
+    explicit SerialException(const char *message) { message_ = message; }
 
     /**
      * Construct a SerialException with a message
      * @param[in] message Description of the error
      */
-    explicit SerialException(const std::string &message) { _message = message; }
+    explicit SerialException(const std::string &message) { message_ = message; }
 
     /**
      * Construct a SerialException with an error number and message
@@ -44,10 +44,10 @@ class SerialException : public std::exception {
      * error number
      */
     SerialException(int errnum, const std::string &message) {
-        _code = errnum;
+        code_ = errnum;
         std::stringstream oss;
         oss << errnum << " " << message << ": " << strerror(errnum);
-        _message = oss.str();
+        message_ = oss.str();
     }
 
     /**
@@ -55,19 +55,19 @@ class SerialException : public std::exception {
      * @return Error code
      * @return 0 if not set
      */
-    [[nodiscard]] int code() const noexcept { return _code; }
+    [[nodiscard]] int code() const noexcept { return code_; }
 
     /**
      * Return the error message
      * @return The error message as a C-style string
      */
     [[nodiscard]] const char *what() const noexcept override {
-        return _message.c_str();
+        return message_.c_str();
     }
 
   protected:
-    int _code = 0;
-    std::string _message;
+    int code_ = 0;
+    std::string message_;
 };
 
 /// Write timeouts give an exception
@@ -520,29 +520,29 @@ class SerialBase {
 
   protected:
     // Protected Attributes
-    bool _is_open;
-    std::string _port;
-    enum BaudRate _baudrate;
-    enum ByteSize _bytesize;
-    enum Parity _parity;
-    enum StopBits _stopbits;
-    milliseconds _timeout{};
-    milliseconds _write_timeout{};
-    bool _xonxoff;
-    bool _rtscts;
-    bool _dsrdtr;
-    int32_t _inter_byte_timeout;
-    bool _rts_state;
-    bool _dtr_state;
-    bool _exclusive;
+    bool is_open_;
+    std::string port_;
+    enum BaudRate baudrate_;
+    enum ByteSize bytesize_;
+    enum Parity parity_;
+    enum StopBits stopbits_;
+    milliseconds timeout_{};
+    milliseconds write_timeout_{};
+    bool xonxoff_;
+    bool rtscts_;
+    bool dsrdtr_;
+    int32_t inter_byte_timeout_;
+    bool rts_state_;
+    bool dtr_state_;
+    bool exclusive_;
 
     // Internal Routines
 
     // Platform defined internal routines
-    virtual void _reconfigure_port() = 0;
-    virtual void _update_rts_state() = 0;
-    virtual void _update_dtr_state() = 0;
+    virtual void reconfigure_port_() = 0;
+    virtual void update_rts_state_() = 0;
+    virtual void update_dtr_state_() = 0;
 };
 } // namespace SerialInternal
 
-#endif // BELUGA_FRAME_SERIAL_BASE_HPP
+#endif // BELUGA_SERIAL_SERIAL_BASE_HPP

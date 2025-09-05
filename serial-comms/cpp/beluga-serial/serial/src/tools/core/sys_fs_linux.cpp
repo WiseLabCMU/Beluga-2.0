@@ -25,7 +25,7 @@ SysFsLinux::SysFsLinux(const fs::path &dev) : SysFsBase(dev) {
     }
 
     _usb_device_path = fs::path();
-    device_path = fs::path("/sys/class/tty") / _name / "device";
+    device_path = fs::path("/sys/class/tty") / name_ / "device";
     if (!device_path.empty()) {
         _device_path = fs::canonical(device_path);
         _subsystem = fs::canonical(fs::path(_device_path) / "subsystem")
@@ -49,18 +49,18 @@ SysFsLinux::SysFsLinux(const fs::path &dev) : SysFsBase(dev) {
     }
 
     if (_subsystem == "usb" || _subsystem == "usb-serial") {
-        _apply_usb_info();
+        apply_usb_info_();
     } else if (_subsystem == "pnp") {
-        _description = _name;
-        _hwid = SysFsLinux::_read_line(_device_path, "id");
+        description_ = name_;
+        hwid_ = SysFsLinux::_read_line(_device_path, "id");
     } else if (_subsystem == "amba") {
-        _description = _name;
-        _hwid = _device_path.stem().string();
+        description_ = name_;
+        hwid_ = _device_path.stem().string();
     }
 
     if (is_link) {
         std::string link = " LINK=" + device.string();
-        _hwid += link;
+        hwid_ += link;
     }
 }
 
@@ -78,18 +78,18 @@ void SysFsLinux::_fill_usb_dev_info() {
     }
 
     line = SysFsLinux::_read_line(_usb_device_path, "idVendor");
-    _vid = std::stoull(line, nullptr, 16);
+    vid_ = std::stoull(line, nullptr, 16);
     line = SysFsLinux::_read_line(_usb_device_path, "idProduct");
-    _pid = std::stoull(line, nullptr, 16);
-    _serial_number = SysFsLinux::_read_line(_usb_device_path, "serial");
+    pid_ = std::stoull(line, nullptr, 16);
+    serial_number_ = SysFsLinux::_read_line(_usb_device_path, "serial");
     if (num_interfaces > 1) {
-        _location = _usb_interface_path.stem().string();
+        location_ = _usb_interface_path.stem().string();
     } else {
-        _location = _usb_device_path.stem().string();
+        location_ = _usb_device_path.stem().string();
     }
-    _manufacturer = SysFsLinux::_read_line(_usb_device_path, "manufacturer");
-    _product = SysFsLinux::_read_line(_usb_device_path, "product");
-    _interface = SysFsLinux::_read_line(_usb_interface_path, "interface");
+    manufacturer_ = SysFsLinux::_read_line(_usb_device_path, "manufacturer");
+    product_ = SysFsLinux::_read_line(_usb_device_path, "product");
+    interface_ = SysFsLinux::_read_line(_usb_interface_path, "interface");
 }
 
 std::string SysFsLinux::_read_line(const fs::path &path,
@@ -125,7 +125,7 @@ static std::vector<std::string> _glob(const char *pattern) {
 
     if (glob(pattern, 0, NULL, &glob_result) == 0) {
         for (size_t i = 0; i < glob_result.gl_pathc; i++) {
-            results.push_back(std::string(glob_result.gl_pathv[i]));
+            results.emplace_back(glob_result.gl_pathv[i]);
         }
         globfree(&glob_result);
     }
@@ -139,7 +139,7 @@ static std::vector<std::string> _glob(const char *pattern) {
 #define UPDATE_VECTOR(attr, _destination, _source, _pattern)                   \
     do {                                                                       \
         if (attr) {                                                            \
-            _source = _glob(_pattern);                                         \
+            (_source) = _glob(_pattern);                                       \
             APPEND_VECTOR(_destination, _source);                              \
         }                                                                      \
     } while (false)
@@ -157,8 +157,8 @@ std::vector<SysFsLinux> comports(const SysFsLinuxScanAttr &attr) {
     UPDATE_VECTOR(attr.ttyAP, devices, results, "/dev/ttyAP*");
     UPDATE_VECTOR(attr.ttyGS, devices, results, "/dev/ttyGS*");
 
-    for (size_t i = 0; i < devices.size(); i++) {
-        SysFsLinux dev(devices[i]);
+    for (const auto &device : devices) {
+        SysFsLinux dev(device);
         if (dev.subsystem() != "platform") {
             ret.push_back(dev);
         }

@@ -16,11 +16,11 @@
 namespace SerialInternal {
 void SerialPosix::_init_flow_control() {
     try {
-        if (!_dsrdtr) {
-            _update_dtr_state();
+        if (!dsrdtr_) {
+            update_dtr_state_();
         }
-        if (!_rtscts) {
-            _update_rts_state();
+        if (!rtscts_) {
+            update_rts_state_();
         }
     } catch (const SerialException &err) {
         int code = err.code();
@@ -31,16 +31,16 @@ void SerialPosix::_init_flow_control() {
 }
 
 void SerialPosix::open() {
-    if (_port.empty()) {
+    if (port_.empty()) {
         throw SerialException("Port must be configured before it can be used.");
     }
-    if (_is_open) {
+    if (is_open_) {
         throw SerialException("Port is already open");
     }
 
-    fd = open_port(_port.c_str());
-    if (fd < 0) {
-        throw SerialException(errno, "could not open port " + _port);
+    _fd = open_port(port_.c_str());
+    if (_fd < 0) {
+        throw SerialException(errno, "could not open port " + port_);
     }
 
     try {
@@ -51,20 +51,20 @@ void SerialPosix::open() {
         close();
         throw;
     }
-    _is_open = true;
+    is_open_ = true;
 }
 
 void SerialPosix::_reconfigure_port_internal() {
-    struct serial_posix_config config = {
-        .fd = fd,
-        .baudrate = _baudrate,
-        .parity = _parity,
-        .bytesize = _bytesize,
-        .stopbits = _stopbits,
-        .xonxoff = _xonxoff,
-        .rtscts = _rtscts,
-        .exclusive = _exclusive,
-        .inter_byte_timeout = _inter_byte_timeout,
+    struct SerialPosixConfig config = {
+        .fd = _fd,
+        .baudrate = baudrate_,
+        .parity = parity_,
+        .bytesize = bytesize_,
+        .stopbits = stopbits_,
+        .xonxoff = xonxoff_,
+        .rtscts = rtscts_,
+        .exclusive = exclusive_,
+        .inter_byte_timeout = inter_byte_timeout_,
     };
 
     int ret = configure_port(&config);
@@ -73,24 +73,24 @@ void SerialPosix::_reconfigure_port_internal() {
     }
 }
 
-void SerialPosix::_reconfigure_port() {
-    if (!_is_open) {
+void SerialPosix::reconfigure_port_() {
+    if (!is_open_) {
         return;
     }
     _reconfigure_port_internal();
 }
 
 void SerialPosix::close() {
-    if (_is_open) {
-        if (fd > -1) {
-            close_port(fd);
+    if (is_open_) {
+        if (_fd > -1) {
+            close_port(_fd);
         }
-        _is_open = false;
+        is_open_ = false;
     }
 }
 
 size_t SerialPosix::in_waiting() {
-    ssize_t waiting = port_in_waiting(fd);
+    ssize_t waiting = port_in_waiting(_fd);
     if (waiting < 0) {
         throw SerialException(-(int)waiting,
                               "Unable to get number of bytes in waiting");
@@ -101,23 +101,23 @@ size_t SerialPosix::in_waiting() {
 size_t SerialPosix::read(std::vector<uint8_t> &b, size_t n) {
     size_t bytes_read = 0;
 
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
 
     b.clear();
 
-    Timeout timeout(_timeout);
+    Timeout timeout(timeout_);
 
     while (bytes_read < n) {
         ssize_t ret;
         size_t read_len = n - bytes_read;
         std::vector<uint8_t> buf(read_len);
         if (timeout.infinite()) {
-            ret = read_port(fd, buf.data(), read_len, NULL);
+            ret = read_port(_fd, buf.data(), read_len, NULL);
         } else {
             struct timeval tv = timeout.time_left_tv();
-            ret = read_port(fd, buf.data(), read_len, &tv);
+            ret = read_port(_fd, buf.data(), read_len, &tv);
         }
         if (ret < 0) {
             int err = errno;
@@ -149,7 +149,7 @@ void SerialPosix::_wait_write_timed(Timeout &timeout) const {
         throw SerialTimeoutException("Write timeout");
     }
     struct timeval tv = timeout.time_left_tv();
-    int ret = select_write_port(fd, &tv);
+    int ret = select_write_port(_fd, &tv);
     if (ret == 0) {
         throw SerialTimeoutException("Write timeout");
     } else if (ret < 0) {
@@ -158,21 +158,21 @@ void SerialPosix::_wait_write_timed(Timeout &timeout) const {
 }
 
 void SerialPosix::_wait_write_blocking() const {
-    int ret = select_write_port(fd, NULL);
+    int ret = select_write_port(_fd, NULL);
     if (ret == 0) {
         throw SerialException("write failed (select)");
     }
 }
 
 size_t SerialPosix::write(const std::vector<uint8_t> &b) {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
     std::vector<uint8_t> d = b;
     size_t tx_len = b.size();
-    Timeout timeout(_write_timeout);
+    Timeout timeout(write_timeout_);
     while (tx_len > 0) {
-        ssize_t n = write_port(fd, d.data(), tx_len);
+        ssize_t n = write_port(_fd, d.data(), tx_len);
 
         if (n < 0) {
             int err = errno;
@@ -199,34 +199,34 @@ size_t SerialPosix::write(const std::vector<uint8_t> &b) {
 }
 
 void SerialPosix::flush() {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
-    int ret = port_flush(fd);
+    int ret = port_flush(_fd);
     if (ret < 0) {
         throw SerialException(errno, "Unable to flush");
     }
 }
 
 void SerialPosix::reset_input_buffer() {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
     _reset_input_buffer();
 }
 
 void SerialPosix::reset_output_buffer() {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
     _reset_output_buffer();
 }
 
 bool SerialPosix::cts() {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
-    int ret = port_cts(fd);
+    int ret = port_cts(_fd);
     if (ret < 0) {
         throw SerialException(errno, "Cannot get CTS");
     }
@@ -234,10 +234,10 @@ bool SerialPosix::cts() {
 }
 
 bool SerialPosix::dsr() {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
-    int ret = port_dsr(fd);
+    int ret = port_dsr(_fd);
     if (ret < 0) {
         throw SerialException(errno, "Cannot get DSR");
     }
@@ -245,10 +245,10 @@ bool SerialPosix::dsr() {
 }
 
 bool SerialPosix::ri() {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
-    int ret = port_ri(fd);
+    int ret = port_ri(_fd);
     if (ret < 0) {
         throw SerialException(errno, "Cannot get RI");
     }
@@ -256,32 +256,32 @@ bool SerialPosix::ri() {
 }
 
 bool SerialPosix::cd() {
-    if (!_is_open) {
+    if (!is_open_) {
         throw PortNotOpenError();
     }
-    int ret = port_cd(fd);
+    int ret = port_cd(_fd);
     if (ret < 0) {
         throw SerialException(errno, "Cannot get CD");
     }
     return ret != 0;
 }
 
-void SerialPosix::_update_rts_state() {
-    int ret = port_set_rts_state(fd, _rts_state);
+void SerialPosix::update_rts_state_() {
+    int ret = port_set_rts_state(_fd, rts_state_);
     if (ret < 0) {
         throw SerialException(errno, "Unable to set RTS state");
     }
 }
 
-void SerialPosix::_update_dtr_state() {
-    int ret = port_set_dtr_state(fd, _dtr_state);
+void SerialPosix::update_dtr_state_() {
+    int ret = port_set_dtr_state(_fd, dtr_state_);
     if (ret < 0) {
         throw SerialException(errno, "Unable to set DTR state");
     }
 }
 
 void SerialPosix::_reset_input_buffer() const {
-    int ret = port_reset_input(fd);
+    int ret = port_reset_input(_fd);
 
     if (ret < 0) {
         throw SerialException(errno, "Input buffer flush failed");
@@ -289,7 +289,7 @@ void SerialPosix::_reset_input_buffer() const {
 }
 
 void SerialPosix::_reset_output_buffer() const {
-    int ret = port_reset_output(fd);
+    int ret = port_reset_output(_fd);
 
     if (ret < 0) {
         throw SerialException(errno, "Output buffer flush failed");

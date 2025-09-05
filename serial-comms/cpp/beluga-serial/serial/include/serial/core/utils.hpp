@@ -8,8 +8,8 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
-#ifndef BELUGA_FRAME_UTILS_HPP
-#define BELUGA_FRAME_UTILS_HPP
+#ifndef BELUGA_SERIAL_UTILS_HPP
+#define BELUGA_SERIAL_UTILS_HPP
 
 #include <exception>
 
@@ -20,11 +20,13 @@ class NotImplemented : public std::exception {
   public:
     NotImplemented() = default;
 
-    [[nodiscard]] const char *what() const noexcept override { return message; }
+    [[nodiscard]] const char *what() const noexcept override {
+        return _message;
+    }
 
   private:
-    const char *message = "Not implemented";
+    const char *_message = "Not implemented";
 };
 } // namespace SerialInternal
 
-#endif // BELUGA_FRAME_UTILS_HPP
+#endif // BELUGA_SERIAL_UTILS_HPP

@@ -261,7 +261,7 @@ static int set_ic_timeout(struct termios *tty, int32_t timeout) {
  * @return -EINVAL if config is NULL
  * @return negative error code on failure
  */
-int configure_port(struct serial_posix_config *config) {
+int configure_port(struct SerialPosixConfig *config) {
     struct termios tty;
     int ret;
     if (config == NULL) {

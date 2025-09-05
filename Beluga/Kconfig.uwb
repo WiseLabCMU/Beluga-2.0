@@ -115,4 +115,13 @@ config RESPONDER_TIMEOUT
     int "UWB Responder task timeout (ms)"
     default 1000
 
+config INITIATOR_TIMEOUT
+    int "UWB Initiator task timeout (ms)"
+    default 1000
+
+config RESP_SUSPEND_SCHED
+    bool "Suspend scheduler when responding [EXPERIMENTAL]"
+    select EXPERIMENTAL
+    default n
+
 endmenu

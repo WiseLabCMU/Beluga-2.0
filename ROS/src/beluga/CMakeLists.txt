@@ -4,7 +4,7 @@ project(beluga)
 set(CMAKE_CXX_STANDARD 20)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -Wno-unknown-pragmas)
 endif()
 
 # Debugging
@@ -15,8 +15,8 @@ add_definitions(
         # -DLOG_NEIGHBORS # Log neighbor updates
         # -DLOG_EXCHANGES # Log exchanges
         # -DTIMED_PUBLISHERS # All publishers are triggered timers
-        # -DTIMED_NEIGHBOR_PUBLISHER # Publish neighbor updates on a timer
-        # -DTIMED_RANGES_PUBLISHER # Publish range updates on a timer
+        -DTIMED_NEIGHBOR_PUBLISHER # Publish neighbor updates on a timer
+        -DTIMED_RANGES_PUBLISHER # Publish range updates on a timer
         # -DTIMED_RANGE_EVENTS_PUBLISHER # Publish ranging events on a timer
 )
 
