@@ -57,25 +57,25 @@ class BelugaNeighborBase {
      * Neighbor range
      * @return The neighbor's range
      */
-    [[nodiscard]] virtual double range() const noexcept = 0;
+    [[nodiscard]] virtual double range() = 0;
 
     /**
      * Neighbor RSSI
      * @return The neighbor's RSSI
      */
-    [[nodiscard]] virtual int8_t rssi() const noexcept = 0;
+    [[nodiscard]] virtual int8_t rssi() = 0;
 
     /**
      * Timestamp of the last ranging update
      * @return The timestamp of the last ranging update
      */
-    [[nodiscard]] virtual int64_t time() const noexcept = 0;
+    [[nodiscard]] virtual int64_t time() = 0;
 
     /**
      * Exchange ID of the last ranging exchange
      * @return The exchange ID of the last ranging exchange
      */
-    [[nodiscard]] virtual uint32_t exchange() const noexcept = 0;
+    [[nodiscard]] virtual uint32_t exchange() = 0;
 
     /**
      * Indicates if the neighbor has been updated since the last read
@@ -149,25 +149,25 @@ class BelugaNeighbor : public BelugaNeighborBase {
      * Neighbor range
      * @return The neighbor's range
      */
-    [[nodiscard]] double range() const noexcept override;
+    [[nodiscard]] double range() override;
 
     /**
      * Neighbor RSSI
      * @return The neighbor's RSSI
      */
-    [[nodiscard]] int8_t rssi() const noexcept override;
+    [[nodiscard]] int8_t rssi() override;
 
     /**
      * Timestamp of the last ranging update
      * @return The timestamp of the last ranging update
      */
-    [[nodiscard]] int64_t time() const noexcept override;
+    [[nodiscard]] int64_t time() override;
 
     /**
      * Exchange ID of the last ranging exchange
      * @return The exchange ID of the last ranging exchange
      */
-    [[nodiscard]] uint32_t exchange() const noexcept override;
+    [[nodiscard]] uint32_t exchange() override;
 
     /**
      * Updates the neighbor's information with a new NeighborUpdate

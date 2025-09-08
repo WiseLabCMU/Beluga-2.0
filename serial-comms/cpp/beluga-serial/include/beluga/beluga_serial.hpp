@@ -144,7 +144,7 @@ void BelugaSerial<NeighborImpl>::publish_neighbor_update_() {
 template <typename NeighborImpl>
 void BelugaSerial<NeighborImpl>::publish_range_update_() {
     if (_neighbors.range_updates()) {
-        std::vector<BelugaNeighbor> updates;
+        std::vector<NeighborImpl> updates;
         _neighbors.get_updates(updates);
         if (_range_cb != nullptr) {
             _range_cb(updates);

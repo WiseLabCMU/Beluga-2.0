@@ -13,13 +13,13 @@
 
 namespace BelugaSerial {
 
-double BelugaNeighbor::range() const noexcept { return _data.range; }
+double BelugaNeighbor::range() { return _data.range; }
 
-int8_t BelugaNeighbor::rssi() const noexcept { return _data.rssi; }
+int8_t BelugaNeighbor::rssi() { return _data.rssi; }
 
-int64_t BelugaNeighbor::time() const noexcept { return _data.time; }
+int64_t BelugaNeighbor::time() { return _data.time; }
 
-uint32_t BelugaNeighbor::exchange() const noexcept { return _data.exchange; }
+uint32_t BelugaNeighbor::exchange() { return _data.exchange; }
 
 void BelugaNeighbor::update(const BelugaFrame::NeighborUpdate &neighbor) {
     _data.range = neighbor.RANGE;
