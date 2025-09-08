@@ -20,6 +20,7 @@ class BelugaSerial : public BelugaSerialBase {
                   "NeighborList must derive from BelugaNeighborListBase");
 
   public:
+    BelugaSerial() : BelugaSerialBase() {}
     explicit BelugaSerial(const BelugaSerialAttributes &attr)
         : BelugaSerialBase(attr) {}
 
