@@ -8,7 +8,8 @@ FORMAT_FILES=beluga-serial/include/beluga/*.hpp \
 	beluga-serial/serial/src/core/C-API/*.c \
 	beluga-serial/serial/src/core/*.cpp \
 	beluga-serial/serial/src/tools/core/*.cpp \
-	beluga-serial/serial/src/tools/*.cpp
+	beluga-serial/serial/src/tools/*.cpp \
+	samples/*/src/*.cpp
 
 format:
 	clang-format -i $(FORMAT_FILES)
