@@ -44,8 +44,9 @@ class BelugaSerial : public BelugaSerialBase {
 
   public:
     BelugaSerial() : BelugaSerialBase() {}
-    explicit BelugaSerial(const BelugaSerialAttributes &attr,
-                          NeighborCallbacks<NeighborImpl> &neighbor_callbacks)
+    explicit BelugaSerial(
+        const BelugaSerialAttributes &attr,
+        const NeighborCallbacks<NeighborImpl> &neighbor_callbacks)
         : BelugaSerialBase(attr) {
         _neighbor_cb = neighbor_callbacks.neighbor_update_cb;
         _range_cb = neighbor_callbacks.range_updates_cb;

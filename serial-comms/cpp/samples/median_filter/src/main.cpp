@@ -34,10 +34,10 @@ class BelugaNeighborMedianFilter final
 
     ~BelugaNeighborMedianFilter() final = default;
 
-    [[nodiscard]] double range() final;
-    [[nodiscard]] int8_t rssi() final;
-    [[nodiscard]] int64_t time() final;
-    [[nodiscard]] uint32_t exchange() final;
+    [[nodiscard]] double range() const final;
+    [[nodiscard]] int8_t rssi() const final;
+    [[nodiscard]] int64_t time() const final;
+    [[nodiscard]] uint32_t exchange() const final;
     void
     update(const BelugaSerial::BelugaFrame::NeighborUpdate &neighbor) final;
 
@@ -51,7 +51,7 @@ class BelugaNeighborMedianFilter final
     void _sort();
 };
 
-double BelugaNeighborMedianFilter::range() {
+double BelugaNeighborMedianFilter::range() const {
     if (_data.size() == window_size) {
         return _data[median_idx].range;
     } else if (!_data.empty()) {
@@ -61,7 +61,7 @@ double BelugaNeighborMedianFilter::range() {
     }
 }
 
-int8_t BelugaNeighborMedianFilter::rssi() {
+int8_t BelugaNeighborMedianFilter::rssi() const {
     if (_data.size() == window_size) {
         return _data[median_idx].rssi;
     } else if (!_data.empty()) {
@@ -71,7 +71,7 @@ int8_t BelugaNeighborMedianFilter::rssi() {
     }
 }
 
-int64_t BelugaNeighborMedianFilter::time() {
+int64_t BelugaNeighborMedianFilter::time() const {
     if (_data.size() == window_size) {
         return _data[median_idx].time;
     } else if (!_data.empty()) {
@@ -81,7 +81,7 @@ int64_t BelugaNeighborMedianFilter::time() {
     }
 }
 
-uint32_t BelugaNeighborMedianFilter::exchange() {
+uint32_t BelugaNeighborMedianFilter::exchange() const {
     if (_data.size() == window_size) {
         return _data[median_idx].exchange;
     } else if (!_data.empty()) {
@@ -129,7 +129,7 @@ void BelugaNeighborMedianFilter::_sort() {
 }
 
 void range_update_cb(std::vector<BelugaNeighborMedianFilter> &updates) {
-    for (auto update : updates) {
+    for (const auto &update : updates) {
         std::cout << update.id() << "\n"
                   << update.range() << "\n"
                   << update.rssi() << "\n"
