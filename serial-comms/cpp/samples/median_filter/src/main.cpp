@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <beluga/beluga_neighbor_list.hpp>
 #include <beluga/beluga_serial.hpp>
+#include <cinttypes>
 #include <iostream>
 #include <ranges>
 #include <vector>
@@ -130,14 +131,14 @@ void BelugaNeighborMedianFilter::_sort() {
 
 void range_update_cb(std::vector<BelugaNeighborMedianFilter> &updates) {
     for (const auto &update : updates) {
-        std::cout << update.id() << "\n"
-                  << update.range() << "\n"
-                  << update.rssi() << "\n"
-                  << update.time() << "\n"
-                  << update.exchange() << "\n"
-                  << "------\n";
+        printf("ID: %" PRIu16 "\n", update.id());
+        printf("Distance: %lf\n", update.range());
+        printf("RSSI: %" PRId8 "\n", update.rssi());
+        printf("Timestamp: %" PRId64 "\n", update.time());
+        printf("Exchange: %" PRIu32 "\n", update.exchange());
+        puts("------");
     }
-    std::cout << "\n";
+    puts("");
 }
 
 int main() {
