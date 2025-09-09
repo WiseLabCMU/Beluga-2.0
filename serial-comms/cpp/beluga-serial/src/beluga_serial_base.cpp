@@ -96,8 +96,6 @@ void BelugaSerialBase::_initialize(const BelugaSerialAttributes &attr) {
 
     _timeout = attr.timeout;
 
-    _neighbor_cb = attr.neighbor_update_cb;
-    _range_cb = attr.range_updates_cb;
     _range_event_cb = attr.range_event_cb;
     _report_uwb_drops = attr.report_uwb_drops_cb;
     _unexpected_reboot_event_cb = attr.unexpected_reboot_event;
@@ -137,8 +135,7 @@ void BelugaSerialBase::_publish_uwb_exchange_drop(
 }
 
 void BelugaSerialBase::_process_reboot(const std::string &) {
-    _range_queue.clear();
-    _neighbor_queue.clear();
+    clear_queues_();
     _range_event_queue.clear();
     clear_neighbor_list_();
     if (_reboot_done.is_set()) {
@@ -567,34 +564,6 @@ void BelugaSerialBase::close() {
     _serial.close();
 }
 
-bool BelugaSerialBase::get_neighbors(std::vector<BelugaNeighbor> &list) {
-    bool update = true;
-    list.clear();
-
-    try {
-        list = _neighbor_queue.get(false);
-    } catch (const BelugaQueueException &exc) {
-        if (exc.reason() == BelugaQueueException::QUEUE_EMPTY) {
-            update = false;
-        } else {
-            throw;
-        }
-    }
-
-    return update;
-}
-
-void BelugaSerialBase::get_ranges(std::vector<BelugaNeighbor> &list) {
-    list.clear();
-    try {
-        list = _range_queue.get(false);
-    } catch (const BelugaQueueException &exc) {
-        if (exc.reason() != BelugaQueueException::QUEUE_EMPTY) {
-            throw;
-        }
-    }
-}
-
 RangeEvent BelugaSerialBase::get_range_event() {
     RangeEvent event{};
     try {
@@ -826,24 +795,6 @@ void BelugaSerialBase::_reconnect() {
     }
 
     _resync_time();
-}
-
-void BelugaSerialBase::_publish_neighbor_updates_(
-    std::vector<BelugaNeighbor> &updates) {
-    if (_neighbor_cb != nullptr) {
-        _neighbor_cb(updates);
-    } else {
-        _neighbor_queue.put(updates, false);
-    }
-}
-
-void BelugaSerialBase::_publish_range_updates_(
-    std::vector<BelugaNeighbor> &updates) {
-    if (_range_cb != nullptr) {
-        _range_cb(updates);
-    } else {
-        _range_queue.put(updates, false);
-    }
 }
 
 void BelugaSerialBase::_notify_unexpected_reboot() {

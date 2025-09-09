@@ -55,7 +55,7 @@
 /**
  * Class to use for the neighbor list. Leave empty to use default class.
  */
-#define NEIGHBOR_LIST_CLASS
+#define NEIGHBOR_CLASS BelugaSerial::BelugaNeighbor
 
 using namespace std::chrono_literals;
 
@@ -65,8 +65,6 @@ class Beluga : public rclcpp::Node {
      * Attributes for BelugaSerial
      */
     const BelugaSerial::BelugaSerialAttributes _attr = {
-        .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
-        .range_updates_cb = RANGE_UPDATE_CB,
         .range_event_cb = RANGE_EVENT_UPDATE_CB,
         .logger_cb =
             [this](auto &&ph_1, auto &&ph_2) {
@@ -75,6 +73,10 @@ class Beluga : public rclcpp::Node {
             },
         .unexpected_reboot_event = [this]() { _unexpected_reboot_event(); },
     };
+    const BelugaSerial::NeighborCallbacks<NEIGHBOR_CLASS> _neighbor_cb = {
+        .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
+        .range_updates_cb = RANGE_UPDATE_CB,
+    };
 
   public:
 #pragma clang diagnostic push
@@ -82,7 +84,7 @@ class Beluga : public rclcpp::Node {
     /**
      * Constructor
      */
-    Beluga() : Node("beluga"), _serial(_attr) {
+    Beluga() : Node("beluga"), _serial(_attr, _neighbor_cb) {
         // Neighbor list publisher name
         this->declare_parameter("neighbors_name", "neighbor_list");
 
@@ -204,7 +206,7 @@ class Beluga : public rclcpp::Node {
     _publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ranges);
     void _publish_exchange(const BelugaSerial::RangeEvent &event);
 
-    BelugaSerial::BelugaSerial<NEIGHBOR_LIST_CLASS> _serial;
+    BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> _serial;
 
     void _setup();
     std::string _set_txpower(const std::string &power);

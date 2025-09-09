@@ -79,24 +79,6 @@ struct BelugaSerialAttributes {
     std::chrono::milliseconds serial_timeout = std::chrono::milliseconds(100);
 
     /**
-     * Callback for neighbor updates
-     * Default is nullptr
-     * @note If this is left unset, the library will use a queue to store
-     * updates.
-     */
-    std::function<void(const std::vector<BelugaNeighbor> &)>
-        neighbor_update_cb = nullptr;
-
-    /**
-     * Callback for range updates
-     * Default is nullptr
-     * @note If this is left unset, the library will use a queue to store
-     * updates.
-     */
-    std::function<void(const std::vector<BelugaNeighbor> &)> range_updates_cb =
-        nullptr;
-
-    /**
      * Callback for range events
      * Default is nullptr
      * @note If this is left unset, the library will use a queue to store
@@ -422,26 +404,6 @@ class BelugaSerialBase {
     void close();
 
     /**
-     * Retrieves the list of neighbors from the queue.
-     * @param[in,out] list List of neighbors to populate
-     * @return `true` if a neighbor update was available, `false` otherwise
-     * @throws BelugaQueueException if there was an error retrieving the
-     * neighbors and the error was not because the queue was empty
-     * @note This will always return `false` if the neighbor updates callback is
-     * set.
-     */
-    bool get_neighbors(std::vector<BelugaNeighbor> &list);
-
-    /**
-     * Retrieves the list of ranges from the queue.
-     * @param[in,out] list List of ranges to populate
-     * @throws BelugaQueueException if there was an error retrieving the ranges
-     * and the error was not because the queue was empty
-     * @note The list will always be empty if the range updates callback is set.
-     */
-    void get_ranges(std::vector<BelugaNeighbor> &list);
-
-    /**
      * Retrieves a ranging event from the queue.
      * @return The ranging event
      * @throws BelugaQueueException if there was an error retrieving the event
@@ -490,18 +452,11 @@ class BelugaSerialBase {
     virtual void clear_neighbor_list_() = 0;
 
     /**
-     * Method for publishing neighbor updates to the appropriate location. This
-     * must be called within @ref publish_neighbor_update_().
-     * @param[in] updates The updates to publish.
+     * Virtual method for clearing the queues.
+     *
+     * @note This method must be overridden.
      */
-    void _publish_neighbor_updates_(std::vector<BelugaNeighbor> &updates);
-
-    /**
-     * Method for publishing range updates to the appropriate location. This
-     * must be called within @ref publish_range_update_().
-     * @param[in] updates The updates to publish.
-     */
-    void _publish_range_updates_(std::vector<BelugaNeighbor> &updates);
+    virtual void clear_queues_() = 0;
 
   private:
     std::function<int(const char *, va_list)> _logger_cb = nullptr;
@@ -539,14 +494,6 @@ class BelugaSerialBase {
     void _process_rx_buffer(std::vector<uint8_t> &buf);
     void _read_serial_helper();
     void _read_serial();
-
-    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _neighbor_queue;
-    std::function<void(const std::vector<BelugaNeighbor> &)> _neighbor_cb =
-        nullptr;
-
-    BelugaQueue<std::vector<BelugaNeighbor>, 1, true> _range_queue;
-    std::function<void(const std::vector<BelugaNeighbor> &)> _range_cb =
-        nullptr;
 
     static uint16_t _extract_id(const std::string &s);
 

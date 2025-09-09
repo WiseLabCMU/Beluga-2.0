@@ -185,7 +185,7 @@ void Beluga::_run_at_command(
 }
 
 void Beluga::_publish_neighbor_list(
-    const std::vector<BelugaSerial::BelugaNeighbor> &neighbors) {
+    const std::vector<NEIGHBOR_CLASS> &neighbors) {
     auto message = beluga_messages::msg::BelugaNeighbors();
     for (const auto &it : neighbors) {
         auto neighbor = beluga_messages::msg::BelugaNeighbor();
@@ -200,8 +200,7 @@ void Beluga::_publish_neighbor_list(
     PRINT_NEIGHBORS(message);
 }
 
-void Beluga::_publish_ranges(
-    const std::vector<BelugaSerial::BelugaNeighbor> &ranges) {
+void Beluga::_publish_ranges(const std::vector<NEIGHBOR_CLASS> &ranges) {
     auto message = beluga_messages::msg::BelugaRanges();
     for (const auto &it : ranges) {
         auto range = beluga_messages::msg::BelugaRange();
@@ -383,9 +382,10 @@ std::string Beluga::_set_txpower(const std::string &power) {
         uint32_t coarse_gain = ~coarse_gain_inv & coarse_gain_mask;
         uint32_t fine_gain =
             stage_setting ^ (coarse_gain_inv << coarse_gain_shift);
-        _serial.txpower(BelugaSerial::BelugaSerial<
-                            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage(stage),
-                        coarse_gain, fine_gain);
+        _serial.txpower(
+            BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::UwbAmplificationStage(
+                stage),
+            coarse_gain, fine_gain);
     }
 
     RCLCPP_INFO(this->get_logger(), "%s", _serial.txpower().c_str());
@@ -598,29 +598,28 @@ inline std::string Beluga::pwr_control_cmd(
     uint8_t stage,
     const std::shared_ptr<beluga_messages::srv::BelugaPowerControl::Request>
         request) {
-    BelugaSerial::BelugaSerial<NEIGHBOR_LIST_CLASS>::UwbAmplificationStage
-        amp_stage;
+    BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::UwbAmplificationStage amp_stage;
 
     switch (stage) {
     case beluga_messages::srv::BelugaPowerControl::Request::
         POWER_CONTROL_BOOSTNORM:
         amp_stage = BelugaSerial::BelugaSerial<
-            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOST_NORM;
+            NEIGHBOR_CLASS>::UwbAmplificationStage::BOOST_NORM;
         break;
     case beluga_messages::srv::BelugaPowerControl::Request::
         POWER_CONTROL_BOOSTP500:
         amp_stage = BelugaSerial::BelugaSerial<
-            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_500;
+            NEIGHBOR_CLASS>::UwbAmplificationStage::BOOSTP_500;
         break;
     case beluga_messages::srv::BelugaPowerControl::Request::
         POWER_CONTROL_BOOSTP250:
         amp_stage = BelugaSerial::BelugaSerial<
-            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_250;
+            NEIGHBOR_CLASS>::UwbAmplificationStage::BOOSTP_250;
         break;
     case beluga_messages::srv::BelugaPowerControl::Request::
         POWER_CONTROL_BOOSTP125:
         amp_stage = BelugaSerial::BelugaSerial<
-            NEIGHBOR_LIST_CLASS>::UwbAmplificationStage::BOOSTP_125;
+            NEIGHBOR_CLASS>::UwbAmplificationStage::BOOSTP_125;
         break;
     default:
         return "";

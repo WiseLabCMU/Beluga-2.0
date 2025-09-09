@@ -41,19 +41,85 @@ class BelugaEntryError : std::exception {
     std::string _msg;
 };
 
+class BelugaNeighborBase {
+  public:
+    BelugaNeighborBase() = default;
+    explicit BelugaNeighborBase(const BelugaFrame::NeighborUpdate &neighbor);
+    BelugaNeighborBase(const BelugaNeighborBase &) = default;
+    BelugaNeighborBase(BelugaNeighborBase &&) = default;
+    virtual ~BelugaNeighborBase() = 0;
+
+    BelugaNeighborBase &operator=(const BelugaNeighborBase &copy) = default;
+
+    [[nodiscard]] uint16_t id() const noexcept;
+
+    /**
+     * Neighbor range
+     * @return The neighbor's range
+     */
+    [[nodiscard]] virtual double range() const = 0;
+
+    /**
+     * Neighbor RSSI
+     * @return The neighbor's RSSI
+     */
+    [[nodiscard]] virtual int8_t rssi() const = 0;
+
+    /**
+     * Timestamp of the last ranging update
+     * @return The timestamp of the last ranging update
+     */
+    [[nodiscard]] virtual int64_t time() const = 0;
+
+    /**
+     * Exchange ID of the last ranging exchange
+     * @return The exchange ID of the last ranging exchange
+     */
+    [[nodiscard]] virtual uint32_t exchange() const = 0;
+
+    /**
+     * Indicates if the neighbor has been updated since the last read
+     * @return `true` if the neighbor has been updated, `false` otherwise
+     */
+    [[nodiscard]] bool updated() const noexcept;
+    void updated(bool update);
+
+    /**
+     * Updates the neighbor's information with a new NeighborUpdate
+     * @param[in] neighbor The NeighborUpdate to update the BelugaNeighbor
+     */
+    virtual void update(const BelugaFrame::NeighborUpdate &neighbor) = 0;
+
+  protected:
+    struct NeighborData {
+        double range = 0.0;
+        int8_t rssi = 0;
+        int64_t time = 0;
+        uint32_t exchange = 0;
+    };
+
+    bool updated_ = false;
+
+  private:
+    uint16_t _id = 0;
+};
+
 /// Class representing a neighbor in the Beluga network
-class BelugaNeighbor {
+class BelugaNeighbor : public BelugaNeighborBase {
   public:
     /**
      * Default constructor
      */
-    BelugaNeighbor() = default;
+    BelugaNeighbor() : BelugaNeighborBase() {}
 
     /**
      * Constructs a BelugaNeighbor from a NeighborUpdate
      * @param[in] neighbor The NeighborUpdate to initialize the BelugaNeighbor
      */
-    explicit BelugaNeighbor(const BelugaFrame::NeighborUpdate &neighbor);
+    explicit BelugaNeighbor(const BelugaFrame::NeighborUpdate &neighbor)
+        : BelugaNeighborBase(neighbor) {
+        update(neighbor);
+    }
 
     /**
      * Copy constructor
@@ -70,7 +136,7 @@ class BelugaNeighbor {
     /**
      * Destructor
      */
-    ~BelugaNeighbor() = default;
+    ~BelugaNeighbor() override = default;
 
     /**
      * Copy assignment operator
@@ -80,99 +146,83 @@ class BelugaNeighbor {
     BelugaNeighbor &operator=(const BelugaNeighbor &copy) = default;
 
     /**
-     * Neighbor ID
-     * @return The neighbor's ID
-     */
-    [[nodiscard]] uint16_t id() const noexcept;
-
-    /**
      * Neighbor range
      * @return The neighbor's range
      */
-    [[nodiscard]] double range() const noexcept;
+    [[nodiscard]] double range() const override;
 
     /**
      * Neighbor RSSI
      * @return The neighbor's RSSI
      */
-    [[nodiscard]] int8_t rssi() const noexcept;
+    [[nodiscard]] int8_t rssi() const override;
 
     /**
      * Timestamp of the last ranging update
      * @return The timestamp of the last ranging update
      */
-    [[nodiscard]] int64_t time() const noexcept;
+    [[nodiscard]] int64_t time() const override;
 
     /**
      * Exchange ID of the last ranging exchange
      * @return The exchange ID of the last ranging exchange
      */
-    [[nodiscard]] uint32_t exchange() const noexcept;
-
-    /**
-     * Indicates if the neighbor has been updated since the last read
-     * @return `true` if the neighbor has been updated, `false` otherwise
-     */
-    [[nodiscard]] bool updated() const noexcept;
-    void updated(bool update);
+    [[nodiscard]] uint32_t exchange() const override;
 
     /**
      * Updates the neighbor's information with a new NeighborUpdate
      * @param[in] neighbor The NeighborUpdate to update the BelugaNeighbor
      */
-    void update(const BelugaFrame::NeighborUpdate &neighbor);
+    void update(const BelugaFrame::NeighborUpdate &neighbor) override;
 
   private:
-    uint16_t _id = 0;
-    double _range = 0.0;
-    int8_t _rssi = 0;
-    int64_t _time = 0;
-    uint32_t _exchange = 0;
-    bool _updated = false;
+    NeighborData _data;
 };
 
-/// Base class for the neighbor list
-class BelugaNeighborListBase {
+/// Class representing a list of Beluga neighbors
+template <typename NeighborImpl = BelugaNeighbor> class BelugaNeighborList {
   public:
     /**
      * Default constructor
      */
-    BelugaNeighborListBase() = default;
+    BelugaNeighborList() {
+        static_assert(std::is_base_of<BelugaNeighborBase, NeighborImpl>::value,
+                      "NeighborImpl must inherit from BelugaNeighborBase");
+    }
 
     /**
      * Destructor
      */
-    virtual ~BelugaNeighborListBase() = 0;
+    ~BelugaNeighborList() = default;
 
     /**
      * Updates the neighbor list with new NeighborUpdates
      * @param[in] updates The NeighborUpdates to add to the list
      */
-    virtual void
-    update(const std::vector<BelugaFrame::NeighborUpdate> &updates) = 0;
+    void update(const std::vector<BelugaFrame::NeighborUpdate> &updates);
 
     /**
      * Removes a neighbor from the list by ID
      * @param[in] node_id The ID of the neighbor to remove
      */
-    virtual void remove(uint32_t node_id) = 0;
+    void remove(uint32_t node_id);
 
     /**
      * Retrieves the updated neighbors from the list
      * @param[out] updates The updated neighbors
      */
-    virtual void get_updates(std::vector<BelugaNeighbor> &updates) = 0;
+    void get_updates(std::vector<NeighborImpl> &updates);
 
     /**
      * Retrieves all neighbors from the list
      * @param[out] neighbors The list of all neighbors
      */
-    virtual void get_neighbors(std::vector<BelugaNeighbor> &neighbors) = 0;
+    void get_neighbors(std::vector<NeighborImpl> &neighbors);
 
     /**
      * Clears the neighbor list
      */
-    virtual void clear() noexcept = 0;
+    void clear() noexcept;
 
     /**
      * Checks if there are any neighbor list updates
@@ -188,57 +238,75 @@ class BelugaNeighborListBase {
      */
     [[nodiscard]] bool range_updates() const noexcept;
 
-  protected:
-    bool neighbors_update_ = false;
-    bool range_update_ = false;
-};
-
-/// Class representing a list of Beluga neighbors
-class BelugaNeighborList : public BelugaNeighborListBase {
-  public:
-    /**
-     * Default constructor
-     */
-    BelugaNeighborList() = default;
-
-    /**
-     * Destructor
-     */
-    ~BelugaNeighborList() override = default;
-
-    /**
-     * Updates the neighbor list with new NeighborUpdates
-     * @param[in] updates The NeighborUpdates to add to the list
-     */
-    void
-    update(const std::vector<BelugaFrame::NeighborUpdate> &updates) override;
-
-    /**
-     * Removes a neighbor from the list by ID
-     * @param[in] node_id The ID of the neighbor to remove
-     */
-    void remove(uint32_t node_id) override;
-
-    /**
-     * Retrieves the updated neighbors from the list
-     * @param[out] updates The updated neighbors
-     */
-    void get_updates(std::vector<BelugaNeighbor> &updates) override;
-
-    /**
-     * Retrieves all neighbors from the list
-     * @param[out] neighbors The list of all neighbors
-     */
-    void get_neighbors(std::vector<BelugaNeighbor> &neighbors) override;
-
-    /**
-     * Clears the neighbor list
-     */
-    void clear() noexcept override;
-
   private:
-    std::map<uint16_t, BelugaNeighbor> _list;
+    std::map<uint16_t, NeighborImpl> _list;
+    bool _neighbors_update = false;
+    bool _range_update = false;
 };
+
+template <typename NeighborImpl>
+void BelugaNeighborList<NeighborImpl>::update(
+    const std::vector<BelugaFrame::NeighborUpdate> &updates) {
+    for (auto neighbor : updates) {
+        if (_list.find(neighbor.ID) == _list.end()) {
+            _list[neighbor.ID] = NeighborImpl(neighbor);
+            _range_update = true;
+            _neighbors_update = true;
+        } else {
+            _list[neighbor.ID].update(neighbor);
+            _range_update = true;
+        }
+    }
+}
+
+template <typename NeighborImpl>
+void BelugaNeighborList<NeighborImpl>::remove(uint32_t node_id) {
+    if (_list.find((uint16_t)node_id) != _list.end()) {
+        _list.erase((uint16_t)node_id);
+        _neighbors_update = true;
+    }
+}
+
+template <typename NeighborImpl>
+void BelugaNeighborList<NeighborImpl>::get_updates(
+    std::vector<NeighborImpl> &updates) {
+    updates.clear();
+    for (auto &[_, value] : _list) {
+        if (value.updated()) {
+            updates.emplace_back(value);
+            value.updated(false);
+        }
+    }
+    _range_update = false;
+}
+
+template <typename NeighborImpl>
+void BelugaNeighborList<NeighborImpl>::get_neighbors(
+    std::vector<NeighborImpl> &neighbors) {
+    for (auto &[_, value] : _list) {
+        neighbors.emplace_back(value);
+    }
+    _neighbors_update = false;
+}
+
+template <typename NeighborImpl>
+void BelugaNeighborList<NeighborImpl>::clear() noexcept {
+    if (!_list.empty()) {
+        _list.clear();
+        _neighbors_update = true;
+        _range_update = false;
+    }
+}
+
+template <typename NeighborImpl>
+bool BelugaNeighborList<NeighborImpl>::neighbor_updates() const noexcept {
+    return _neighbors_update;
+}
+
+template <typename NeighborImpl>
+bool BelugaNeighborList<NeighborImpl>::range_updates() const noexcept {
+    return _range_update;
+}
 } // namespace BelugaSerial
 
 #endif // BELUGA_SERIAL_BELUGA_NEIGHBOR_LIST_HPP
