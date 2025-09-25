@@ -12,87 +12,33 @@
 #include <beluga/beluga_neighbor_list.hpp>
 
 namespace BelugaSerial {
-BelugaNeighbor::BelugaNeighbor(const BelugaFrame::NeighborUpdate &neighbor) {
-    _id = neighbor.ID;
-    update(neighbor);
-}
 
-uint16_t BelugaNeighbor::id() const noexcept { return _id; }
+double BelugaNeighbor::range() const { return _data.range; }
 
-double BelugaNeighbor::range() const noexcept { return _range; }
+int8_t BelugaNeighbor::rssi() const { return _data.rssi; }
 
-int8_t BelugaNeighbor::rssi() const noexcept { return _rssi; }
+int64_t BelugaNeighbor::time() const { return _data.time; }
 
-int64_t BelugaNeighbor::time() const noexcept { return _time; }
-
-uint32_t BelugaNeighbor::exchange() const noexcept { return _exchange; }
-
-bool BelugaNeighbor::updated() const noexcept { return _updated; }
-
-void BelugaNeighbor::updated(bool update) { _updated = update; }
+uint32_t BelugaNeighbor::exchange() const { return _data.exchange; }
 
 void BelugaNeighbor::update(const BelugaFrame::NeighborUpdate &neighbor) {
-    _range = neighbor.RANGE;
-    _rssi = neighbor.RSSI;
-    _time = neighbor.TIMESTAMP;
-    _exchange = neighbor.EXCHANGE;
-    _updated = true;
+    _data.range = neighbor.RANGE;
+    _data.rssi = neighbor.RSSI;
+    _data.time = neighbor.TIMESTAMP;
+    _data.exchange = neighbor.EXCHANGE;
+    updated_ = true;
 }
 
-BelugaNeighborListBase::~BelugaNeighborListBase() = default;
+BelugaNeighborBase::~BelugaNeighborBase() = default;
 
-bool BelugaNeighborListBase::neighbor_updates() const noexcept {
-    return neighbors_update_;
+BelugaNeighborBase::BelugaNeighborBase(
+    const BelugaFrame::NeighborUpdate &neighbor) {
+    _id = neighbor.ID;
 }
 
-bool BelugaNeighborListBase::range_updates() const noexcept {
-    return range_update_;
-}
+uint16_t BelugaNeighborBase::id() const noexcept { return _id; }
 
-void BelugaNeighborList::update(
-    const std::vector<BelugaFrame::NeighborUpdate> &updates) {
-    for (auto neighbor : updates) {
-        if (_list.find(neighbor.ID) == _list.end()) {
-            _list[neighbor.ID] = BelugaNeighbor(neighbor);
-            range_update_ = true;
-            neighbors_update_ = true;
-        } else {
-            _list[neighbor.ID].update(neighbor);
-            range_update_ = true;
-        }
-    }
-}
+bool BelugaNeighborBase::updated() const noexcept { return updated_; }
 
-void BelugaNeighborList::remove(uint32_t node_id) {
-    if (_list.find((uint16_t)node_id) != _list.end()) {
-        _list.erase((uint16_t)node_id);
-        neighbors_update_ = true;
-    }
-}
-
-void BelugaNeighborList::get_updates(std::vector<BelugaNeighbor> &updates) {
-    updates.clear();
-    for (auto &[_, value] : _list) {
-        if (value.updated()) {
-            updates.emplace_back(value);
-            value.updated(false);
-        }
-    }
-    range_update_ = false;
-}
-
-void BelugaNeighborList::get_neighbors(std::vector<BelugaNeighbor> &neighbors) {
-    for (auto &[_, value] : _list) {
-        neighbors.emplace_back(value);
-    }
-    neighbors_update_ = false;
-}
-
-void BelugaNeighborList::clear() noexcept {
-    if (!_list.empty()) {
-        _list.clear();
-        neighbors_update_ = true;
-        range_update_ = false;
-    }
-}
+void BelugaNeighborBase::updated(bool update) { updated_ = update; }
 } // namespace BelugaSerial
