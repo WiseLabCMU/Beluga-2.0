@@ -16,7 +16,7 @@
 #include <daw/json/daw_json_link.h>
 #include <fstream>
 
-#if defined(LOG_RANGES) || defined(LOG_PUBS)
+#if defined(LOG_RANGES)
 #define PRINT_RANGES(msg_)                                                     \
     do {                                                                       \
         std::stringstream oss;                                                 \
@@ -30,9 +30,9 @@
     } while (false)
 #else
 #define PRINT_RANGES(...) (void)0
-#endif
+#endif // defined(LOG_RANGES)
 
-#if defined(LOG_NEIGHBORS) || defined(LOG_PUBS)
+#if defined(LOG_NEIGHBORS)
 #define PRINT_NEIGHBORS(msg_)                                                  \
     do {                                                                       \
         std::stringstream oss;                                                 \
@@ -47,9 +47,9 @@
     } while (false)
 #else
 #define PRINT_NEIGHBORS(...) (void)0
-#endif
+#endif // defined(LOG_NEIGHBORS)
 
-#if defined(LOG_EXCHANGES) || defined(LOG_PUBS)
+#if defined(LOG_EXCHANGES)
 #define PRINT_EXCHANGE(msg_)                                                   \
     do {                                                                       \
         std::stringstream oss;                                                 \
@@ -59,7 +59,7 @@
     } while (false)
 #else
 #define PRINT_EXCHANGE(...) (void)0
-#endif
+#endif // defined(LOG_EXCHANGES)
 
 class ValueError : std::exception {
   public:
