@@ -28,8 +28,7 @@
 #endif
 #define NEIGHBOR_UPDATE_CB nullptr
 #else
-#define NEIGHBOR_UPDATE_CB                                                     \
-    std::bind(&Beluga::publish_neighbor_list, this, std::placeholders::_1)
+#define NEIGHBOR_UPDATE_CB [this](auto && PH1) { _publish_neighbor_list(std::forward<decltype(PH1)>(PH1)); }
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_NEIGHBOR_PUBLISHER)
 
 #if defined(TIMED_PUBLISHERS) || defined(TIMED_RANGES_PUBLISHER)
@@ -38,8 +37,7 @@
 #endif
 #define RANGE_UPDATE_CB nullptr
 #else
-#define RANGE_UPDATE_CB                                                        \
-    std::bind(&Beluga::publish_ranges, this, std::placeholders::_1)
+#define RANGE_UPDATE_CB [this](auto && PH1) { _publish_ranges(std::forward<decltype(PH1)>(PH1)); }
 #endif // defined(TIMED_PUBLISHERS) || defined(TIMED_RANGES_PUBLISHER)
 
 #if defined(TIMED_PUBLISHERS) || defined(TIMED_RANGE_EVENTS_PUBLISHER)
@@ -163,7 +161,7 @@ class Beluga : public rclcpp::Node {
         int64_t events_period = this->get_parameter("events_period").as_int();
         _range_events_timer = this->create_wall_timer(
             std::chrono::milliseconds(events_period),
-            std::bind(&Beluga::timer_callback_range_events, this));
+            std::bind(&Beluga::_timer_callback_range_events, this));
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
     }
 #pragma clang diagnostic pop
