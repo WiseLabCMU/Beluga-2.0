@@ -7,18 +7,44 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Wno-unknown-pragmas)
 endif()
 
+# Publisher options
+option(TIMED_PUBS "Enable all timed publishers" OFF)
+option(TIMED_NEIGHBOR_PUB "Enable timed publisher for neighbor list updates" OFF)
+option(TIMED_RANGES_PUB "Enable timed publisher for range updates" OFF)
+option(TIMED_EXCHANGE_PUB "Enable timed publisher for ranging exchanges" OFF)
+
+# Loggers
+option(LOG_PUBS "Log all messages being published" OFF)
+option(LOG_NEIGHBORS "Log neighbor list updates" OFF)
+option(LOG_RANGES "Log range updates" OFF)
+option(LOG_EXCHANGES "Log ranging exchanges" OFF)
+
+if(TIMED_NEIGHBOR_PUB OR TIMED_PUBS)
+  add_definitions(-DTIMED_NEIGHBOR_PUBLISHER)
+endif()
+
+if(TIMED_RANGES_PUB OR TIMED_PUBS)
+  add_definitions(-DTIMED_RANGES_PUBLISHER)
+endif()
+
+if(TIMED_EXCHANGE_PUB OR TIMED_PUBS)
+  add_definitions(-DTIMED_RANGE_EVENTS_PUBLISHER)
+endif()
+
+if(LOG_NEIGHBORS OR LOG_PUBS)
+  add_definitions(-DLOG_NEIGHBORS)
+endif()
+
+if(LOG_RANGES OR LOG_PUBS)
+  add_definitions(-DLOG_RANGES)
+endif()
+
+if(LOG_EXCHANGES OR LOG_PUBS)
+  add_definitions(-DLOG_EXCHANGES)
+endif()
+
 # Debugging
 # add_compile_options(-g -O0)
-add_definitions(
-        # -DLOG_PUBS      # Log all messages being published
-        # -DLOG_RANGES    # Log range reports
-        # -DLOG_NEIGHBORS # Log neighbor updates
-        # -DLOG_EXCHANGES # Log exchanges
-        # -DTIMED_PUBLISHERS # All publishers are triggered timers
-        -DTIMED_NEIGHBOR_PUBLISHER # Publish neighbor updates on a timer
-        -DTIMED_RANGES_PUBLISHER # Publish range updates on a timer
-        # -DTIMED_RANGE_EVENTS_PUBLISHER # Publish ranging events on a timer
-)
 
 include_directories(include)
 
