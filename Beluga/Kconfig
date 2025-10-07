@@ -29,7 +29,7 @@ config BELUGA_RANGE_EXTENSION
     default n
 
 config BELUGA_USE_ACCEL
-    bool "Use the accelerometer to wakeup from deep sleep"
+    bool "Use the accelerometer to wakeup from deep sleep [EXPERIMENTAL]"
     select SENSOR
     select EXPERIMENTAL
     default n
@@ -50,6 +50,6 @@ config WDT_MAX_WINDOW
 
 rsource "./config/kconfig/Kconfig.comms"
 
-endmenu
+endmenu # "Beluga Configurations"
 
 source "Kconfig.zephyr"
