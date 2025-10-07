@@ -99,7 +99,7 @@ config COMMS_BACKEND_SERIAL_API_ASYNC
 	depends on SERIAL_SUPPORT_ASYNC
 	select UART_ASYNC_RX_HELPER
 
-endchoice
+endchoice # COMMS_BACKEND_SERIAL_API
 
 config COMMS_BACKEND_SERIAL_FORCE_TX_BLOCKING_MODE
 	bool "Force blocking mode for TX"

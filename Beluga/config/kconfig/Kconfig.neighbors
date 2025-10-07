@@ -38,4 +38,4 @@ config RANGE_TO_ACTIVE_ONLY
         that do not have UWB active (Good for UWB
         power evaluation).
 
-endmenu
+endmenu # Neighbor List Settings

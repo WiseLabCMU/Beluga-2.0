@@ -17,4 +17,4 @@ config BELUGA_EVAL_BLE_STRENGTH
     bool "Evaluate the signal strength of BLE regardless if UWB is on or not"
     default n
 
-endmenu
+endmenu # Beluga Debugging

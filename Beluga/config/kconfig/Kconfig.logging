@@ -6,134 +6,134 @@ menu "Beluga Service Client"
 module = BELUGA_SERVICE_CLIENT
 module-str = Beluga Service Client
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Beluga Service Client
 
 menu "Beluga Service"
 module = BELUGA_SERVICE
 module-str = Beluga Service
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Beluga Service
 
 menu "Serial"
 menu "Serial Comms"
 module = COMMS
 module-str = Comms module
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Serial Comms
 
 menu "Comms Backend"
 module = COMMS_SERIAL
 module-str = Comms Backend module
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
-endmenu
+endmenu # Comms Backend
+endmenu # Serial
 
 menu "App LEDs"
 module = APP_LEDS
 module-str = App LEDs
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # App LEDs
 
 menu "AT Commands"
 module = AT_COMMANDS
 module-str = AT commands
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # AT Commands
 
 menu "Beluga Message"
 module = BELUGA_MESSAGE
 module-str = Beluga message
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Beluga Message
 
 menu "BLE Application"
 module = BLE_APP
 module-str = BLE application
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # BLE Application
 
 menu "Debug"
 module = BELUGA_DEBUG
 module-str = Beluga debugging
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Debug
 
 menu "Initiator"
 module = INITIATOR
 module-str = Initiator
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Initiator
 
 menu "List Monitor"
 module = LIST_MONITOR
 module-str = List monitor
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # List Monitor
 
 menu "Neighbor Listing"
 module = NEIGHBOR_LISTING
 module-str = Neighbor listing module
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Neighbor Listing
 
 menu "Main Application"
 module = BELUGA_MAIN
 module-str = Beluga main
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Main Application
 
 menu "Power Manager"
 module = POWER_MANAGER
 module-str = Power manager
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Power Manager
 
 menu "Range Extension"
 module = RANGE_EXTENSION
 module-str = Range extension
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Range Extension
 
 menu "Ranging"
 module = RANGING_MODULE
 module-str = ranging module
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Ranging
 
 menu "Responder"
 module = RESPONDER
 module-str = Responder
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Responder
 
 menu "Serial LEDs"
 module = SERIAL_LED
 module-str = Serial LEDs
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Serial LEDs
 
 menu "Settings"
 module = SETTINGS_MODULE
 module-str = settings
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Settings
 
 menu "SPI module"
 module = SPI_MODULE
 module-str = SPI module
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # SPI module
 
 menu "Voltage Regulator"
 module = VOLTAGE_REG_MODULE
 module-str = Voltage regulator module
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Voltage Regulator
 
 menu "Watchdog"
 module = WATCHDOG_MODULE
 module-str = watchdog module
 source "subsys/logging/Kconfig.template.log_config"
-endmenu
+endmenu # Watchdog
 
-endmenu
+endmenu # Logger configurations
