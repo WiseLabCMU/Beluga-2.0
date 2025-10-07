@@ -91,7 +91,7 @@ NO_RETURN static void list_task_function(void *p1, void *p2, void *p3) {
     }
 }
 
-#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_LIST)
+#if defined(CONFIG_ENABLE_LIST)
 K_THREAD_DEFINE(list_task, CONFIG_LIST_STACK_SIZE, list_task_function, NULL,
                 NULL, NULL, CONFIG_BELUGA_LIST_PRIO, 0, -1);
 
@@ -110,4 +110,4 @@ void init_print_list_task(void) {
  * is disabled.
  */
 void init_print_list_task(void) { LOG_INF("Neighbors list disabled"); }
-#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_LIST)
+#endif // defined(CONFIG_ENABLE_LIST)

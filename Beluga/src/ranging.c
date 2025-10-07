@@ -1087,7 +1087,7 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     }
 }
 
-#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_RANGING)
+#if defined(CONFIG_ENABLE_RANGING)
 K_THREAD_DEFINE(ranging_task, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
                 NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, K_FP_REGS, -1);
 
@@ -1104,10 +1104,9 @@ void init_ranging_thread(void) {
  * @brief Creates the ranging thread and initiates its data
  */
 void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
-#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) &&
-       // defined(CONFIG_ENABLE_RANGING)
+#endif // defined(CONFIG_ENABLE_RANGING)
 
-#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_RESPONDER)
+#if defined(CONFIG_ENABLE_RESPONDER)
 K_THREAD_DEFINE(responder_task, CONFIG_RESPONDER_STACK_SIZE,
                 responder_task_function, NULL, NULL, NULL,
                 CONFIG_BELUGA_RESPONDER_PRIO, K_FP_REGS, -1);
@@ -1125,5 +1124,4 @@ void init_responder_thread(void) {
  * @brief Creates the responder thread and initiates its data
  */
 void init_responder_thread(void) { LOG_INF("Responder disabled"); }
-#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) &&
-       // defined(CONFIG_ENABLE_RESPONDER)
+#endif // defined(CONFIG_ENABLE_RESPONDER)
