@@ -2,11 +2,11 @@ mainmenu "Beluga application"
 
 menu "Beluga Configurations"
 
-rsource "./Kconfig.beluga_threads"
+rsource "./config/kconfig/Kconfig.beluga_threads"
 
-rsource "./Kconfig.uwb"
+rsource "./config/kconfig/Kconfig.uwb"
 
-rsource "./Kconfig.neighbors"
+rsource "./config/kconfig/Kconfig.neighbors"
 
 config BELUGA_BOARD_HW_ID
     int "Hardware ID of the Board"
@@ -29,8 +29,9 @@ config BELUGA_RANGE_EXTENSION
     default n
 
 config BELUGA_USE_ACCEL
-    bool "Use the accelerometer to wakeup from deep sleep"
+    bool "Use the accelerometer to wakeup from deep sleep [EXPERIMENTAL]"
     select SENSOR
+    select EXPERIMENTAL
     default n
 
 config UWB_LOGIC_CLK
@@ -41,14 +42,14 @@ config BELUGA_GATT
     bool "Beluga GATT service"
     default n
 
-rsource "./Kconfig.beluga_debug"
+rsource "./config/kconfig/Kconfig.beluga_debug"
 
 config WDT_MAX_WINDOW
     int "Maximum window of the watchdog timer"
     default 2000
 
-rsource "./Kconfig.comms"
+rsource "./config/kconfig/Kconfig.comms"
 
-endmenu
+endmenu # "Beluga Configurations"
 
 source "Kconfig.zephyr"

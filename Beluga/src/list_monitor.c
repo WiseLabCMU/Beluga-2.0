@@ -240,7 +240,7 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
     }
 }
 
-#if defined(CONFIG_ENABLE_BELUGA_THREADS) && defined(CONFIG_ENABLE_MONITOR)
+#if defined(CONFIG_ENABLE_MONITOR)
 K_THREAD_DEFINE(monitor_task, CONFIG_MONITOR_STACK_SIZE, monitor_task_function,
                 NULL, NULL, NULL, CONFIG_BELUGA_MONITOR_PRIO, 0, -1);
 
@@ -258,8 +258,7 @@ void init_monitor_thread(void) {
  * is disabled.
  */
 void init_monitor_thread(void) { LOG_INF("Monitor disabled"); }
-#endif // defined(CONFIG_ENABLE_BELUGA_THREADS) &&
-       // defined(CONFIG_ENABLE_MONITOR)
+#endif // defined(CONFIG_ENABLE_MONITOR)
 
 /**
  * Fetches the neighbor list index where a neighbor node data is stored

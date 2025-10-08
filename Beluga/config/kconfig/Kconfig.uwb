@@ -46,7 +46,7 @@ config UWB_RANGE_FILTER_UPPER_BOUND
     help
         This is the upper bound of the range filtering. If an upper bound is not desired,
         then set it to a negative value.
-endif
+endif # UWB_FILTER_RANGES
 
 config POLL_RX_TO_RESP_TX_DLY
     int "Poll RX to Response Delay in microseconds"
@@ -104,7 +104,8 @@ config UWB_DIAGNOSTICS
     help
         This allows the DW1000 to record its diagnostics information after each successful
         ranging attempt. WARNING: The more nodes that are on the network, the more heap
-        memory is required to report the data.
+        memory is required to report the data. It is recommended that at most 4 nodes are
+        used.
 
 config UWB_FRAME_FILTER
     bool "Filter frames on the DW1000 [Experimental]"
@@ -124,4 +125,4 @@ config RESP_SUSPEND_SCHED
     select EXPERIMENTAL
     default n
 
-endmenu
+endmenu # Beluga UWB Settings
