@@ -650,7 +650,13 @@ std::vector<std::string> BelugaSerialBase::_find_port_candidates(
     std::map<BelugaSerialBase::target_pair, std::vector<std::string>>
         avail_ports;
     std::vector<std::string> candidates;
-    BelugaSerialBase::_find_ports(TARGETS, avail_ports);
+
+    try {
+        BelugaSerialBase::_find_ports(TARGETS, avail_ports);
+    } catch (std::filesystem::filesyst4em_error const &e) {
+        std::this_thread::sleep_for(open_delay);
+        return candidates;
+    }
 
     for (const auto &target : TARGETS) {
         if (avail_ports.find(target) == avail_ports.end()) {
