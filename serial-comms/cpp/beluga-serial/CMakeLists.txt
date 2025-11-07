@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 add_library(beluga-serial)
 
+if (NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/extern/daw_json_link/CMakeLists.txt)
+    message(FATAL_ERROR "Please run `git submodule init`")
+endif()
+
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/extern/daw_json_link)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/serial)
