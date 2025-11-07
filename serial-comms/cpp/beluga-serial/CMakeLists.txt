@@ -1,15 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 add_library(beluga-serial)
 
-set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/_deps)
-
-include( FetchContent )
-FetchContent_Declare(
-        daw_json_link
-        GIT_REPOSITORY https://github.com/beached/daw_json_link
-        GIT_TAG release
-)
-FetchContent_MakeAvailable(daw_json_link)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/extern/daw_json_link)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/serial)
 
