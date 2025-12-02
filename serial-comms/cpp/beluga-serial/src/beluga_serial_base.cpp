@@ -653,7 +653,7 @@ std::vector<std::string> BelugaSerialBase::_find_port_candidates(
 
     try {
         BelugaSerialBase::_find_ports(TARGETS, avail_ports);
-    } catch (std::filesystem::filesyst4em_error const &e) {
+    } catch (std::filesystem::filesystem_error const &e) {
         std::this_thread::sleep_for(open_delay);
         return candidates;
     }
