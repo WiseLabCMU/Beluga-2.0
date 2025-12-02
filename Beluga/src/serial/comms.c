@@ -670,6 +670,33 @@ static int ascii_write_start_event(const struct comms *comms,
 }
 
 /**
+ * @brief Writes an error log to the transport in ascii format.
+ * @param[in] comms The comms object.
+ * @param[in] msg The beluga message containing the error message.
+ * @return 0 upon success.
+ * @return -EINVAL if there is no error message present.
+ */
+static int write_fatal_error(const struct comms *comms,
+                             const struct beluga_msg *msg) {
+    const char *ending = "\r\n";
+    const char *preamble = "FATAL ERROR: ";
+    const char *payload = msg->payload.error_message;
+
+    if (!payload) {
+        return -EINVAL;
+    }
+
+    comms_write(comms, preamble, 13);
+
+    for (; *payload != '\0'; payload++) {
+        comms_write(comms, payload, 1);
+    }
+
+    comms_write(comms, ending, 2);
+    return 0;
+}
+
+/**
  * @brief Writes a dropped neighbor message to the transport
  * @param[in] comms The comms object
  * @param[in] msg The beluga message indicating which neighbor was dropped
@@ -718,6 +745,10 @@ static int comms_write_normal(const struct comms *comms,
     }
     case NEIGHBOR_DROP: {
         ret = json_write_dropped_neighbor(comms, msg);
+        break;
+    }
+    case LOG_FATAL_ERROR: {
+        ret = write_fatal_error(comms, msg);
         break;
     }
     default: {
