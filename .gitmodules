@@ -1,0 +1,4 @@
+[submodule "serial-comms/cpp/beluga-serial/extern/daw_json_link"]
+	path = serial-comms/cpp/beluga-serial/extern/daw_json_link
+	url = https://github.com/beached/daw_json_link.git
+	branch = release
