@@ -109,6 +109,14 @@ struct BelugaSerialAttributes {
      * unexpected reboots.
      */
     std::function<void()> unexpected_reboot_event = nullptr;
+
+    /**
+     * Callback for reporting fatal errors from the Beluga node.
+     * Default is nullptr
+     * @note If this is left unset, then the library will not report fatal
+     * errors.
+     */
+    std::function<void(const std::string &)> fatal_error_event = nullptr;
 };
 
 /// Base manager for serial communication with Beluga nodes
@@ -133,7 +141,7 @@ class BelugaSerialBase {
     /**
      * Destructor
      */
-    ~BelugaSerialBase();
+    virtual ~BelugaSerialBase();
 
     /**
      * Register a callback for resynchronizing time
@@ -476,11 +484,13 @@ class BelugaSerialBase {
     void
     _initialize(const BelugaSerialAttributes &attr = BelugaSerialAttributes{});
 
-    void _log(const char *msg, ...);
+    void _log(const char *msg, ...) const;
 
     void _publish_range_event(RangeEvent event);
     void _publish_response(std::string &response);
-    void _publish_uwb_exchange_drop(BelugaFrame::DroppedUwbExchange &drop_info);
+    void _publish_uwb_exchange_drop(
+        const BelugaFrame::DroppedUwbExchange &drop_info) const;
+    void _publish_fatal_error(const std::string &msg) const;
 
     void _process_reboot(const std::string &payload);
 
@@ -517,7 +527,7 @@ class BelugaSerialBase {
     void _reconnect_helper();
     void _reconnect();
     void _reboot();
-    void _notify_unexpected_reboot();
+    void _notify_unexpected_reboot() const;
     void _resync_time();
 
     std::string _send_command(const std::string &command);
@@ -543,6 +553,7 @@ class BelugaSerialBase {
 
     std::function<void(const BelugaFrame::DroppedUwbExchange &)>
         _report_uwb_drops = nullptr;
+    std::function<void(const std::string &)> _report_fatal_error_cb = nullptr;
 };
 } // namespace BelugaSerial
 

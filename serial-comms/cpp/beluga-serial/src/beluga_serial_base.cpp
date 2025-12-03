@@ -99,11 +99,12 @@ void BelugaSerialBase::_initialize(const BelugaSerialAttributes &attr) {
     _range_event_cb = attr.range_event_cb;
     _report_uwb_drops = attr.report_uwb_drops_cb;
     _unexpected_reboot_event_cb = attr.unexpected_reboot_event;
+    _report_fatal_error_cb = attr.fatal_error_event;
 }
 
 BelugaSerialBase::~BelugaSerialBase() { this->close(); }
 
-void BelugaSerialBase::_log(const char *msg, ...) {
+void BelugaSerialBase::_log(const char *msg, ...) const {
     if (_logger_cb != nullptr) {
         va_list args;
         va_start(args, msg);
@@ -128,9 +129,15 @@ void BelugaSerialBase::_publish_response(std::string &response) {
 }
 
 void BelugaSerialBase::_publish_uwb_exchange_drop(
-    BelugaFrame::DroppedUwbExchange &drop_info) {
+    const BelugaFrame::DroppedUwbExchange &drop_info) const {
     if (_report_uwb_drops != nullptr) {
         _report_uwb_drops(drop_info);
+    }
+}
+
+void BelugaSerialBase::_publish_fatal_error(const std::string &msg) const {
+    if (_report_fatal_error_cb != nullptr) {
+        _report_fatal_error_cb(msg);
     }
 }
 
@@ -199,6 +206,9 @@ void BelugaSerialBase::_process_frames_helper() {
         case BelugaFrame::BelugaFrameType::RANGING_DROP:
             _publish_uwb_exchange_drop(
                 std::get<BelugaFrame::DroppedUwbExchange>(frame.payload));
+            break;
+        case BelugaFrame::BelugaFrameType::FATAL_ERROR:
+            _publish_fatal_error(std::get<std::string>(frame.payload));
             break;
         default:
             _log("Invalid frame type");
@@ -516,7 +526,7 @@ void BelugaSerialBase::start() {
 }
 
 void BelugaSerialBase::stop() {
-    const int max_attempts = 10;
+    constexpr int max_attempts = 10;
     if (!_tasks_running) {
         return;
     }
@@ -640,7 +650,7 @@ uint16_t BelugaSerialBase::_extract_id(const std::string &s) {
 
     int id_ = std::stoi(id_str);
     if (id_ <= (int)UINT16_MAX && id_ >= 0) {
-        return (uint16_t)id_;
+        return static_cast<uint16_t>(id_);
     }
     throw std::overflow_error("Unable to convert ID to `uint16_t`");
 }
@@ -775,7 +785,7 @@ void BelugaSerialBase::_reconnect_helper() {
             break;
         }
         case RECONNECT_NEXT: {
-            it++;
+            ++it;
             state = (it == ports.end()) ? RECONNECT_SLEEP : RECONNECT_CONNECT;
             break;
         }
@@ -803,7 +813,7 @@ void BelugaSerialBase::_reconnect() {
     _resync_time();
 }
 
-void BelugaSerialBase::_notify_unexpected_reboot() {
+void BelugaSerialBase::_notify_unexpected_reboot() const {
     if (_unexpected_reboot_event_cb != nullptr) {
         _unexpected_reboot_event_cb();
     }

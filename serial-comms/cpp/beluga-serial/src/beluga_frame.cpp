@@ -103,6 +103,7 @@ void BelugaSerial::BelugaFrame::parse_frame(
         switch (type) {
         case COMMAND_RESPONSE:
         case START_EVENT:
+        case FATAL_ERROR:
             this->_parsed_data.payload = a_payload;
             break;
         case NEIGHBOR_UPDATE:
