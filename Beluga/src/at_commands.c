@@ -1203,3 +1203,42 @@ AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_BELUGA_RESET_REASON), REASON) {
     uint32_t reason = get_reset_cause();
     OK(comms, "Reset reason: %" PRIu32, reason);
 }
+
+/**
+ * Starve a watchdog timer channel.
+ *
+ * @param comms Pointer to the comms instance
+ * @param argc Number of arguments
+ * @param argv The arguments
+ * @return 0 upon success
+ * @return Negative error code otherwise
+ */
+AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_WDT_TEST_COMMAND), STARVE) {
+    CHECK_ARGC(comms, argc, 2);
+    int32_t channel;
+
+    if (!strtoint32(argv[1], &channel)) {
+        ERROR(comms, "Invalid channel argument. Must be 0, 1, or 2.");
+    }
+
+    switch (channel) {
+    case 0: {
+        starve_ranging_wdt();
+        break;
+    }
+    case 1: {
+        starve_responder_wdt();
+        break;
+    }
+    case 2: {
+        starve_monitor_wdt();
+        break;
+    }
+    default: {
+        ERROR(comms, "Invalid channel argument. Must be 0, 1, or 2.");
+        break;
+    }
+    }
+
+    AT_OK(comms, "Starving channel %" PRId32, channel);
+}

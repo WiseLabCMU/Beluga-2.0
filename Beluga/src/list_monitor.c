@@ -64,6 +64,11 @@ static uint64_t timeout = UINT64_C(9000);
 static bool _node_added = false;
 
 /**
+ * Watchdog attributes for list monitor.
+ */
+static struct task_wdt_attr watchdogAttr = {.period = 3000};
+
+/**
  * @brief Set the timeout value for node eviction.
  *
  * @param value The new timeout value in milliseconds.
@@ -188,6 +193,12 @@ static bool notify_msgq_nodes(const struct comms *comms) {
 }
 
 /**
+ * Starve the monitor wdt.
+ * @note This has no affect if the monitor thread has not started.
+ */
+void starve_monitor_wdt(void) { let_the_dog_starve(&watchdogAttr); }
+
+/**
  * @brief Task that maintains the neighbor list.
  *
  * Task that checks for neighbors that have timed out and re-sorts the neighbors
@@ -208,7 +219,6 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p3);
     uint32_t count = 0;
     bool removed;
-    struct task_wdt_attr watchdogAttr = {.period = 3000};
     const struct comms *comms = comms_backend_uart_get_ptr();
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {

@@ -69,6 +69,12 @@ void insert_into_seen_list(struct ble_data *data, int8_t rssi, bool polling);
  */
 void update_seen_neighbor(struct ble_data *data, int8_t rssi, bool polling);
 
+/**
+ * Starve the monitor wdt.
+ * @note This has no affect if the monitor thread has not started.
+ */
+void starve_monitor_wdt(void);
+
 #if defined(CONFIG_BELUGA_EVICT_RUNTIME_SELECT)
 /**
  * Updates the eviction policy

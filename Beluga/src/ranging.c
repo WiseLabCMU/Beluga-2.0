@@ -232,6 +232,13 @@ static struct task_wdt_attr ranging_watchdog_attr = {
     .period = 10 * CONFIG_POLLING_REFRESH_PERIOD};
 
 /**
+ * The watchdog timer instance for the responder task.
+ */
+static struct task_wdt_attr responder_wdt = {
+    .period = CONFIG_RESPONDER_TIMEOUT * 5,
+};
+
+/**
  * @brief Prints the TX power in a non-standard (human readable) format
  * @param[in] tx_power The current TX power
  */
@@ -812,6 +819,18 @@ void update_uwb_state(bool active) {
 }
 
 /**
+ * Starve the ranging task's watchdog timer.
+ * @note if UWB is disabled, this will have no affect.
+ */
+void starve_ranging_wdt(void) { let_the_dog_starve(&ranging_watchdog_attr); }
+
+/**
+ * Starve the responder task's watchdog timer.
+ * @note This will have no affect if the responder task has not started.
+ */
+void starve_responder_wdt(void) { let_the_dog_starve(&responder_wdt); }
+
+/**
  * @brief Initialize the DW1000 for ranging.
  *
  * Wakes the DW1000 (if coming out of deep sleep), resets the DW1000, and
@@ -1047,9 +1066,6 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
     int ret;
     const struct comms *comms = comms_backend_uart_get_ptr();
     struct beluga_msg msg = {.type = RANGING_EVENT};
-    struct task_wdt_attr responder_wdt = {
-        .period = CONFIG_RESPONDER_TIMEOUT * 5,
-    };
 
     if (are_leds_on()) {
         dwt_setleds(DWT_LEDS_ENABLE);

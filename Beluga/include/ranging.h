@@ -341,6 +341,18 @@ int set_uwb_pan_id(uint32_t pan);
 void update_uwb_state(bool active);
 
 /**
+ * Starve the ranging task's watchdog timer.
+ * @note if UWB is disabled, this will have no affect.
+ */
+void starve_ranging_wdt(void);
+
+/**
+ * Starve the responder task's watchdog timer.
+ * @note This will have no affect if the responder task has not started.
+ */
+void starve_responder_wdt(void);
+
+/**
  * @brief Initialize the DW1000 for ranging.
  *
  * Wakes the DW1000 (if coming out of deep sleep), resets the DW1000, and
