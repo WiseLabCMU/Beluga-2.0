@@ -258,9 +258,13 @@ void BelugaSerialBase::_read_serial_helper() {
             std::vector<uint8_t> buf;
             _serial.read_all(buf);
             rx.insert(rx.end(), buf.begin(), buf.end());
+            lock.unlock();
+            _process_rx_buffer(rx);
+        } else {
+            lock.unlock();
+            std::this_thread::sleep_until(std::chrono::steady_clock::now() +
+                                          25ms);
         }
-        lock.unlock();
-        _process_rx_buffer(rx);
     }
 }
 
