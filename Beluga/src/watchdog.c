@@ -14,6 +14,9 @@
  * @author Tom Schmitz
  */
 
+#include <beluga_message.h>
+#include <serial/comms.h>
+#include <serial/comms_uart.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <watchdog.h>
@@ -45,6 +48,32 @@ LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
 #define WDT_NODE DT_INVALID_NODE
 #endif
 
+struct wdt_timeout_work {
+    int channel_id;
+    k_tid_t tid;
+    struct k_work work;
+};
+
+static struct wdt_timeout_work wdt_work;
+
+static void report_fatal_error(struct k_work *work) {
+    struct wdt_timeout_work *wdt_to_data =
+        CONTAINER_OF(work, struct wdt_timeout_work, work);
+    char msg_[128];
+    struct beluga_msg msg = {
+        .type = LOG_FATAL_ERROR,
+        .payload.error_message = msg_,
+    };
+    const struct comms *comms_ptr = comms_backend_uart_get_ptr();
+
+    snprintk(msg_, sizeof(msg), "Task watchdog expired (%s)",
+             k_thread_name_get(wdt_to_data->tid));
+    comms_write_msg(comms_ptr, &msg);
+    comms_flush_out(comms_ptr, 1);
+
+    sys_reboot(SYS_REBOOT_COLD);
+}
+
 /**
  * @brief Callback that gets called whenever a watchdog channel expires
  * @param[in] channel_id The task watchdog channel ID
@@ -57,7 +86,10 @@ static void task_wdt_callback(int channel_id, void *user_data) {
             "for animal cruelty",
             channel_id, k_thread_name_get((k_tid_t)user_data));
 
-    sys_reboot(SYS_REBOOT_COLD);
+    wdt_work.channel_id = channel_id;
+    wdt_work.tid = (k_tid_t)user_data;
+
+    k_work_submit(&wdt_work.work);
 }
 
 /**
@@ -72,6 +104,8 @@ int configure_watchdog_timer(void) {
     if (!device_is_ready(wdt)) {
         LOG_ERR("Hardware watchdog is not ready");
     }
+
+    k_work_init(&wdt_work.work, report_fatal_error);
 
     ret = task_wdt_init(wdt);
 
