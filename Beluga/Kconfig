@@ -8,6 +8,8 @@ rsource "./config/kconfig/Kconfig.uwb"
 
 rsource "./config/kconfig/Kconfig.neighbors"
 
+rsource "./config/kconfig/Kconfig.watchdog"
+
 config BELUGA_BOARD_HW_ID
     int "Hardware ID of the Board"
     default 0
