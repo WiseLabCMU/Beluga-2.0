@@ -25,14 +25,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
-#include <zephyr/task_wdt/task_wdt.h>
 
 /**
  * Logger for the watchdog timer
  */
 LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
-
-#if defined(CONFIG_TASK_WDT)
 
 #if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_wdt) && IS_ENABLED(CONFIG_WATCHDOG)
 /**
@@ -48,13 +45,39 @@ LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
 #define WDT_NODE DT_INVALID_NODE
 #endif
 
+#if IS_ENABLED(CONFIG_SW_WDT_HW_FALLBACK)
+#define MIN_WDT_PERIOD CONFIG_SW_WDT_HW_FALLBACK_DELAY
+#else
+#define MIN_WDT_PERIOD CONFIG_SW_WDT_MIN_DELAY
+#endif
+
 struct wdt_timeout_work {
     int channel_id;
     k_tid_t tid;
     struct k_work work;
 };
 
+struct wdt_channel {
+    int64_t period;
+    k_tid_t tid;
+    uint64_t timeout;
+    bool active;
+};
+
+struct hw_wdt {
+    const struct device *const wdt;
+    unsigned int channel;
+};
+
 static struct wdt_timeout_work wdt_work;
+static struct wdt_channel wdt_channels[CONFIG_SW_WDT_CHANNELS] = {};
+struct hw_wdt wdt = {
+    .wdt = DEVICE_DT_GET_OR_NULL(WDT_NODE),
+};
+
+static struct k_spinlock spinlock;
+
+#define WDT_CHECK(attr_) (attr_) == NULL || attr->id < 0 || attr->id >= ARRAY_SIZE(wdt_channels)
 
 static void report_fatal_error(struct k_work *work) {
     struct wdt_timeout_work *wdt_to_data =
@@ -74,197 +97,104 @@ static void report_fatal_error(struct k_work *work) {
     sys_reboot(SYS_REBOOT_COLD);
 }
 
-/**
- * @brief Callback that gets called whenever a watchdog channel expires
- * @param[in] channel_id The task watchdog channel ID
- * @param[in] user_data Additional context
- */
-static void task_wdt_callback(int channel_id, void *user_data) {
-    ARG_UNUSED(channel_id);
-    ARG_UNUSED(user_data);
-    LOG_ERR("Watchdog %d has starved. The offending thread (%s) will be tried "
-            "for animal cruelty",
-            channel_id, k_thread_name_get((k_tid_t)user_data));
+static void wdt_timer_handler(struct k_timer *timer) {
+    int64_t current_ticks = sys_clock_tick_get();
+    wdt_feed(wdt.wdt, 0); // todo
 
-    wdt_work.channel_id = channel_id;
-    wdt_work.tid = (k_tid_t)user_data;
-
-    k_work_submit(&wdt_work.work);
+    for (ssize_t i = 0; i < ARRAY_SIZE(wdt_channels); i++) {
+        if (wdt_channels[i].active && wdt_channels[i].timeout < current_ticks) { // todo
+            k_work_submit(&wdt_work.work);
+            k_timer_stop(timer);
+            break;
+        }
+    }
 }
+K_TIMER_DEFINE(wdt_timer, wdt_timer_handler, NULL);
 
-/**
- * @brief Initializes the watchdog timer and the task watchdog subsystem
- * @return 0 upon success
- * @return negative error code otherwise
- */
 int configure_watchdog_timer(void) {
-    int ret;
-    const struct device *const wdt = DEVICE_DT_GET_OR_NULL(WDT_NODE);
-
-    if (!device_is_ready(wdt)) {
-        LOG_ERR("Hardware watchdog is not ready");
+    if (!device_is_ready(wdt.wdt)) {
+        // TODO
     }
 
     k_work_init(&wdt_work.work, report_fatal_error);
 
-    ret = task_wdt_init(wdt);
+    k_timer_init(&wdt_timer, wdt_timer_handler, NULL);
+    k_timer_start(&wdt_timer, K_MSEC(MIN_WDT_PERIOD / 2), K_MSEC(MIN_WDT_PERIOD / 2));
 
-    if (ret == -ENOTSUP) {
-        // Hardware watchdog disabled.
-        ret = 0;
+    return 0;
+}
+
+int spawn_task_watchdog(struct task_wdt_attr *attr) {
+    int ret = -ENOMEM;
+
+    if (attr == NULL || (attr->id >= 0 && attr->id < ARRAY_SIZE(wdt_channels))) {
+        return -EINVAL;
     }
 
-    if (ret != 0) {
-        LOG_ERR("Task wdt init failure: %d", ret);
+    attr->period = MAX(attr->period, (int32_t)MIN_WDT_PERIOD);
+
+    K_SPINLOCK(&spinlock) {
+        for (ssize_t i = 0; i < ARRAY_SIZE(wdt_channels); i++) {
+            if (!wdt_channels[i].active) {
+                // Found an available channel
+                wdt_channels[i].period = attr->period;
+                wdt_channels[i].active = true;
+                wdt_channels[i].tid = k_current_get();
+                // TODO: timeout
+                attr->id = i;
+                attr->starving = false;
+                ret = 0;
+                break;
+            }
+        }
+    }
+
+    if (ret == 0) {
+        watchdog_red_rocket(attr);
     }
 
     return ret;
 }
 
-/**
- * @brief Creates a new task watchdog timer and initializes it
- * @param[in,out] attr The task watchdog attributes to initialize
- * @return 0 upon success
- * @return -EINVAL if attr is NULL
- * @return negative error code otherwise
- */
-int spawn_task_watchdog(struct task_wdt_attr *attr) {
-    int ret;
-
-    if (attr == NULL) {
-        LOG_WRN("No attributes detected");
-        return -EINVAL;
-    }
-
-    ret =
-        task_wdt_add(attr->period, task_wdt_callback, (void *)k_current_get());
-    if (ret < 0) {
-        LOG_WRN("Unable to spawn puppy (%d)", ret);
-        return ret;
-    }
-
-    attr->id = ret;
-    attr->starving = false;
-    return 0;
-}
-
-/**
- * @brief Sets an attribute that prevents the task watchdog timer from feeding
- * @param[in] attr The task watchdog attributes
- */
 void let_the_dog_starve(struct task_wdt_attr *attr) {
-    if (attr == NULL) {
-        LOG_WRN("No attributes detected");
+    if (WDT_CHECK(attr) ) {
         return;
     }
     attr->starving = true;
 }
 
-/**
- * @brief Feeds a task watchdog timer if it is not marked for starving
- *
- * Come here Sparky
- * Red rocket, Red rocket! heh-heh-heh Red Rocket, Red Rocket! heh-heh Come on!
- * Red rocket, come on, dog, red rocket. Oh, hoo!
- *
- * @param[in] attr The task watchdog attributes
- */
+static ALWAYS_INLINE void crit_sect_onexit(unsigned int *key) {
+    __ASSERT(*key, "CRITICAL_SECTION exited with goto, break, or return; use CRITICAL_SECTION_BREAK instead.");
+    k_sched_unlock();
+}
+#define CRITICAL_SECTION_ONEXIT __attribute__((cleanup(crit_sect_onexit)))
+#define CRITICAL_SECTION_BREAK continue
+
+#define CRITICAL_SECTION() k_sched_lock(); for (unsigned int __i __attribute__((__cleanup__(crit_sect_onexit))) = 0, __key = irq_lock(); !__i; irq_unlock(__key), __i = 1)
+
 void watchdog_red_rocket(struct task_wdt_attr *attr) {
-    if (attr == NULL) {
-        LOG_WRN("A non-existent dog cannot get a red rocket");
+    int64_t current_ticks;
+
+    if (WDT_CHECK(attr) || unlikely(attr->starving)) {
         return;
     }
-    if (!attr->starving) {
-        task_wdt_feed(attr->id);
+
+    // Don't allow anyone to interrupt this process
+    CRITICAL_SECTION() {
+        // TODO
     }
 }
 
-/**
- * @brief Deletes a task watchdog channel
- * @param[in] attr The task watchdog attribute for the dog to be euthanized
- * @return 0 upon success
- * @return -EINVAL if attr is NULL
- * @return negative error code otherwise
- */
 int kill_task_watchdog(struct task_wdt_attr *attr) {
-    if (attr == NULL) {
-        LOG_WRN("A non-existent dog cannot be euthanized");
+
+    if (WDT_CHECK(attr)) {
         return -EINVAL;
     }
 
-    return task_wdt_delete(attr->id);
+    K_SPINLOCK(&spinlock) {
+        wdt_channels[attr->id].active = false;
+        attr->id = -1;
+    }
+
+    return 0;
 }
-
-#else
-
-/**
- * Replacement code for watchdog functions that must return
- */
-#define _DISABLED_RET(ret)                                                     \
-    do {                                                                       \
-        LOG_WRN("WDT disabled");                                               \
-        return ret;                                                            \
-    } while (0)
-
-/**
- * Generator for logging a watchdog warning and returning
- */
-#define WDT_DISABLED(ret...)                                                   \
-    COND_CODE_1(IS_EMPTY(ret), (LOG_WRN("WDT disabled")),                      \
-                (_DISABLED_RET(GET_ARG_N(1, ret))))
-
-/**
- * @brief Initializes the watchdog timer and the task watchdog subsystem
- * @return 0 upon success
- * @return negative error code otherwise
- */
-int configure_watchdog_timer(void) { WDT_DISABLED(0); }
-
-/**
- * @brief Creates a new task watchdog timer and initializes it
- * @param[in,out] attr The task watchdog attributes to initialize
- * @return 0 upon success
- * @return -EINVAL if attr is NULL
- * @return negative error code otherwise
- */
-int spawn_task_watchdog(struct task_wdt_attr *attr) {
-    ARG_UNUSED(attr);
-    WDT_DISABLED(0);
-}
-
-/**
- * @brief Sets an attribute that prevents the task watchdog timer from feeding
- * @param[in] attr The task watchdog attributes
- */
-void let_the_dog_starve(struct task_wdt_attr *attr) {
-    ARG_UNUSED(attr);
-    WDT_DISABLED();
-}
-
-/**
- * @brief Feeds a task watchdog timer if it is not marked for starving
- *
- * Come here Sparky
- * Red rocket, Red rocket! heh-heh-heh Red Rocket, Red Rocket! heh-heh Come on!
- * Red rocket, come on, dog, red rocket. Oh, hoo!
- *
- * @param[in] attr The task watchdog attributes
- */
-void watchdog_red_rocket(struct task_wdt_attr *attr) {
-    ARG_UNUSED(attr);
-    WDT_DISABLED();
-}
-
-/**
- * @brief Deletes a task watchdog channel
- * @param[in] attr The task watchdog attribute for the dog to be euthanized
- * @return 0 upon success
- * @return -EINVAL if attr is NULL
- * @return negative error code otherwise
- */
-int kill_task_watchdog(struct task_wdt_attr *attr) {
-    ARG_UNUSED(attr);
-    WDT_DISABLED(0);
-}
-
-#endif // defined(CONFIG_TASK_WDT)
