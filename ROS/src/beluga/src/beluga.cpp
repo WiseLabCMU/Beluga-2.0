@@ -350,12 +350,14 @@ void Beluga::_init_time_sync() {
     const size_t init_time_sync_runs = 11;
     RCLCPP_INFO(this->get_logger(), "Syncing time");
     std::stringstream oss;
+
+    oss << _mrexchange;
+    _serial.exchange(oss.str());
+
     _ns_per_timestamp_unit = 0.0;
     _last_mapping["ros"] = rclcpp::Time();
     _last_mapping["beluga"] = 0;
     _time_sync(true);
-
-    oss << _mrexchange;
 
     for (size_t i = 0; i < init_time_sync_runs; i++) {
         this->get_clock()->sleep_until(this->get_clock()->now() +
@@ -363,7 +365,6 @@ void Beluga::_init_time_sync() {
         _time_sync();
     }
 
-    _serial.exchange(oss.str());
     RCLCPP_INFO(this->get_logger(), "Time is synced");
 }
 
