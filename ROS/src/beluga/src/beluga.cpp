@@ -176,6 +176,9 @@ void Beluga::_run_at_command(
     case BelugaATCommand::Request::AT_COMMAND_VERSION:
         response->response = _serial.version();
         break;
+    case BelugaATCommand::Request::AT_COMMAND_EXCHANGE:
+        response->response = _serial.exchange(request->arg);
+        break;
     default:
         response->response = "INVALID";
         RCLCPP_ERROR(this->get_logger(), "Invalid AT Command (%d)",
