@@ -496,7 +496,7 @@ std::string BelugaSerialBase::version() {
     return _send_command("AT+VERSION\r\n");
 }
 
-std::string exchange(const std::string &new_id) {
+std::string BelugaSerialBase::exchange(const std::string &new_id) {
     std::stringstream oss;
     oss << "AT+EXCHANGE " << new_id << "\r\n";
     return _send_command(oss.str());

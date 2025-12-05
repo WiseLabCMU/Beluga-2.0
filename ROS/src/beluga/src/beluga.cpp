@@ -207,11 +207,15 @@ void Beluga::_publish_ranges(const std::vector<NEIGHBOR_CLASS> &ranges) {
     auto message = beluga_messages::msg::BelugaRanges();
     for (const auto &it : ranges) {
         auto range = beluga_messages::msg::BelugaRange();
+        uint32_t exchange = it.exchange();
         range.id = it.id();
         range.range = (float)it.range();
         range.exchange = it.exchange();
         range.timestamp = _beluga_to_ros_time(it.time());
         message.ranges.push_back(range);
+        if (_mrexchange < exchange) {
+            _mrexchange = exchange;
+        }
     }
     _range_updates_publisher->publish(message);
     PRINT_RANGES(message);
@@ -345,16 +349,21 @@ rclcpp::Time Beluga::_beluga_to_ros_time(int64_t t) {
 void Beluga::_init_time_sync() {
     const size_t init_time_sync_runs = 11;
     RCLCPP_INFO(this->get_logger(), "Syncing time");
+    std::stringstream oss;
     _ns_per_timestamp_unit = 0.0;
     _last_mapping["ros"] = rclcpp::Time();
     _last_mapping["beluga"] = 0;
     _time_sync(true);
+
+    oss << _mrexchange;
 
     for (size_t i = 0; i < init_time_sync_runs; i++) {
         this->get_clock()->sleep_until(this->get_clock()->now() +
                                        rclcpp::Duration(500ms));
         _time_sync();
     }
+
+    _serial.exchange(oss.str());
     RCLCPP_INFO(this->get_logger(), "Time is synced");
 }
 
