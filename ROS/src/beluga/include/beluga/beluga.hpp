@@ -234,6 +234,8 @@ class Beluga : public rclcpp::Node {
 #endif // defined(TIMED_RANGE_EVENTS_PUBLISHER)
 
     void _unexpected_reboot_event();
+
+    uint32_t _mrexchange = 0;
 };
 
 #endif // BELUGA_ROS_BELUGA_HPP

@@ -385,6 +385,13 @@ class BelugaSerialBase {
     std::string version();
 
     /**
+     * Set an new exchange ID.
+     * @param[in] new_id The new ID.
+     * @return The command response.
+     */
+    std::string exchange(const std::string &new_id);
+
+    /**
      * Starts the serial reception and processing tasks
      * @throws std::runtime_error if the receive and processing tasks are
      * already running
