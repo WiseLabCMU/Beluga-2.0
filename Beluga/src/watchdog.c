@@ -25,7 +25,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
-#include <zephyr/drivers/watchdog.h>
 
 /**
  * Logger for the watchdog timer
@@ -82,7 +81,8 @@ static struct hw_wdt wdt = {
 
 static struct k_spinlock spinlock;
 
-#define WDT_CHECK(attr_) (attr_) == NULL || attr->id < 0 || attr->id >= ARRAY_SIZE(wdt_channels)
+#define WDT_CHECK(attr_)                                                       \
+    (attr_) == NULL || attr->id < 0 || attr->id >= ARRAY_SIZE(wdt_channels)
 
 static void report_fatal_error(struct k_work *work) {
     struct wdt_timeout_work *wdt_to_data =
@@ -95,8 +95,7 @@ static void report_fatal_error(struct k_work *work) {
     const struct comms *comms_ptr = comms_backend_uart_get_ptr();
     const char *thread_name = k_thread_name_get(wdt_to_data->tid);
 
-    snprintf(msg_, sizeof(msg_), "Task watchdog expired (%s)",
-             thread_name);
+    snprintf(msg_, sizeof(msg_), "Task watchdog expired (%s)", thread_name);
     comms_write_msg(comms_ptr, &msg);
     // fatal errors are written in a blocking enabled.
     k_sleep(K_MSEC(MIN_WDT_PERIOD / 2));
@@ -113,32 +112,36 @@ static void schedule_next_timeout(int64_t current_time_ms) {
 
 #if defined(CONFIG_SW_WDT_HW_FALLBACK)
     next_channel_id = ARRAY_SIZE(wdt_channels);
-    next_timeout = current_time_ms + (int64_t)(CONFIG_SW_WDT_HW_FALLBACK_DELAY / 2);
+    next_timeout =
+        current_time_ms + (int64_t)(CONFIG_SW_WDT_HW_FALLBACK_DELAY / 2);
 #else
     next_channel_id = 0;
     next_timeout = INT64_MAX;
-#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+#endif // defined(CONFIG_SW_WDT_HW_FALLBACK)
 
     for (size_t i = 0; i < ARRAY_SIZE(wdt_channels); i++) {
-        if (wdt_channels[i].active && wdt_channels[i].timeout_ms < next_timeout) {
+        if (wdt_channels[i].active &&
+            wdt_channels[i].timeout_ms < next_timeout) {
             next_channel_id = i;
             next_timeout = wdt_channels[i].timeout_ms;
         }
     }
 
     k_timer_user_data_set(&wdt_timer, (void *)next_channel_id);
-    k_timer_start(&wdt_timer, K_MSEC(next_timeout - current_time_ms), K_FOREVER);
+    k_timer_start(&wdt_timer, K_MSEC(next_timeout - current_time_ms),
+                  K_FOREVER);
 
 #if defined(CONFIG_SW_WDT_HW_FALLBACK)
     if (atomic_test_bit(&wdt.state, HW_WDT_STARTED)) {
         wdt_feed(wdt.wdt, wdt.channel);
     }
-#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+#endif // defined(CONFIG_SW_WDT_HW_FALLBACK)
 }
 
 static void wdt_timer_handler(struct k_timer *timer) {
     size_t channel_id = (size_t)k_timer_user_data_get(timer);
-    bool bg_channel = IS_ENABLED(CONFIG_SW_WDT_HW_FALLBACK) && (channel_id == ARRAY_SIZE(wdt_channels));
+    bool bg_channel = IS_ENABLED(CONFIG_SW_WDT_HW_FALLBACK) &&
+                      (channel_id == ARRAY_SIZE(wdt_channels));
 
     if (bg_channel || !wdt_channels[channel_id].active) {
         schedule_next_timeout(k_uptime_get());
@@ -149,7 +152,7 @@ static void wdt_timer_handler(struct k_timer *timer) {
     if (atomic_test_bit(&wdt.state, HW_WDT_STARTED)) {
         wdt_feed(wdt.wdt, wdt.channel);
     }
-#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+#endif // defined(CONFIG_SW_WDT_HW_FALLBACK)
     wdt_work.tid = wdt_channels[channel_id].tid;
     k_work_submit(&wdt_work.work);
 }
@@ -171,7 +174,7 @@ int configure_watchdog_timer(void) {
         LOG_ERR("Unable to install hw watchdog timeout: %d", wdt.channel);
         return wdt.channel;
     }
-#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+#endif // defined(CONFIG_SW_WDT_HW_FALLBACK)
 
     k_work_init(&wdt_work.work, report_fatal_error);
     schedule_next_timeout(k_uptime_get());
@@ -182,7 +185,8 @@ int configure_watchdog_timer(void) {
 int spawn_task_watchdog(struct task_wdt_attr *attr) {
     int ret = -ENOMEM;
 
-    if (attr == NULL || (attr->id >= 0 && attr->id < ARRAY_SIZE(wdt_channels))) {
+    if (attr == NULL ||
+        (attr->id >= 0 && attr->id < ARRAY_SIZE(wdt_channels))) {
         return -EINVAL;
     }
 
@@ -205,7 +209,7 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
                     wdt_setup(wdt.wdt, WDT_OPT_PAUSE_HALTED_BY_DBG);
                     atomic_set_bit(&wdt.state, HW_WDT_STARTED);
                 }
-#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+#endif // defined(CONFIG_SW_WDT_HW_FALLBACK)
                 break;
             }
         }
@@ -219,20 +223,25 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
 }
 
 void let_the_dog_starve(struct task_wdt_attr *attr) {
-    if (WDT_CHECK(attr) ) {
+    if (WDT_CHECK(attr)) {
         return;
     }
     attr->starving = true;
 }
 
 static ALWAYS_INLINE void crit_sect_onexit(unsigned int *key) {
-    __ASSERT(*key, "CRITICAL_SECTION exited with goto, break, or return; use CRITICAL_SECTION_BREAK instead.");
+    __ASSERT(*key, "CRITICAL_SECTION exited with goto, break, or return; use "
+                   "CRITICAL_SECTION_BREAK instead.");
     k_sched_unlock();
 }
 #define CRITICAL_SECTION_ONEXIT __attribute__((cleanup(crit_sect_onexit)))
-#define CRITICAL_SECTION_BREAK continue
+#define CRITICAL_SECTION_BREAK  continue
 
-#define CRITICAL_SECTION() k_sched_lock(); for (unsigned int __i __attribute__((__cleanup__(crit_sect_onexit))) = 0, __key = irq_lock(); !__i; irq_unlock(__key), __i = 1)
+#define CRITICAL_SECTION()                                                     \
+    k_sched_lock();                                                            \
+    for (unsigned int __i __attribute__((__cleanup__(crit_sect_onexit))) = 0,  \
+                          __key = irq_lock();                                  \
+         !__i; irq_unlock(__key), __i = 1)
 
 void watchdog_red_rocket(struct task_wdt_attr *attr) {
     int64_t current_uptime;
@@ -245,7 +254,8 @@ void watchdog_red_rocket(struct task_wdt_attr *attr) {
     CRITICAL_SECTION() {
         current_uptime = k_uptime_get();
 
-        wdt_channels[attr->id].timeout_ms = current_uptime + wdt_channels[attr->id].period;
+        wdt_channels[attr->id].timeout_ms =
+            current_uptime + wdt_channels[attr->id].period;
         schedule_next_timeout(current_uptime);
     }
 }

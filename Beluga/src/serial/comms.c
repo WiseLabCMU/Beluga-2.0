@@ -812,7 +812,8 @@ int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
     }
 
     if (msg->type == LOG_FATAL_ERROR) {
-        struct comms_uart_common *ctx = (struct comms_uart_common *)comms->iface->ctx;
+        struct comms_uart_common *ctx =
+            (struct comms_uart_common *)comms->iface->ctx;
         prev_state = ctx->blocking_tx;
         ctx->blocking_tx = true;
         fatal = true;
@@ -835,7 +836,8 @@ int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
     }
 
     if (fatal) {
-        struct comms_uart_common *ctx = (struct comms_uart_common *)comms->iface->ctx;
+        struct comms_uart_common *ctx =
+            (struct comms_uart_common *)comms->iface->ctx;
         ctx->blocking_tx = prev_state;
     }
 

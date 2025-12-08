@@ -40,7 +40,12 @@ struct task_wdt_attr {
                      ///< starves
 };
 
-#define TASK_WDT_INITIALIZER(period_) { .id = -1, .starving = false, .period = (period_) }
+/**
+ * Initializer for @ref task_wdt_attr.
+ * @param[in] period_ The task watchdog period.
+ */
+#define TASK_WDT_INITIALIZER(period_)                                          \
+    { .id = -1, .starving = false, .period = (period_) }
 
 /**
  * @brief Initializes the watchdog timer and the task watchdog subsystem

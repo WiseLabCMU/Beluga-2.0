@@ -228,12 +228,14 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 /**
  * The watchdog timer instance for the ranging.
  */
-static struct task_wdt_attr ranging_watchdog_attr = TASK_WDT_INITIALIZER(10 * CONFIG_POLLING_REFRESH_PERIOD);
+static struct task_wdt_attr ranging_watchdog_attr =
+    TASK_WDT_INITIALIZER(10 * CONFIG_POLLING_REFRESH_PERIOD);
 
 /**
  * The watchdog timer instance for the responder task.
  */
-static struct task_wdt_attr responder_wdt = TASK_WDT_INITIALIZER(5 * CONFIG_RESPONDER_TIMEOUT);
+static struct task_wdt_attr responder_wdt =
+    TASK_WDT_INITIALIZER(5 * CONFIG_RESPONDER_TIMEOUT);
 
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
