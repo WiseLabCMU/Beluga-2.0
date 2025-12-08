@@ -84,6 +84,7 @@ class BelugaFrame {
         NEIGHBOR_DROP, ///< Indicates that a neighbor has been dropped
         START_EVENT,   ///< Indicates that the node has booted
         RANGING_DROP,  ///< Dropped ranging exchange
+        FATAL_ERROR,   ///< Fatal error message.
         NO_TYPE        ///< No frame type. Used for error handling
     };
 
@@ -118,6 +119,7 @@ class BelugaFrame {
                      ///< - `NEIGHBOR_DROP`: `uint32_t`
                      ///< - `START_EVENT`: `std::string`
                      ///< - `RANGING_DROP`: `BelugaFrame::DroppedUwbExchange`
+                     ///< - `FATAL_ERROR`: `std::string`
                      /// - `NO_TYPE`: No payload
     };
 

@@ -531,6 +531,15 @@ int construct_frame(const struct beluga_msg *msg, uint8_t buffer[],
                                              len - MSG_OVERHEAD);
         break;
     }
+    case LOG_FATAL_ERROR: {
+        if (msg->payload.error_message == NULL) {
+            LOG_ERR("Invalid error message");
+            return -EINVAL;
+        }
+        msgLen = snprintf(buffer + MSG_PAYLOAD_OFFSET, len - MSG_OVERHEAD, "%s",
+                          msg->payload.error_message);
+        break;
+    }
     default:
         __ASSERT(false, "Invalid beluga message type: (%d)",
                  (uint32_t)msg->type);
@@ -595,6 +604,14 @@ int frame_length(const struct beluga_msg *msg) {
     }
     case UWB_RANGING_DROP: {
         msgLen = encode_dropped_packet_event(msg, NULL, 0);
+        break;
+    }
+    case LOG_FATAL_ERROR: {
+        if (msg->payload.error_message == NULL) {
+            LOG_ERR("Invalid error message");
+            return -EINVAL;
+        }
+        msgLen = (ssize_t)strlen(msg->payload.error_message) + 1;
         break;
     }
     default:

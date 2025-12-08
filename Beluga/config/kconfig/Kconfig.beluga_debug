@@ -17,4 +17,8 @@ config BELUGA_EVAL_BLE_STRENGTH
     bool "Evaluate the signal strength of BLE regardless if UWB is on or not"
     default n
 
+config WDT_TEST_COMMAND
+    bool "Enable WDT test command"
+    default n
+
 endmenu # Beluga Debugging

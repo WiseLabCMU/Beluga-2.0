@@ -62,6 +62,7 @@ enum beluga_msg_type {
     NEIGHBOR_DROP,    ///< Can no longer find neighbor in network
     START_EVENT,      ///< A boot event
     UWB_RANGING_DROP, ///< Report that ranging failed
+    LOG_FATAL_ERROR,  ///< Log a fatal error
 };
 
 /**
@@ -147,6 +148,7 @@ struct beluga_msg {
         uint32_t dropped_neighbor;                     ///< NEIGHBOR_DROP
         const char *node_version;                      ///< START_EVENT
         const struct dropped_packet_event *drop_event; ///< UWB_RANGING_DROP
+        const char *error_message;                     ///< LOG_FATAL_ERROR
     } payload;
 };
 
