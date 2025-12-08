@@ -149,6 +149,16 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #endif
 
 /**
+ * Watchdog timer period in milliseconds
+ */
+#define RANGING_WDT_PERIOD (10 * CONFIG_POLLING_REFRESH_PERIOD)
+
+/**
+ * The amount of time to sleep the ranging thread when in "responder" mode.
+ */
+#define RESP_ONLY_MODE_SLEEP_TIME (RANGING_WDT_PERIOD / 2)
+
+/**
  * Suspends the responder task when performing ranging to other nodes
  */
 #define SUSPEND_RESPONDER_TASK()                                               \
@@ -229,7 +239,7 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
  * The watchdog timer instance for the ranging.
  */
 static struct task_wdt_attr ranging_watchdog_attr =
-    TASK_WDT_INITIALIZER(10 * CONFIG_POLLING_REFRESH_PERIOD);
+    TASK_WDT_INITIALIZER(RANGING_WDT_PERIOD);
 
 /**
  * The watchdog timer instance for the responder task.
@@ -1039,7 +1049,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
         if (initiator_freq > 0) {
             initiate_ranging(comms);
         } else {
-            k_sleep(K_SECONDS(1));
+            k_sleep(K_MSEC(RESP_ONLY_MODE_SLEEP_TIME));
         }
 
         update_poll_count();

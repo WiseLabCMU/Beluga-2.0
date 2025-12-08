@@ -1242,3 +1242,23 @@ AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_WDT_TEST_COMMAND), STARVE) {
 
     AT_OK(comms, "Starving channel %" PRId32, channel);
 }
+
+/**
+ * Set the exchange ID to a new value
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success, negative error code otherwise.
+ */
+AT_COMMAND(EXCHANGE) {
+    CHECK_ARGC(comms, argc, 2);
+    uint32_t new_id;
+
+    if (!strtoint32(argv[1], &new_id)) {
+        ERROR(comms, "Argument must be an integer");
+    }
+
+    override_exchange_id(new_id);
+    OK(comms, "Exchange ID updated to %" PRIu32, new_id);
+}

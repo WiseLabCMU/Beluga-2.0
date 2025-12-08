@@ -152,6 +152,12 @@ int ss_init_run(uint16_t id, double *distance, uint32_t *logic_clock);
 int dropped_stage(void);
 
 /**
+ * Set a new exchange ID.
+ * @param[in] new_id The new exchange ID.
+ */
+void override_exchange_id(uint32_t new_id);
+
+/**
  * Semaphore for suspending the initiator task
  */
 extern struct k_sem k_sus_init;
