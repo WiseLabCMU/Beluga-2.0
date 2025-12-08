@@ -230,6 +230,13 @@ void Beluga::_publish_exchange(const BelugaSerial::RangeEvent &event) {
     PRINT_EXCHANGE(message);
 }
 
+void Beluga::_publish_fatal_error(const std::string &error) {
+    auto message = beluga_messages::msg::BelugaFatalError();
+    message.error = error;
+    message.timestamp = this->get_clock()->now();
+    _fatal_error_publisher->publish(message);
+}
+
 void Beluga::_time_sync(bool first) {
     std::unique_lock<std::mutex> lock(_timestamp_sync, std::defer_lock);
     int retries = 5;
