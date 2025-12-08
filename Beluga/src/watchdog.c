@@ -25,6 +25,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/reboot.h>
+#include <zephyr/drivers/watchdog.h>
 
 /**
  * Logger for the watchdog timer
@@ -52,7 +53,6 @@ LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
 #endif
 
 struct wdt_timeout_work {
-    int channel_id;
     k_tid_t tid;
     struct k_work work;
 };
@@ -60,18 +60,23 @@ struct wdt_timeout_work {
 struct wdt_channel {
     int64_t period;
     k_tid_t tid;
-    uint64_t timeout;
+    int64_t timeout_ms;
     bool active;
 };
 
 struct hw_wdt {
     const struct device *const wdt;
-    unsigned int channel;
+    int channel;
+    atomic_t state;
+};
+
+enum {
+    HW_WDT_STARTED,
 };
 
 static struct wdt_timeout_work wdt_work;
 static struct wdt_channel wdt_channels[CONFIG_SW_WDT_CHANNELS] = {};
-struct hw_wdt wdt = {
+static struct hw_wdt wdt = {
     .wdt = DEVICE_DT_GET_OR_NULL(WDT_NODE),
 };
 
@@ -88,38 +93,88 @@ static void report_fatal_error(struct k_work *work) {
         .payload.error_message = msg_,
     };
     const struct comms *comms_ptr = comms_backend_uart_get_ptr();
+    const char *thread_name = k_thread_name_get(wdt_to_data->tid);
 
-    snprintk(msg_, sizeof(msg), "Task watchdog expired (%s)",
-             k_thread_name_get(wdt_to_data->tid));
+    snprintf(msg_, sizeof(msg_), "Task watchdog expired (%s)",
+             thread_name);
     comms_write_msg(comms_ptr, &msg);
-    comms_flush_out(comms_ptr, 1);
+    // fatal errors are written in a blocking enabled.
+    k_sleep(K_MSEC(MIN_WDT_PERIOD / 2));
 
     sys_reboot(SYS_REBOOT_COLD);
 }
 
-static void wdt_timer_handler(struct k_timer *timer) {
-    int64_t current_ticks = sys_clock_tick_get();
-    wdt_feed(wdt.wdt, 0); // todo
-
-    for (ssize_t i = 0; i < ARRAY_SIZE(wdt_channels); i++) {
-        if (wdt_channels[i].active && wdt_channels[i].timeout < current_ticks) { // todo
-            k_work_submit(&wdt_work.work);
-            k_timer_stop(timer);
-            break;
-        }
-    }
-}
+static void wdt_timer_handler(struct k_timer *timer);
 K_TIMER_DEFINE(wdt_timer, wdt_timer_handler, NULL);
 
-int configure_watchdog_timer(void) {
-    if (!device_is_ready(wdt.wdt)) {
-        // TODO
+static void schedule_next_timeout(int64_t current_time_ms) {
+    size_t next_channel_id;
+    int64_t next_timeout;
+
+#if defined(CONFIG_SW_WDT_HW_FALLBACK)
+    next_channel_id = ARRAY_SIZE(wdt_channels);
+    next_timeout = current_time_ms + (int64_t)(CONFIG_SW_WDT_HW_FALLBACK_DELAY / 2);
+#else
+    next_channel_id = 0;
+    next_timeout = INT64_MAX;
+#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+
+    for (size_t i = 0; i < ARRAY_SIZE(wdt_channels); i++) {
+        if (wdt_channels[i].active && wdt_channels[i].timeout_ms < next_timeout) {
+            next_channel_id = i;
+            next_timeout = wdt_channels[i].timeout_ms;
+        }
     }
 
-    k_work_init(&wdt_work.work, report_fatal_error);
+    k_timer_user_data_set(&wdt_timer, (void *)next_channel_id);
+    k_timer_start(&wdt_timer, K_MSEC(next_timeout - current_time_ms), K_FOREVER);
 
-    k_timer_init(&wdt_timer, wdt_timer_handler, NULL);
-    k_timer_start(&wdt_timer, K_MSEC(MIN_WDT_PERIOD / 2), K_MSEC(MIN_WDT_PERIOD / 2));
+#if defined(CONFIG_SW_WDT_HW_FALLBACK)
+    if (atomic_test_bit(&wdt.state, HW_WDT_STARTED)) {
+        wdt_feed(wdt.wdt, wdt.channel);
+    }
+#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+}
+
+static void wdt_timer_handler(struct k_timer *timer) {
+    size_t channel_id = (size_t)k_timer_user_data_get(timer);
+    bool bg_channel = IS_ENABLED(CONFIG_SW_WDT_HW_FALLBACK) && (channel_id == ARRAY_SIZE(wdt_channels));
+
+    if (bg_channel || !wdt_channels[channel_id].active) {
+        schedule_next_timeout(k_uptime_get());
+        return;
+    }
+
+#if defined(CONFIG_SW_WDT_HW_FALLBACK)
+    if (atomic_test_bit(&wdt.state, HW_WDT_STARTED)) {
+        wdt_feed(wdt.wdt, wdt.channel);
+    }
+#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+    wdt_work.tid = wdt_channels[channel_id].tid;
+    k_work_submit(&wdt_work.work);
+}
+
+int configure_watchdog_timer(void) {
+#if defined(CONFIG_SW_WDT_HW_FALLBACK)
+    struct wdt_timeout_cfg wdt_config;
+    if (!device_is_ready(wdt.wdt)) {
+        return -ENODEV;
+    }
+
+    wdt_config.flags = WDT_FLAG_RESET_SOC;
+    wdt_config.window.min = 0U;
+    wdt_config.window.max = CONFIG_SW_WDT_HW_FALLBACK_DELAY;
+    wdt_config.callback = NULL;
+
+    wdt.channel = wdt_install_timeout(wdt.wdt, &wdt_config);
+    if (wdt.channel < 0) {
+        LOG_ERR("Unable to install hw watchdog timeout: %d", wdt.channel);
+        return wdt.channel;
+    }
+#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
+
+    k_work_init(&wdt_work.work, report_fatal_error);
+    schedule_next_timeout(k_uptime_get());
 
     return 0;
 }
@@ -140,10 +195,17 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
                 wdt_channels[i].period = attr->period;
                 wdt_channels[i].active = true;
                 wdt_channels[i].tid = k_current_get();
-                // TODO: timeout
+                wdt_channels[i].timeout_ms = K_TICKS_FOREVER;
                 attr->id = i;
                 attr->starving = false;
                 ret = 0;
+
+#if defined(CONFIG_SW_WDT_HW_FALLBACK)
+                if (!atomic_test_bit(&wdt.state, HW_WDT_STARTED) && wdt.wdt) {
+                    wdt_setup(wdt.wdt, WDT_OPT_PAUSE_HALTED_BY_DBG);
+                    atomic_set_bit(&wdt.state, HW_WDT_STARTED);
+                }
+#endif  // defined(CONFIG_SW_WDT_HW_FALLBACK)
                 break;
             }
         }
@@ -173,7 +235,7 @@ static ALWAYS_INLINE void crit_sect_onexit(unsigned int *key) {
 #define CRITICAL_SECTION() k_sched_lock(); for (unsigned int __i __attribute__((__cleanup__(crit_sect_onexit))) = 0, __key = irq_lock(); !__i; irq_unlock(__key), __i = 1)
 
 void watchdog_red_rocket(struct task_wdt_attr *attr) {
-    int64_t current_ticks;
+    int64_t current_uptime;
 
     if (WDT_CHECK(attr) || unlikely(attr->starving)) {
         return;
@@ -181,7 +243,10 @@ void watchdog_red_rocket(struct task_wdt_attr *attr) {
 
     // Don't allow anyone to interrupt this process
     CRITICAL_SECTION() {
-        // TODO
+        current_uptime = k_uptime_get();
+
+        wdt_channels[attr->id].timeout_ms = current_uptime + wdt_channels[attr->id].period;
+        schedule_next_timeout(current_uptime);
     }
 }
 
