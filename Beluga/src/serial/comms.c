@@ -364,7 +364,7 @@ void comms_process(const struct comms *comms) {
     char data;
     struct comms_buf *buf = &comms->ctx->rx_buf;
 
-    struct task_wdt_attr watchdog = {.period = 5000};
+    struct task_wdt_attr watchdog = TASK_WDT_INITIALIZER(5000);
     if (spawn_task_watchdog(&watchdog) < 0) {
         printk("Unable to spawn task watchdog in command thread\n");
         return;

@@ -228,15 +228,12 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 /**
  * The watchdog timer instance for the ranging.
  */
-static struct task_wdt_attr ranging_watchdog_attr = {
-    .period = 10 * CONFIG_POLLING_REFRESH_PERIOD};
+static struct task_wdt_attr ranging_watchdog_attr = TASK_WDT_INITIALIZER(10 * CONFIG_POLLING_REFRESH_PERIOD);
 
 /**
  * The watchdog timer instance for the responder task.
  */
-static struct task_wdt_attr responder_wdt = {
-    .period = CONFIG_RESPONDER_TIMEOUT * 5,
-};
+static struct task_wdt_attr responder_wdt = TASK_WDT_INITIALIZER(5 * CONFIG_RESPONDER_TIMEOUT);
 
 /**
  * @brief Prints the TX power in a non-standard (human readable) format
@@ -803,16 +800,10 @@ void update_uwb_state(bool active) {
         k_sem_give(&k_sus_resp);
         k_sem_give(&k_sus_init);
         update_led_state(LED_UWB, LED_ON);
-        if (spawn_task_watchdog(&ranging_watchdog_attr) < 0) {
-            LOG_ERR("Unable to spawn watchdog for ranging");
-        }
     } else {
         k_sem_take(&k_sus_resp, K_FOREVER);
         k_sem_take(&k_sus_init, K_FOREVER);
         update_led_state(LED_UWB, LED_OFF);
-        if (kill_task_watchdog(&ranging_watchdog_attr) < 0) {
-            LOG_ERR("Unable to kill ranging watchdog");
-        }
     }
 
     UPDATE_ADV_DATA(ACTIVE, active);
@@ -1034,6 +1025,11 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
+
+    if (spawn_task_watchdog(&ranging_watchdog_attr) < 0) {
+        LOG_ERR("Unable to spawn watchdog for ranging");
+        sys_reboot(SYS_REBOOT_COLD);
+    }
 
     while (true) {
         watchdog_red_rocket(&ranging_watchdog_attr);

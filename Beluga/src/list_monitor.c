@@ -66,7 +66,7 @@ static bool _node_added = false;
 /**
  * Watchdog attributes for list monitor.
  */
-static struct task_wdt_attr watchdogAttr = {.period = 3000};
+static struct task_wdt_attr watchdogAttr = TASK_WDT_INITIALIZER(3000);
 
 /**
  * @brief Set the timeout value for node eviction.
