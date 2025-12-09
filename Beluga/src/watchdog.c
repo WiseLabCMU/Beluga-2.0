@@ -261,7 +261,6 @@ void watchdog_red_rocket(struct task_wdt_attr *attr) {
 }
 
 int kill_task_watchdog(struct task_wdt_attr *attr) {
-
     if (WDT_CHECK(attr)) {
         return -EINVAL;
     }
@@ -270,6 +269,16 @@ int kill_task_watchdog(struct task_wdt_attr *attr) {
         wdt_channels[attr->id].active = false;
         attr->id = -1;
     }
+
+    return 0;
+}
+
+int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid) {
+    if (WDT_CHECK(attr)) {
+        return -EINVAL;
+    }
+
+    K_SPINLOCK(&spinlock) { wdt_channels[attr->id].tid = tid; }
 
     return 0;
 }

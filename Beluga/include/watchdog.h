@@ -89,4 +89,18 @@ void watchdog_red_rocket(struct task_wdt_attr *attr);
  */
 int kill_task_watchdog(struct task_wdt_attr *attr);
 
+/**
+ * @brief Updates the tid of the watchdog channel.
+ *
+ * Updates the tid of the watchdog channel. This is helpful when the task
+ * watchdog gets spawned in a different thread from the one feeding the
+ * watchdog.
+ *
+ * @param[in] attr Pointer to watchdog attributes
+ * @param[in] tid The tid of the thread feeding the watchdog
+ * @return 0 upon success
+ * @return -EINVAL if attr is NULL or the attr are invalid.
+ */
+int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid);
+
 #endif // BELUGA_WATCHDOG_H
