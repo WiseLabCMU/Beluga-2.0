@@ -812,10 +812,16 @@ void update_uwb_state(bool active) {
         k_sem_give(&k_sus_resp);
         k_sem_give(&k_sus_init);
         update_led_state(LED_UWB, LED_ON);
+        if (spawn_task_watchdog(&ranging_watchdog_attr) < 0) {
+            LOG_ERR("Unable to spawn watchdog for ranging");
+        }
     } else {
         k_sem_take(&k_sus_resp, K_FOREVER);
         k_sem_take(&k_sus_init, K_FOREVER);
         update_led_state(LED_UWB, LED_OFF);
+        if (kill_task_watchdog(&ranging_watchdog_attr) < 0) {
+            LOG_ERR("Unable to kill ranging watchdog");
+        }
     }
 
     UPDATE_ADV_DATA(ACTIVE, active);
@@ -1079,11 +1085,6 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
         dwt_setleds(DWT_LEDS_ENABLE);
     } else {
         dwt_setleds(DWT_LEDS_DISABLE);
-    }
-
-    if (spawn_task_watchdog(&responder_wdt) < 0) {
-        LOG_ERR("Unable to spawn responder wdt");
-        sys_reboot(SYS_REBOOT_COLD);
     }
 
     while (true) {
