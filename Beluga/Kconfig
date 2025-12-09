@@ -44,6 +44,15 @@ config BELUGA_GATT
     bool "Beluga GATT service"
     default n
 
+config STATUS_BLINK_PERIOD
+    int "Period that the status LED blinks at in msec"
+    default 1000
+    range 0 10000
+    help
+        The period that the status LED blinks at. It
+        is recommended that the period is kept to 1000 msec.
+        If the period is set to 0, the LED will stay solid.
+
 rsource "./config/kconfig/Kconfig.beluga_debug"
 
 config WDT_MAX_WINDOW

@@ -168,6 +168,7 @@ LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
         }                                                                      \
     } while (0)
 
+#if CONFIG_STATUS_BLINK_PERIOD != 0
 /**
  * Work handler for blinking the status (Power) LED.
  * @param[in] work Pointer to the work item.
@@ -180,9 +181,10 @@ static void blink_status_led(struct k_work *work) {
     update_led_state(LED_POWER, state);
     state = (state == LED_ON) ? LED_OFF : LED_ON;
 
-    k_work_schedule(dwork, K_MSEC(1000));
+    k_work_schedule(dwork, K_MSEC(CONFIG_STATUS_BLINK_PERIOD));
 }
 K_WORK_DELAYABLE_DEFINE(blink_work, blink_status_led);
+#endif // CONFIG_STATUS_BLINK_PERIOD != 0
 
 /**
  * Load the LED mode from the settings and display the current state
@@ -193,7 +195,11 @@ static void load_led_mode(const struct comms *comms) {
     if (led_mode == 1) {
         all_leds_off();
     }
+#if CONFIG_STATUS_BLINK_PERIOD != 0
     k_work_schedule(&blink_work, K_NO_WAIT);
+#else
+    update_led_state(LED_POWER, LED_ON);
+#endif // CONFIG_STATUS_BLINK_PERIOD != 0
     SETTINGS_PRINT(comms, "LED Mode: %d", led_mode);
 }
 
