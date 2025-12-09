@@ -856,6 +856,7 @@ void update_uwb_state(bool active) {
         if (spawn_task_watchdog(&ranging_watchdog_attr) < 0) {
             LOG_ERR("Unable to spawn watchdog for ranging");
         }
+        set_watchdog_tid(&ranging_watchdog_attr, ranging_task);
     } else {
         k_sem_take(&k_sus_resp, K_FOREVER);
         k_sem_take(&k_sus_init, K_FOREVER);
