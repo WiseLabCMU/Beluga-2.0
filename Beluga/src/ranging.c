@@ -1086,11 +1086,6 @@ NO_RETURN static void rangingTask(void *p1, void *p2, void *p3) {
     ARG_UNUSED(p2);
     ARG_UNUSED(p3);
 
-    if (spawn_task_watchdog(&ranging_watchdog_attr) < 0) {
-        LOG_ERR("Unable to spawn watchdog for ranging");
-        sys_reboot(SYS_REBOOT_COLD);
-    }
-
     while (true) {
         watchdog_red_rocket(&ranging_watchdog_attr);
 
