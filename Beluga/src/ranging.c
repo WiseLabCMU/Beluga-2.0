@@ -1124,6 +1124,11 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
         dwt_setleds(DWT_LEDS_DISABLE);
     }
 
+    if (spawn_task_watchdog(&responder_wdt) < 0) {
+        LOG_ERR("Unable to spawn responder wdt");
+        sys_reboot(SYS_REBOOT_COLD);
+    }
+
     while (true) {
         watchdog_red_rocket(&responder_wdt);
 
