@@ -364,7 +364,7 @@ void comms_process(const struct comms *comms) {
     char data;
     struct comms_buf *buf = &comms->ctx->rx_buf;
 
-    struct task_wdt_attr watchdog = {.period = 5000};
+    struct task_wdt_attr watchdog = TASK_WDT_INITIALIZER(5000);
     if (spawn_task_watchdog(&watchdog) < 0) {
         printk("Unable to spawn task watchdog in command thread\n");
         return;
@@ -806,8 +806,17 @@ static int comms_write_frame(const struct comms *comms,
  */
 int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
     int ret;
+    bool prev_state = false, fatal = false;
     if (comms == NULL || msg == NULL) {
         return -EINVAL;
+    }
+
+    if (msg->type == LOG_FATAL_ERROR) {
+        struct comms_uart_common *ctx =
+            (struct comms_uart_common *)comms->iface->ctx;
+        prev_state = ctx->blocking_tx;
+        ctx->blocking_tx = true;
+        fatal = true;
     }
 
     switch (comms->ctx->format) {
@@ -824,6 +833,12 @@ int comms_write_msg(const struct comms *comms, const struct beluga_msg *msg) {
         ret = -EFAULT;
         break;
     }
+    }
+
+    if (fatal) {
+        struct comms_uart_common *ctx =
+            (struct comms_uart_common *)comms->iface->ctx;
+        ctx->blocking_tx = prev_state;
     }
 
     return ret;

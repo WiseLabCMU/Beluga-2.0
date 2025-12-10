@@ -149,6 +149,16 @@ LOG_MODULE_REGISTER(ranging_logger, CONFIG_RANGING_MODULE_LOG_LEVEL);
 #endif
 
 /**
+ * Watchdog timer period in milliseconds
+ */
+#define RANGING_WDT_PERIOD (10 * CONFIG_POLLING_REFRESH_PERIOD)
+
+/**
+ * The amount of time to sleep the ranging thread when in "responder" mode.
+ */
+#define RESP_ONLY_MODE_SLEEP_TIME (RANGING_WDT_PERIOD / 2)
+
+/**
  * Suspends the responder task when performing ranging to other nodes
  */
 #define SUSPEND_RESPONDER_TASK()                                               \
@@ -228,8 +238,55 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
 /**
  * The watchdog timer instance for the ranging.
  */
-static struct task_wdt_attr ranging_watchdog_attr = {
-    .period = 10 * CONFIG_POLLING_REFRESH_PERIOD};
+static struct task_wdt_attr ranging_watchdog_attr =
+    TASK_WDT_INITIALIZER(RANGING_WDT_PERIOD);
+
+/**
+ * The watchdog timer instance for the responder task.
+ */
+static struct task_wdt_attr responder_wdt =
+    TASK_WDT_INITIALIZER(5 * CONFIG_RESPONDER_TIMEOUT);
+
+#if defined(CONFIG_ENABLE_RANGING)
+static void rangingTask(void *p1, void *p2, void *p3);
+K_THREAD_DEFINE(ranging_task, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
+                NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, K_FP_REGS, -1);
+
+/**
+ * @brief Creates the ranging thread and initiates its data
+ */
+void init_ranging_thread(void) {
+    k_thread_name_set(ranging_task, "Ranging task");
+    k_thread_start(ranging_task);
+    LOG_INF("Started ranging");
+}
+#else
+/**
+ * @brief Creates the ranging thread and initiates its data
+ */
+void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
+#endif // defined(CONFIG_ENABLE_RANGING)
+
+#if defined(CONFIG_ENABLE_RESPONDER)
+static void responder_task_function(void *p1, void *p2, void *p3);
+K_THREAD_DEFINE(responder_task, CONFIG_RESPONDER_STACK_SIZE,
+                responder_task_function, NULL, NULL, NULL,
+                CONFIG_BELUGA_RESPONDER_PRIO, K_FP_REGS, -1);
+
+/**
+ * @brief Creates the responder thread and initiates its data
+ */
+void init_responder_thread(void) {
+    k_thread_name_set(responder_task, "Responder task");
+    k_thread_start(responder_task);
+    LOG_INF("Started responder");
+}
+#else
+/**
+ * @brief Creates the responder thread and initiates its data
+ */
+void init_responder_thread(void) { LOG_INF("Responder disabled"); }
+#endif // defined(CONFIG_ENABLE_RESPONDER)
 
 /**
  * The watchdog timer instance for the responder task.
@@ -806,6 +863,7 @@ void update_uwb_state(bool active) {
         if (spawn_task_watchdog(&ranging_watchdog_attr) < 0) {
             LOG_ERR("Unable to spawn watchdog for ranging");
         }
+        set_watchdog_tid(&ranging_watchdog_attr, ranging_task);
     } else {
         k_sem_take(&k_sus_resp, K_FOREVER);
         k_sem_take(&k_sus_init, K_FOREVER);
@@ -1029,7 +1087,7 @@ void update_poll_count(void) {
  * @param p2 Additional context (unused)
  * @param p3 Additional context (unused)
  */
-NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
+NO_RETURN static void rangingTask(void *p1, void *p2, void *p3) {
     const struct comms *comms = comms_backend_uart_get_ptr();
     ARG_UNUSED(p1);
     ARG_UNUSED(p2);
@@ -1041,7 +1099,7 @@ NO_RETURN void rangingTask(void *p1, void *p2, void *p3) {
         if (initiator_freq > 0) {
             initiate_ranging(comms);
         } else {
-            k_sleep(K_SECONDS(1));
+            k_sleep(K_MSEC(RESP_ONLY_MODE_SLEEP_TIME));
         }
 
         update_poll_count();
@@ -1102,42 +1160,3 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
         }
     }
 }
-
-#if defined(CONFIG_ENABLE_RANGING)
-K_THREAD_DEFINE(ranging_task, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
-                NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, K_FP_REGS, -1);
-
-/**
- * @brief Creates the ranging thread and initiates its data
- */
-void init_ranging_thread(void) {
-    k_thread_name_set(ranging_task, "Ranging task");
-    k_thread_start(ranging_task);
-    LOG_INF("Started ranging");
-}
-#else
-/**
- * @brief Creates the ranging thread and initiates its data
- */
-void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
-#endif // defined(CONFIG_ENABLE_RANGING)
-
-#if defined(CONFIG_ENABLE_RESPONDER)
-K_THREAD_DEFINE(responder_task, CONFIG_RESPONDER_STACK_SIZE,
-                responder_task_function, NULL, NULL, NULL,
-                CONFIG_BELUGA_RESPONDER_PRIO, K_FP_REGS, -1);
-
-/**
- * @brief Creates the responder thread and initiates its data
- */
-void init_responder_thread(void) {
-    k_thread_name_set(responder_task, "Responder task");
-    k_thread_start(responder_task);
-    LOG_INF("Started responder");
-}
-#else
-/**
- * @brief Creates the responder thread and initiates its data
- */
-void init_responder_thread(void) { LOG_INF("Responder disabled"); }
-#endif // defined(CONFIG_ENABLE_RESPONDER)

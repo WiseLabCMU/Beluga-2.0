@@ -1242,3 +1242,56 @@ AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_WDT_TEST_COMMAND), STARVE) {
 
     AT_OK(comms, "Starving channel %" PRId32, channel);
 }
+
+/**
+ * Set the exchange ID to a new value
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success, negative error code otherwise.
+ */
+AT_COMMAND(EXCHANGE) {
+    CHECK_ARGC(comms, argc, 2);
+    uint32_t new_id;
+
+    if (!strtoint32(argv[1], &new_id)) {
+        ERROR(comms, "Argument must be an integer");
+    }
+
+    override_exchange_id(new_id);
+    OK(comms, "Exchange ID updated to %" PRIu32, new_id);
+}
+
+/**
+ * Print the scanned neighbors over serial.
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success, negative error code otherwise.
+ */
+AT_COMMAND(NEIGHBORS) {
+    uint16_t neighbors[MAX_ANCHOR_COUNT] = {0};
+    size_t count = 0;
+    char msg[7 * MAX_ANCHOR_COUNT] = "";
+    int chars_written = 0;
+
+    for (size_t i = 0; i < ARRAY_SIZE(seen_list); i++) {
+        if (seen_list[i].UUID != 0) {
+            neighbors[count] = seen_list[i].UUID;
+            count++;
+        }
+    }
+
+    if (count == 0) {
+        OK(comms, "No neighbors found");
+    }
+
+    for (size_t i = 0; i < count; i++) {
+        chars_written = snprintk(msg, sizeof(msg) - chars_written,
+                                 "%" PRIu16 ",", neighbors[i]);
+    }
+
+    OK(comms, msg);
+}

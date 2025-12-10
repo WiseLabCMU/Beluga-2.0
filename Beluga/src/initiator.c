@@ -387,6 +387,12 @@ static void set_destination(uint16_t id) {
 static uint32_t exchange_id = UINT32_C(0);
 
 /**
+ * Set a new exchange ID.
+ * @param[in] new_id The new exchange ID.
+ */
+void override_exchange_id(uint32_t new_id) { exchange_id = new_id + 1; }
+
+/**
  * @brief Updates each of the messages with the appropriate exchange ID.
  */
 static void set_exchange_id(void) {

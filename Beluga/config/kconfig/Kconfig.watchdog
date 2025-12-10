@@ -1,0 +1,26 @@
+menu "Watchdog"
+
+config SW_WDT_CHANNELS
+    int "Number of watchdog channels"
+    default 4
+
+config SW_WDT_HW_FALLBACK
+    bool "Hardware watchdog timer fallback"
+    select WATCHDOG
+    default y
+
+config SW_WDT_HW_FALLBACK_DELAY
+    int "Milliseconds before the HW WDT triggers"
+    depends on SW_WDT_HW_FALLBACK
+    default 1000
+    help
+        Milliseconds before the HW WDT triggers. This also serves
+        as the minimum period for software watchdog periods.
+
+
+config SW_WDT_MIN_DELAY
+    int "Minimum timeout period (ms) for software watchdog"
+    depends on !SW_WDT_HW_FALLBACK
+    default 1000
+
+endmenu # Watchdog
