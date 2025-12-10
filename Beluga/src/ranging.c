@@ -289,13 +289,6 @@ void init_responder_thread(void) { LOG_INF("Responder disabled"); }
 #endif // defined(CONFIG_ENABLE_RESPONDER)
 
 /**
- * The watchdog timer instance for the responder task.
- */
-static struct task_wdt_attr responder_wdt = {
-    .period = CONFIG_RESPONDER_TIMEOUT * 5,
-};
-
-/**
  * @brief Prints the TX power in a non-standard (human readable) format
  * @param[in] tx_power The current TX power
  */
