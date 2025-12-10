@@ -196,6 +196,16 @@ struct comms_transport_api {
      * @param[in] transport Pointer to the transfer instance
      */
     void (*wait_dtr)(const struct comms_transport *transport);
+
+    /**
+     * @brief Function that checks if there was a reception error.
+     *
+     * @param[in] transport Pointer to the transfer instance.
+     *
+     * @return `true` if there was a UART receive error.
+     * @return `false` if no error occurred.
+     */
+    bool (*rx_error)(const struct comms_transport *transport);
 };
 
 /**

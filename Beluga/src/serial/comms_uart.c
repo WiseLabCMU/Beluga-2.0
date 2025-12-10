@@ -309,6 +309,15 @@ static void wait_dtr(const struct comms_transport *transport) {
 }
 #endif // CONFIG_USB_DEVICE_STACK
 
+static bool check_uart_error(const struct comms_transport *transport) {
+    const struct comms_uart_common *comms =
+        (struct comms_uart_common *)transport->ctx;
+    int err;
+
+    err = uart_err_check(comms->dev);
+    return (err != 0) && (err != -ENOSYS);
+}
+
 const struct comms_transport_api comms_uart_transport_api = {
     .init = init,
     .uninit = uninit,
@@ -318,6 +327,7 @@ const struct comms_transport_api comms_uart_transport_api = {
 #ifdef CONFIG_USB_DEVICE_STACK
     .wait_dtr = wait_dtr,
 #endif // CONFIG_USB_DEVICE_STACK
+    .rx_error = check_uart_error,
 };
 
 COMMS_UART_DEFINE(comms_transport_uart);
