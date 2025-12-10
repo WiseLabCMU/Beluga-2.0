@@ -113,7 +113,7 @@ static void uart_tx_handle(const struct device *dev,
         ARG_UNUSED(err);
     } else {
         uart_irq_tx_disable(dev);
-        sh_uart->tx_busy = 0;
+        atomic_clear(&sh_uart->tx_busy);
     }
 
     sh_uart->common.handler(COMMS_TRANSPORT_EVT_TX_RDY,
@@ -121,8 +121,7 @@ static void uart_tx_handle(const struct device *dev,
 }
 
 static void uart_callback(const struct device *dev, void *user_data) {
-    struct comms_uart_int_driven *sh_uart =
-        (struct comms_uart_int_driven *)user_data;
+    struct comms_uart_int_driven *sh_uart = user_data;
 
     uart_irq_update(dev);
 
@@ -147,8 +146,8 @@ static void irq_init(struct comms_uart_int_driven *sh_uart) {
     ring_buf_init(&sh_uart->tx_ringbuf,
                   CONFIG_COMMS_BACKEND_SERIAL_TX_RING_BUFFER_SIZE,
                   sh_uart->tx_buf);
-    sh_uart->tx_busy = 0;
-    uart_irq_callback_user_data_set(dev, uart_callback, (void *)sh_uart);
+    atomic_clear(&sh_uart->tx_busy);
+    uart_irq_callback_user_data_set(dev, uart_callback, sh_uart);
     uart_irq_rx_enable(dev);
 
     if (IS_ENABLED(CONFIG_SHELL_BACKEND_SERIAL_CHECK_DTR)) {
@@ -173,7 +172,7 @@ static void polling_rx_timeout_handler(struct k_timer *timer) {
 
 static void polling_init(struct comms_uart_polling *sh_uart) {
     k_timer_init(&sh_uart->rx_timer, polling_rx_timeout_handler, NULL);
-    k_timer_user_data_set(&sh_uart->rx_timer, (void *)sh_uart);
+    k_timer_user_data_set(&sh_uart->rx_timer, sh_uart);
     k_timer_start(&sh_uart->rx_timer, RX_POLL_PERIOD, RX_POLL_PERIOD);
 
     ring_buf_init(&sh_uart->rx_ringbuf,
@@ -183,8 +182,7 @@ static void polling_init(struct comms_uart_polling *sh_uart) {
 
 static int init(const struct comms_transport *transport, const void *config,
                 comms_transport_handler_t evt_handler, void *context) {
-    struct comms_uart_common *common =
-        (struct comms_uart_common *)transport->ctx;
+    struct comms_uart_common *common = transport->ctx;
 
     common->dev = (const struct device *)config;
     common->handler = evt_handler;
@@ -193,9 +191,9 @@ static int init(const struct comms_transport *transport, const void *config,
     serial_leds_init();
 
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
-        irq_init((struct comms_uart_int_driven *)transport->ctx);
+        irq_init(transport->ctx);
     } else {
-        polling_init((struct comms_uart_polling *)transport->ctx);
+        polling_init(transport->ctx);
     }
 
     return 0;
@@ -215,17 +213,16 @@ static void polling_uninit(struct comms_uart_polling *sh_uart) {
 
 static int uninit(const struct comms_transport *transport) {
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
-        irq_uninit((struct comms_uart_int_driven *)transport->ctx);
+        irq_uninit(transport->ctx);
     } else {
-        polling_uninit((struct comms_uart_polling *)transport->ctx);
+        polling_uninit(transport->ctx);
     }
 
     return 0;
 }
 
 static int enable(const struct comms_transport *transport, bool blocking_tx) {
-    struct comms_uart_common *sh_uart =
-        (struct comms_uart_common *)transport->ctx;
+    struct comms_uart_common *sh_uart = transport->ctx;
 
     sh_uart->blocking_tx =
         blocking_tx ||
@@ -241,7 +238,7 @@ static int enable(const struct comms_transport *transport, bool blocking_tx) {
 
 static int polling_write(struct comms_uart_common *sh_uart, const void *data,
                          size_t length, size_t *cnt) {
-    const uint8_t *data8 = (const uint8_t *)data;
+    const uint8_t *data8 = data;
 
     for (size_t i = 0; i < length; i++) {
         uart_poll_out(sh_uart->dev, data8[i]);
@@ -267,8 +264,7 @@ static int irq_write(struct comms_uart_int_driven *sh_uart, const void *data,
 
 static int write_uart(const struct comms_transport *transport, const void *data,
                       size_t length, size_t *cnt) {
-    struct comms_uart_common *sh_uart =
-        (struct comms_uart_common *)transport->ctx;
+    struct comms_uart_common *sh_uart = transport->ctx;
 
     serial_leds_update_state(LED_START_TX);
 
@@ -276,8 +272,7 @@ static int write_uart(const struct comms_transport *transport, const void *data,
         sh_uart->blocking_tx) {
         return polling_write(sh_uart, data, length, cnt);
     }
-    return irq_write((struct comms_uart_int_driven *)transport->ctx, data,
-                     length, cnt);
+    return irq_write(transport->ctx, data, length, cnt);
 }
 
 static int irq_read(struct comms_uart_int_driven *sh_uart, void *data,
@@ -297,11 +292,9 @@ static int polling_read(struct comms_uart_polling *sh_uart, void *data,
 static int read_uart(const struct comms_transport *transport, void *data,
                      size_t length, size_t *cnt) {
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
-        return irq_read((struct comms_uart_int_driven *)transport->ctx, data,
-                        length, cnt);
+        return irq_read(transport->ctx, data, length, cnt);
     }
-    return polling_read((struct comms_uart_polling *)transport->ctx, data,
-                        length, cnt);
+    return polling_read(transport->ctx, data, length, cnt);
 }
 
 #ifdef CONFIG_USB_DEVICE_STACK
