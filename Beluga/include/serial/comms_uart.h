@@ -65,7 +65,7 @@ struct comms_uart_polling {
  */
 #define COMMS_UART_DEFINE(_name)                                               \
     static COMMS_UART_STRUCT _name##_comms_uart;                               \
-    struct comms_transport _name = {                                           \
+    static struct comms_transport _name = {                                    \
         .api = &comms_uart_transport_api,                                      \
         .ctx = (struct comms_telnet *)&_name##_comms_uart,                     \
     }

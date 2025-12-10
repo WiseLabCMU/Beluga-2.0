@@ -304,16 +304,14 @@ struct comms {
  * @param[in] _transport Pointer to the transport interface.
  */
 #define COMMS_DEFINE(_name, _transport)                                        \
-    static const struct comms _name;                                           \
     static struct comms_ctx UTIL_CAT(_name, _ctx);                             \
     static K_KERNEL_STACK_DEFINE(_name##_stack, CONFIG_COMMANDS_STACK_SIZE);   \
     static struct k_thread _name##_thread;                                     \
-    static const STRUCT_SECTION_ITERABLE(comms, _name) = {                     \
-        .iface = (_transport),                                                 \
-        .ctx = &UTIL_CAT(_name, _ctx),                                         \
-        .name = STRINGIFY(_name),                                              \
-        .thread = &_name##_thread,                                             \
-        .stack = _name##_stack}
+    static const struct comms _name = {.iface = (_transport),                  \
+                                       .ctx = &UTIL_CAT(_name, _ctx),          \
+                                       .name = STRINGIFY(_name),               \
+                                       .thread = &_name##_thread,              \
+                                       .stack = _name##_stack}
 
 /**
  * @brief Function for initializing a transport layer and internal comms state.

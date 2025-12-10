@@ -327,19 +327,8 @@ const struct comms_transport_api comms_uart_transport_api = {
 #endif // CONFIG_USB_DEVICE_STACK
 };
 
-static COMMS_UART_STRUCT comms_transport_uart_comms_uart_api;
-static struct comms_transport comms_transport_uart = {
-    .api = &comms_uart_transport_api,
-    .ctx = (struct comms_telnet *)&comms_transport_uart_comms_uart_api,
-};
-static struct comms_ctx comms_uart_ctx;
-static K_KERNEL_STACK_DEFINE(comms_uart_stack, CONFIG_COMMANDS_STACK_SIZE);
-static struct k_thread comms_uart_thread;
-static const struct comms comms_uart = {.iface = &comms_transport_uart,
-                                        .ctx = &comms_uart_ctx,
-                                        .name = "comms_uart",
-                                        .thread = &comms_uart_thread,
-                                        .stack = comms_uart_stack};
+COMMS_UART_DEFINE(comms_transport_uart);
+COMMS_DEFINE(comms_uart, &comms_transport_uart);
 
 static int enable_comms_uart(void) {
     const struct device *const dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
