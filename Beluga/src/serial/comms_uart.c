@@ -19,61 +19,12 @@ LOG_MODULE_REGISTER(comms_uart, CONFIG_COMMS_SERIAL_LOG_LEVEL);
 #define RX_POLL_PERIOD K_NO_WAIT
 #endif // defined(CONFIG_COMMS_BACKEND_SERIAL_RX_POLL_PERIOD)
 
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-NET_BUF_POOL_DEFINE(smp_comms_rx_pool,
-                    CONFIG_MCUMGR_TRANSPORT_COMMS_RX_BUF_COUNT,
-                    SMP_SHELL_RX_BUF_SIZE, 0, NULL);
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
-
-static void async_callback(const struct device *dev, struct uart_event *evt,
-                           void *user_data) {
-    struct comms_uart_async *sh_uart = (struct comms_uart_async *)user_data;
-
-    switch (evt->type) {
-    case UART_TX_DONE:
-        k_sem_give(&sh_uart->tx_sem);
-        break;
-    case UART_RX_RDY:
-        uart_async_rx_on_rdy(&sh_uart->async_rx, evt->data.rx.buf,
-                             evt->data.rx.len);
-        sh_uart->common.handler(COMMS_TRANSPORT_EVT_RX_RDY,
-                                sh_uart->common.context);
-        break;
-    case UART_RX_BUF_REQUEST: {
-        uint8_t *buf = uart_async_rx_buf_req(&sh_uart->async_rx);
-        size_t len = uart_async_rx_get_buf_len(&sh_uart->async_rx);
-
-        if (buf) {
-            int err = uart_rx_buf_rsp(dev, buf, len);
-
-            if (err < 0) {
-                uart_async_rx_on_buf_rel(&sh_uart->async_rx, buf);
-            }
-        } else {
-            atomic_inc(&sh_uart->pending_rx_req);
-        }
-
-        break;
-    }
-    case UART_RX_BUF_RELEASED:
-        uart_async_rx_on_buf_rel(&sh_uart->async_rx, evt->data.rx_buf.buf);
-        break;
-    case UART_RX_DISABLED:
-        break;
-    default:
-        break;
-    }
-}
-
 static void uart_rx_handle(const struct device *dev,
                            struct comms_uart_int_driven *sh_uart) {
     uint8_t *data;
     uint32_t len;
     uint32_t rd_len;
     bool new_data = false;
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-    struct smp_comms_data *const smp = &sh_uart->common.smp;
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 
     do {
         len = ring_buf_put_claim(&sh_uart->rx_ringbuf, &data,
@@ -89,20 +40,6 @@ static void uart_rx_handle(const struct device *dev,
             if (rd_len > 0) {
                 new_data = true;
             }
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-            /* Divert bytes from shell handling if it is
-             * part of an mcumgr frame.
-             */
-            size_t i = smp_comms_rx_bytes(smp, data, rd_len);
-
-            rd_len -= i;
-
-            if (rd_len) {
-                for (uint32_t j = 0; j < rd_len; j++) {
-                    data[j] = data[i + j];
-                }
-            }
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
             int err = ring_buf_put_finish(&sh_uart->rx_ringbuf, rd_len);
             (void)err;
             __ASSERT_NO_MSG(err == 0);
@@ -113,14 +50,6 @@ static void uart_rx_handle(const struct device *dev,
             LOG_WRN("RX ring buffer full.");
 
             rd_len = uart_fifo_read(dev, &dummy, 1);
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-            /* If successful in getting byte from the fifo, try
-             * feeding it to SMP as a part of mcumgr frame.
-             */
-            if ((rd_len != 0) && (smp_comms_rx_bytes(smp, &dummy, 1) == 1)) {
-                new_data = true;
-            }
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
         }
     } while (rd_len && (rd_len == len));
 
@@ -228,38 +157,6 @@ static void irq_init(struct comms_uart_int_driven *sh_uart) {
     }
 }
 
-static int rx_enable(const struct device *dev, uint8_t *buf, size_t len) {
-    return uart_rx_enable(dev, buf, len, 10000);
-}
-
-static void async_init(struct comms_uart_async *sh_uart) {
-    const struct device *dev = sh_uart->common.dev;
-    struct uart_async_rx *async_rx = &sh_uart->async_rx;
-    int err;
-
-    sh_uart->async_rx_config = (struct uart_async_rx_config){
-        .buffer = sh_uart->rx_data,
-        .length = ASYNC_RX_BUF_SIZE,
-        .buf_cnt = CONFIG_COMMS_BACKEND_SERIAL_ASYNC_RX_BUFFER_COUNT,
-    };
-
-    k_sem_init(&sh_uart->tx_sem, 0, 1);
-
-    err = uart_async_rx_init(async_rx, &sh_uart->async_rx_config);
-    (void)err;
-    __ASSERT_NO_MSG(err == 0);
-
-    uint8_t *buf = uart_async_rx_buf_req(async_rx);
-
-    err = uart_callback_set(dev, async_callback, (void *)sh_uart);
-    (void)err;
-    __ASSERT_NO_MSG(err == 0);
-
-    err = rx_enable(dev, buf, uart_async_rx_get_buf_len(async_rx));
-    (void)err;
-    __ASSERT_NO_MSG(err == 0);
-}
-
 static void polling_rx_timeout_handler(struct k_timer *timer) {
     uint8_t c;
     struct comms_uart_polling *sh_uart = k_timer_user_data_get(timer);
@@ -295,14 +192,7 @@ static int init(const struct comms_transport *transport, const void *config,
 
     serial_leds_init();
 
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-    common->smp.buf_pool = &smp_comms_rx_pool;
-    k_fifo_init(&common->smp.buf_ready);
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
-
-    if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_ASYNC)) {
-        async_init((struct comms_uart_async *)transport->ctx);
-    } else if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
+    if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
         irq_init((struct comms_uart_int_driven *)transport->ctx);
     } else {
         polling_init((struct comms_uart_polling *)transport->ctx);
@@ -319,16 +209,12 @@ static void irq_uninit(struct comms_uart_int_driven *sh_uart) {
     uart_irq_rx_disable(dev);
 }
 
-static void async_uninit(struct comms_uart_async *sh_uart) {}
-
 static void polling_uninit(struct comms_uart_polling *sh_uart) {
     k_timer_stop(&sh_uart->rx_timer);
 }
 
 static int uninit(const struct comms_transport *transport) {
-    if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_ASYNC)) {
-        async_uninit((struct comms_uart_async *)transport->ctx);
-    } else if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
+    if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
         irq_uninit((struct comms_uart_int_driven *)transport->ctx);
     } else {
         polling_uninit((struct comms_uart_polling *)transport->ctx);
@@ -379,25 +265,6 @@ static int irq_write(struct comms_uart_int_driven *sh_uart, const void *data,
     return 0;
 }
 
-static int async_write(struct comms_uart_async *sh_uart, const void *data,
-                       size_t length, size_t *cnt) {
-    int err;
-
-    err = uart_tx(sh_uart->common.dev, data, length, SYS_FOREVER_US);
-    if (err < 0) {
-        *cnt = 0;
-        return err;
-    }
-
-    err = k_sem_take(&sh_uart->tx_sem, K_FOREVER);
-    *cnt = length;
-
-    sh_uart->common.handler(COMMS_TRANSPORT_EVT_TX_RDY,
-                            sh_uart->common.context);
-
-    return err;
-}
-
 static int write_uart(const struct comms_transport *transport, const void *data,
                       size_t length, size_t *cnt) {
     struct comms_uart_common *sh_uart =
@@ -408,13 +275,9 @@ static int write_uart(const struct comms_transport *transport, const void *data,
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_POLLING) ||
         sh_uart->blocking_tx) {
         return polling_write(sh_uart, data, length, cnt);
-    } else if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
-        return irq_write((struct comms_uart_int_driven *)transport->ctx, data,
-                         length, cnt);
-    } else {
-        return async_write((struct comms_uart_async *)transport->ctx, data,
-                           length, cnt);
     }
+    return irq_write((struct comms_uart_int_driven *)transport->ctx, data,
+                     length, cnt);
 }
 
 static int irq_read(struct comms_uart_int_driven *sh_uart, void *data,
@@ -431,77 +294,15 @@ static int polling_read(struct comms_uart_polling *sh_uart, void *data,
     return 0;
 }
 
-static int async_read(struct comms_uart_async *sh_uart, void *data,
-                      size_t length, size_t *cnt) {
-    uint8_t *buf;
-    size_t blen;
-    struct uart_async_rx *async_rx = &sh_uart->async_rx;
-
-    blen = uart_async_rx_data_claim(async_rx, &buf, length);
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-    struct smp_comms_data *const smp = &sh_uart->common.smp;
-    size_t sh_cnt = 0;
-
-    for (size_t i = 0; i < blen; i++) {
-        if (smp_comms_rx_bytes(smp, &buf[i], 1) == 0) {
-            ((uint8_t *)data)[sh_cnt++] = buf[i];
-        }
-    }
-#else
-    size_t sh_cnt = blen;
-    memcpy(data, buf, blen);
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
-    bool buf_available = uart_async_rx_data_consume(async_rx, sh_cnt);
-    *cnt = sh_cnt;
-
-    if (sh_uart->pending_rx_req && buf_available) {
-        uint8_t *buf = uart_async_rx_buf_req(async_rx);
-        size_t len = uart_async_rx_get_buf_len(async_rx);
-        int err;
-
-        __ASSERT_NO_MSG(buf != NULL);
-        atomic_dec(&sh_uart->pending_rx_req);
-        err = uart_rx_buf_rsp(sh_uart->common.dev, buf, len);
-        /* If it is too late and RX is disabled then re-enable it. */
-        if (err < 0) {
-            if (err == -EACCES) {
-                sh_uart->pending_rx_req = 0;
-                (void)rx_enable(sh_uart->common.dev, buf, len);
-            } else {
-                return err;
-            }
-        }
-    }
-
-    return 0;
-}
-
 static int read_uart(const struct comms_transport *transport, void *data,
                      size_t length, size_t *cnt) {
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN)) {
         return irq_read((struct comms_uart_int_driven *)transport->ctx, data,
                         length, cnt);
-    } else if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_ASYNC)) {
-        return async_read((struct comms_uart_async *)transport->ctx, data,
-                          length, cnt);
-    } else {
-        return polling_read((struct comms_uart_polling *)transport->ctx, data,
-                            length, cnt);
     }
+    return polling_read((struct comms_uart_polling *)transport->ctx, data,
+                        length, cnt);
 }
-
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-static void update(const struct comms_transport *transport) {
-    /*
-     * This is dependent on the fact that `struct shell_uart_common`
-     * is always the first member, regardless of the UART configuration
-     */
-    struct comms_uart_common *sh_uart =
-        (struct comms_uart_common *)transport->ctx;
-
-    smp_comms_process(&sh_uart->smp);
-}
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 
 #ifdef CONFIG_USB_DEVICE_STACK
 static void wait_dtr(const struct comms_transport *transport) {
@@ -521,25 +322,24 @@ const struct comms_transport_api comms_uart_transport_api = {
     .enable = enable,
     .write = write_uart,
     .read = read_uart,
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-    .update = update,
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 #ifdef CONFIG_USB_DEVICE_STACK
     .wait_dtr = wait_dtr,
 #endif // CONFIG_USB_DEVICE_STACK
 };
 
-COMMS_UART_DEFINE(comms_transport_uart);
-COMMS_DEFINE(comms_uart, &comms_transport_uart);
-
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-struct smp_comms_data *comms_uart_smp_comms_data_get_ptr(void) {
-    struct comms_uart_common *common =
-        (struct comms_uart_common *)comms_transport_uart.ctx;
-
-    return &common->smp;
-}
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
+static COMMS_UART_STRUCT comms_transport_uart_comms_uart_api;
+static struct comms_transport comms_transport_uart = {
+    .api = &comms_uart_transport_api,
+    .ctx = (struct comms_telnet *)&comms_transport_uart_comms_uart_api,
+};
+static struct comms_ctx comms_uart_ctx;
+static K_KERNEL_STACK_DEFINE(comms_uart_stack, CONFIG_COMMANDS_STACK_SIZE);
+static struct k_thread comms_uart_thread;
+static const struct comms comms_uart = {.iface = &comms_transport_uart,
+                                        .ctx = &comms_uart_ctx,
+                                        .name = "comms_uart",
+                                        .thread = &comms_uart_thread,
+                                        .stack = comms_uart_stack};
 
 static int enable_comms_uart(void) {
     const struct device *const dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
@@ -555,9 +355,6 @@ static int enable_comms_uart(void) {
         }
     }
 
-    if (IS_ENABLED(CONFIG_MCUMGR_TRANSPORT_COMMS)) {
-        smp_comms_init();
-    }
     comms_init(&comms_uart, dev);
 
     return 0;

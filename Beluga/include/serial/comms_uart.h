@@ -30,27 +30,11 @@ extern const struct comms_transport_api comms_uart_transport_api;
 #define CONFIG_COMMS_BACKEND_SERIAL_TX_RING_BUFFER_SIZE 0
 #endif
 
-#ifndef CONFIG_COMMS_BACKEND_SERIAL_ASYNC_RX_BUFFER_COUNT
-#define CONFIG_COMMS_BACKEND_SERIAL_ASYNC_RX_BUFFER_COUNT 0
-#endif
-
-#ifndef CONFIG_COMMS_BACKEND_SERIAL_ASYNC_RX_BUFFER_SIZE
-#define CONFIG_COMMS_BACKEND_SERIAL_ASYNC_RX_BUFFER_SIZE 0
-#endif
-
-#define ASYNC_RX_BUF_SIZE                                                      \
-    (CONFIG_COMMS_BACKEND_SERIAL_ASYNC_RX_BUFFER_COUNT *                       \
-     (CONFIG_COMMS_BACKEND_SERIAL_ASYNC_RX_BUFFER_SIZE +                       \
-      UART_ASYNC_RX_BUF_OVERHEAD))
-
 struct comms_uart_common {
     const struct device *dev;
     comms_transport_handler_t handler;
     void *context;
     bool blocking_tx;
-#ifdef CONFIG_MCUMGR_TRANSPORT_COMMS
-    struct smp_comms_data smp;
-#endif // CONFIG_MCUMGR_TRANSPORT_COMMS
 };
 
 struct comms_uart_int_driven {
@@ -63,15 +47,6 @@ struct comms_uart_int_driven {
     atomic_t tx_busy;
 };
 
-struct comms_uart_async {
-    struct comms_uart_common common;
-    struct k_sem tx_sem;
-    struct uart_async_rx async_rx;
-    struct uart_async_rx_config async_rx_config;
-    atomic_t pending_rx_req;
-    uint8_t rx_data[ASYNC_RX_BUF_SIZE];
-};
-
 struct comms_uart_polling {
     struct comms_uart_common common;
     struct ring_buf rx_ringbuf;
@@ -81,8 +56,6 @@ struct comms_uart_polling {
 
 #if defined(CONFIG_COMMS_BACKEND_SERIAL_API_POLLING)
 #define COMMS_UART_STRUCT struct comms_uart_polling
-#elif defined(CONFIG_COMMS_BACKEND_SERIAL_API_ASYNC)
-#define COMMS_UART_STRUCT struct comms_uart_async
 #else
 #define COMMS_UART_STRUCT struct comms_uart_int_driven
 #endif

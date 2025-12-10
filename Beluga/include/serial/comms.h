@@ -318,7 +318,7 @@ struct comms {
 /**
  * @brief Function for initializing a transport layer and internal comms state.
  *
- * @param[in] sh		Pointer to comms instance.
+ * @param[in] comms		Pointer to comms instance.
  * @param[in] transport_config	Transport configuration during initialization.
  *
  * @return Standard error code.
@@ -329,7 +329,7 @@ int comms_init(const struct comms *comms, const void *transport_config);
  * @brief Process function, which should be executed when data is ready in the
  *	  transport interface.
  *
- * @param[in] sh Pointer to the comms instance.
+ * @param[in] comms Pointer to the comms instance.
  */
 void comms_process(const struct comms *comms);
 
