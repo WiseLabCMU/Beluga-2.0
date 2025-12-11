@@ -1309,7 +1309,7 @@ AT_COMMAND(WAITUSBHOST) {
         ERROR(comms, "Argument must be 0 or 1");
     }
 
-    // TODO: Update comms setting
+    set_wait_usb_host(comms, mode != 0);
 
     updateSetting(BELUGA_WAIT_USB_HOST, mode);
     AT_OK(comms, "Wait USB host: %" PRId32, mode);

@@ -604,6 +604,15 @@ static void update_power_mode_(uint8_t pwramp) {
     updateSetting(BELUGA_RANGE_EXTEND, pwramp);
 }
 
+static void finalize_serial_setup(const struct comms *comms) {
+    int32_t block = retrieveSetting(BELUGA_WAIT_USB_HOST);
+    set_wait_usb_host(comms, block != 0);
+
+    if (block != 0) {
+        wait_comms_ready(comms);
+    }
+}
+
 /**
  * @brief Main entry point of the application
  * @return 1 on error
@@ -649,7 +658,7 @@ int main(void) {
     }
 
     LOG_INF("Module initialization done. Waiting for DTR to be asserted");
-    wait_comms_ready(comms);
+    finalize_serial_setup(comms);
 
     init_uwb();
 
