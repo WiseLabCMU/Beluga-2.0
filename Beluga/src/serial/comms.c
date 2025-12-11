@@ -541,6 +541,21 @@ int set_format(const struct comms *comms, enum comms_out_format_mode mode) {
     return 0;
 }
 
+int set_wait_usb_host(const struct comms *comms, bool block) {
+    if (comms == NULL) {
+        return -EINVAL;
+    }
+    _COMMS_API(comms, block_no_usb_host, block);
+    return 0;
+}
+
+bool comms_check_rx_error(const struct comms *comms) {
+    if (comms == NULL) {
+        return -EINVAL;
+    }
+    return _COMMS_API(comms, rx_error);
+}
+
 /**
  * @brief Generates the header output for ASCII mode
  *

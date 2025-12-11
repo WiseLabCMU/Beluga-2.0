@@ -12,6 +12,7 @@ class FrameType(ZeroBasedEnum):
     DROP = auto()
     START = auto()
     RANGING_DROP = auto()
+    FATAL_ERROR = auto()
     NO_TYPE = auto()
 
     def __str__(self):
@@ -120,6 +121,8 @@ class BelugaFrame:
                 payload = payload_.decode()
             case FrameType.RANGING_DROP:
                 payload = json.loads(payload_.decode())
+            case FrameType.FATAL_ERROR:
+                payload = payload_.decode()
             case _:
                 raise ValueError("Invalid type")
 

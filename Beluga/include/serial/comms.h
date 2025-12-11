@@ -196,6 +196,28 @@ struct comms_transport_api {
      * @param[in] transport Pointer to the transfer instance
      */
     void (*wait_dtr)(const struct comms_transport *transport);
+
+    /**
+     * @brief Function that checks if there was a reception error.
+     *
+     * @param[in] transport Pointer to the transfer instance.
+     *
+     * @return `true` if there was a UART receive error.
+     * @return `false` if no error occurred.
+     */
+    bool (*rx_error)(const struct comms_transport *transport);
+
+    /**
+     * @brief Function that sets up the transport in blocking/non-blocking mode
+     * while waiting for a host connection.
+     *
+     * @param[in] transport Pointer to the transfer instance.
+     * @param[in] block If `true`, sets up the transport to wait for a host
+     * connection. If `false`, sets up the transport to not wait for a host
+     * connection.
+     */
+    void (*block_no_usb_host)(const struct comms_transport *transport,
+                              bool block);
 };
 
 /**
@@ -304,21 +326,19 @@ struct comms {
  * @param[in] _transport Pointer to the transport interface.
  */
 #define COMMS_DEFINE(_name, _transport)                                        \
-    static const struct comms _name;                                           \
     static struct comms_ctx UTIL_CAT(_name, _ctx);                             \
     static K_KERNEL_STACK_DEFINE(_name##_stack, CONFIG_COMMANDS_STACK_SIZE);   \
     static struct k_thread _name##_thread;                                     \
-    static const STRUCT_SECTION_ITERABLE(comms, _name) = {                     \
-        .iface = (_transport),                                                 \
-        .ctx = &UTIL_CAT(_name, _ctx),                                         \
-        .name = STRINGIFY(_name),                                              \
-        .thread = &_name##_thread,                                             \
-        .stack = _name##_stack}
+    static const struct comms _name = {.iface = (_transport),                  \
+                                       .ctx = &UTIL_CAT(_name, _ctx),          \
+                                       .name = STRINGIFY(_name),               \
+                                       .thread = &_name##_thread,              \
+                                       .stack = _name##_stack}
 
 /**
  * @brief Function for initializing a transport layer and internal comms state.
  *
- * @param[in] sh		Pointer to comms instance.
+ * @param[in] comms		Pointer to comms instance.
  * @param[in] transport_config	Transport configuration during initialization.
  *
  * @return Standard error code.
@@ -329,7 +349,7 @@ int comms_init(const struct comms *comms, const void *transport_config);
  * @brief Process function, which should be executed when data is ready in the
  *	  transport interface.
  *
- * @param[in] sh Pointer to the comms instance.
+ * @param[in] comms Pointer to the comms instance.
  */
 void comms_process(const struct comms *comms);
 
@@ -410,6 +430,18 @@ int wait_comms_ready(const struct comms *comms);
  * @return -EINVAL if input is invalid
  */
 int set_verbosity(const struct comms *comms, bool verbose);
+
+/**
+ * @brief Determines if the transmitter should block if there is no USB host
+ * connection.
+ * @param comms The comms object.
+ * @param block Flag to determine if the transmitter should wait for a host
+ * connection.
+ * @return 0 upon success.
+ */
+int set_wait_usb_host(const struct comms *comms, bool block);
+
+bool comms_check_rx_error(const struct comms *comms);
 
 /**
  * @brief Helper that prints an AT command response and indicates that the

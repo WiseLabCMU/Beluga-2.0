@@ -444,6 +444,12 @@ std::string BelugaSerialBase::_format(const std::string &mode) {
     return _send_command(oss.str());
 }
 
+std::string BelugaSerialBase::_waitusbhost(const std::string &mode) {
+    std::stringstream oss;
+    oss << "AT+WAITUSBHOST" << mode << "\r\n";
+    return _send_command(oss.str());
+}
+
 std::string BelugaSerialBase::deepsleep() {
     return _send_command("AT+DEEPSLEEP\r\n");
 }
@@ -531,6 +537,9 @@ void BelugaSerialBase::start() {
     // Ensure that we are in the correct format mode otherwise this program will
     // crash like the Hindenburg
     _format("2");
+    // Tell node to wait for a USB host connection so we can detect its
+    // fuck-ups...
+    _waitusbhost("1");
     std::string id = this->id();
     _id = _extract_id(id);
 }
