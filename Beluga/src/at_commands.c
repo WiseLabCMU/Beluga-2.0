@@ -1295,3 +1295,22 @@ AT_COMMAND(NEIGHBORS) {
 
     OK(comms, msg);
 }
+
+AT_COMMAND(WAITUSBHOST) {
+    READ_SETTING(comms, argc, 2, BELUGA_WAIT_USB_HOST,
+                 "Wait for USB host connection");
+    int32_t mode;
+
+    if (!strtoint32(argv[1], &mode)) {
+        ERROR(comms, "Argument must be an integer");
+    }
+
+    if (mode != INT32_C(0) && mode != INT32_C(1)) {
+        ERROR(comms, "Argument must be 0 or 1");
+    }
+
+    // TODO: Update comms setting
+
+    updateSetting(BELUGA_WAIT_USB_HOST, mode);
+    AT_OK(comms, "Wait USB host: %" PRId32, mode);
+}
