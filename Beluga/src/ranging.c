@@ -195,6 +195,10 @@ static struct advertising_info uwb_metadata = {
         advertising_reconfig(&uwb_metadata);                                   \
     } while (0)
 
+#define RANGING_THREAD_NAME   "Ranging task"
+
+#define RESPONDER_THREAD_NAME "Responder task"
+
 /**
  * The number of milliseconds between initiator runs
  */
@@ -239,13 +243,13 @@ static dwt_txconfig_t config_tx = {TC_PGDELAY_CH5, TX_POWER_MAN_DEFAULT};
  * The watchdog timer instance for the ranging.
  */
 static struct task_wdt_attr ranging_watchdog_attr =
-    TASK_WDT_INITIALIZER(RANGING_WDT_PERIOD);
+    TASK_WDT_INITIALIZER(RANGING_WDT_PERIOD, RANGING_THREAD_NAME);
 
 /**
  * The watchdog timer instance for the responder task.
  */
 static struct task_wdt_attr responder_wdt =
-    TASK_WDT_INITIALIZER(5 * CONFIG_RESPONDER_TIMEOUT);
+    TASK_WDT_INITIALIZER(5 * CONFIG_RESPONDER_TIMEOUT, RESPONDER_THREAD_NAME);
 
 #if defined(CONFIG_ENABLE_RANGING)
 static void rangingTask(void *p1, void *p2, void *p3);
@@ -256,7 +260,7 @@ K_THREAD_DEFINE(ranging_task, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
  * @brief Creates the ranging thread and initiates its data
  */
 void init_ranging_thread(void) {
-    k_thread_name_set(ranging_task, "Ranging task");
+    k_thread_name_set(ranging_task, RANGING_THREAD_NAME);
     k_thread_start(ranging_task);
     LOG_INF("Started ranging");
 }
@@ -277,7 +281,7 @@ K_THREAD_DEFINE(responder_task, CONFIG_RESPONDER_STACK_SIZE,
  * @brief Creates the responder thread and initiates its data
  */
 void init_responder_thread(void) {
-    k_thread_name_set(responder_task, "Responder task");
+    k_thread_name_set(responder_task, RESPONDER_THREAD_NAME);
     k_thread_start(responder_task);
     LOG_INF("Started responder");
 }

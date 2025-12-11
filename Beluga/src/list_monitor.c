@@ -53,6 +53,8 @@ LOG_MODULE_REGISTER(list_monitor, CONFIG_LIST_MONITOR_LOG_LEVEL);
  */
 #define RESUME_NEIGHBOR_SCANNING() resume_scanning()
 
+#define MONITOR_THREAD_NAME        "Neighbors monitor"
+
 /**
  * Number of milliseconds allowed to elapse before evicting a neighbor
  */
@@ -66,7 +68,8 @@ static bool _node_added = false;
 /**
  * Watchdog attributes for list monitor.
  */
-static struct task_wdt_attr watchdogAttr = TASK_WDT_INITIALIZER(3000);
+static struct task_wdt_attr watchdogAttr =
+    TASK_WDT_INITIALIZER(3000, MONITOR_THREAD_NAME);
 
 /**
  * @brief Set the timeout value for node eviction.
@@ -223,7 +226,7 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
         LOG_ERR("Unable to spawn watchdog for monitor thread.\n");
-        while (1)
+        while (1) // todo
             ;
     }
 
@@ -258,7 +261,7 @@ K_THREAD_DEFINE(monitor_task, CONFIG_MONITOR_STACK_SIZE, monitor_task_function,
  * @brief Initializes and starts the list monitor thread
  */
 void init_monitor_thread(void) {
-    k_thread_name_set(monitor_task, "Neighbors monitor");
+    k_thread_name_set(monitor_task, MONITOR_THREAD_NAME);
     k_thread_start(monitor_task);
     LOG_INF("Started monitor");
 }
