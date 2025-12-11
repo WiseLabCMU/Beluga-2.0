@@ -431,7 +431,15 @@ int wait_comms_ready(const struct comms *comms);
  */
 int set_verbosity(const struct comms *comms, bool verbose);
 
-int set_wait_usb_host(const struct comms *comms, bool wait);
+/**
+ * @brief Determines if the transmitter should block if there is no USB host
+ * connection.
+ * @param comms The comms object.
+ * @param block Flag to determine if the transmitter should wait for a host
+ * connection.
+ * @return 0 upon success.
+ */
+int set_wait_usb_host(const struct comms *comms, bool block);
 
 /**
  * @brief Helper that prints an AT command response and indicates that the
