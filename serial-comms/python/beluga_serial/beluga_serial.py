@@ -115,6 +115,15 @@ class BelugaStatus:
     def dynamic_eviction_scheme_support(self):
         return self._dynamic_eviction_scheme_support
 
+    def __repr__(self) -> str:
+        return f"Board Name: {self._name}\n" \
+               f"External UWB Amplifier: {'Supported' if self._uwb_amplifier else 'Not supported'}\n" \
+               f"External BLE Amplifier: {'Supported' if self._ble_amplifier else 'Not supported'}\n" \
+               f"Secondary Antenna: {'Not supported' if not self._secondary_antenna else 'Active' if self._using_second_antenna else 'Inactive'}\n" \
+               f"BLE: {'On' if self._ble_active else 'Off'}\n" \
+               f"UWB: {'On' if self._uwb_active else 'Off'}\n" \
+               f"Dynamic Eviction Scheme Support: {'Yes' if self._dynamic_eviction_scheme_support else 'No'}"
+
 
 @dataclass(init=True)
 class BelugaSerialAttr:

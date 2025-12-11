@@ -361,14 +361,13 @@ class BelugaTerminal(cmd2.Cmd):
         """
         Retrieve the current status of the Beluga node
         """
-        response = self._serial.status() # TODO: Fixme
+        response = self._serial.status()
         try:
             status = unpack_beluga_status(response)
         except ValueError:
             print(response)
             return
-        for key in status:
-            print(f"{key}: {status[key]}")
+        print(status, end='\n\n')
 
     @serial_command
     def do_version(self, arg):
