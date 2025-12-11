@@ -14,7 +14,6 @@ import time
 from dataclasses import dataclass
 import enum
 
-from tools.bridge_agent.bridge_agent import payload_length_bytes
 from .beluga_frame import BelugaFrame, FrameType
 from .beluga_neighbor import BelugaNeighborList
 from .beluga_queue import BelugaQueue
@@ -864,19 +863,15 @@ class BelugaSerial:
         """
         return self._send_command(value=node)
 
-    def calibrate(self, delay_id: Optional[int] = None, delay: Optional[int] = None):
+    def calibrate(self, delay_args: Optional[str] = None):
         """
         Calibrate the given antenna delay.
 
-        :param delay_id: The delay ID
-        :param delay: The antenna delay
+        :param delay_args: The antenna delay arguments
         :return: The command response or a timeout message
         :rtype: str
         """
-        payload = None
-        if delay_id is not None:
-            payload = f"{delay_id} {delay}"
-        return self._send_command(value=payload)
+        return self._send_command(value=delay_args)
 
     def reason(self):
         """
@@ -923,7 +918,7 @@ class BelugaSerial:
         :return: The command response or a timeout message
         :rtype: str
         """
-        self._send_command(value=mode)
+        return self._send_command(value=mode)
 
     def start(self):
         """

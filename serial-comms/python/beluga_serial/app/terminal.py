@@ -361,7 +361,7 @@ class BelugaTerminal(cmd2.Cmd):
         """
         Retrieve the current status of the Beluga node
         """
-        response = self._serial.status()
+        response = self._serial.status() # TODO: Fixme
         try:
             status = unpack_beluga_status(response)
         except ValueError:
@@ -376,6 +376,48 @@ class BelugaTerminal(cmd2.Cmd):
         Get the firmware version of the Beluga node
         """
         print(self._serial.version())
+
+    @serial_command
+    def do_sync(self, arg):
+        """
+        Synchronize another node's settings with the connected node
+        """
+        print(self._serial.sync(arg))
+
+    @serial_command
+    def do_calibrate(self, arg):
+        """
+        Calibrate the antenna delay
+        """
+        print(self._serial.calibrate(arg))
+
+    @serial_command
+    def do_reason(self, arg):
+        """
+        Retrieve reset reason
+        """
+        print(self._serial.reason())
+
+    @serial_command
+    def do_starve(self, arg):
+        """
+        Starve the given watchdog timer
+        """
+        print(self._serial.starve(arg))
+
+    @serial_command
+    def do_exchange_id(self, arg):
+        """
+        Set a new exchange ID
+        """
+        print(self._serial.exchange(arg))
+
+    @serial_command
+    def do_waitusbhost(self, arg):
+        """
+        Tell the node to wait for a USB host connection before transmitting data or not to wait for a USB host connection
+        """
+        print(self._serial.waitusbhost(arg))
 
     def do_neighbors(self, arg):
         """Display the most recent neighbor list."""
@@ -454,9 +496,11 @@ def main():
     setattr(BelugaTerminal, 'do_stream-neighbors', BelugaTerminal.do_stream_neighbors)
     setattr(BelugaTerminal, 'do_stream-ranges', BelugaTerminal.do_stream_ranges)
     setattr(BelugaTerminal, 'do_stream-exchanges', BelugaTerminal.do_stream_exchanges)
+    setattr(BelugaTerminal, 'do_exchange-id', BelugaTerminal.do_exchange_id)
     del BelugaTerminal.do_stream_neighbors
     del BelugaTerminal.do_stream_ranges
     del BelugaTerminal.do_stream_exchanges
+    del BelugaTerminal.do_exchange_id
     # Run
     BelugaTerminal().cmdloop()
 
