@@ -13,6 +13,8 @@ import queue
 import time
 from dataclasses import dataclass
 import enum
+
+from tools.bridge_agent.bridge_agent import payload_length_bytes
 from .beluga_frame import BelugaFrame, FrameType
 from .beluga_neighbor import BelugaNeighborList
 from .beluga_queue import BelugaQueue
@@ -142,6 +144,7 @@ class BelugaSerialAttr:
     logger_cb: Optional[Callable[[Any], None]] = None
     auto_connect: bool = True
     neighbor_list_impl: Type[BelugaNeighborList] = BelugaNeighborList
+    fatal_error_cb: Optional[Callable[[str], None]] = None
 
 
 class BelugaSerial:
@@ -246,6 +249,7 @@ class BelugaSerial:
         self._io_hooks = []
 
         self._dropped_uwb_transaction_hook: Optional[Callable[[dict[str, int]], None]] = None
+        self._fatal_error_hook: Optional[Callable[[str], None]] = attr.fatal_error_cb
 
     def __del__(self):
         self.stop()
@@ -343,6 +347,11 @@ class BelugaSerial:
         else:
             self._reboot_done.set()
 
+    def _publish_fatal_error(self, payload: str):
+        if self._fatal_error_hook is None:
+            return
+        self._fatal_error_hook(payload)
+
     def __process_frames(self):
         while self._task_running:
             frame: BelugaFrame = self._batch_queue.get()
@@ -367,6 +376,8 @@ class BelugaSerial:
                 case FrameType.RANGING_DROP:
                     if self._dropped_uwb_transaction_hook is not None:
                         self._dropped_uwb_transaction_hook(frame.payload)
+                case FrameType.FATAL_ERROR:
+                    self._publish_fatal_error(frame.payload)
                 case _:
                     self._log("Invalid frame type")
 
@@ -825,6 +836,7 @@ class BelugaSerial:
         :return: The command response or a timeout message
         :rtype: str
         """
+        return self._send_command(value=mode)
 
     def status(self):
         """
@@ -841,6 +853,77 @@ class BelugaSerial:
         :rtype: str
         """
         return self._send_command()
+
+    def sync(self, node: Optional[int] = None):
+        """
+        Syncs the given node's settings with the connected node's settings
+
+        :param node: The node to sync settings with
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=node)
+
+    def calibrate(self, delay_id: Optional[int] = None, delay: Optional[int] = None):
+        """
+        Calibrate the given antenna delay.
+
+        :param delay_id: The delay ID
+        :param delay: The antenna delay
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        payload = None
+        if delay_id is not None:
+            payload = f"{delay_id} {delay}"
+        return self._send_command(value=payload)
+
+    def reason(self):
+        """
+        Retrieve the reset reason.
+
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
+    def starve(self, channel: Optional[int] = None):
+        """
+        Starve the given watchdog channel.
+
+        :param channel: The watchdog channel to starve
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=channel)
+
+    def exchange(self, exchange_id: Optional[int] = None):
+        """
+        Set a new exchange ID.
+
+        :param exchange_id: The new exchange ID.
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=exchange_id)
+
+    def neighbors(self):
+        """
+        Retrieve the current BLE neighbor list.
+
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
+    def waitusbhost(self, mode: Optional[int] = None):
+        """
+        Tell the node whether to wait for a USB host connection before transmitting or to drop the data and continue
+        :param mode: `0` to drop the data and continue and `1` to wait for a USB host connection
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        self._send_command(value=mode)
 
     def start(self):
         """
