@@ -482,6 +482,7 @@ class BelugaSerialBase {
 
     // Private because we don't want to get car-bombed by the user
     std::string _format(const std::string &mode = "");
+    std::string _waitusbhost(const std::string &mode = "");
 
     BelugaQueue<RangeEvent, 1, true> _range_event_queue;
     std::function<void(const RangeEvent &)> _range_event_cb = nullptr;
