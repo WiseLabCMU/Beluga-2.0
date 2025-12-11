@@ -1296,7 +1296,17 @@ AT_COMMAND(NEIGHBORS) {
     OK(comms, msg);
 }
 
-AT_COMMAND(WAITUSBHOST) {
+/**
+ * Set USB host mode. Depending on the setting, the node
+ * will wait for a USB host connection. Default behavior
+ * is not to wait for a USB host connection.
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success, negative error code otherwise.
+ */
+AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_USB_DEVICE_STACK), WAITUSBHOST) {
     READ_SETTING(comms, argc, 2, BELUGA_WAIT_USB_HOST,
                  "Wait for USB host connection");
     int32_t mode;
