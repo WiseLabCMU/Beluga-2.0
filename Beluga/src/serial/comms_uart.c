@@ -19,6 +19,10 @@ LOG_MODULE_REGISTER(comms_uart, CONFIG_COMMS_SERIAL_LOG_LEVEL);
 #define RX_POLL_PERIOD K_NO_WAIT
 #endif // defined(CONFIG_COMMS_BACKEND_SERIAL_RX_POLL_PERIOD)
 
+enum {
+    BLOCK_NO_USB_HOST,
+};
+
 static void uart_rx_handle(const struct device *dev,
                            struct comms_uart_int_driven *sh_uart) {
     uint8_t *data;
@@ -266,6 +270,12 @@ static int write_uart(const struct comms_transport *transport, const void *data,
                       size_t length, size_t *cnt) {
     struct comms_uart_common *sh_uart = transport->ctx;
 
+    if (!atomic_test_bit(&sh_uart->block_no_usb, BLOCK_NO_USB_HOST) &&
+        !uart_dtr_check(sh_uart->dev)) {
+        *cnt = length;
+        return 0;
+    }
+
     serial_leds_update_state(LED_START_TX);
 
     if (IS_ENABLED(CONFIG_COMMS_BACKEND_SERIAL_API_POLLING) ||
@@ -318,6 +328,17 @@ static bool check_uart_error(const struct comms_transport *transport) {
     return (err != 0) && (err != -ENOSYS);
 }
 
+static void set_block_no_usb_host(const struct comms_transport *transport,
+                                  bool block) {
+    struct comms_uart_common *comms = transport->ctx;
+
+    if (block) {
+        atomic_set_bit(&comms->block_no_usb, BLOCK_NO_USB_HOST);
+    } else {
+        atomic_clear_bit(&comms->block_no_usb, BLOCK_NO_USB_HOST);
+    }
+}
+
 const struct comms_transport_api comms_uart_transport_api = {
     .init = init,
     .uninit = uninit,
@@ -328,6 +349,7 @@ const struct comms_transport_api comms_uart_transport_api = {
     .wait_dtr = wait_dtr,
 #endif // CONFIG_USB_DEVICE_STACK
     .rx_error = check_uart_error,
+    .block_no_usb_host = set_block_no_usb_host,
 };
 
 COMMS_UART_DEFINE(comms_transport_uart);

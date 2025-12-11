@@ -166,6 +166,7 @@ config COMMS_BACKEND_SERIAL_CHECK_DTR
 	bool "Check DTR signal before TX"
 	depends on COMMS_BACKEND_SERIAL_API_INTERRUPT_DRIVEN
 	depends on UART_LINE_CTRL
+	default y
 	help
 	  Check DTR signal before TX.
 

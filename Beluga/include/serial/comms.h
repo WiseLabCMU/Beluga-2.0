@@ -206,6 +206,18 @@ struct comms_transport_api {
      * @return `false` if no error occurred.
      */
     bool (*rx_error)(const struct comms_transport *transport);
+
+    /**
+     * @brief Function that sets up the transport in blocking/non-blocking mode
+     * while waiting for a host connection.
+     *
+     * @param[in] transport Pointer to the transfer instance.
+     * @param[in] block If `true`, sets up the transport to wait for a host
+     * connection. If `false`, sets up the transport to not wait for a host
+     * connection.
+     */
+    void (*block_no_usb_host)(const struct comms_transport *transport,
+                              bool block);
 };
 
 /**
@@ -418,6 +430,8 @@ int wait_comms_ready(const struct comms *comms);
  * @return -EINVAL if input is invalid
  */
 int set_verbosity(const struct comms *comms, bool verbose);
+
+int set_wait_usb_host(const struct comms *comms, bool wait);
 
 /**
  * @brief Helper that prints an AT command response and indicates that the

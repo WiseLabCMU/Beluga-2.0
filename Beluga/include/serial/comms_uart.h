@@ -35,6 +35,7 @@ struct comms_uart_common {
     comms_transport_handler_t handler;
     void *context;
     bool blocking_tx;
+    atomic_t block_no_usb;
 };
 
 struct comms_uart_int_driven {
