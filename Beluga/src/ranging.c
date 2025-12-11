@@ -195,8 +195,14 @@ static struct advertising_info uwb_metadata = {
         advertising_reconfig(&uwb_metadata);                                   \
     } while (0)
 
-#define RANGING_THREAD_NAME   "Ranging task"
+/**
+ * Name of the ranging thread.
+ */
+#define RANGING_THREAD_NAME "Ranging task"
 
+/**
+ * Name of the responder thread.
+ */
 #define RESPONDER_THREAD_NAME "Responder task"
 
 /**

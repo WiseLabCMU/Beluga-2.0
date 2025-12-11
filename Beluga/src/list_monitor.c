@@ -53,7 +53,10 @@ LOG_MODULE_REGISTER(list_monitor, CONFIG_LIST_MONITOR_LOG_LEVEL);
  */
 #define RESUME_NEIGHBOR_SCANNING() resume_scanning()
 
-#define MONITOR_THREAD_NAME        "Neighbors monitor"
+/**
+ * Name of the monitor thread.
+ */
+#define MONITOR_THREAD_NAME "Neighbors monitor"
 
 /**
  * Number of milliseconds allowed to elapse before evicting a neighbor
