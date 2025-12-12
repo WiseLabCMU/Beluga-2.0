@@ -393,6 +393,13 @@ class BelugaSerialBase {
     std::string version();
 
     /**
+     * Starve the given watchdog channel.
+     * @param channel_id The watchdog channel to starve
+     * @return The command response.
+     */
+    std::string starve(const std::string &channel_id);
+
+    /**
      * Set an new exchange ID.
      * @param[in] new_id The new ID.
      * @return The command response.

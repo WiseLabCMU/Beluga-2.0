@@ -35,6 +35,7 @@ set(msg_files
         "msg/BelugaExchange.msg"
         "msg/BelugaUnexpectedReboot.msg"
         "srv/BelugaPowerControl.srv"
+        "msg/BelugaFatalError.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
