@@ -531,8 +531,10 @@ void BelugaSerialBase::start() {
 
     _processing_task.task =
         std::packaged_task<void()>([this] { _process_frames(); });
+    _processing_task.future = _processing_task.task.get_future();
     _processing_task.thread = std::thread(std::move(_processing_task.task));
     _rx_task.task = std::packaged_task<void()>([this] { _read_serial(); });
+    _rx_task.future = _rx_task.task.get_future();
     _rx_task.thread = std::thread(std::move(_rx_task.task));
     // Ensure that we are in the correct format mode otherwise this program will
     // crash like the Hindenburg
@@ -549,13 +551,11 @@ void BelugaSerialBase::stop() {
     if (!_tasks_running) {
         return;
     }
-    auto rx_future = _rx_task.task.get_future();
-    auto process_future = _processing_task.task.get_future();
 
     _tasks_running = false;
 
     while (true) {
-        auto status = rx_future.wait_for(10ms);
+        auto status = _rx_task.future.wait_for(10ms);
         if (status == std::future_status::ready) {
             break;
         }
@@ -566,7 +566,7 @@ void BelugaSerialBase::stop() {
     for (; retries < max_attempts; retries++) {
         int attempts = 0;
         for (; attempts < max_attempts; attempts++) {
-            auto status = process_future.wait_for(10ms);
+            auto status = _processing_task.future.wait_for(10ms);
             if (status == std::future_status::ready) {
                 break;
             }

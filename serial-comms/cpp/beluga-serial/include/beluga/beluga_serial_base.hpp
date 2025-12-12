@@ -542,6 +542,7 @@ class BelugaSerialBase {
 
     struct Task {
         std::packaged_task<void()> task;
+        std::future<void> future;
         std::thread thread;
     };
 
