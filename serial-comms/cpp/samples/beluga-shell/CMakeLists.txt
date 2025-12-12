@@ -12,7 +12,8 @@ include_directories(include)
 
 set(SRC_FILES
         src/main.c
+        src/beluga_serial_translation_layer.cpp
 )
 
 add_executable(beluga-shell ${SRC_FILES})
-target_link_libraries(beluga-serial)
+target_link_libraries(beluga-shell beluga-serial)
