@@ -13,6 +13,48 @@
 
 #define NEIGHBOR_CLASS
 
+template <typename NeighborType = BelugaSerial::BelugaNeighbor>
+static void neighbor_list_update(struct beluga_serial *obj,
+                                 const std::vector<NeighborType> &evt) {
+    if (!obj) {
+        return;
+    }
+    std::vector<struct beluga_neighbor> neighbors(evt.size());
+
+    for (size_t i = 0; i < evt.size(); i++) {
+        neighbors[i] = {
+            .rssi = evt[i].rssi(),
+            .id = evt[i].id(),
+            .exchange = evt[i].exchange(),
+            .range = evt[i].range(),
+            .time = evt[i].time(),
+        };
+    }
+
+    obj->_attr.neighbor_list_updates(neighbors.data(), neighbors.size());
+}
+
+template <typename NeighborType = BelugaSerial::BelugaNeighbor>
+static void range_update(struct beluga_serial *obj,
+                         const std::vector<NeighborType> &evt) {
+    if (!obj) {
+        return;
+    }
+    std::vector<struct beluga_neighbor> neighbors(evt.size());
+
+    for (size_t i = 0; i < evt.size(); i++) {
+        neighbors[i] = {
+            .rssi = evt[i].rssi(),
+            .id = evt[i].id(),
+            .exchange = evt[i].exchange(),
+            .range = evt[i].range(),
+            .time = evt[i].time(),
+        };
+    }
+
+    obj->_attr.neighbor_ranging_updates(neighbors.data(), neighbors.size());
+}
+
 extern "C" {
 #include <stdlib.h>
 
@@ -93,7 +135,11 @@ create_beluga_serial_instance(const struct beluga_serial_attr *attr) {
             [obj](const std::string &msg) { fatal_error_cb_(obj, msg); },
     };
 
-    BelugaSerial::NeighborCallbacks<NEIGHBOR_CLASS> neighbor_cb_ = {};
+    BelugaSerial::NeighborCallbacks<NEIGHBOR_CLASS> neighbor_cb_ = {
+        .neighbor_update_cb =
+            [obj](auto const &evt) { neighbor_list_update(obj, evt); },
+        .range_updates_cb = [obj](auto const &evt) { range_update(obj, evt); },
+    };
 
     obj->ctx = (void *)(new BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>(
         attr_, neighbor_cb_));
