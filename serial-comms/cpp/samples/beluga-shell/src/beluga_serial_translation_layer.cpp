@@ -177,7 +177,8 @@ int beluga_serial_swap_port(struct beluga_serial *obj, const char *port) {
         } else {                                                               \
             response = serial->func_(arg_);                                    \
         }                                                                      \
-        memcpy(obj_->response, response.c_str(), response.length());           \
+        memcpy(obj_->response, response.c_str(),                               \
+               std::min(response.length(), sizeof(obj->response) - 1));        \
     } while (false)
 
 #define _CALL_AT_CMD2(obj_, func_)                                             \
@@ -191,7 +192,8 @@ int beluga_serial_swap_port(struct beluga_serial *obj, const char *port) {
                 obj_->ctx);                                                    \
         std::string response;                                                  \
         response = serial->func_();                                            \
-        memcpy(obj_->response, response.c_str(), response.length());           \
+        memcpy(obj_->response, response.c_str(),                               \
+               std::min(response.length(), sizeof(obj->response) - 1));        \
     } while (false)
 
 void beluga_serial_start_ble(struct beluga_serial *obj) {
@@ -239,7 +241,37 @@ void beluga_serial_txpower(struct beluga_serial *obj, const char *arg) {
 }
 
 void beluga_serial_txpower2(struct beluga_serial *obj, enum uwb_amp_stage stage,
-                            uint32_t coarse, uint32_t fine);
+                            uint32_t coarse, uint32_t fine) {
+    if (!obj) {
+        return;
+    }
+
+    auto serial =
+        static_cast<BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> *>(obj->ctx);
+    memset(obj->response, 0, sizeof(obj->response));
+    BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::UwbAmplificationStage stage_;
+
+    switch (stage) {
+    case BOOST_NORM:
+        stage_ = BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::BOOST_NORM;
+        break;
+    case BOOSTP_500:
+        stage_ = BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::BOOSTP_500;
+        break;
+    case BOOSTP_250:
+        stage_ = BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::BOOSTP_250;
+        break;
+    case BOOSTP_125:
+        stage_ = BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::BOOSTP_125;
+        break;
+    default:
+        return;
+    }
+
+    std::string response = serial->txpower(stage_, coarse, fine);
+    memcpy(obj->response, response.c_str(),
+           std::min(response.length(), sizeof(obj->response) - 1));
+}
 
 void beluga_serial_streammode(struct beluga_serial *obj, const char *arg) {
     _CALL_AT_CMD(obj, streammode, arg);
