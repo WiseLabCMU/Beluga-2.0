@@ -143,6 +143,25 @@ void beluga_serial_close(struct beluga_serial *obj) {
     _CALL_API_FUNC(obj, close);
 }
 
+int swap_port(struct beluga_serial *obj, const char *port) {
+    if (!obj) {
+        return -EINVAL;
+    }
+
+    auto serial =
+        static_cast<BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> *>(obj->ctx);
+
+    try {
+        serial->swap_port(port);
+    } catch (const std::invalid_argument &) {
+        return -EINVAL;
+    } catch (const std::runtime_error &) {
+        return -EBUSY;
+    }
+
+    return 0;
+}
+
 #define _CALL_AT_CMD(obj_, func_, arg_)                                        \
     do {                                                                       \
         if (!obj) {                                                            \

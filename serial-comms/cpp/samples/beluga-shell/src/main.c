@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
     beluga_serial_start(serial);
 
-    stop_ble(serial);
+    printf("Error: %d\n", swap_port(serial, "/dev/ttyACM"));
 
     printf("Response: %s\n", serial->response);
 

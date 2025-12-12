@@ -87,7 +87,7 @@ void destroy_beluga_serial_instance(struct beluga_serial **obj);
 void beluga_serial_start(struct beluga_serial *obj);
 void beluga_serial_stop(struct beluga_serial *obj);
 void beluga_serial_close(struct beluga_serial *obj);
-// void swap_port(struct beluga_serial *obj, const char *port);
+int swap_port(struct beluga_serial *obj, const char *port);
 void start_ble(struct beluga_serial *obj);
 void stop_ble(struct beluga_serial *obj);
 // void start_uwb(struct beluga_serial *obj);
