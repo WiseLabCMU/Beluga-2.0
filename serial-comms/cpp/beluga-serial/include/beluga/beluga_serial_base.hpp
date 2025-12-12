@@ -211,7 +211,7 @@ class BelugaSerialBase {
      * channel
      * @return The command response
      */
-    std::string channel(const std::string &channel);
+    std::string channel(const std::string &channel = "");
 
     /**
      * Sends a command for resetting the device settings
@@ -397,7 +397,7 @@ class BelugaSerialBase {
      * @param[in] new_id The new ID.
      * @return The command response.
      */
-    std::string exchange(const std::string &new_id);
+    std::string exchange(const std::string &new_id = "");
 
     /**
      * Starts the serial reception and processing tasks

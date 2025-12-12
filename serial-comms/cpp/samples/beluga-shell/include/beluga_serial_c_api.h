@@ -87,38 +87,40 @@ void destroy_beluga_serial_instance(struct beluga_serial **obj);
 void beluga_serial_start(struct beluga_serial *obj);
 void beluga_serial_stop(struct beluga_serial *obj);
 void beluga_serial_close(struct beluga_serial *obj);
-int swap_port(struct beluga_serial *obj, const char *port);
-void start_ble(struct beluga_serial *obj);
-void stop_ble(struct beluga_serial *obj);
-// void start_uwb(struct beluga_serial *obj);
-// void stop_uwb(struct beluga_serial *obj);
-// void id(struct beluga_serial *obj, const char *arg);
-// void bootmode(struct beluga_serial *obj, const char *arg);
-// void rate(struct beluga_serial *obj, const char *arg);
-// void channel(struct beluga_serial *obj, const char *arg);
-// void reset(struct beluga_serial *obj);
-// void timeout(struct beluga_serial *obj, const char *arg);
-// void txpower(struct beluga_serial *obj, const char *arg);
-// void txpower2(struct beluga_serial *obj, enum uwb_amp_stage stage, uint32_t
-// coarse, uint32_t fine); void streammode(struct beluga_serial *obj, const char
-// *arg); void twrmode(struct beluga_serial *obj, const char *arg); void
-// ledmode(struct beluga_serial *obj, const char *arg); void reboot(struct
-// beluga_serial *obj); void pwramp(struct beluga_serial *obj, const char *arg);
-// void antenna(struct beluga_serial *obj, const char *arg);
-// void time(struct beluga_serial *obj);
-// void deepsleep(struct beluga_serial *obj);
-// void datarate(struct beluga_serial *obj, const char *arg);
-// void preamble(struct beluga_serial *obj, const char *arg);
-// void pulserate(struct beluga_serial *obj, const char *arg);
-// void phr(struct beluga_serial *obj, const char *arg);
-// void pac(struct beluga_serial *obj, const char *arg);
-// void sfd(struct beluga_serial *obj, const char *arg);
-// void panid(struct beluga_serial *obj, const char *arg);
-// void evict(struct beluga_serial *obj, const char *arg);
-// void verbose(struct beluga_serial *obj, const char *arg);
-// void status(struct beluga_serial *obj);
-// void version(struct beluga_serial *obj);
-// void exchange(struct beluga_serial *obj, const char *arg);
+int beluga_serial_swap_port(struct beluga_serial *obj, const char *port);
+void beluga_serial_start_ble(struct beluga_serial *obj);
+void beluga_serial_stop_ble(struct beluga_serial *obj);
+void beluga_serial_start_uwb(struct beluga_serial *obj);
+void beluga_serial_stop_uwb(struct beluga_serial *obj);
+void beluga_serial_id(struct beluga_serial *obj, const char *arg);
+void beluga_serial_bootmode(struct beluga_serial *obj, const char *arg);
+void beluga_serial_rate(struct beluga_serial *obj, const char *arg);
+void beluga_serial_channel(struct beluga_serial *obj, const char *arg);
+void beluga_serial_reset(struct beluga_serial *obj);
+void beluga_serial_timeout(struct beluga_serial *obj, const char *arg);
+void beluga_serial_txpower(struct beluga_serial *obj, const char *arg);
+void beluga_serial_txpower2(struct beluga_serial *obj, enum uwb_amp_stage stage,
+                            uint32_t coarse, uint32_t fine);
+void beluga_serial_streammode(struct beluga_serial *obj, const char *arg);
+void beluga_serial_twrmode(struct beluga_serial *obj, const char *arg);
+void beluga_serial_ledmode(struct beluga_serial *obj, const char *arg);
+void beluga_serial_reboot(struct beluga_serial *obj);
+void beluga_serial_pwramp(struct beluga_serial *obj, const char *arg);
+void beluga_serial_antenna(struct beluga_serial *obj, const char *arg);
+void beluga_serial_time(struct beluga_serial *obj);
+void beluga_serial_deepsleep(struct beluga_serial *obj);
+void beluga_serial_datarate(struct beluga_serial *obj, const char *arg);
+void beluga_serial_preamble(struct beluga_serial *obj, const char *arg);
+void beluga_serial_pulserate(struct beluga_serial *obj, const char *arg);
+void beluga_serial_phr(struct beluga_serial *obj, const char *arg);
+void beluga_serial_pac(struct beluga_serial *obj, const char *arg);
+void beluga_serial_sfd(struct beluga_serial *obj, const char *arg);
+void beluga_serial_panid(struct beluga_serial *obj, const char *arg);
+void beluga_serial_evict(struct beluga_serial *obj, const char *arg);
+void beluga_serial_verbose(struct beluga_serial *obj, const char *arg);
+void beluga_serial_status(struct beluga_serial *obj);
+void beluga_serial_version(struct beluga_serial *obj);
+void beluga_serial_exchange(struct beluga_serial *obj, const char *arg);
 
 #ifdef __cplusplus
 };

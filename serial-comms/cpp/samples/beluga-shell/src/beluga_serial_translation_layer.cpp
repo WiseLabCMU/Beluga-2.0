@@ -143,7 +143,7 @@ void beluga_serial_close(struct beluga_serial *obj) {
     _CALL_API_FUNC(obj, close);
 }
 
-int swap_port(struct beluga_serial *obj, const char *port) {
+int beluga_serial_swap_port(struct beluga_serial *obj, const char *port) {
     if (!obj) {
         return -EINVAL;
     }
@@ -194,7 +194,128 @@ int swap_port(struct beluga_serial *obj, const char *port) {
         memcpy(obj_->response, response.c_str(), response.length());           \
     } while (false)
 
-void start_ble(struct beluga_serial *obj) { _CALL_AT_CMD2(obj, start_ble); }
+void beluga_serial_start_ble(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, start_ble);
+}
 
-void stop_ble(struct beluga_serial *obj) { _CALL_AT_CMD2(obj, stop_ble); }
+void beluga_serial_stop_ble(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, stop_ble);
+}
+
+void beluga_serial_start_uwb(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, start_uwb);
+}
+
+void beluga_serial_stop_uwb(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, stop_uwb);
+}
+
+void beluga_serial_id(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, id, arg);
+}
+
+void beluga_serial_bootmode(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, bootmode, arg);
+}
+
+void beluga_serial_rate(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, rate, arg);
+}
+
+void beluga_serial_channel(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, channel, arg);
+}
+
+void beluga_serial_reset(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, reset);
+}
+
+void beluga_serial_timeout(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, timeout, arg);
+}
+
+void beluga_serial_txpower(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, txpower, arg);
+}
+
+void beluga_serial_txpower2(struct beluga_serial *obj, enum uwb_amp_stage stage,
+                            uint32_t coarse, uint32_t fine);
+
+void beluga_serial_streammode(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, streammode, arg);
+}
+
+void beluga_serial_twrmode(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, twrmode, arg);
+}
+
+void beluga_serial_ledmode(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, ledmode, arg);
+}
+
+void beluga_serial_reboot(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, reboot);
+}
+
+void beluga_serial_pwramp(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, pwramp, arg);
+}
+
+void beluga_serial_antenna(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, antenna, arg);
+}
+
+void beluga_serial_time(struct beluga_serial *obj) { _CALL_AT_CMD2(obj, time); }
+
+void beluga_serial_deepsleep(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, deepsleep);
+}
+
+void beluga_serial_datarate(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, datarate, arg);
+}
+
+void beluga_serial_preamble(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, preamble, arg);
+}
+
+void beluga_serial_pulserate(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, pulserate, arg);
+}
+
+void beluga_serial_phr(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, phr, arg);
+}
+
+void beluga_serial_pac(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, pac, arg);
+}
+
+void beluga_serial_sfd(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, sfd, arg);
+}
+
+void beluga_serial_panid(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, panid, arg);
+}
+
+void beluga_serial_evict(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, evict, arg);
+}
+
+void beluga_serial_verbose(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, verbose, arg);
+}
+
+void beluga_serial_status(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, status);
+}
+
+void beluga_serial_version(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, version);
+}
+
+void beluga_serial_exchange(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, exchange, arg);
+}
 };
