@@ -133,10 +133,49 @@ void beluga_serial_start(struct beluga_serial *obj) {
 }
 
 void beluga_serial_stop(struct beluga_serial *obj) {
-    _CALL_API_FUNC(obj, stop);
+    try {
+        _CALL_API_FUNC(obj, stop);
+    } catch (std::future_error &err) {
+    }
 }
 
 void beluga_serial_close(struct beluga_serial *obj) {
     _CALL_API_FUNC(obj, close);
 }
+
+#define _CALL_AT_CMD(obj_, func_, arg_)                                        \
+    do {                                                                       \
+        if (!obj) {                                                            \
+            return;                                                            \
+        }                                                                      \
+        memset(obj_->response, 0, sizeof(obj_->response));                     \
+        auto serial =                                                          \
+            static_cast<BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> *>(         \
+                obj_->ctx);                                                    \
+        std::string response;                                                  \
+        if (!arg_) {                                                           \
+            response = serial->func_();                                        \
+        } else {                                                               \
+            response = serial->func_(arg_);                                    \
+        }                                                                      \
+        memcpy(obj_->response, response.c_str(), response.length());           \
+    } while (false)
+
+#define _CALL_AT_CMD2(obj_, func_)                                             \
+    do {                                                                       \
+        if (!obj) {                                                            \
+            return;                                                            \
+        }                                                                      \
+        memset(obj_->response, 0, sizeof(obj_->response));                     \
+        auto serial =                                                          \
+            static_cast<BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> *>(         \
+                obj_->ctx);                                                    \
+        std::string response;                                                  \
+        response = serial->func_();                                            \
+        memcpy(obj_->response, response.c_str(), response.length());           \
+    } while (false)
+
+void start_ble(struct beluga_serial *obj) { _CALL_AT_CMD2(obj, start_ble); }
+
+void stop_ble(struct beluga_serial *obj) { _CALL_AT_CMD2(obj, stop_ble); }
 };
