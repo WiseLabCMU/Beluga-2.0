@@ -844,4 +844,31 @@ void BelugaSerialBase::_resync_time() {
         t.detach();
     }
 }
+
+void find_ports(
+    std::map<BelugaSerialBase::target_pair, std::vector<std::string>> &ports) {
+    SerialTools::SysFsScanAttr attr = {
+        .ttyXRUSB = false,
+        .ttyAMA = false,
+        .rfcomm = false,
+        .ttyAP = false,
+        .ttyGS = false,
+    };
+    std::vector<SerialTools::SysFS> ports_ = SerialTools::comports(attr);
+
+    ports.clear();
+
+    for (const auto &port : ports_) {
+        BelugaSerialBase::target_pair target = {port.manufacturer(),
+                                                port.product()};
+
+        for (const auto &valid_target : TARGETS) {
+            if (valid_target == target) {
+                ports[target].push_back(port.device());
+                break;
+            }
+        }
+    }
+}
+
 } // namespace BelugaSerial

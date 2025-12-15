@@ -564,6 +564,10 @@ class BelugaSerialBase {
         _report_uwb_drops = nullptr;
     std::function<void(const std::string &)> _report_fatal_error_cb = nullptr;
 };
+
+void find_ports(
+    std::map<BelugaSerialBase::target_pair, std::vector<std::string>> &ports);
+
 } // namespace BelugaSerial
 
 #endif // BELUGA_SERIAL_BELUGA_SERIAL_BASE_HPP
