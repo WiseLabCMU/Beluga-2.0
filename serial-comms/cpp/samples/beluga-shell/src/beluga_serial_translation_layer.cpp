@@ -153,7 +153,7 @@ create_beluga_serial_instance(const struct beluga_serial_attr *attr) {
 }
 
 void destroy_beluga_serial_instance(struct beluga_serial **obj) {
-    if (!obj) {
+    if (!obj || *obj == nullptr) {
         return;
     }
 

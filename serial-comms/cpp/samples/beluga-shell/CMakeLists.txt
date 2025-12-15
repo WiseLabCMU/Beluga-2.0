@@ -14,7 +14,7 @@ set(SRC_FILES
         src/main.c
         src/beluga_serial_translation_layer.cpp
         src/select_port.c
-        src/
+        src/shell_helpers.c
 )
 
 add_executable(beluga-shell ${SRC_FILES})
