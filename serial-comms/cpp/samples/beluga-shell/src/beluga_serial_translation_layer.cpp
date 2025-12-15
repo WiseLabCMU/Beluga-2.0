@@ -396,4 +396,108 @@ void beluga_serial_version(struct beluga_serial *obj) {
 void beluga_serial_exchange(struct beluga_serial *obj, const char *arg) {
     _CALL_AT_CMD(obj, exchange, arg);
 }
+
+static bool allocate_port_entry(
+    const BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::target_pair &target,
+    const std::string &port, struct beluga_serial_ports &beluga_port) {
+    char *manf = (char *)calloc(target.first.length() + 1, sizeof(char));
+    beluga_port.manufacturer = manf;
+
+    if (beluga_port.manufacturer == nullptr) {
+        return false;
+    }
+
+    strncpy(manf, target.first.c_str(), target.first.length());
+
+    char *product = (char *)calloc(target.second.length() + 1, sizeof(char));
+    beluga_port.product = product;
+
+    if (beluga_port.product == nullptr) {
+        free(manf);
+        return false;
+    }
+
+    strncpy(product, target.second.c_str(), target.second.length());
+
+    char *port_ = (char *)calloc(port.length() + 1, sizeof(char));
+    beluga_port.port = port_;
+
+    if (beluga_port.port == nullptr) {
+        free(manf);
+        free(product);
+        return false;
+    }
+
+    strncpy(port_, port.c_str(), port.length());
+
+    return true;
+}
+
+struct beluga_serial_ports *find_ports(size_t *len) {
+    if (len == nullptr) {
+        return nullptr;
+    }
+
+    std::map<BelugaSerial::BelugaSerial<NEIGHBOR_CLASS>::target_pair,
+             std::vector<std::string>>
+        ports_;
+    BelugaSerial::find_ports(ports_);
+
+    size_t num_ports = 0;
+    for (const auto &[fst, snd] : ports_) {
+        num_ports += snd.size();
+    }
+
+    if (num_ports == 0) {
+        *len = 0;
+        return nullptr;
+    }
+
+    struct beluga_serial_ports *ports = (struct beluga_serial_ports *)calloc(
+        num_ports, sizeof(struct beluga_serial_ports));
+
+    if (ports == nullptr) {
+        *len = 0;
+        return nullptr;
+    }
+
+    size_t current = 0;
+    for (const auto &[fst, snd] : ports_) {
+        for (const auto &port : snd) {
+            if (!allocate_port_entry(fst, port, ports[current])) {
+                cleanup_find_ports(&ports, num_ports);
+                *len = 0;
+                return nullptr;
+            }
+            current++;
+        }
+    }
+
+    *len = num_ports;
+    return ports;
+}
+
+void cleanup_find_ports(struct beluga_serial_ports **ports, size_t len) {
+    if (ports == nullptr || *ports == nullptr) {
+        return;
+    }
+
+    struct beluga_serial_ports *ports_ = *ports;
+    for (size_t i = 0; i < len; i++) {
+        if (ports_[i].manufacturer != nullptr) {
+            free((char *)ports_[i].manufacturer);
+        }
+
+        if (ports_[i].product != nullptr) {
+            free((char *)ports_[i].product);
+        }
+
+        if (ports_[i].port != nullptr) {
+            free((char *)ports_->port);
+        }
+    }
+
+    free(ports_);
+    *ports = nullptr;
+}
 };

@@ -75,6 +75,12 @@ struct beluga_serial_attr {
     range_update_cb neighbor_ranging_updates;
 };
 
+struct beluga_serial_ports {
+    const char *manufacturer;
+    const char *product;
+    const char *port;
+};
+
 struct beluga_serial {
     void *ctx;
     char response[MAX_RESPONSE_SIZE];
@@ -121,6 +127,8 @@ void beluga_serial_verbose(struct beluga_serial *obj, const char *arg);
 void beluga_serial_status(struct beluga_serial *obj);
 void beluga_serial_version(struct beluga_serial *obj);
 void beluga_serial_exchange(struct beluga_serial *obj, const char *arg);
+struct beluga_serial_ports *find_ports(size_t *len);
+void cleanup_find_ports(struct beluga_serial_ports **ports, size_t len);
 
 #ifdef __cplusplus
 };
