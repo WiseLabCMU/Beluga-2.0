@@ -16,4 +16,5 @@ set(SRC_FILES
 )
 
 add_executable(beluga-shell ${SRC_FILES})
-target_link_libraries(beluga-shell beluga-serial)
+target_link_libraries(beluga-shell beluga-serial readline)
+# sudo apt install libreadline-dev

@@ -175,14 +175,16 @@ void destroy_beluga_serial_instance(struct beluga_serial **obj) {
     } while (false)
 
 void beluga_serial_start(struct beluga_serial *obj) {
-    _CALL_API_FUNC(obj, start);
+    try {
+        _CALL_API_FUNC(obj, start);
+    } catch (const std::runtime_error &error) {
+        printf("Start serial communication failed: %s\n", error.what());
+        exit(EXIT_FAILURE);
+    }
 }
 
 void beluga_serial_stop(struct beluga_serial *obj) {
-    try {
-        _CALL_API_FUNC(obj, stop);
-    } catch (std::future_error &err) {
-    }
+    _CALL_API_FUNC(obj, stop);
 }
 
 void beluga_serial_close(struct beluga_serial *obj) {
@@ -493,7 +495,7 @@ void cleanup_find_ports(struct beluga_serial_ports **ports, size_t len) {
         }
 
         if (ports_[i].port != nullptr) {
-            free((char *)ports_->port);
+            free((char *)ports_[i].port);
         }
     }
 

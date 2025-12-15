@@ -51,6 +51,7 @@ class BelugaSerial : public BelugaSerialBase {
         _neighbor_cb = neighbor_callbacks.neighbor_update_cb;
         _range_cb = neighbor_callbacks.range_updates_cb;
     }
+    ~BelugaSerial() override;
 
     /**
      * Retrieves the list of neighbors from the queue.
@@ -108,6 +109,12 @@ BelugaSerial<NeighborImpl>::get_ranges(std::vector<NeighborImpl> &list) {
             throw;
         }
     }
+}
+
+template <typename NeighborImpl> BelugaSerial<NeighborImpl>::~BelugaSerial() {
+    // If this is not called now, the program will not exit cleanly... fuck
+    // c++...
+    this->stop();
 }
 
 template <typename NeighborImpl>
