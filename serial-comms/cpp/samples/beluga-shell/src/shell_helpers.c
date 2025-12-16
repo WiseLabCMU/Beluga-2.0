@@ -16,6 +16,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct job {
+    pid_t pid;
+    jid_t jid;
+    enum job_state state;
+    char *cmdline;
+};
+
 struct builtin_commands {
     const struct command_info *commands;
     size_t len;
@@ -31,6 +38,10 @@ struct builtin_commands builtin_commands = {
     NULL,
     0,
 };
+
+static struct job job_list[MAXJOBS];
+static jid_t nextjid = 1;
+static bool jobs_initialized;
 
 signal_handler_t *Signal(int signum, signal_handler_t handler) {
     struct sigaction action, old_action;
@@ -288,4 +299,242 @@ void run_builtin_command(struct cmdline_tokens *tokens) {
 
     builtin_commands.commands[tokens->builtin_index].callback(tokens->argc,
                                                               tokens->argv);
+}
+
+static void check_blocked(void) {
+    if (!jobs_initialized) {
+        // todo
+    }
+
+    sigset_t currmask;
+    sigprocmask(SIG_SETMASK, NULL, &currmask);
+
+    bool sigchld = sigismember(&currmask, SIGCHLD) <= 0;
+    bool sigint = sigismember(&currmask, SIGINT) <= 0;
+    bool sigtstp = sigismember(&currmask, SIGTSTP) <= 0;
+
+    if (sigchld || sigint || sigtstp) {
+        // todo
+    }
+}
+
+static struct job *get_job(jid_t jid) {
+    if (jid < 1 || jid > MAXJOBS) {
+        // todo
+        abort();
+    }
+    return &job_list[jid - 1];
+}
+
+static void clearjob(struct job *job) {
+    job->pid = 0;
+    job->jid = 0;
+    job->state = UNDEF;
+}
+
+void init_job_list(void) {
+    jobs_initialized = true;
+    for (jid_t jid = 1; jid <= MAXJOBS; jid++) {
+        struct job *job = get_job(jid);
+        clearjob(job);
+        job->cmdline = NULL;
+    }
+    nextjid = 1;
+}
+
+void destroy_job_list(void) {
+    for (jid_t jid = 1; jid <= MAXJOBS; jid++) {
+        struct job *job = get_job(jid);
+        clearjob(job);
+        free(job->cmdline);
+        job->cmdline = NULL;
+    }
+    nextjid = 1;
+}
+
+static jid_t maxjid(void) {
+    for (jid_t jid = MAXJOBS; jid > 0; jid--) {
+        if (job_exists(jid)) {
+            return jid;
+        }
+    }
+    return 0;
+}
+
+bool job_exists(jid_t jid) {
+    check_blocked();
+
+    if (jid < 1 || jid > MAXJOBS) {
+        return false;
+    }
+
+    struct job *job = get_job(jid);
+    return job->state != UNDEF;
+}
+
+jid_t add_job(pid_t pid, enum job_state state, const char *cmdline) {
+    check_blocked();
+    if (!((state == FG && fg_job() == 0) || state == BG || state == ST)) {
+        if (state == FG) {
+            // todo
+            abort();
+        }
+        // todo
+        abort();
+    }
+
+    if (pid <= 0) {
+        // todo
+        abort();
+    }
+
+    if (cmdline == NULL) {
+        // todo
+        abort();
+    }
+
+    // todo
+    if (nextjid > MAXJOBS) {
+        return 0;
+    }
+
+    struct job *job = get_job(nextjid);
+    // todo
+
+    job->jid = nextjid;
+    job->pid = pid;
+    job->state = state;
+
+    job->cmdline = realloc(job->cmdline, strlen(cmdline) - 1);
+    if (job->cmdline == NULL) {
+        // todo
+        _exit(EXIT_FAILURE);
+    }
+
+    strcpy(job->cmdline, cmdline);
+
+    nextjid++;
+    // todo
+    return job->jid;
+}
+
+bool delete_job(jid_t jid) {
+    check_blocked();
+
+    if (!job_exists(jid)) {
+        return false;
+    }
+
+    struct job *job = get_job(jid);
+    clearjob(job);
+
+    nextjid = maxjid() + 1;
+    // todo
+    return true;
+}
+
+jid_t fg_job(void) {
+    check_blocked();
+
+    for (jid_t jid = 1; jid <= MAXJOBS; jid++) {
+        struct job *job = get_job(jid);
+        if (job->state == FG) {
+            return jid;
+        }
+    }
+
+    return 0;
+}
+
+jid_t job_from_pid(pid_t pid) {
+    check_blocked();
+
+    if (pid < 1) {
+        return 0;
+    }
+
+    for (jid_t jid = 1; jid <= MAXJOBS; jid++) {
+        struct job *job = get_job(jid);
+        if (job->state != UNDEF && job->pid == pid) {
+            return jid;
+        }
+    }
+
+    return 0;
+}
+
+pid_t job_get_pid(jid_t jid) {
+    check_blocked();
+    // todo
+
+    struct job *job = get_job(jid);
+    return job->pid;
+}
+
+const char *job_get_cmdline(jid_t jid) {
+    check_blocked();
+    // todo
+
+    struct job *job = get_job(jid);
+    return job->cmdline;
+}
+
+enum job_state job_get_state(jid_t jid) {
+    check_blocked();
+    // todo
+
+    struct job *job = get_job(jid);
+    return job->state;
+}
+
+void job_set_state(jid_t jid, enum job_state state) {
+    check_blocked();
+    // todo
+    // todo
+
+    struct job *job = get_job(jid);
+    job->state = state;
+}
+
+bool list_jobs(int output_fd) {
+    check_blocked();
+    if (output_fd < 0) {
+        // todo
+        abort();
+    }
+
+    for (jid_t jid = 1; jid <= MAXJOBS; jid++) {
+        struct job *job = get_job(jid);
+        if (job->state == UNDEF) {
+            continue;
+        }
+
+        char *status = NULL;
+        switch (job->state) {
+        case BG: {
+            status = "Running    ";
+            break;
+        }
+        case FG: {
+            status = "Foreground ";
+            break;
+        }
+        case ST: {
+            status = "Stopped    ";
+            break;
+        }
+        default: {
+            // todo
+            abort();
+        }
+        }
+
+        // todo
+        if (false) {
+            // todo
+            return false;
+        }
+    }
+
+    return true;
 }

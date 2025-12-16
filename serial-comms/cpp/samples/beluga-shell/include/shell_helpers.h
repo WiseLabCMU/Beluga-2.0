@@ -69,7 +69,7 @@ void run_builtin_command(struct cmdline_tokens *tokens);
 
 void init_job_list(void);
 void destroy_job_list(void);
-jid_t add_job(pid_t pid, enum job_state, const char *cmdline);
+jid_t add_job(pid_t pid, enum job_state state, const char *cmdline);
 bool delete_job(jid_t jid);
 jid_t fg_job(void);
 bool job_exists(jid_t jid);
