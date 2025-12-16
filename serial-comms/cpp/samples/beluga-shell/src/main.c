@@ -15,10 +15,13 @@
 #include <select_port.h>
 #include <shell_helpers.h>
 #include <signal.h>
+#include <sio.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define MAX_HISTORY 500
@@ -33,6 +36,9 @@ static void cleanup(void);
 static void init(void);
 static void run(void);
 static bool evaluate_command(const char *cmd);
+static void sigchld_handler(int sig);
+static void sigint_handler(int sig);
+static void sigtstp_handler(int sig);
 
 int main(int argc, char *argv[]) {
     // todo
@@ -109,6 +115,13 @@ static void init(void) {
 
     beluga_serial_start(serial);
     printf("Connection established\n\n");
+
+    Signal(SIGINT, sigint_handler);
+    Signal(SIGTSTP, sigtstp_handler);
+    Signal(SIGCHLD, sigchld_handler);
+
+    Signal(SIGTTIN, SIG_IGN);
+    Signal(SIGTTOU, SIG_IGN);
 }
 
 static void run(void) {
@@ -162,6 +175,81 @@ static void save_history(void) {
     }
 
     write_history(path);
+}
+
+static void sigchld_handler(int sig) {
+    ARG_UNUSED(sig);
+    sigset_t mask, prev_mask;
+    pid_t pid;
+    jid_t job;
+    int status, prev_errno = errno;
+
+    sigfillset(&mask);
+
+    while ((pid = waitpid((pid_t)-1, &status, WNOHANG | WUNTRACED)) > 0) {
+        sigprocmask(SIG_BLOCK, &mask, &prev_mask);
+        job = job_from_pid(pid);
+        if (job == fg_job()) {
+            // todo
+        }
+
+        if (WIFEXITED(status) || WIFSIGNALED(status)) {
+            if (WIFSIGNALED(status)) {
+                sio_printf("Job [%d] (%ld) terminated by signal %d\n", (int)job,
+                           (long)pid, WTERMSIG(status));
+            }
+            delete_job(job);
+        } else if (WIFSTOPPED(status)) {
+            sio_printf("Job [%d] (%ld) stopped by signal %d\n", (int)job,
+                       (long)pid, WSTOPSIG(status));
+            job_set_state(job, ST);
+        } else {
+            delete_job(job);
+        }
+        sigprocmask(SIG_SETMASK, &prev_mask, NULL);
+    }
+
+    errno = prev_errno;
+}
+
+static void sigint_handler(int sig) {
+    ARG_UNUSED(sig);
+    sigset_t mask, prev;
+    int prev_errno = errno;
+    pid_t pid;
+    jid_t job;
+
+    sigfillset(&mask);
+    sigprocmask(SIG_BLOCK, &mask, &prev);
+
+    if ((job = fg_job()) != 0) {
+        pid = job_get_pid(job);
+
+        kill(-pid, SIGINT);
+    }
+
+    sigprocmask(SIG_SETMASK, &prev, NULL);
+    errno = prev_errno;
+}
+
+static void sigtstp_handler(int sig) {
+    ARG_UNUSED(sig);
+    sigset_t mask, prev;
+    int prev_errno = errno;
+    jid_t job;
+
+    sigfillset(&mask);
+    sigprocmask(SIG_BLOCK, &mask, &prev);
+
+    job = fg_job();
+
+    if (job != 0) {
+        pid_t pid = job_get_pid(job);
+        kill(-pid, SIGTSTP);
+    }
+
+    sigprocmask(SIG_SETMASK, &prev, NULL);
+    errno = prev_errno;
 }
 
 static void cleanup(void) {

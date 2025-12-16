@@ -28,6 +28,8 @@ typedef uint16_t jid_t;
 typedef uint8_t jid_t;
 #endif
 
+#define ARG_UNUSED(arg) (void)(arg)
+
 enum job_state {
     FG,
     BG,
