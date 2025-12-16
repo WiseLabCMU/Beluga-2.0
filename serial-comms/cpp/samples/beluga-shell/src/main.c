@@ -32,6 +32,7 @@ static bool history_initialized = false;
 static void cleanup(void);
 static void init(void);
 static void run(void);
+static bool evaluate_command(const char *cmd);
 
 int main(int argc, char *argv[]) {
     // todo
@@ -125,7 +126,7 @@ static void run(void) {
             exit(EXIT_FAILURE);
         }
 
-        // todo: run command
+        add_hist = evaluate_command(command);
 
         if (add_hist) {
             add_history(command);
@@ -133,6 +134,21 @@ static void run(void) {
 
         free(command);
     }
+}
+
+static bool evaluate_command(const char *cmd) {
+    struct cmdline_tokens tokens;
+    enum parseline_result result = parseline(cmd, &tokens);
+
+    if (tokens.builtin_command) {
+        run_builtin_command(&tokens);
+    } else {
+        // todo: use parseline result here
+    }
+
+    cleanup_parseline(&tokens);
+
+    return result != PARSELINE_ERROR && result != PARSELINE_EMPTY;
 }
 
 static void save_history(void) {
