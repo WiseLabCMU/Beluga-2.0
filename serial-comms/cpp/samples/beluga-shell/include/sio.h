@@ -21,7 +21,7 @@ ssize_t sio_eprintf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 ssize_t sio_vdprintf(int fileno, const char *format, va_list argp)
     __attribute__((format(printf, 2, 0)));
 
-#if defined(NDEBUG)
+#if !defined(NDEBUG)
 #define sio_assert(expr)                                                       \
     ((expr) ? (void)0 : __sio_assert_fail(#expr, __FILE__, __LINE__, __func__))
 #else

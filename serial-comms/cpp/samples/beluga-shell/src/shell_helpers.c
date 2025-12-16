@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <shell_helpers.h>
 #include <signal.h>
+#include <sio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -303,7 +304,7 @@ void run_builtin_command(struct cmdline_tokens *tokens) {
 
 static void check_blocked(void) {
     if (!jobs_initialized) {
-        // todo
+        sio_eprintf("WARNING: Failed to call init_job_list()\n");
     }
 
     sigset_t currmask;
@@ -314,13 +315,16 @@ static void check_blocked(void) {
     bool sigtstp = sigismember(&currmask, SIGTSTP) <= 0;
 
     if (sigchld || sigint || sigtstp) {
-        // todo
+        sio_eprintf("WARNING: signals not blocked before accessing job list:"
+                    "%s%s%s\n",
+                    sigchld ? " SIGCHLD" : "", sigint ? " SIGINT" : "",
+                    sigtstp ? " SIGTSTP" : "");
     }
 }
 
 static struct job *get_job(jid_t jid) {
     if (jid < 1 || jid > MAXJOBS) {
-        // todo
+        sio_eprintf("get_job(): invalid jid\n");
         abort();
     }
     return &job_list[jid - 1];
@@ -376,30 +380,30 @@ jid_t add_job(pid_t pid, enum job_state state, const char *cmdline) {
     check_blocked();
     if (!((state == FG && fg_job() == 0) || state == BG || state == ST)) {
         if (state == FG) {
-            // todo
+            sio_eprintf("add_job: foreground job already exists\n");
             abort();
         }
-        // todo
+        sio_eprintf("add_job: invalid job state\n");
         abort();
     }
 
     if (pid <= 0) {
-        // todo
+        sio_eprintf("add_job: invalid pid\n");
         abort();
     }
 
     if (cmdline == NULL) {
-        // todo
+        sio_eprintf("add_job: missing command line\n");
         abort();
     }
 
-    // todo
+    sio_assert(nextjid > 0);
     if (nextjid > MAXJOBS) {
         return 0;
     }
 
     struct job *job = get_job(nextjid);
-    // todo
+    sio_assert(job->state == UNDEF);
 
     job->jid = nextjid;
     job->pid = pid;
@@ -407,14 +411,14 @@ jid_t add_job(pid_t pid, enum job_state state, const char *cmdline) {
 
     job->cmdline = realloc(job->cmdline, strlen(cmdline) - 1);
     if (job->cmdline == NULL) {
-        // todo
+        sio_eprintf("Realloc error\n");
         _exit(EXIT_FAILURE);
     }
 
     strcpy(job->cmdline, cmdline);
 
     nextjid++;
-    // todo
+    sio_assert(nextjid > 0);
     return job->jid;
 }
 
@@ -429,7 +433,7 @@ bool delete_job(jid_t jid) {
     clearjob(job);
 
     nextjid = maxjid() + 1;
-    // todo
+    sio_assert(nextjid > 0);
     return true;
 }
 
@@ -463,9 +467,29 @@ jid_t job_from_pid(pid_t pid) {
     return 0;
 }
 
+static void require_job_exists(char *func, jid_t jid) {
+    if (!job_exists(jid)) {
+        sio_eprintf("FATAL: %s: invalid JID argument %d\n", func, jid);
+        abort();
+    }
+}
+
+static void require_valid_state(jid_t jid, enum job_state state) {
+    if (state != FG && state != BG && state != ST) {
+        sio_eprintf("FATAL: job_set_state: invalid job state: %d\n", state);
+        abort();
+    }
+    if (state == FG && fg_job() != 0) {
+        sio_eprintf("FATAL: job_set_state: cannot make %d the foreground job "
+                    "when another job %d is also the foreground job",
+                    jid, fg_job());
+        abort();
+    }
+}
+
 pid_t job_get_pid(jid_t jid) {
     check_blocked();
-    // todo
+    require_job_exists("job_get_pid()", jid);
 
     struct job *job = get_job(jid);
     return job->pid;
@@ -473,7 +497,7 @@ pid_t job_get_pid(jid_t jid) {
 
 const char *job_get_cmdline(jid_t jid) {
     check_blocked();
-    // todo
+    require_job_exists("job_get_cmdline()", jid);
 
     struct job *job = get_job(jid);
     return job->cmdline;
@@ -481,7 +505,7 @@ const char *job_get_cmdline(jid_t jid) {
 
 enum job_state job_get_state(jid_t jid) {
     check_blocked();
-    // todo
+    require_job_exists("job_set_state", jid);
 
     struct job *job = get_job(jid);
     return job->state;
@@ -489,8 +513,8 @@ enum job_state job_get_state(jid_t jid) {
 
 void job_set_state(jid_t jid, enum job_state state) {
     check_blocked();
-    // todo
-    // todo
+    require_job_exists("job_set_state", jid);
+    require_valid_state(jid, state);
 
     struct job *job = get_job(jid);
     job->state = state;
@@ -499,7 +523,7 @@ void job_set_state(jid_t jid, enum job_state state) {
 bool list_jobs(int output_fd) {
     check_blocked();
     if (output_fd < 0) {
-        // todo
+        sio_eprintf("list_jobs(): invalid file descriptor\n");
         abort();
     }
 
@@ -524,14 +548,16 @@ bool list_jobs(int output_fd) {
             break;
         }
         default: {
-            // todo
+            sio_eprintf("Invalid job state\n");
             abort();
         }
         }
 
-        // todo
-        if (false) {
-            // todo
+        ssize_t res = sio_dprintf(output_fd, "[%d] (%d) %s%s\n", job->jid,
+                                  job->pid, status, job->cmdline);
+        if (res < 0) {
+            sio_eprintf("list_jobs: Error writing to output_fd: %d\n",
+                        output_fd);
             return false;
         }
     }
