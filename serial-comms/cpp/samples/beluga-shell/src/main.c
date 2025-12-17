@@ -198,10 +198,11 @@ static void run_shell_command(struct cmdline_tokens *tokens) {
     for (size_t i = 0; i < (sizeof(search_paths) / sizeof(const char *)); i++) {
         strncpy(line, search_paths[i], FILENAME_MAX);
         strncat(line, tokens->argv[0], FILENAME_MAX);
-        execve(tokens->argv[0], tokens->argv, environ);
+        execve(line, tokens->argv, environ);
     }
 
-    exit(EXIT_FAILURE);
+    sio_eprintf("%s: %s\n", tokens->argv[0], strerror(errno));
+    _exit(EXIT_FAILURE);
 }
 
 static void run_job(struct cmdline_tokens *tokens, const char *cmdline,
@@ -210,6 +211,7 @@ static void run_job(struct cmdline_tokens *tokens, const char *cmdline,
     pid_t pid;
 
     CRITICAL_SECTION(mask, prev) {
+        fg_running = state == FG;
         if ((pid = fork()) == 0) {
             setpgrp();
             // todo: redirect IO
@@ -219,12 +221,9 @@ static void run_job(struct cmdline_tokens *tokens, const char *cmdline,
         add_job(pid, state, cmdline);
 
         if (state == FG) {
-            fg_running = 1;
-
             while (fg_running) {
                 sigsuspend(&prev);
             }
-            sio_printf("Here!\n");
         } else {
             sio_printf("[%d] (%ld) %s\n", (int)job_from_pid(pid), (long)pid,
                        cmdline);
@@ -267,10 +266,11 @@ static void sigchld_handler(int sig) {
     jid_t job;
     int status, prev_errno = errno;
 
+    sigemptyset(&mask);
     sigfillset(&mask);
+    sigprocmask(SIG_BLOCK, &mask, &prev_mask);
 
     while ((pid = waitpid((pid_t)-1, &status, WNOHANG | WUNTRACED)) > 0) {
-        sigprocmask(SIG_BLOCK, &mask, &prev_mask);
         job = job_from_pid(pid);
         if (job == fg_job()) {
             fg_running = 0;
@@ -289,8 +289,8 @@ static void sigchld_handler(int sig) {
         } else {
             delete_job(job);
         }
-        sigprocmask(SIG_SETMASK, &prev_mask, NULL);
     }
+    sigprocmask(SIG_SETMASK, &prev_mask, NULL);
 
     errno = prev_errno;
 }
