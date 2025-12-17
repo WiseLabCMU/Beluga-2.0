@@ -259,80 +259,77 @@ static void save_history(void) {
     write_history(path);
 }
 
+static __attribute__((always_inline)) inline void sig_cleanup(int *key) {
+    sio_assert(*key == 1);
+}
+
+#define SIGNAL_HANDLER_CRIT_SECTION_ONEXIT __attribute__((cleanup(sig_cleanup)))
+
+#define SIGNAL_HANDLER_CRIT_SECTION()                                          \
+    int __prev_errno = errno;                                                  \
+    sigset_t __mask, __prev;                                                   \
+    sigfillset(&__mask);                                                       \
+    sigprocmask(SIG_BLOCK, &__mask, &__prev);                                  \
+    for (int __key SIGNAL_HANDLER_CRIT_SECTION_ONEXIT = 0; !__key;             \
+         sigprocmask(SIG_UNBLOCK, &__prev, NULL), errno = __prev_errno,        \
+                   __key = 1)
+
 static void sigchld_handler(int sig) {
     ARG_UNUSED(sig);
-    sigset_t mask, prev_mask;
     pid_t pid;
     jid_t job;
-    int status, prev_errno = errno;
+    int status;
 
-    sigemptyset(&mask);
-    sigfillset(&mask);
-    sigprocmask(SIG_BLOCK, &mask, &prev_mask);
-
-    while ((pid = waitpid((pid_t)-1, &status, WNOHANG | WUNTRACED)) > 0) {
-        job = job_from_pid(pid);
-        if (job == fg_job()) {
-            fg_running = 0;
-        }
-
-        if (WIFEXITED(status) || WIFSIGNALED(status)) {
-            if (WIFSIGNALED(status)) {
-                sio_printf("Job [%d] (%ld) terminated by signal %d\n", (int)job,
-                           (long)pid, WTERMSIG(status));
+    SIGNAL_HANDLER_CRIT_SECTION() {
+        while ((pid = waitpid((pid_t)-1, &status, WNOHANG | WUNTRACED)) > 0) {
+            job = job_from_pid(pid);
+            if (job == fg_job()) {
+                fg_running = 0;
             }
-            delete_job(job);
-        } else if (WIFSTOPPED(status)) {
-            sio_printf("Job [%d] (%ld) stopped by signal %d\n", (int)job,
-                       (long)pid, WSTOPSIG(status));
-            job_set_state(job, ST);
-        } else {
-            delete_job(job);
+
+            if (WIFEXITED(status) || WIFSIGNALED(status)) {
+                if (WIFSIGNALED(status)) {
+                    sio_printf("Job [%d] (%ld) terminated by signal %d\n",
+                               (int)job, (long)pid, WTERMSIG(status));
+                }
+                delete_job(job);
+            } else if (WIFSTOPPED(status)) {
+                sio_printf("Job [%d] (%ld) stopped by signal %d\n", (int)job,
+                           (long)pid, WSTOPSIG(status));
+                job_set_state(job, ST);
+            } else {
+                delete_job(job);
+            }
         }
     }
-    sigprocmask(SIG_SETMASK, &prev_mask, NULL);
-
-    errno = prev_errno;
 }
 
 static void sigint_handler(int sig) {
     ARG_UNUSED(sig);
-    sigset_t mask, prev;
-    int prev_errno = errno;
     pid_t pid;
     jid_t job;
 
-    sigfillset(&mask);
-    sigprocmask(SIG_BLOCK, &mask, &prev);
+    SIGNAL_HANDLER_CRIT_SECTION() {
+        if ((job = fg_job()) != 0) {
+            pid = job_get_pid(job);
 
-    if ((job = fg_job()) != 0) {
-        pid = job_get_pid(job);
-
-        kill(-pid, SIGINT);
+            kill(-pid, SIGINT);
+        }
     }
-
-    sigprocmask(SIG_SETMASK, &prev, NULL);
-    errno = prev_errno;
 }
 
 static void sigtstp_handler(int sig) {
     ARG_UNUSED(sig);
-    sigset_t mask, prev;
-    int prev_errno = errno;
     jid_t job;
 
-    sigfillset(&mask);
-    sigprocmask(SIG_BLOCK, &mask, &prev);
+    SIGNAL_HANDLER_CRIT_SECTION() {
+        job = fg_job();
 
-    job = fg_job();
-
-    if (job != 0) {
-        pid_t pid = job_get_pid(job);
-        kill(-pid, SIGTSTP);
+        if (job != 0) {
+            pid_t pid = job_get_pid(job);
+            kill(-pid, SIGTSTP);
+        }
     }
-
-    sigprocmask(SIG_SETMASK, &prev, NULL);
-    errno = prev_errno;
 }
 
 static void cleanup(void) {
