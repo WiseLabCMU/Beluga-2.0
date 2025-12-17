@@ -13,12 +13,82 @@
 #include <shell_helpers.h>
 #include <sio.h>
 #include <stdio.h>
+#include <utils.h>
 
-static void cmd_id(const struct cmdline_tokens *tokens);
+#define _COMMAND_DEFAULT_NAME(handler_)                                        \
+    { #handler_, handler_ }
+#define _COMMAND_CUSTOM_NAME(handler_, name_)                                  \
+    { name_, handler_ }
+
+#define COMMAND(handler_, name_...)                                            \
+    COND_CODE_0(IS_EMPTY(name_), (_COMMAND_CUSTOM_NAME(handler_, name_)),      \
+                (_COMMAND_DEFAULT_NAME(handler_)))
+
+static void id(const struct cmdline_tokens *tokens);
+static void start_ble(const struct cmdline_tokens *tokens);
+static void stop_ble(const struct cmdline_tokens *tokens);
+static void start_uwb(const struct cmdline_tokens *tokens);
+static void stop_uwb(const struct cmdline_tokens *tokens);
+static void bootmode(const struct cmdline_tokens *tokens);
+static void rate(const struct cmdline_tokens *tokens);
+static void channel(const struct cmdline_tokens *tokens);
+static void reset(const struct cmdline_tokens *tokens);
+static void timeout(const struct cmdline_tokens *tokens);
+static void txpower(const struct cmdline_tokens *tokens);
+static void streammode(const struct cmdline_tokens *tokens);
+static void twrmode(const struct cmdline_tokens *tokens);
+static void ledmode(const struct cmdline_tokens *tokens);
+static void reboot(const struct cmdline_tokens *tokens);
+static void pwramp(const struct cmdline_tokens *tokens);
+static void antenna(const struct cmdline_tokens *tokens);
+static void cmd_time(const struct cmdline_tokens *tokens);
+static void deepsleep(const struct cmdline_tokens *tokens);
+static void datarate(const struct cmdline_tokens *tokens);
+static void preamble(const struct cmdline_tokens *tokens);
+static void pulserate(const struct cmdline_tokens *tokens);
+static void phr(const struct cmdline_tokens *tokens);
+static void pac(const struct cmdline_tokens *tokens);
+static void sfd(const struct cmdline_tokens *tokens);
+static void panid(const struct cmdline_tokens *tokens);
+static void evict(const struct cmdline_tokens *tokens);
+static void verbose(const struct cmdline_tokens *tokens);
+static void status(const struct cmdline_tokens *tokens);
+static void version(const struct cmdline_tokens *tokens);
+static void exchange(const struct cmdline_tokens *tokens);
 
 static struct beluga_serial *_serial = NULL;
 static struct command_info commands[] = {
-    {"id", cmd_id},
+    COMMAND(id),
+    COMMAND(start_ble, "start-ble"),
+    COMMAND(stop_ble, "stop-ble"),
+    COMMAND(start_uwb, "start-uwb"),
+    COMMAND(stop_uwb, "stop-uwb"),
+    COMMAND(bootmode),
+    COMMAND(rate),
+    COMMAND(channel),
+    COMMAND(reset),
+    COMMAND(timeout),
+    COMMAND(txpower),
+    COMMAND(streammode),
+    COMMAND(twrmode),
+    COMMAND(ledmode),
+    COMMAND(reboot), // todo: fix cpp bridge
+    COMMAND(pwramp),
+    COMMAND(antenna),
+    COMMAND(cmd_time, "time"),
+    COMMAND(deepsleep),
+    COMMAND(datarate),
+    COMMAND(preamble),
+    COMMAND(pulserate),
+    COMMAND(phr),
+    COMMAND(pac),
+    COMMAND(sfd),
+    COMMAND(panid),
+    COMMAND(evict),
+    COMMAND(verbose),
+    COMMAND(status),
+    COMMAND(version),
+    COMMAND(exchange),
 };
 
 int initialize_builtin_commands(struct beluga_serial *serial) {
@@ -55,7 +125,7 @@ static void write_serial_response(const struct cmdline_tokens *tokens) {
     sio_dprintf(output_fd, "%s\n", _serial->response);
 }
 
-static void cmd_id(const struct cmdline_tokens *tokens) {
+static void id(const struct cmdline_tokens *tokens) {
     const char *arg = NULL;
 
     if (tokens->argc > 1) {
@@ -63,5 +133,276 @@ static void cmd_id(const struct cmdline_tokens *tokens) {
     }
 
     beluga_serial_id(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void start_ble(const struct cmdline_tokens *tokens) {
+    beluga_serial_start_ble(_serial);
+    write_serial_response(tokens);
+}
+
+static void stop_ble(const struct cmdline_tokens *tokens) {
+    beluga_serial_stop_ble(_serial);
+    write_serial_response(tokens);
+}
+
+static void start_uwb(const struct cmdline_tokens *tokens) {
+    beluga_serial_start_uwb(_serial);
+    write_serial_response(tokens);
+}
+
+static void stop_uwb(const struct cmdline_tokens *tokens) {
+    beluga_serial_stop_uwb(_serial);
+    write_serial_response(tokens);
+}
+
+static void bootmode(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_bootmode(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void rate(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_rate(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void channel(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_channel(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void reset(const struct cmdline_tokens *tokens) {
+    beluga_serial_reset(_serial);
+    write_serial_response(tokens);
+}
+
+static void timeout(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_timeout(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void txpower(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    // todo
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_txpower(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void streammode(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_streammode(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void twrmode(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_twrmode(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void ledmode(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_ledmode(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void reboot(const struct cmdline_tokens *tokens) {
+    beluga_serial_reboot(_serial);
+    write_serial_response(tokens);
+}
+
+static void pwramp(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_pwramp(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void antenna(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_antenna(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void cmd_time(const struct cmdline_tokens *tokens) {
+    beluga_serial_time(_serial);
+    write_serial_response(tokens);
+}
+
+static void deepsleep(const struct cmdline_tokens *tokens) {
+    beluga_serial_deepsleep(_serial);
+    write_serial_response(tokens);
+}
+
+static void datarate(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_datarate(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void preamble(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_preamble(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void pulserate(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_pulserate(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void phr(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_phr(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void pac(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_pac(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void sfd(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_sfd(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void panid(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_panid(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void evict(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_evict(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void verbose(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_verbose(_serial, arg);
+    write_serial_response(tokens);
+}
+
+static void status(const struct cmdline_tokens *tokens) {
+    beluga_serial_status(_serial);
+    write_serial_response(tokens);
+}
+
+static void version(const struct cmdline_tokens *tokens) {
+    beluga_serial_version(_serial);
+    write_serial_response(tokens);
+}
+
+static void exchange(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_exchange(_serial, arg);
     write_serial_response(tokens);
 }
