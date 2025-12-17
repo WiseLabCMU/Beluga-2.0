@@ -13,7 +13,7 @@
 #include <shell_helpers.h>
 #include <stdio.h>
 
-static void cmd_id(int argc, char **argv);
+static void cmd_id(const struct cmdline_tokens *tokens);
 
 static struct beluga_serial *_serial = NULL;
 static struct command_info commands[] = {
@@ -35,11 +35,11 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
     return 0;
 }
 
-static void cmd_id(int argc, char **argv) {
+static void cmd_id(const struct cmdline_tokens *tokens) {
     const char *arg = NULL;
 
-    if (argc > 1) {
-        arg = argv[1];
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
     }
 
     beluga_serial_id(_serial, arg);

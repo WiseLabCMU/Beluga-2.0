@@ -57,7 +57,7 @@ struct cmdline_tokens {
     char *_buf;
 };
 
-typedef void (*command_callback_t)(int argc, char **argv);
+typedef void (*command_callback_t)(const struct cmdline_tokens *tokens);
 struct command_info {
     const char *cmd_str;
     command_callback_t callback;
