@@ -11,6 +11,7 @@
 #ifndef BELUGA_SHELL_HELPERS_H
 #define BELUGA_SHELL_HELPERS_H
 
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -19,7 +20,11 @@
 
 extern char **environ;
 
-#define MAXJOBS 64
+#define WR_FLAGS     (O_WRONLY | O_CREAT | O_TRUNC)
+#define APPEND_FLAGS (O_RDWR | O_APPEND | O_CREAT)
+#define WR_PERMS     (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+
+#define MAXJOBS      64
 
 #if MAXJOBS >= UINT32_MAX
 typedef uint64_t jid_t;

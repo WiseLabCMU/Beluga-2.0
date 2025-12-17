@@ -11,6 +11,7 @@
 #include <commands.h>
 #include <errno.h>
 #include <shell_helpers.h>
+#include <sio.h>
 #include <stdio.h>
 
 static void cmd_id(const struct cmdline_tokens *tokens);
@@ -35,6 +36,25 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
     return 0;
 }
 
+static void write_serial_response(const struct cmdline_tokens *tokens) {
+    int output_fd = STDOUT_FILENO;
+
+    if (tokens->outfile != NULL) {
+        if (!tokens->outfile_append) {
+            output_fd = open(tokens->outfile, WR_FLAGS, WR_PERMS);
+        } else {
+            output_fd = open(tokens->outfile, APPEND_FLAGS, WR_PERMS);
+        }
+
+        if (output_fd < 0) {
+            perror(tokens->outfile);
+            return;
+        }
+    }
+
+    sio_dprintf(output_fd, "%s\n", _serial->response);
+}
+
 static void cmd_id(const struct cmdline_tokens *tokens) {
     const char *arg = NULL;
 
@@ -43,7 +63,5 @@ static void cmd_id(const struct cmdline_tokens *tokens) {
     }
 
     beluga_serial_id(_serial, arg);
-
-    // todo: write to file if applicable
-    printf("%s\n", _serial->response);
+    write_serial_response(tokens);
 }

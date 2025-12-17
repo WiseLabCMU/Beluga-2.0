@@ -149,7 +149,7 @@ static int validate_and_count_args(struct cmdline_tokens *tokens) {
     return 0;
 }
 
-int parse_arguments(struct cmdline_tokens *tokens) {
+static int parse_arguments(struct cmdline_tokens *tokens) {
     const char *delims = " \t\r\n";
     char *buf;
     char *next;
