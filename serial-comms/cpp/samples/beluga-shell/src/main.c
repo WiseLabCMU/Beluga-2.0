@@ -10,6 +10,7 @@
 
 #include <beluga_serial_c_api.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <select_port.h>
@@ -192,6 +193,40 @@ crit_section_onexit(unsigned int *key) {
              block_signals(&mask_, &prev_);                                    \
          !__i; unblock_signals(&prev_), __i = 1)
 
+static void redirect_io(struct cmdline_tokens *tokens) {
+    int input_fd = STDIN_FILENO, output_fd = STDOUT_FILENO;
+
+    if (tokens->infile != NULL) {
+        input_fd = open(tokens->infile, O_RDONLY);
+
+        if (input_fd < 0) {
+            perror(tokens->infile);
+            _exit(EXIT_FAILURE);
+        }
+
+        if (dup2(input_fd, STDIN_FILENO) < 0) {
+            perror("dup2()");
+            _exit(EXIT_FAILURE);
+        }
+    }
+
+    if (tokens->outfile) {
+        output_fd =
+            open(tokens->outfile, O_WRONLY | O_CREAT | O_TRUNC,
+                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+
+        if (output_fd < 0) {
+            perror(tokens->outfile);
+            _exit(EXIT_FAILURE);
+        }
+
+        if (dup2(output_fd, STDOUT_FILENO) < 0) {
+            perror("dup2()");
+            _exit(EXIT_FAILURE);
+        }
+    }
+}
+
 static void run_shell_command(struct cmdline_tokens *tokens) {
     char line[FILENAME_MAX];
 
@@ -214,7 +249,7 @@ static void run_job(struct cmdline_tokens *tokens, const char *cmdline,
         fg_running = state == FG;
         if ((pid = fork()) == 0) {
             setpgrp();
-            // todo: redirect IO
+            redirect_io(tokens);
             CRITICAL_SECTION_EXIT_FUNCTION(prev, run_shell_command(tokens), );
         }
 
