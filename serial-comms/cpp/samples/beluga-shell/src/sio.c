@@ -18,7 +18,7 @@
 
 static void reverse(char *s, size_t len) {
     size_t i, j;
-    for (i = 0, j = len - 1; i < j; i++, j++) {
+    for (i = 0, j = len - 1; i < j; i++, j--) {
         char c = s[i];
         s[i] = s[j];
         s[j] = c;

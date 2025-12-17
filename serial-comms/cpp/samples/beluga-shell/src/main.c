@@ -32,6 +32,10 @@ static struct beluga_serial *serial = NULL;
 static char *port = NULL;
 static bool history_initialized = false;
 
+static const char *search_paths[] = {"/bin/", "/usr/bin/", "/usr/games/"};
+
+static sig_atomic_t fg_running = 0;
+
 static void cleanup(void);
 static void init(void);
 static void run(void);
@@ -105,6 +109,11 @@ static void init(void) {
 
     load_history();
 
+    if (setvbuf(stdout, NULL, _IOLBF, 0) < 0) {
+        perror("setvbuf error");
+        exit(1);
+    }
+
     // todo: create autocompletion
     serial = create_beluga_serial_instance(&attr);
 
@@ -115,6 +124,8 @@ static void init(void) {
 
     beluga_serial_start(serial);
     printf("Connection established\n\n");
+
+    init_job_list();
 
     Signal(SIGINT, sigint_handler);
     Signal(SIGTSTP, sigtstp_handler);
@@ -149,14 +160,86 @@ static void run(void) {
     }
 }
 
+static int block_signals(sigset_t *mask, sigset_t *prev) {
+    sigemptyset(mask);
+    sigaddset(mask, SIGCHLD);
+    sigaddset(mask, SIGINT);
+    sigaddset(mask, SIGTSTP);
+    sigprocmask(SIG_BLOCK, mask, prev);
+    return 0;
+}
+
+static void unblock_signals(sigset_t *mask) {
+    sigprocmask(SIG_SETMASK, mask, NULL);
+}
+
+static __attribute__((always_inline)) inline void
+crit_section_onexit(unsigned int *key) {
+    sio_assert(*key);
+}
+#define CRITICAL_SECTION_ONEXIT __attribute__((cleanup(crit_section_onexit)))
+#define CRITICAL_SECTION_BREAK  continue
+#define CRITICAL_SECTION_EXIT_FUNCTION(prev_, stmt_, ret_)                     \
+    do {                                                                       \
+        __i = 1;                                                               \
+        unblock_signals(&prev_);                                               \
+        stmt_;                                                                 \
+        return ret_;                                                           \
+    } while (0)
+
+#define CRITICAL_SECTION(mask_, prev_)                                         \
+    for (unsigned int __i CRITICAL_SECTION_ONEXIT =                            \
+             block_signals(&mask_, &prev_);                                    \
+         !__i; unblock_signals(&prev_), __i = 1)
+
+static void run_shell_command(struct cmdline_tokens *tokens) {
+    char line[FILENAME_MAX];
+
+    for (size_t i = 0; i < (sizeof(search_paths) / sizeof(const char *)); i++) {
+        strncpy(line, search_paths[i], FILENAME_MAX);
+        strncat(line, tokens->argv[0], FILENAME_MAX);
+        execve(tokens->argv[0], tokens->argv, environ);
+    }
+
+    exit(EXIT_FAILURE);
+}
+
+static void run_job(struct cmdline_tokens *tokens, const char *cmdline,
+                    enum job_state state) {
+    sigset_t mask, prev;
+    pid_t pid;
+
+    CRITICAL_SECTION(mask, prev) {
+        if ((pid = fork()) == 0) {
+            setpgrp();
+            // todo: redirect IO
+            CRITICAL_SECTION_EXIT_FUNCTION(prev, run_shell_command(tokens), );
+        }
+
+        add_job(pid, state, cmdline);
+
+        if (state == FG) {
+            fg_running = 1;
+
+            while (fg_running) {
+                sigsuspend(&prev);
+            }
+            sio_printf("Here!\n");
+        } else {
+            sio_printf("[%d] (%ld) %s\n", (int)job_from_pid(pid), (long)pid,
+                       cmdline);
+        }
+    }
+}
+
 static bool evaluate_command(const char *cmd) {
     struct cmdline_tokens tokens;
     enum parseline_result result = parseline(cmd, &tokens);
 
     if (tokens.builtin_command) {
         run_builtin_command(&tokens);
-    } else {
-        // todo: use parseline result here
+    } else if (result != PARSELINE_ERROR && result != PARSELINE_EMPTY) {
+        run_job(&tokens, cmd, result == PARSELINE_FG ? FG : BG);
     }
 
     cleanup_parseline(&tokens);
@@ -190,7 +273,7 @@ static void sigchld_handler(int sig) {
         sigprocmask(SIG_BLOCK, &mask, &prev_mask);
         job = job_from_pid(pid);
         if (job == fg_job()) {
-            // todo
+            fg_running = 0;
         }
 
         if (WIFEXITED(status) || WIFSIGNALED(status)) {

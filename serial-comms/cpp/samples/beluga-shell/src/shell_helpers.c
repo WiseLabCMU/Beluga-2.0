@@ -232,7 +232,7 @@ enum parseline_result parseline(const char *cmdline,
                                 struct cmdline_tokens *tokens) {
     assert(tokens != NULL);
 
-    if (cmdline == NULL || *cmdline == '\0') {
+    if (cmdline == NULL) {
         return PARSELINE_EMPTY;
     }
 
@@ -248,6 +248,7 @@ enum parseline_result parseline(const char *cmdline,
     tokens->infile = NULL;
     tokens->outfile = NULL;
     tokens->builtin_command = false;
+    tokens->argv = NULL;
 
     if (validate_and_count_args(tokens) < 0) {
         return PARSELINE_ERROR;
@@ -296,6 +297,9 @@ void cleanup_parseline(struct cmdline_tokens *tokens) {
 }
 
 void run_builtin_command(struct cmdline_tokens *tokens) {
+    if (!tokens->builtin_command) {
+        return;
+    }
     assert(tokens->builtin_index < builtin_commands.len);
 
     builtin_commands.commands[tokens->builtin_index].callback(tokens->argc,
