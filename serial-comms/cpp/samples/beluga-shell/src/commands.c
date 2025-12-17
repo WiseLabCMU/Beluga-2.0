@@ -10,9 +10,11 @@
 
 #include <commands.h>
 #include <errno.h>
+#include <readline/readline.h>
 #include <shell_helpers.h>
 #include <sio.h>
 #include <stdio.h>
+#include <string.h>
 #include <utils.h>
 
 #define _COMMAND_DEFAULT_NAME(handler_)                                        \
@@ -91,19 +93,43 @@ static struct command_info commands[] = {
     COMMAND(exchange),
 };
 
+#define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
+
 int initialize_builtin_commands(struct beluga_serial *serial) {
     if (serial == NULL) {
         return -EINVAL;
     }
     _serial = serial;
 
-    if (register_command_callbacks(commands, sizeof(commands) /
-                                                 sizeof(commands[0])) < 0) {
+    if (register_command_callbacks(commands, ARRAY_SIZE(commands)) < 0) {
         printf("Failed to initialize command handlers\n");
         exit(EXIT_FAILURE);
     }
 
     return 0;
+}
+
+static char *command_name_generator(const char *text, int state) {
+    static size_t list_index, len;
+
+    if (!state) {
+        list_index = 0;
+        len = strlen(text);
+    }
+
+    for (; list_index < ARRAY_SIZE(commands); list_index++) {
+        if (strncmp(commands[list_index].cmd_str, text, len) == 0) {
+            char *cmd = strdup(commands[list_index].cmd_str);
+            list_index++;
+            return cmd;
+        }
+    }
+
+    return NULL;
+}
+
+char **command_completion(const char *text, int start, int end) {
+    return rl_completion_matches(text, command_name_generator);
 }
 
 static void write_serial_response(const struct cmdline_tokens *tokens) {

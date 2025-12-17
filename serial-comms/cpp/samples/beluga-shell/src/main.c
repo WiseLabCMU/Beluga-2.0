@@ -116,7 +116,7 @@ static void init(void) {
         exit(1);
     }
 
-    // todo: create autocompletion
+    rl_attempted_completion_function = command_completion;
     serial = create_beluga_serial_instance(&attr);
 
     if (serial == NULL) {
