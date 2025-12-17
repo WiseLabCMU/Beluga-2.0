@@ -16,6 +16,7 @@ set(SRC_FILES
         src/select_port.c
         src/shell_helpers.c
         src/sio.c
+        src/commands.c
 )
 
 add_executable(beluga-shell ${SRC_FILES})

@@ -9,6 +9,7 @@
  */
 
 #include <beluga_serial_c_api.h>
+#include <commands.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <readline/history.h>
@@ -127,6 +128,7 @@ static void init(void) {
     printf("Connection established\n\n");
 
     init_job_list();
+    initialize_builtin_commands(serial);
 
     Signal(SIGINT, sigint_handler);
     Signal(SIGTSTP, sigtstp_handler);
