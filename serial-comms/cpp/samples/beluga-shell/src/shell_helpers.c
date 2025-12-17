@@ -33,6 +33,7 @@ enum parse_state {
     PARSE_STATE_NORMAL,
     PARSE_STATE_INFILE,
     PARSE_STATE_OUTFILE,
+    PARSE_STATE_APPEND,
 };
 
 struct builtin_commands builtin_commands = {
@@ -99,7 +100,8 @@ static int validate_and_count_args(struct cmdline_tokens *tokens) {
             if (tokens->outfile != NULL) {
                 return -EEXIST;
             }
-            state = PARSE_STATE_OUTFILE;
+            state = (state != PARSE_STATE_OUTFILE) ? PARSE_STATE_OUTFILE
+                                                   : PARSE_STATE_APPEND;
             buf++;
             continue;
         }
@@ -127,6 +129,9 @@ static int validate_and_count_args(struct cmdline_tokens *tokens) {
         case PARSE_STATE_INFILE: {
             tokens->infile = buf;
             break;
+        }
+        case PARSE_STATE_APPEND: {
+            tokens->outfile_append = true;
         }
         case PARSE_STATE_OUTFILE: {
             tokens->outfile = buf;
@@ -168,7 +173,8 @@ int parse_arguments(struct cmdline_tokens *tokens) {
             continue;
         }
         case '>': {
-            state = PARSE_STATE_OUTFILE;
+            state = (state != PARSE_STATE_OUTFILE) ? PARSE_STATE_OUTFILE
+                                                   : PARSE_STATE_APPEND;
             buf++;
             continue;
         }
@@ -200,6 +206,9 @@ int parse_arguments(struct cmdline_tokens *tokens) {
         case PARSE_STATE_INFILE: {
             tokens->infile = buf;
             break;
+        }
+        case PARSE_STATE_APPEND: {
+            tokens->outfile_append = true;
         }
         case PARSE_STATE_OUTFILE: {
             tokens->outfile = buf;
@@ -247,6 +256,7 @@ enum parseline_result parseline(const char *cmdline,
     tokens->argc = 0;
     tokens->infile = NULL;
     tokens->outfile = NULL;
+    tokens->outfile_append = false;
     tokens->builtin_command = false;
     tokens->argv = NULL;
 
@@ -302,8 +312,7 @@ void run_builtin_command(struct cmdline_tokens *tokens) {
     }
     assert(tokens->builtin_index < builtin_commands.len);
 
-    builtin_commands.commands[tokens->builtin_index].callback(tokens->argc,
-                                                              tokens->argv);
+    builtin_commands.commands[tokens->builtin_index].callback(tokens);
 }
 
 static void check_blocked(void) {

@@ -52,6 +52,7 @@ struct cmdline_tokens {
     char **argv;
     char *infile;
     char *outfile;
+    bool outfile_append;
     bool builtin_command;
     size_t builtin_index;
     char *_buf;

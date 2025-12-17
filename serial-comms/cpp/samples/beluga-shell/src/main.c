@@ -213,9 +213,16 @@ static void redirect_io(struct cmdline_tokens *tokens) {
     }
 
     if (tokens->outfile) {
-        output_fd =
-            open(tokens->outfile, O_WRONLY | O_CREAT | O_TRUNC,
-                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+
+        if (!tokens->outfile_append) {
+            output_fd =
+                open(tokens->outfile, O_WRONLY | O_CREAT | O_TRUNC,
+                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+        } else {
+            output_fd =
+                open(tokens->outfile, O_RDWR | O_APPEND | O_CREAT,
+                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+        }
 
         if (output_fd < 0) {
             perror(tokens->outfile);
