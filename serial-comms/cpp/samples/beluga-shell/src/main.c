@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <autocomplete.h>
 
 #define MAX_HISTORY 500
 
@@ -32,7 +33,6 @@ static const char *history_file = ".history";
 static const char *beluga_shell_cache_dir = ".beluga-shell";
 static struct beluga_serial *serial = NULL;
 static char *port = NULL;
-static bool history_initialized = false;
 
 static const char *search_paths[] = {"/bin/", "/usr/bin/", "/usr/games/"};
 
@@ -101,6 +101,10 @@ static void init(void) {
 
     if (atexit(cleanup) < 0) {
         perror("atexit()");
+        exit(EXIT_FAILURE);
+    }
+
+    if (initialize_autocomplete() < 0) {
         exit(EXIT_FAILURE);
     }
 
@@ -384,4 +388,6 @@ static void cleanup(void) {
 
     destroy_beluga_serial_instance(&serial);
     free(port);
+
+    cleanup_autocomplete();
 }
