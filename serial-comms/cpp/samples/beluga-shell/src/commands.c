@@ -74,7 +74,7 @@ static struct command_info commands[] = {
     COMMAND(streammode),
     COMMAND(twrmode),
     COMMAND(ledmode),
-    COMMAND(reboot), // todo: fix cpp bridge
+    COMMAND(reboot),
     COMMAND(pwramp),
     COMMAND(antenna),
     COMMAND(cmd_time, "time"),

@@ -62,6 +62,11 @@ static int select_port(void) {
     rl_attempted_completion_function = port_completion;
     port = readline("Port: ");
 
+    if (port == NULL) {
+        free(port);
+        exit(EXIT_SUCCESS);
+    }
+
     for (size_t i = 0; i < ports.len; i++) {
         if (strcmp(port, ports.ports[i].port) == 0) {
             index = (int)i;
