@@ -9,14 +9,14 @@
  */
 
 #include <autocomplete.h>
-#include <stdlib.h>
 #include <dirent.h>
-#include <stdio.h>
 #include <errno.h>
-#include <string.h>
 #include <stdbool.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 struct shell_command {
@@ -32,9 +32,7 @@ struct commands {
     size_t num_paths;
 };
 
-struct commands commands = {
-    NULL, 0
-};
+struct commands commands = {NULL, 0};
 
 static bool check_executable(const char *path, const char *name) {
     char _path[FILENAME_MAX];
@@ -67,6 +65,16 @@ static size_t count_files(const char *path, DIR *d) {
     return num_files;
 }
 
+static int add_command(const char *name, const char *path) {
+    commands.commands[commands.len].command = strdup(name);
+    if (commands.commands[commands.len].command == NULL) {
+        return -ENOMEM;
+    }
+    commands.commands[commands.len].path = path;
+    commands.len++;
+    return 0;
+}
+
 static int add_commands_to_list(const char *path, DIR *d) {
     struct dirent *entry;
     const char *_path = strdup(path);
@@ -78,14 +86,11 @@ static int add_commands_to_list(const char *path, DIR *d) {
     }
 
     while ((entry = readdir(d)) != NULL) {
-        if (entry->d_type != DT_DIR && check_executable(path, entry->d_name) && !in_list(entry->d_name)) {
-            commands.commands[commands.len].command = strdup(entry->d_name);
-
-            if (commands.commands[commands.len].command == NULL) {
+        if (entry->d_type != DT_DIR && check_executable(path, entry->d_name) &&
+            !in_list(entry->d_name)) {
+            if (add_command(entry->d_name, _path) < 0) {
                 return -ENOMEM;
             }
-            commands.commands[commands.len].path = _path;
-            commands.len++;
         }
     }
 
@@ -109,7 +114,9 @@ static int add_path_directory(const char *path) {
         return 0;
     }
 
-    commands.commands = reallocarray(commands.commands, commands.len + num_commands, sizeof(struct shell_command));
+    commands.commands =
+        reallocarray(commands.commands, commands.len + num_commands,
+                     sizeof(struct shell_command));
 
     if (errno == ENOMEM) {
         return -errno;
@@ -142,6 +149,13 @@ static size_t count_paths(const char *path) {
     return paths;
 }
 
+static int qsort_comp(const void *left, const void *right) {
+    const struct shell_command *l_cmd = left;
+    const struct shell_command *r_cmd = right;
+
+    return strcmp(l_cmd->command, r_cmd->command);
+}
+
 static int build_commands_list(void) {
     const char *path = getenv("PATH");
     char *path_copy, *token, *pos;
@@ -157,7 +171,8 @@ static int build_commands_list(void) {
         return -ENOMEM;
     }
 
-    commands.path = (const char **)calloc(count_paths(path), sizeof(const char **));
+    commands.path =
+        (const char **)calloc(count_paths(path), sizeof(const char **));
 
     token = strtok_r(path_copy, ":", &pos);
     while (token != NULL) {
@@ -168,16 +183,16 @@ static int build_commands_list(void) {
     }
     free(path_copy);
 
-    commands.path = reallocarray(commands.path, commands.num_paths, sizeof(const char **));
+    commands.path =
+        reallocarray(commands.path, commands.num_paths, sizeof(const char **));
 
-    // todo: sort the commands list
+    qsort(commands.commands, commands.len, sizeof(struct shell_command),
+          qsort_comp);
 
     return 0;
 }
 
-int initialize_autocomplete(void) {
-    return build_commands_list();
-}
+int initialize_autocomplete(void) { return build_commands_list(); }
 
 void cleanup_autocomplete(void) {
     for (size_t i = 0; i < commands.len; i++) {
@@ -195,12 +210,55 @@ void cleanup_autocomplete(void) {
     commands.num_paths = 0;
 }
 
+static struct shell_command *find_command(const char *command) {
+    ssize_t low = 0;
+    ssize_t high = (ssize_t)commands.len - 1;
+
+    while (low <= high) {
+        ssize_t mid = low + ((high - low) / 2);
+        int res = strcmp(commands.commands[mid].command, command);
+
+        if (res == 0) {
+            return &commands.commands[mid];
+        }
+
+        if (res < 0) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    return NULL;
+}
+
 int autocomplete_register_builtin_command(const char *command) {
-    // todo
+    struct shell_command *cmd = find_command(command);
+
+    if (cmd != NULL) {
+        cmd->path = NULL;
+        return 0;
+    }
+
+    commands.commands = reallocarray(commands.commands, commands.len + 1,
+                                     sizeof(struct shell_command));
+    if (errno == ENOMEM) {
+        return -ENOMEM;
+    }
+
+    add_command(command, NULL);
+    qsort(commands.commands, commands.len, sizeof(struct shell_command),
+          qsort_comp);
+
     return 0;
 }
 
 const char *command_path(const char *command) {
-    // todo: search for the command. Use binary search
-    return NULL;
+    struct shell_command *cmd = find_command(command);
+
+    if (cmd == NULL) {
+        return NULL;
+    }
+
+    return cmd->path;
 }

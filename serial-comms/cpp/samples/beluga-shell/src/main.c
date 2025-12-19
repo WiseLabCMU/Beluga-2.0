@@ -8,6 +8,7 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
+#include <autocomplete.h>
 #include <beluga_serial_c_api.h>
 #include <commands.h>
 #include <errno.h>
@@ -25,7 +26,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <autocomplete.h>
 
 #define MAX_HISTORY 500
 
