@@ -37,7 +37,7 @@ static char *port = NULL;
 
 static const char *search_paths[] = {"/bin/", "/usr/bin/", "/usr/games/"};
 
-static sig_atomic_t fg_running = 0;
+sig_atomic_t fg_running = 0;
 
 static void cleanup(void);
 static void init(void);

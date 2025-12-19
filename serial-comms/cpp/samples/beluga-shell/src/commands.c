@@ -59,6 +59,8 @@ static void status(const struct cmdline_tokens *tokens);
 static void version(const struct cmdline_tokens *tokens);
 static void exchange(const struct cmdline_tokens *tokens);
 static void jobs(const struct cmdline_tokens *tokens);
+static void bg(const struct cmdline_tokens *tokens);
+static void fg(const struct cmdline_tokens *tokens);
 
 static struct beluga_serial *_serial = NULL;
 static struct command_info commands[] = {
@@ -94,6 +96,8 @@ static struct command_info commands[] = {
     COMMAND(version),
     COMMAND(exchange),
     COMMAND(jobs),
+    COMMAND(bg),
+    COMMAND(fg),
 };
 
 #define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
@@ -443,4 +447,103 @@ static void jobs(const struct cmdline_tokens *tokens) {
             close(fd);
         }
     }
+}
+
+static bool strtoint32(const char *str, int32_t *result) {
+    char *endptr;
+    unsigned long ret;
+    char *start = (char *)str;
+
+    errno = 0;
+    ret = strtol(start, &endptr, 10);
+
+    if (errno == ERANGE || (int64_t)ret > (int64_t)INT32_MAX ||
+        (int64_t)ret < (int64_t)INT32_MIN || isgraph((int)*endptr)) {
+        *result = 0;
+        return false;
+    }
+
+    *result = (int32_t)ret;
+    return true;
+}
+
+extern sig_atomic_t fg_running; // declared in main.c
+
+static void update_job(jid_t job, pid_t pid, enum job_state state,
+                       sigset_t *prev) {
+    sio_assert(state == BG || state == FG);
+    if (state == BG) {
+        job_set_state(job, state);
+        sio_printf("[%d] (%ld) %s\n", (int)job, (long)pid,
+                   job_get_cmdline(job));
+        return;
+    }
+
+    sio_assert(fg_job() == (jid_t)0);
+
+    fg_running = 1;
+
+    job_set_state(job, state);
+    kill(-pid, SIGCONT);
+
+    while (fg_running) {
+        sigsuspend(prev);
+    }
+}
+
+static void continue_job(const struct cmdline_tokens *tokens,
+                         enum job_state state) {
+    sigset_t mask, prev;
+    jid_t job;
+    pid_t pid;
+    int32_t parsed_number;
+    char *arg1;
+    bool job_arg = false;
+
+    if (tokens->argc == 1) {
+        sio_eprintf("%s command requires PID or %%jobid argument\n",
+                    tokens->argv[0]);
+        return;
+    }
+
+    if (tokens->argv[1][0] == '%') {
+        arg1 = tokens->argv[1] + 1;
+        job_arg = true;
+    } else {
+        arg1 = tokens->argv[1];
+    }
+
+    if (!strtoint32(arg1, &parsed_number)) {
+        sio_eprintf("%s: argument must be a PID or %%jobid\n", tokens->argv[0]);
+        return;
+    }
+
+    CRITICAL_SECTION(mask, prev) {
+        if (job_arg) {
+            job = (jid_t)parsed_number;
+            if (!job_exists(job)) {
+                sio_eprintf("%s: No such job\n", tokens->argv[1]);
+                CRITICAL_SECTION_BREAK;
+            }
+            pid = job_get_pid(job);
+        } else {
+            pid = (pid_t)parsed_number;
+            job = job_from_pid(pid);
+
+            if (!job_exists(job)) {
+                sio_eprintf("(%s): No such process\n", tokens->argv[1]);
+                CRITICAL_SECTION_BREAK;
+            }
+        }
+
+        update_job(job, pid, state, &prev);
+    }
+}
+
+static void bg(const struct cmdline_tokens *tokens) {
+    continue_job(tokens, BG);
+}
+
+static void fg(const struct cmdline_tokens *tokens) {
+    continue_job(tokens, FG);
 }
