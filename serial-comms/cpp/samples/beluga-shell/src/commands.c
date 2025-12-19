@@ -8,13 +8,13 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
+#include <autocomplete.h>
 #include <commands.h>
 #include <errno.h>
 #include <readline/readline.h>
 #include <shell_helpers.h>
 #include <sio.h>
 #include <stdio.h>
-#include <string.h>
 #include <utils.h>
 
 #define _COMMAND_DEFAULT_NAME(handler_)                                        \
@@ -106,30 +106,11 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
         exit(EXIT_FAILURE);
     }
 
+    for (size_t i = 0; i < ARRAY_SIZE(commands); i++) {
+        autocomplete_register_builtin_command(commands[i].cmd_str);
+    }
+
     return 0;
-}
-
-static char *command_name_generator(const char *text, int state) {
-    static size_t list_index, len;
-
-    if (!state) {
-        list_index = 0;
-        len = strlen(text);
-    }
-
-    for (; list_index < ARRAY_SIZE(commands); list_index++) {
-        if (strncmp(commands[list_index].cmd_str, text, len) == 0) {
-            char *cmd = strdup(commands[list_index].cmd_str);
-            list_index++;
-            return cmd;
-        }
-    }
-
-    return NULL;
-}
-
-char **command_completion(const char *text, int start, int end) {
-    return rl_completion_matches(text, command_name_generator);
 }
 
 static void write_serial_response(const struct cmdline_tokens *tokens) {

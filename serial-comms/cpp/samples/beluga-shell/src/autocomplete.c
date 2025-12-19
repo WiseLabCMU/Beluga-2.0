@@ -11,6 +11,7 @@
 #include <autocomplete.h>
 #include <dirent.h>
 #include <errno.h>
+#include <readline/readline.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -192,8 +193,6 @@ static int build_commands_list(void) {
     return 0;
 }
 
-int initialize_autocomplete(void) { return build_commands_list(); }
-
 void cleanup_autocomplete(void) {
     for (size_t i = 0; i < commands.len; i++) {
         free((void *)commands.commands[i].command);
@@ -261,4 +260,38 @@ const char *command_path(const char *command) {
     }
 
     return cmd->path;
+}
+
+static char *command_name_generator(const char *text, int state) {
+    static size_t list_index, len;
+
+    if (!state) {
+        list_index = 0;
+        len = strlen(text);
+    }
+
+    for (; list_index < commands.len; list_index++) {
+        if (strncmp(commands.commands[list_index].command, text, len) == 0) {
+            char *cmd = strdup(commands.commands[list_index].command);
+            list_index++;
+            return cmd;
+        }
+    }
+
+    return NULL;
+}
+
+static char **command_completion(const char *text, int start, int end) {
+    return rl_completion_matches(text, command_name_generator);
+}
+
+int initialize_autocomplete(void) {
+    int ret = build_commands_list();
+
+    if (ret < 0) {
+        return ret;
+    }
+
+    rl_attempted_completion_function = command_completion;
+    return ret;
 }

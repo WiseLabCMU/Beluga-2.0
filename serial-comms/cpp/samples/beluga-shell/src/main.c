@@ -104,10 +104,6 @@ static void init(void) {
         exit(EXIT_FAILURE);
     }
 
-    if (initialize_autocomplete() < 0) {
-        exit(EXIT_FAILURE);
-    }
-
     stifle_history(MAX_HISTORY);
 
     port = pick_port();
@@ -120,7 +116,10 @@ static void init(void) {
         exit(1);
     }
 
-    rl_attempted_completion_function = command_completion;
+    if (initialize_autocomplete() < 0) {
+        exit(EXIT_FAILURE);
+    }
+
     serial = create_beluga_serial_instance(&attr);
 
     if (serial == NULL) {
@@ -238,12 +237,10 @@ static void redirect_io(struct cmdline_tokens *tokens) {
 
 static void run_shell_command(struct cmdline_tokens *tokens) {
     char line[FILENAME_MAX];
+    const char *path = command_path(tokens->argv[0]);
 
-    for (size_t i = 0; i < (sizeof(search_paths) / sizeof(const char *)); i++) {
-        strncpy(line, search_paths[i], FILENAME_MAX);
-        strncat(line, tokens->argv[0], FILENAME_MAX);
-        execve(line, tokens->argv, environ);
-    }
+    snprintf(line, sizeof(line), "%s/%s", path, tokens->argv[0]);
+    execve(line, tokens->argv, environ);
 
     sio_eprintf("%s: %s\n", tokens->argv[0], strerror(errno));
     _exit(EXIT_FAILURE);
