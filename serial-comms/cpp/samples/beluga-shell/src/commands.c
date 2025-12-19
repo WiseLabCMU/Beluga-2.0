@@ -10,6 +10,7 @@
 
 #include <autocomplete.h>
 #include <commands.h>
+#include <critical_sections.h>
 #include <errno.h>
 #include <readline/readline.h>
 #include <shell_helpers.h>
@@ -57,6 +58,7 @@ static void verbose(const struct cmdline_tokens *tokens);
 static void status(const struct cmdline_tokens *tokens);
 static void version(const struct cmdline_tokens *tokens);
 static void exchange(const struct cmdline_tokens *tokens);
+static void jobs(const struct cmdline_tokens *tokens);
 
 static struct beluga_serial *_serial = NULL;
 static struct command_info commands[] = {
@@ -91,6 +93,7 @@ static struct command_info commands[] = {
     COMMAND(status),
     COMMAND(version),
     COMMAND(exchange),
+    COMMAND(jobs),
 };
 
 #define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
@@ -412,4 +415,32 @@ static void exchange(const struct cmdline_tokens *tokens) {
 
     beluga_serial_exchange(_serial, arg);
     write_serial_response(tokens);
+}
+
+static void jobs(const struct cmdline_tokens *tokens) {
+    sigset_t mask, prev;
+    int fd = STDOUT_FILENO;
+
+    CRITICAL_SECTION(mask, prev) {
+        if (tokens->outfile) {
+            if (!tokens->outfile_append) {
+                fd = open(tokens->outfile, WR_FLAGS, WR_PERMS);
+            } else {
+                fd = open(tokens->outfile, APPEND_FLAGS, WR_PERMS);
+            }
+
+            if (fd < 0) {
+                perror(tokens->outfile);
+                CRITICAL_SECTION_BREAK;
+            }
+        }
+
+        if (!list_jobs(fd)) {
+            sio_printf("Error printing out job list\n");
+        }
+
+        if (fd != STDOUT_FILENO) {
+            close(fd);
+        }
+    }
 }
