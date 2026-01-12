@@ -1,10 +1,11 @@
 name: Firmware Build
 on:
   push:
-    branches: [ master ]
+    tags:
+      - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   NCS_VERSION: v2.9.0
@@ -92,3 +93,44 @@ jobs:
         with:
           name: dwm1001-fw-${{ steps.sha.outputs.sha }}
           path: dwm1001-bin
+
+  release-assets:
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Get Git SHA
+        id: sha
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Download Binaries (Beluga)
+        uses: actions/download-artifact@v4
+        with:
+          name: beluga-fw-${{ steps.sha.outputs.sha }}
+          path: beluga-fw
+
+      - name: Download Binaries (dwm1001)
+        uses: actions/download-artifact@v4
+        with:
+          name: dwm1001-fw-${{ steps.sha.outputs.sha }}
+          path: dwm1001-fw
+
+      - name: Prepare Assets
+        run: |
+          tar -czf beluga-fw.tar.gz beluga-fw/
+          zip -rq beluga-fw.zip beluga-fw/
+          tar -czf dwm1001-fw.tar.gz dwm1001-fw/
+          zip -rq dwm1001-fw.zip dwm1001-fw/
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: true
+          files: |
+            beluga-fw.tar.gz
+            beluga-fw.zip
+            dwm1001-fw.tar.gz
+            dwm1001-fw.zip
