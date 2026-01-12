@@ -63,3 +63,32 @@ jobs:
         with:
           name: full-firmware-builds-${{ steps.sha.outputs.sha }}
           path: gh_artifacts
+
+      - name: Prepare Binary Archives
+        run: |
+          mkdir -p beluga-bin
+          mkdir -p beluga-bin/full-images
+          mkdir -p beluga-bin/update-images
+          cp raw-builds/beluga/merged.hex beluga-bin/full-images/beluga.hex
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.hex beluga-bin/update-images/beluga-app.hex
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.signed.hex beluga-bin/update-images/beluga-app.signed.hex
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.bin beluga-bin/update-images/beluga-app.bin
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.signed.bin beluga-bin/update-images/beluga-app.signed.bin
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.elf beluga-bin/update-images/beluga.elf
+          
+          mkdir -p dwm1001-bin
+          cp raw-builds/dwm1001/zephyr/zephyr.hex dwm1001-bin/beluga-app.hex
+          cp raw-builds/dwm1001/zephyr/zephyr.bin dwm1001-bin/beluga-app.bin
+          cp raw-builds/dwm1001/zephyr/zephyr.elf dwm1001-bin/beluga-app.elf
+
+      - name: Archive Binaries (Beluga)
+        uses: actions/upload-artifact@v4
+        with:
+          name: beluga-fw-${{ steps.sha.outputs.sha }}
+          path: beluga-bin
+
+      - name: Archive Binaries (dwm1001)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dwm1001-fw-${{ steps.sha.outputs.sha }}
+          path: dwm1001-bin
