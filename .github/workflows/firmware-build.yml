@@ -45,8 +45,10 @@ jobs:
         run: |
           source $(pwd)/ncs/${NCS_VERSION}/zephyr/zephyr-env.sh
           mkdir -p raw-builds
-          west build --build-dir raw-builds/beluga beluga/Beluga --pristine --board beluga/nrf52840 --sysbuild -- -DEXTRA_CONF_FILE=config/beluga.conf;config/mcumgr.conf;config/usb.conf;config/DALEC.conf -DCONF_FILE=prj.conf -DEXTRA_DTC_OVERLAY_FILE=overlay/extra/usb.overlay -DDTC_OVERLAY_FILE=overlay/beluga.overlay -DCONFIG_SPEED_OPTIMIZATIONS=y -DBOARD_ROOT=$(pwd)/beluga/Beluga
-          west build --build-dir raw-builds/dwm1001 beluga/Beluga --pristine --board decawave_dwm1001_dev/nrf52832 --no-sysbuild -- -DCONF_FILE=prj.conf -DDTC_OVERLAY_FILE=overlay/decawave_dwm1001_dev.overlay -DCONFIG_SIZE_OPTIMIZATIONS=y
+          export cmd="west build --build-dir raw-builds/beluga beluga/Beluga --pristine --board beluga/nrf52840 --sysbuild -- -DEXTRA_CONF_FILE=config/beluga.conf;config/mcumgr.conf;config/usb.conf;config/DALEC.conf -DCONF_FILE=prj.conf -DEXTRA_DTC_OVERLAY_FILE=overlay/extra/usb.overlay -DDTC_OVERLAY_FILE=overlay/beluga.overlay -DCONFIG_SPEED_OPTIMIZATIONS=y -DBOARD_ROOT=$(pwd)/beluga/Beluga"
+          ./nrfutil sdk-manager toolchain launch --install-dir ./ncs --ncs-version ${NCS_VERSION} -- $cmd
+          export cmd="west build --build-dir raw-builds/dwm1001 beluga/Beluga --pristine --board decawave_dwm1001_dev/nrf52832 --no-sysbuild -- -DCONF_FILE=prj.conf -DDTC_OVERLAY_FILE=overlay/decawave_dwm1001_dev.overlay -DCONFIG_SIZE_OPTIMIZATIONS=y"
+          ./nrfutil sdk-manager toolchain launch --install-dir ./ncs --ncs-version ${NCS_VERSION} -- $cmd
 
       - name: Prepare archive
         run: |
