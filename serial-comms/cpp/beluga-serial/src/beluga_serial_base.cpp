@@ -512,7 +512,7 @@ std::string BelugaSerialBase::version() {
 
 std::string BelugaSerialBase::starve(const std::string &channel_id) {
     std::ostringstream oss;
-    oss << "AT+STARVE" << channel_id << "\r\n";
+    oss << "AT+STARVE " << channel_id << "\r\n";
     return _send_command(oss.str());
 }
 
