@@ -54,9 +54,9 @@ jobs:
       - name: Prepare archive
         run: |
           mkdir -p gh_artifacts
-          zip -r beluga.zip raw-builds/beluga
+          zip -rq beluga.zip raw-builds/beluga
           mv beluga.zip gh_artifacts
-          zip -r decawave_dwm1001.zip raw-builds/dwm1001
+          zip -rq decawave_dwm1001.zip raw-builds/dwm1001
           mv decawave_dwm1001.zip gh_artifacts
 
       - name: Archive Builds
@@ -128,7 +128,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
-          prerelease: true
+          prerelease: false
           files: |
             beluga-fw.tar.gz
             beluga-fw.zip
