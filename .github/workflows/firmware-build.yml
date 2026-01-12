@@ -1,0 +1,54 @@
+name: Firmware Build
+on:
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+
+env:
+  NCS_VERSION: v2.9.0
+
+jobs:
+  build:
+    name: "Firmware Build"
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v5
+        with:
+          path: beluga
+
+      - name: Get Git SHA
+        id: sha
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Initialize Machine
+        run: |
+          sudo apt update
+          python3 -m pip install west
+          wget -q https://files.nordicsemi.com/artifactory/swtools/external/nrfutil/executables/x86_64-unknown-linux-gnu/nrfutil
+          chmod +x nrfutil
+          ./nrfutil install sdk-manager
+
+      - name: Install toolchain
+        run: |
+          ./nrfutil sdk-manager install ${NCS_VERSION} --install-dir $(pwd)/ncs
+
+      - name: Initialize toolchain
+        run: |
+          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/${NCS_VERSION} -- west update
+          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/${NCS_VERSION} -- west zephyr-export
+
+      - name: Build
+        run: |
+          source $(pwd)/ncs/${NCS_VERSION}/zephyr/zephyr-env.sh
+          mkdir -p raw-builds
+          west build --build-dir raw-builds/beluga beluga/Beluga --pristine --board todo --sysbuild -- -DEXTRA_CONF_FILE=config/beluga.conf;config/mcumgr.conf;config/usb.conf;config/DALEC.conf -DCONF_FILE=prj.conf -DEXTRA_DTC_OVERLAY_FILE=overlay/extra/usb.overlay -DDTC_OVERLAY_FILE=overlay/beluga.overlay -DCONFIG_SPEED_OPTIMIZATIONS=y -DBOARD_ROOT=$(pwd)/beluga/Beluga
+
+      - name: Prepare archive
+        run: |
+          mkdir -p gh_artifacts
+          zip -r beluga.zip raw-builds/beluga
+          mv beluga.zip gh_artifacts
