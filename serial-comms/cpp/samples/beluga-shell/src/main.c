@@ -94,43 +94,13 @@ static void load_history(void) {
     }
 }
 
-static void unexpected_reboot(void) {
-    const char msg[] = "\nBeluga rebooted unexpectedly\n";
-    ssize_t err = write(STDOUT_FILENO, msg, sizeof(msg) - 1);
-    if (err < 0) {
-        perror("open");
-    }
-    rl_redraw_prompt_last_line();
-}
-
-static void fatal_report(const char *msg) {
-    size_t len = strlen(msg);
-    ssize_t err = write(STDOUT_FILENO, "\n", 1);
-    if (err < 0) {
-        perror("open");
-        return;
-    }
-
-    err = write(STDOUT_FILENO, msg, len);
-    if (err < 0) {
-        perror("open");
-    }
-
-    err = write(STDOUT_FILENO, "\n", 1);
-    if (err < 0) {
-        perror("open");
-    }
-
-    rl_redraw_prompt_last_line();
-}
-
 static void init(void) {
     struct beluga_serial_attr attr = {
         .baud = BAUD_115200,
         .timeout = 2000,
         .serial_timeout = 100,
-        .reboot_event = unexpected_reboot,
-        .fatal_error_event = fatal_report,
+        .reboot_event = report_unexpected_reboot,
+        .fatal_error_event = report_fatal_error,
     };
 
     cache_mkdir();

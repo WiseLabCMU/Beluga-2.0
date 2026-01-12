@@ -125,6 +125,36 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
     return 0;
 }
 
+void report_unexpected_reboot(void) {
+    const char msg[] = "\nBeluga rebooted unexpectedly\n";
+    ssize_t err = write(STDOUT_FILENO, msg, sizeof(msg) - 1);
+    if (err < 0) {
+        perror("open");
+    }
+    rl_redraw_prompt_last_line();
+}
+
+void report_fatal_error(const char *msg) {
+    size_t len = strlen(msg);
+    ssize_t err = write(STDOUT_FILENO, "\n", 1);
+    if (err < 0) {
+        perror("open");
+        return;
+    }
+
+    err = write(STDOUT_FILENO, msg, len);
+    if (err < 0) {
+        perror("open");
+    }
+
+    err = write(STDOUT_FILENO, "\n", 1);
+    if (err < 0) {
+        perror("open");
+    }
+
+    rl_redraw_prompt_last_line();
+}
+
 static void write_serial_response(const struct cmdline_tokens *tokens) {
     int output_fd = STDOUT_FILENO;
 
