@@ -395,6 +395,10 @@ void beluga_serial_version(struct beluga_serial *obj) {
     _CALL_AT_CMD2(obj, version);
 }
 
+void beluga_serial_starve(struct beluga_serial *obj, const char *arg) {
+    _CALL_AT_CMD(obj, starve, arg);
+}
+
 void beluga_serial_exchange(struct beluga_serial *obj, const char *arg) {
     _CALL_AT_CMD(obj, exchange, arg);
 }

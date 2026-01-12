@@ -57,10 +57,14 @@ static void evict(const struct cmdline_tokens *tokens);
 static void verbose(const struct cmdline_tokens *tokens);
 static void status(const struct cmdline_tokens *tokens);
 static void version(const struct cmdline_tokens *tokens);
+static void starve(const struct cmdline_tokens *tokens);
 static void exchange(const struct cmdline_tokens *tokens);
 static void jobs(const struct cmdline_tokens *tokens);
 static void bg(const struct cmdline_tokens *tokens);
 static void fg(const struct cmdline_tokens *tokens);
+static void stream_exchanges(const struct cmdline_tokens *tokens);
+static void stream_ranges(const struct cmdline_tokens *tokens);
+static void stream_neighbors(const struct cmdline_tokens *tokens);
 
 static struct beluga_serial *_serial = NULL;
 static struct command_info commands[] = {
@@ -94,6 +98,7 @@ static struct command_info commands[] = {
     COMMAND(verbose),
     COMMAND(status),
     COMMAND(version),
+    COMMAND(starve),
     COMMAND(exchange),
     COMMAND(jobs),
     COMMAND(bg),
@@ -407,6 +412,17 @@ static void status(const struct cmdline_tokens *tokens) {
 
 static void version(const struct cmdline_tokens *tokens) {
     beluga_serial_version(_serial);
+    write_serial_response(tokens);
+}
+
+static void starve(const struct cmdline_tokens *tokens) {
+    const char *arg = NULL;
+
+    if (tokens->argc > 1) {
+        arg = tokens->argv[1];
+    }
+
+    beluga_serial_starve(_serial, arg);
     write_serial_response(tokens);
 }
 

@@ -126,6 +126,7 @@ void beluga_serial_evict(struct beluga_serial *obj, const char *arg);
 void beluga_serial_verbose(struct beluga_serial *obj, const char *arg);
 void beluga_serial_status(struct beluga_serial *obj);
 void beluga_serial_version(struct beluga_serial *obj);
+void beluga_serial_starve(struct beluga_serial *obj, const char *arg);
 void beluga_serial_exchange(struct beluga_serial *obj, const char *arg);
 struct beluga_serial_ports *find_ports(size_t *len);
 void cleanup_find_ports(struct beluga_serial_ports **ports, size_t len);
