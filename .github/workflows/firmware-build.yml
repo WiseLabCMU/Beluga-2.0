@@ -38,8 +38,8 @@ jobs:
 
       - name: Initialize toolchain
         run: |
-          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/${NCS_VERSION} -- west update
-          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/${NCS_VERSION} -- west zephyr-export
+          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/ncs/${NCS_VERSION} -- west update
+          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/ncs/${NCS_VERSION} -- west zephyr-export
 
       - name: Build
         run: |
