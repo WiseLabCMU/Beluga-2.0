@@ -1,0 +1,136 @@
+name: Firmware Build
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  NCS_VERSION: v2.9.0
+
+jobs:
+  build:
+    name: "Firmware Build"
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v5
+        with:
+          path: beluga
+
+      - name: Get Git SHA
+        id: sha
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Initialize Machine
+        run: |
+          sudo apt update
+          python3 -m pip install west
+          wget -q https://files.nordicsemi.com/artifactory/swtools/external/nrfutil/executables/x86_64-unknown-linux-gnu/nrfutil
+          chmod +x nrfutil
+          ./nrfutil install sdk-manager
+
+      - name: Install toolchain
+        run: |
+          ./nrfutil sdk-manager install ${NCS_VERSION} --install-dir $(pwd)/ncs
+
+      - name: Initialize toolchain
+        run: |
+          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/ncs/${NCS_VERSION} -- west update
+          ./nrfutil sdk-manager toolchain launch --install-dir $(pwd)/ncs --ncs-version ${NCS_VERSION} --chdir $(pwd)/ncs/${NCS_VERSION} -- west zephyr-export
+
+      - name: Build
+        run: |
+          source $(pwd)/ncs/${NCS_VERSION}/zephyr/zephyr-env.sh
+          mkdir -p raw-builds
+          export cmd="west build --build-dir raw-builds/beluga beluga/Beluga --pristine --board beluga/nrf52840 --sysbuild -- -DEXTRA_CONF_FILE=config/beluga.conf;config/mcumgr.conf;config/usb.conf;config/DALEC.conf -DCONF_FILE=prj.conf -DEXTRA_DTC_OVERLAY_FILE=overlay/extra/usb.overlay -DDTC_OVERLAY_FILE=overlay/beluga.overlay -DCONFIG_SPEED_OPTIMIZATIONS=y -DBOARD_ROOT=$(pwd)/beluga/Beluga"
+          ./nrfutil sdk-manager toolchain launch --install-dir ./ncs --ncs-version ${NCS_VERSION} -- $cmd
+          export cmd="west build --build-dir raw-builds/dwm1001 beluga/Beluga --pristine --board decawave_dwm1001_dev/nrf52832 --no-sysbuild -- -DCONF_FILE=prj.conf -DDTC_OVERLAY_FILE=overlay/decawave_dwm1001_dev.overlay -DCONFIG_SIZE_OPTIMIZATIONS=y"
+          ./nrfutil sdk-manager toolchain launch --install-dir ./ncs --ncs-version ${NCS_VERSION} -- $cmd
+
+      - name: Prepare archive
+        run: |
+          mkdir -p gh_artifacts
+          zip -r beluga.zip raw-builds/beluga
+          mv beluga.zip gh_artifacts
+          zip -r decawave_dwm1001.zip raw-builds/dwm1001
+          mv decawave_dwm1001.zip gh_artifacts
+
+      - name: Archive Builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-firmware-builds-${{ steps.sha.outputs.sha }}
+          path: gh_artifacts
+
+      - name: Prepare Binary Archives
+        run: |
+          mkdir -p beluga-bin
+          mkdir -p beluga-bin/full-images
+          mkdir -p beluga-bin/update-images
+          cp raw-builds/beluga/merged.hex beluga-bin/full-images/beluga.hex
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.hex beluga-bin/update-images/beluga-app.hex
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.signed.hex beluga-bin/update-images/beluga-app.signed.hex
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.bin beluga-bin/update-images/beluga-app.bin
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.signed.bin beluga-bin/update-images/beluga-app.signed.bin
+          cp raw-builds/beluga/Beluga/zephyr/zephyr.elf beluga-bin/update-images/beluga.elf
+          
+          mkdir -p dwm1001-bin
+          cp raw-builds/dwm1001/zephyr/zephyr.hex dwm1001-bin/beluga-app.hex
+          cp raw-builds/dwm1001/zephyr/zephyr.bin dwm1001-bin/beluga-app.bin
+          cp raw-builds/dwm1001/zephyr/zephyr.elf dwm1001-bin/beluga-app.elf
+
+      - name: Archive Binaries (Beluga)
+        uses: actions/upload-artifact@v4
+        with:
+          name: beluga-fw-${{ steps.sha.outputs.sha }}
+          path: beluga-bin
+
+      - name: Archive Binaries (dwm1001)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dwm1001-fw-${{ steps.sha.outputs.sha }}
+          path: dwm1001-bin
+
+  release-assets:
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Get Git SHA
+        id: sha
+        run: echo "sha=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Download Binaries (Beluga)
+        uses: actions/download-artifact@v4
+        with:
+          name: beluga-fw-${{ steps.sha.outputs.sha }}
+          path: beluga-fw
+
+      - name: Download Binaries (dwm1001)
+        uses: actions/download-artifact@v4
+        with:
+          name: dwm1001-fw-${{ steps.sha.outputs.sha }}
+          path: dwm1001-fw
+
+      - name: Prepare Assets
+        run: |
+          tar -czf beluga-fw.tar.gz beluga-fw/
+          zip -rq beluga-fw.zip beluga-fw/
+          tar -czf dwm1001-fw.tar.gz dwm1001-fw/
+          zip -rq dwm1001-fw.zip dwm1001-fw/
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: true
+          files: |
+            beluga-fw.tar.gz
+            beluga-fw.zip
+            dwm1001-fw.tar.gz
+            dwm1001-fw.zip
