@@ -351,16 +351,88 @@ static void timeout(const struct cmdline_tokens *tokens) {
     write_serial_response(tokens);
 }
 
-static void txpower(const struct cmdline_tokens *tokens) {
+static bool strtouint32(const char *str, uint32_t *result) {
+    char *endptr;
+    unsigned long ret;
+    char *start = (char *)str;
+
+    errno = 0;
+    ret = strtoul(start, &endptr, 10);
+
+    if (errno == ERANGE || (uint64_t)ret > (uint64_t)UINT32_MAX ||
+        isgraph((int)*endptr)) {
+        *result = 0;
+        return false;
+    }
+
+    *result = (uint32_t)ret;
+    return true;
+}
+
+static void handle_txpower1(const struct cmdline_tokens *tokens) {
     const char *arg = NULL;
 
-    // todo
     if (tokens->argc > 1) {
         arg = tokens->argv[1];
     }
 
+    if (tokens->argc == 3) {
+        sio_printf("Invalid number of parameters\n");
+        return;
+    }
+
     beluga_serial_txpower(attr.serial, arg);
     write_serial_response(tokens);
+}
+
+static void handle_txpower2(const struct cmdline_tokens *tokens) {
+    enum uwb_amp_stage stage;
+    uint32_t coarse, fine;
+    uint32_t _stage;
+
+    if (!strtouint32(tokens->argv[1], &_stage)) {
+        sio_printf("Stage argument must be a 32-bit unsigned integer\n");
+        return;
+    }
+
+    switch (_stage) {
+    case 0:
+        stage = BOOST_NORM;
+        break;
+    case 1:
+        stage = BOOSTP_500;
+        break;
+    case 2:
+        stage = BOOSTP_250;
+        break;
+    case 3:
+        stage = BOOSTP_125;
+        break;
+    default:
+        sio_printf("Invalid stage ID. Must be 0, 1, 2, or 3\n");
+        return;
+    }
+
+    if (!strtouint32(tokens->argv[2], &coarse)) {
+        sio_printf("Coarse argument must be a 32-bit unsigned integer\n");
+        return;
+    }
+
+    if (!strtouint32(tokens->argv[3], &fine)) {
+        sio_printf("Fine argument must be a 32-bit unsigned integer\n");
+        return;
+    }
+
+    beluga_serial_txpower2(attr.serial, stage, coarse, fine);
+    write_serial_response(tokens);
+}
+
+static void txpower(const struct cmdline_tokens *tokens) {
+    if (tokens->argc < 4) {
+        handle_txpower1(tokens);
+    } else {
+        handle_txpower2(tokens);
+    }
 }
 
 static void streammode(const struct cmdline_tokens *tokens) {
