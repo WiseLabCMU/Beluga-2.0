@@ -65,27 +65,29 @@ static void exchange(const struct cmdline_tokens *tokens);
 static void jobs(const struct cmdline_tokens *tokens);
 static void bg(const struct cmdline_tokens *tokens);
 static void fg(const struct cmdline_tokens *tokens);
-static void stream_exchanges(const struct cmdline_tokens *tokens);
-static void stream_ranges(const struct cmdline_tokens *tokens);
-static void stream_neighbors(const struct cmdline_tokens *tokens);
-static void beluga_error_stream(const struct cmdline_tokens *tokens);
+static void config_beluga_stream(const struct cmdline_tokens *tokens);
 
-struct file_desc {
+struct stream_ctx {
     int fd;
     char *filepath;
     pthread_mutex_t lock;
+    bool streaming;
 };
 
 struct _serial_attr {
     struct beluga_serial *serial;
-    struct file_desc error_fd;
+    struct stream_ctx error;
+    struct stream_ctx exchange;
+    struct stream_ctx ranges;
+    struct stream_ctx neighbors;
 };
 
 static struct _serial_attr attr = {
     .serial = NULL,
-    .error_fd =
+    .error =
         {
             .fd = STDOUT_FILENO,
+            .streaming = true,
         },
 };
 
@@ -125,7 +127,7 @@ static struct command_info commands[] = {
     COMMAND(jobs),
     COMMAND(bg),
     COMMAND(fg),
-    COMMAND(beluga_error_stream, "set-error-stream"),
+    COMMAND(config_beluga_stream, "config-stream"),
 };
 
 #define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
@@ -135,7 +137,7 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
         return -EINVAL;
     }
     attr.serial = serial;
-    pthread_mutex_init(&attr.error_fd.lock, NULL);
+    pthread_mutex_init(&attr.error.lock, NULL);
 
     if (register_command_callbacks(commands, ARRAY_SIZE(commands)) < 0) {
         printf("Failed to initialize command handlers\n");
@@ -152,8 +154,8 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
 void report_unexpected_reboot(void) {
     const char msg[] = "\nBeluga rebooted unexpectedly\n";
 
-    MUTEX_CRITICAL_SECTION(&attr.error_fd.lock) {
-        int fd = attr.error_fd.fd;
+    MUTEX_CRITICAL_SECTION(&attr.error.lock) {
+        int fd = attr.error.fd;
 
         ssize_t err = write(fd, msg, sizeof(msg) - 1);
         if (err < 0) {
@@ -170,8 +172,8 @@ void report_fatal_error(const char *msg) {
     size_t len = strlen(msg);
     ssize_t err;
 
-    MUTEX_CRITICAL_SECTION(&attr.error_fd.lock) {
-        int fd = attr.error_fd.fd;
+    MUTEX_CRITICAL_SECTION(&attr.error.lock) {
+        int fd = attr.error.fd;
 
         if (fd == STDOUT_FILENO) {
             err = write(STDOUT_FILENO, "\n", 1);
@@ -636,23 +638,114 @@ static void fg(const struct cmdline_tokens *tokens) {
     continue_job(tokens, FG);
 }
 
-static const char beluga_error_set_stream_doc[] =
-    "Set the file where error messages are written.";
-static const char beluga_error_set_stream_args_doc[] = "[FILE]...";
-static struct argp_option beluga_error_set_stream_options[] = {
-    {"reset", 'r', 0, 0, "Redirect error events to stdout."},
-    {"append", 'a', 0, 0, "Append the error reports to the given file."},
-    {0}};
-
-struct error_stream_args {
+struct stream_args {
     bool reset;
     bool append;
-    char *file;
+    bool enable;
+    bool disable;
+    char *args[2];
 };
 
-static error_t parse_set_error_stream(int key, char *arg,
-                                      struct argp_state *state) {
-    struct error_stream_args *arguments = state->input;
+static void update_stream_context(struct stream_ctx *ctx,
+                                  const struct stream_args *args,
+                                  const struct argp *argp,
+                                  const struct cmdline_tokens *tokens) {
+    int flags = WR_FLAGS, fd;
+    bool flags_present = args->append || args->reset;
+
+    if (!flags_present && (args->enable || args->disable)) {
+        // nothing else to do
+        return;
+    }
+
+    if (args->append) {
+        flags = APPEND_FLAGS;
+    }
+
+    MUTEX_CRITICAL_SECTION(&ctx->lock) {
+        if (args->args[1] == NULL && !flags_present) {
+            if (ctx->fd == STDOUT_FILENO) {
+                puts("Output file: stdout");
+            } else {
+                sio_printf("Output file: %s\n", ctx->filepath);
+            }
+            puts(ctx->streaming ? "State: Enabled" : "State: Disabled");
+            MUTEX_SECTION_BREAK;
+        }
+
+        if (args->reset) {
+            if (ctx->fd != STDOUT_FILENO) {
+                close(ctx->fd);
+                free(ctx->filepath);
+            }
+            ctx->fd = STDOUT_FILENO;
+            ctx->filepath = NULL;
+            MUTEX_SECTION_BREAK;
+        }
+
+        if (args->args[1] == NULL) {
+            argp_help(argp, stdout, ARGP_NO_EXIT, tokens->argv[0]);
+            MUTEX_SECTION_BREAK;
+        }
+
+        if (ctx->fd != STDOUT_FILENO) {
+            close(ctx->fd);
+            free(ctx->filepath);
+            ctx->filepath = NULL;
+            ctx->fd = STDOUT_FILENO;
+        }
+
+        fd = open(args->args[1], flags, WR_PERMS);
+        if (fd < 0) {
+            perror("open");
+            MUTEX_SECTION_BREAK;
+        }
+
+        ctx->filepath = malloc(strlen(args->args[1]) + 1);
+        if (ctx->filepath == NULL) {
+            perror("malloc");
+            close(fd);
+            MUTEX_SECTION_BREAK;
+        }
+
+        strcpy(ctx->filepath, args->args[1]);
+        ctx->fd = fd;
+    }
+}
+
+static bool update_stream_state(struct stream_ctx *ctx,
+                                const struct stream_args *args) {
+    if (!args->enable && !args->disable) {
+        // no updates to the state
+        return false;
+    }
+
+    MUTEX_CRITICAL_SECTION(&ctx->lock) {
+        if (args->enable) {
+            ctx->streaming = true;
+            MUTEX_SECTION_BREAK;
+        }
+
+        ctx->streaming = false;
+    }
+
+    return true;
+}
+
+static const char config_stream_doc[] = "Configure the event streams.";
+static const char config_stream_args_doc[] =
+    "[error|exchange|neighbors|range] [FILE]...";
+static struct argp_option config_stream_options[] = {
+    {"reset", 'r', 0, 0, "Redirect stream events to stdout."},
+    {"append", 'a', 0, 0, "Append the event reports to the given file."},
+    {"disable", 'd', 0, 0, "Disable the given event stream."},
+    {"enable", 'e', 0, 0,
+     "Enable the given event stream. This takes precedence over --disable."},
+    {0}};
+
+static error_t parse_config_stream(int key, char *arg,
+                                   struct argp_state *state) {
+    struct stream_args *arguments = state->input;
     switch (key) {
     case 'r':
         arguments->reset = true;
@@ -660,80 +753,54 @@ static error_t parse_set_error_stream(int key, char *arg,
     case 'a':
         arguments->append = true;
         break;
+    case 'e':
+        arguments->enable = true;
+        break;
+    case 'd':
+        arguments->disable = true;
+        break;
     case ARGP_KEY_ARG:
-        if (state->arg_num < 1) {
-            arguments->file = arg;
+        if (state->arg_num < 2) {
+            arguments->args[state->arg_num] = arg;
         }
         break;
-
+    case ARGP_KEY_END:
+        if (state->arg_num < 1) {
+            argp_usage(state);
+        }
+        break;
     default:
         return ARGP_ERR_UNKNOWN;
     }
     return 0;
 }
 
-static void beluga_error_stream(const struct cmdline_tokens *tokens) {
-    struct error_stream_args arguments = {};
-    struct argp argp = {beluga_error_set_stream_options, parse_set_error_stream,
-                        beluga_error_set_stream_args_doc,
-                        beluga_error_set_stream_doc};
+static void config_beluga_stream(const struct cmdline_tokens *tokens) {
+    struct stream_args arguments = {};
+    struct argp argp = {config_stream_options, parse_config_stream,
+                        config_stream_args_doc, config_stream_doc};
     error_t err = argp_parse(&argp, tokens->argc, tokens->argv, ARGP_NO_EXIT, 0,
                              &arguments);
-    int flags = WR_FLAGS, fd;
-    bool flags_present = arguments.reset || arguments.append;
+    struct stream_ctx *ctx;
 
     if (err != 0) {
+        perror("argp_parse");
         return;
     }
 
-    if (arguments.append) {
-        flags = APPEND_FLAGS;
+    if (strcmp(arguments.args[0], "error") == 0) {
+        ctx = &attr.error;
+    } else if (strcmp(arguments.args[0], "exchange") == 0) {
+        ctx = &attr.exchange;
+    } else if (strcmp(arguments.args[0], "neighbors") == 0) {
+        ctx = &attr.neighbors;
+    } else if (strcmp(arguments.args[0], "range") == 0) {
+        ctx = &attr.ranges;
+    } else {
+        argp_help(&argp, stdout, ARGP_NO_EXIT, tokens->argv[0]);
+        return;
     }
 
-    MUTEX_CRITICAL_SECTION(&attr.error_fd.lock) {
-        if (arguments.file == NULL && !flags_present) {
-            if (attr.error_fd.fd == STDOUT_FILENO) {
-                puts("stdout");
-            } else {
-                puts(attr.error_fd.filepath);
-            }
-            MUTEX_SECTION_BREAK;
-        }
-
-        if (arguments.reset) {
-            if (attr.error_fd.fd != STDOUT_FILENO) {
-                close(attr.error_fd.fd);
-                free(attr.error_fd.filepath);
-            }
-            attr.error_fd.fd = STDOUT_FILENO;
-            MUTEX_SECTION_BREAK;
-        }
-
-        if (arguments.file == NULL) {
-            argp_help(&argp, stdout, ARGP_NO_EXIT, "set-error-stream");
-            MUTEX_SECTION_BREAK;
-        }
-
-        if (attr.error_fd.fd != STDOUT_FILENO) {
-            close(attr.error_fd.fd);
-            free(attr.error_fd.filepath);
-            attr.error_fd.filepath = NULL;
-        }
-
-        fd = open(arguments.file, flags, WR_PERMS);
-        if (fd < 0) {
-            perror("open");
-            MUTEX_SECTION_BREAK;
-        }
-
-        attr.error_fd.filepath = malloc(strlen(arguments.file) + 1);
-        if (attr.error_fd.filepath == NULL) {
-            perror("malloc");
-            close(fd);
-            MUTEX_SECTION_BREAK;
-        }
-
-        strcpy(attr.error_fd.filepath, arguments.file);
-        attr.error_fd.fd = fd;
-    }
+    update_stream_context(ctx, &arguments, &argp, tokens);
+    update_stream_state(ctx, &arguments);
 }
