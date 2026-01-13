@@ -1262,3 +1262,65 @@ AT_COMMAND(EXCHANGE) {
     override_exchange_id(new_id);
     OK(comms, "Exchange ID updated to %" PRIu32, new_id);
 }
+
+/**
+ * Print the scanned neighbors over serial.
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success, negative error code otherwise.
+ */
+AT_COMMAND(NEIGHBORS) {
+    uint16_t neighbors[MAX_ANCHOR_COUNT] = {0};
+    size_t count = 0;
+    char msg[7 * MAX_ANCHOR_COUNT] = "";
+    int chars_written = 0;
+
+    for (size_t i = 0; i < ARRAY_SIZE(seen_list); i++) {
+        if (seen_list[i].UUID != 0) {
+            neighbors[count] = seen_list[i].UUID;
+            count++;
+        }
+    }
+
+    if (count == 0) {
+        OK(comms, "No neighbors found");
+    }
+
+    for (size_t i = 0; i < count; i++) {
+        chars_written = snprintk(msg, sizeof(msg) - chars_written,
+                                 "%" PRIu16 ",", neighbors[i]);
+    }
+
+    OK(comms, msg);
+}
+
+/**
+ * Set USB host mode. Depending on the setting, the node
+ * will wait for a USB host connection. Default behavior
+ * is not to wait for a USB host connection.
+ *
+ * @param[in] comms Pointer to the comms instance
+ * @param[in] argc Number of arguments
+ * @param[in] argv The arguments
+ * @return 0 upon success, negative error code otherwise.
+ */
+AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_USB_DEVICE_STACK), WAITUSBHOST) {
+    READ_SETTING(comms, argc, 2, BELUGA_WAIT_USB_HOST,
+                 "Wait for USB host connection");
+    int32_t mode;
+
+    if (!strtoint32(argv[1], &mode)) {
+        ERROR(comms, "Argument must be an integer");
+    }
+
+    if (mode != INT32_C(0) && mode != INT32_C(1)) {
+        ERROR(comms, "Argument must be 0 or 1");
+    }
+
+    set_wait_usb_host(comms, mode != 0);
+
+    updateSetting(BELUGA_WAIT_USB_HOST, mode);
+    AT_OK(comms, "Wait USB host: %" PRId32, mode);
+}

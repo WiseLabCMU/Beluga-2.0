@@ -364,7 +364,7 @@ void comms_process(const struct comms *comms) {
     char data;
     struct comms_buf *buf = &comms->ctx->rx_buf;
 
-    struct task_wdt_attr watchdog = TASK_WDT_INITIALIZER(5000);
+    struct task_wdt_attr watchdog = TASK_WDT_INITIALIZER(5000, comms->name);
     if (spawn_task_watchdog(&watchdog) < 0) {
         printk("Unable to spawn task watchdog in command thread\n");
         return;
@@ -539,6 +539,21 @@ int set_format(const struct comms *comms, enum comms_out_format_mode mode) {
     }
     comms->ctx->format = mode;
     return 0;
+}
+
+int set_wait_usb_host(const struct comms *comms, bool block) {
+    if (comms == NULL) {
+        return -EINVAL;
+    }
+    _COMMS_API(comms, block_no_usb_host, block);
+    return 0;
+}
+
+bool comms_check_rx_error(const struct comms *comms) {
+    if (comms == NULL) {
+        return -EINVAL;
+    }
+    return _COMMS_API(comms, rx_error);
 }
 
 /**

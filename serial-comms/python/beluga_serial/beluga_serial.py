@@ -13,6 +13,7 @@ import queue
 import time
 from dataclasses import dataclass
 import enum
+
 from .beluga_frame import BelugaFrame, FrameType
 from .beluga_neighbor import BelugaNeighborList
 from .beluga_queue import BelugaQueue
@@ -114,6 +115,15 @@ class BelugaStatus:
     def dynamic_eviction_scheme_support(self):
         return self._dynamic_eviction_scheme_support
 
+    def __repr__(self) -> str:
+        return f"Board Name: {self._name}\n" \
+               f"External UWB Amplifier: {'Supported' if self._uwb_amplifier else 'Not supported'}\n" \
+               f"External BLE Amplifier: {'Supported' if self._ble_amplifier else 'Not supported'}\n" \
+               f"Secondary Antenna: {'Not supported' if not self._secondary_antenna else 'Active' if self._using_second_antenna else 'Inactive'}\n" \
+               f"BLE: {'On' if self._ble_active else 'Off'}\n" \
+               f"UWB: {'On' if self._uwb_active else 'Off'}\n" \
+               f"Dynamic Eviction Scheme Support: {'Yes' if self._dynamic_eviction_scheme_support else 'No'}"
+
 
 @dataclass(init=True)
 class BelugaSerialAttr:
@@ -142,6 +152,7 @@ class BelugaSerialAttr:
     logger_cb: Optional[Callable[[Any], None]] = None
     auto_connect: bool = True
     neighbor_list_impl: Type[BelugaNeighborList] = BelugaNeighborList
+    fatal_error_cb: Optional[Callable[[str], None]] = None
 
 
 class BelugaSerial:
@@ -246,6 +257,7 @@ class BelugaSerial:
         self._io_hooks = []
 
         self._dropped_uwb_transaction_hook: Optional[Callable[[dict[str, int]], None]] = None
+        self._fatal_error_hook: Optional[Callable[[str], None]] = attr.fatal_error_cb
 
     def __del__(self):
         self.stop()
@@ -343,6 +355,11 @@ class BelugaSerial:
         else:
             self._reboot_done.set()
 
+    def _publish_fatal_error(self, payload: str):
+        if self._fatal_error_hook is None:
+            return
+        self._fatal_error_hook(payload)
+
     def __process_frames(self):
         while self._task_running:
             frame: BelugaFrame = self._batch_queue.get()
@@ -367,6 +384,8 @@ class BelugaSerial:
                 case FrameType.RANGING_DROP:
                     if self._dropped_uwb_transaction_hook is not None:
                         self._dropped_uwb_transaction_hook(frame.payload)
+                case FrameType.FATAL_ERROR:
+                    self._publish_fatal_error(frame.payload)
                 case _:
                     self._log("Invalid frame type")
 
@@ -825,6 +844,7 @@ class BelugaSerial:
         :return: The command response or a timeout message
         :rtype: str
         """
+        return self._send_command(value=mode)
 
     def status(self):
         """
@@ -841,6 +861,73 @@ class BelugaSerial:
         :rtype: str
         """
         return self._send_command()
+
+    def sync(self, node: Optional[int] = None):
+        """
+        Syncs the given node's settings with the connected node's settings
+
+        :param node: The node to sync settings with
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=node)
+
+    def calibrate(self, delay_args: Optional[str] = None):
+        """
+        Calibrate the given antenna delay.
+
+        :param delay_args: The antenna delay arguments
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=delay_args)
+
+    def reason(self):
+        """
+        Retrieve the reset reason.
+
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
+    def starve(self, channel: Optional[int] = None):
+        """
+        Starve the given watchdog channel.
+
+        :param channel: The watchdog channel to starve
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=channel)
+
+    def exchange(self, exchange_id: Optional[int] = None):
+        """
+        Set a new exchange ID.
+
+        :param exchange_id: The new exchange ID.
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=exchange_id)
+
+    def neighbors(self):
+        """
+        Retrieve the current BLE neighbor list.
+
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command()
+
+    def waitusbhost(self, mode: Optional[int] = None):
+        """
+        Tell the node whether to wait for a USB host connection before transmitting or to drop the data and continue
+        :param mode: `0` to drop the data and continue and `1` to wait for a USB host connection
+        :return: The command response or a timeout message
+        :rtype: str
+        """
+        return self._send_command(value=mode)
 
     def start(self):
         """

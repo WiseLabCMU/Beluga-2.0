@@ -52,13 +52,14 @@ LOG_MODULE_REGISTER(watchdog_logger, CONFIG_WATCHDOG_MODULE_LOG_LEVEL);
 #endif
 
 struct wdt_timeout_work {
-    k_tid_t tid;
+    const char *name;
     struct k_work work;
 };
 
 struct wdt_channel {
     int64_t period;
     k_tid_t tid;
+    const char *name;
     int64_t timeout_ms;
     bool active;
 };
@@ -93,7 +94,7 @@ static void report_fatal_error(struct k_work *work) {
         .payload.error_message = msg_,
     };
     const struct comms *comms_ptr = comms_backend_uart_get_ptr();
-    const char *thread_name = k_thread_name_get(wdt_to_data->tid);
+    const char *thread_name = wdt_to_data->name;
 
     snprintf(msg_, sizeof(msg_), "Task watchdog expired (%s)", thread_name);
     comms_write_msg(comms_ptr, &msg);
@@ -153,7 +154,7 @@ static void wdt_timer_handler(struct k_timer *timer) {
         wdt_feed(wdt.wdt, wdt.channel);
     }
 #endif // defined(CONFIG_SW_WDT_HW_FALLBACK)
-    wdt_work.tid = wdt_channels[channel_id].tid;
+    wdt_work.name = wdt_channels[channel_id].name;
     k_work_submit(&wdt_work.work);
 }
 
@@ -200,6 +201,7 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
                 wdt_channels[i].active = true;
                 wdt_channels[i].tid = k_current_get();
                 wdt_channels[i].timeout_ms = K_TICKS_FOREVER;
+                wdt_channels[i].name = attr->name;
                 attr->id = i;
                 attr->starving = false;
                 ret = 0;
@@ -261,7 +263,6 @@ void watchdog_red_rocket(struct task_wdt_attr *attr) {
 }
 
 int kill_task_watchdog(struct task_wdt_attr *attr) {
-
     if (WDT_CHECK(attr)) {
         return -EINVAL;
     }
@@ -270,6 +271,16 @@ int kill_task_watchdog(struct task_wdt_attr *attr) {
         wdt_channels[attr->id].active = false;
         attr->id = -1;
     }
+
+    return 0;
+}
+
+int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid) {
+    if (WDT_CHECK(attr)) {
+        return -EINVAL;
+    }
+
+    K_SPINLOCK(&spinlock) { wdt_channels[attr->id].tid = tid; }
 
     return 0;
 }

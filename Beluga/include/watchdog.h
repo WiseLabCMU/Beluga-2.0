@@ -38,14 +38,20 @@ struct task_wdt_attr {
     bool starving;   ///< Parameter indicating channel is not supposed to be fed
     uint32_t period; ///< The number of milliseconds before the task watchdog
                      ///< starves
+    const char *name; ///< The watchdog channel name (displayed during wdt
+                      ///< triggers)
 };
 
 /**
  * Initializer for @ref task_wdt_attr.
  * @param[in] period_ The task watchdog period.
+ * @param[in] name_ The task watchdog channel name.
  */
-#define TASK_WDT_INITIALIZER(period_)                                          \
-    { .id = -1, .starving = false, .period = (period_) }
+#define TASK_WDT_INITIALIZER(period_, name_...)                                \
+    COND_CODE_1(                                                               \
+        IS_EMPTY(name_),                                                       \
+        ({.id = -1, .starving = false, .period = (period_), .name = NULL}),    \
+        ({.id = -1, .starving = false, .period = (period_), .name = (name_)}))
 
 /**
  * @brief Initializes the watchdog timer and the task watchdog subsystem
@@ -88,5 +94,19 @@ void watchdog_red_rocket(struct task_wdt_attr *attr);
  * @return negative error code otherwise
  */
 int kill_task_watchdog(struct task_wdt_attr *attr);
+
+/**
+ * @brief Updates the tid of the watchdog channel.
+ *
+ * Updates the tid of the watchdog channel. This is helpful when the task
+ * watchdog gets spawned in a different thread from the one feeding the
+ * watchdog.
+ *
+ * @param[in] attr Pointer to watchdog attributes
+ * @param[in] tid The tid of the thread feeding the watchdog
+ * @return 0 upon success
+ * @return -EINVAL if attr is NULL or the attr are invalid.
+ */
+int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid);
 
 #endif // BELUGA_WATCHDOG_H

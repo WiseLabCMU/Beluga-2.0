@@ -47,6 +47,7 @@
  * - UWB Transmit Antenna Delay at 16 MHz PRF
  * - UWB Receive Antenna Delay at 64 MHz PRF
  * - UWB Transmit Antenna Delay at 64 MHz PRF
+ * - Wait for a USB host connection before transmitting
  * .
  *
  * @internal This is the only thing that needs modification when adding new
@@ -78,7 +79,8 @@
     FUNC(RX_ANT_DELAY_16, DEFAULT_RX_ANT_DLY)                                  \
     FUNC(TX_ANT_DELAY_16, DEFAULT_TX_ANT_DLY)                                  \
     FUNC(RX_ANT_DELAY_64, DEFAULT_RX_ANT_DLY)                                  \
-    FUNC(TX_ANT_DELAY_64, DEFAULT_TX_ANT_DLY)
+    FUNC(TX_ANT_DELAY_64, DEFAULT_TX_ANT_DLY)                                  \
+    FUNC(WAIT_USB_HOST, 0)
 
 /**
  * Helper for generating the enumerators for beluga settings

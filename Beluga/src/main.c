@@ -168,6 +168,37 @@ LOG_MODULE_REGISTER(beluga_main, CONFIG_BELUGA_MAIN_LOG_LEVEL);
         }                                                                      \
     } while (0)
 
+#if CONFIG_STATUS_BLINK_PERIOD != 0
+/**
+ * Work handler for blinking the status (Power) LED.
+ * @param[in] work Pointer to the work item.
+ */
+static void blink_status_led(struct k_work *work) {
+    struct k_work_delayable *dwork =
+        CONTAINER_OF(work, struct k_work_delayable, work);
+    static enum led_state state = LED_ON;
+    static uint32_t error_blink = 0;
+    k_timeout_t schedule_period = K_MSEC(CONFIG_STATUS_BLINK_PERIOD);
+    const struct comms *comms = comms_backend_uart_get_ptr();
+
+    if (comms_check_rx_error(comms)) {
+        if ((state == LED_ON && error_blink == 0) ||
+            (state == LED_OFF && error_blink == 1)) {
+            schedule_period = K_MSEC(200);
+            error_blink++;
+        } else {
+            error_blink = 0;
+        }
+    }
+
+    update_led_state(LED_POWER, state);
+    state = (state == LED_ON) ? LED_OFF : LED_ON;
+
+    k_work_schedule(dwork, schedule_period);
+}
+K_WORK_DELAYABLE_DEFINE(blink_work, blink_status_led);
+#endif // CONFIG_STATUS_BLINK_PERIOD != 0
+
 /**
  * Load the LED mode from the settings and display the current state
  */
@@ -177,7 +208,11 @@ static void load_led_mode(const struct comms *comms) {
     if (led_mode == 1) {
         all_leds_off();
     }
+#if CONFIG_STATUS_BLINK_PERIOD != 0
+    k_work_schedule(&blink_work, K_NO_WAIT);
+#else
     update_led_state(LED_POWER, LED_ON);
+#endif // CONFIG_STATUS_BLINK_PERIOD != 0
     SETTINGS_PRINT(comms, "LED Mode: %d", led_mode);
 }
 
@@ -582,6 +617,15 @@ static void update_power_mode_(uint8_t pwramp) {
     updateSetting(BELUGA_RANGE_EXTEND, pwramp);
 }
 
+static void finalize_serial_setup(const struct comms *comms) {
+    int32_t block = retrieveSetting(BELUGA_WAIT_USB_HOST);
+    set_wait_usb_host(comms, block != 0);
+
+    if (block != 0) {
+        wait_comms_ready(comms);
+    }
+}
+
 /**
  * @brief Main entry point of the application
  * @return 1 on error
@@ -627,7 +671,7 @@ int main(void) {
     }
 
     LOG_INF("Module initialization done. Waiting for DTR to be asserted");
-    wait_comms_ready(comms);
+    finalize_serial_setup(comms);
 
     init_uwb();
 
