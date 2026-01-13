@@ -1,2 +1,2 @@
 string error
-builtin_interfaces/Time
+builtin_interfaces/Time timestamp
