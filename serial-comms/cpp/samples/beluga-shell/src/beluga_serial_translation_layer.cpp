@@ -102,6 +102,13 @@ static void fatal_error_cb_(struct beluga_serial *obj, const std::string &msg) {
     obj->_attr.fatal_error_event(msg.c_str());
 }
 
+static void resync_cb_(struct beluga_serial *obj) {
+    if (!obj || !obj->_attr.resync) {
+        return;
+    }
+    obj->_attr.resync();
+}
+
 struct beluga_serial *
 create_beluga_serial_instance(const struct beluga_serial_attr *attr) {
     if (attr == nullptr) {
@@ -147,6 +154,11 @@ create_beluga_serial_instance(const struct beluga_serial_attr *attr) {
     if (!obj->ctx) {
         free(obj);
         return nullptr;
+    }
+
+    if (attr->resync != nullptr) {
+        static_cast<BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> *>(obj->ctx)
+            ->register_resync_cb([obj]() { resync_cb_(obj); });
     }
 
     return obj;
@@ -401,6 +413,10 @@ void beluga_serial_starve(struct beluga_serial *obj, const char *arg) {
 
 void beluga_serial_exchange(struct beluga_serial *obj, const char *arg) {
     _CALL_AT_CMD(obj, exchange, arg);
+}
+
+void beluga_serial_reason(struct beluga_serial *obj) {
+    _CALL_AT_CMD2(obj, reason);
 }
 
 static bool allocate_port_entry(

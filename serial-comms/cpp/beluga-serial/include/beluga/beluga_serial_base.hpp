@@ -407,6 +407,12 @@ class BelugaSerialBase {
     std::string exchange(const std::string &new_id = "");
 
     /**
+     * Retrieve the reset reason
+     * @return The command response
+     */
+    std::string reason();
+
+    /**
      * Starts the serial reception and processing tasks
      * @throws std::runtime_error if the receive and processing tasks are
      * already running

@@ -104,6 +104,7 @@ static void init(void) {
         .range_events = report_range_event,
         .neighbor_list_updates = report_neighbor_update,
         .neighbor_ranging_updates = report_range_update,
+        .resync = handle_resync,
     };
 
     cache_mkdir();

@@ -528,6 +528,10 @@ std::string BelugaSerialBase::exchange(const std::string &new_id) {
     return _send_command(oss.str());
 }
 
+std::string BelugaSerialBase::reason() {
+    return _send_command("AT+REASON\r\n");
+}
+
 void BelugaSerialBase::start() {
     if (_tasks_running || !_serial.is_open()) {
         throw std::runtime_error("Please stop before restarting");
