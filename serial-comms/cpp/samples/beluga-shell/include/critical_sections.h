@@ -11,6 +11,7 @@
 #ifndef BELUGA_CRITICAL_SECTIONS_H
 #define BELUGA_CRITICAL_SECTIONS_H
 
+#include <pthread.h>
 #include <signal.h>
 #include <sio.h>
 #include <stddef.h>
@@ -63,5 +64,16 @@ crit_section_onexit(unsigned int *key) {
     for (unsigned int __i CRITICAL_SECTION_ONEXIT =                            \
              block_signals(&mask_, &prev_);                                    \
          !__i; unblock_signals(&prev_), __i = 1)
+
+static __attribute__((always_inline)) inline void
+mutex_crit_section_onexit(unsigned int *key) {
+    sio_assert(*key);
+}
+#define MUTEX_SECTION_ONEXIT __attribute__((cleanup(mutex_crit_section_onexit)))
+#define MUTEX_SECTION_BREAK  continue
+#define MUTEX_CRITICAL_SECTION(lock_)                                          \
+    for (unsigned int __i MUTEX_SECTION_ONEXIT = 0,                            \
+                          __key = pthread_mutex_lock(lock_);                   \
+         !__i; pthread_mutex_unlock(lock_), __i = 1)
 
 #endif // BELUGA_CRITICAL_SECTIONS_H

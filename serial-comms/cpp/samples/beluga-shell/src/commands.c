@@ -8,10 +8,13 @@
  * @author Tom Schmitz \<tschmitz@andrew.cmu.edu\>
  */
 
+#include <argp.h>
 #include <autocomplete.h>
 #include <commands.h>
 #include <critical_sections.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
 #include <readline/readline.h>
 #include <shell_helpers.h>
 #include <sio.h>
@@ -65,8 +68,27 @@ static void fg(const struct cmdline_tokens *tokens);
 static void stream_exchanges(const struct cmdline_tokens *tokens);
 static void stream_ranges(const struct cmdline_tokens *tokens);
 static void stream_neighbors(const struct cmdline_tokens *tokens);
+static void beluga_error_stream(const struct cmdline_tokens *tokens);
 
-static struct beluga_serial *_serial = NULL;
+struct file_desc {
+    int fd;
+    char *filepath;
+    pthread_mutex_t lock;
+};
+
+struct _serial_attr {
+    struct beluga_serial *serial;
+    struct file_desc error_fd;
+};
+
+static struct _serial_attr attr = {
+    .serial = NULL,
+    .error_fd =
+        {
+            .fd = STDOUT_FILENO,
+        },
+};
+
 static struct command_info commands[] = {
     COMMAND(id),
     COMMAND(start_ble, "start-ble"),
@@ -103,6 +125,7 @@ static struct command_info commands[] = {
     COMMAND(jobs),
     COMMAND(bg),
     COMMAND(fg),
+    COMMAND(beluga_error_stream, "set-error-stream"),
 };
 
 #define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
@@ -111,7 +134,8 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
     if (serial == NULL) {
         return -EINVAL;
     }
-    _serial = serial;
+    attr.serial = serial;
+    pthread_mutex_init(&attr.error_fd.lock, NULL);
 
     if (register_command_callbacks(commands, ARRAY_SIZE(commands)) < 0) {
         printf("Failed to initialize command handlers\n");
@@ -127,32 +151,50 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
 
 void report_unexpected_reboot(void) {
     const char msg[] = "\nBeluga rebooted unexpectedly\n";
-    ssize_t err = write(STDOUT_FILENO, msg, sizeof(msg) - 1);
-    if (err < 0) {
-        perror("open");
+
+    MUTEX_CRITICAL_SECTION(&attr.error_fd.lock) {
+        int fd = attr.error_fd.fd;
+
+        ssize_t err = write(fd, msg, sizeof(msg) - 1);
+        if (err < 0) {
+            perror("open");
+        }
+
+        if (fd == STDOUT_FILENO) {
+            rl_redraw_prompt_last_line();
+        }
     }
-    rl_redraw_prompt_last_line();
 }
 
 void report_fatal_error(const char *msg) {
     size_t len = strlen(msg);
-    ssize_t err = write(STDOUT_FILENO, "\n", 1);
-    if (err < 0) {
-        perror("open");
-        return;
-    }
+    ssize_t err;
 
-    err = write(STDOUT_FILENO, msg, len);
-    if (err < 0) {
-        perror("open");
-    }
+    MUTEX_CRITICAL_SECTION(&attr.error_fd.lock) {
+        int fd = attr.error_fd.fd;
 
-    err = write(STDOUT_FILENO, "\n", 1);
-    if (err < 0) {
-        perror("open");
-    }
+        if (fd == STDOUT_FILENO) {
+            err = write(STDOUT_FILENO, "\n", 1);
+            if (err < 0) {
+                perror("open");
+                return;
+            }
+        }
 
-    rl_redraw_prompt_last_line();
+        err = write(fd, msg, len);
+        if (err < 0) {
+            perror("open");
+        }
+
+        err = write(fd, "\n", 1);
+        if (err < 0) {
+            perror("open");
+        }
+
+        if (fd == STDOUT_FILENO) {
+            rl_redraw_prompt_last_line();
+        }
+    }
 }
 
 static void write_serial_response(const struct cmdline_tokens *tokens) {
@@ -171,7 +213,7 @@ static void write_serial_response(const struct cmdline_tokens *tokens) {
         }
     }
 
-    sio_dprintf(output_fd, "%s\n", _serial->response);
+    sio_dprintf(output_fd, "%s\n", attr.serial->response);
 }
 
 static void id(const struct cmdline_tokens *tokens) {
@@ -181,27 +223,27 @@ static void id(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_id(_serial, arg);
+    beluga_serial_id(attr.serial, arg);
     write_serial_response(tokens);
 }
 
 static void start_ble(const struct cmdline_tokens *tokens) {
-    beluga_serial_start_ble(_serial);
+    beluga_serial_start_ble(attr.serial);
     write_serial_response(tokens);
 }
 
 static void stop_ble(const struct cmdline_tokens *tokens) {
-    beluga_serial_stop_ble(_serial);
+    beluga_serial_stop_ble(attr.serial);
     write_serial_response(tokens);
 }
 
 static void start_uwb(const struct cmdline_tokens *tokens) {
-    beluga_serial_start_uwb(_serial);
+    beluga_serial_start_uwb(attr.serial);
     write_serial_response(tokens);
 }
 
 static void stop_uwb(const struct cmdline_tokens *tokens) {
-    beluga_serial_stop_uwb(_serial);
+    beluga_serial_stop_uwb(attr.serial);
     write_serial_response(tokens);
 }
 
@@ -212,7 +254,7 @@ static void bootmode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_bootmode(_serial, arg);
+    beluga_serial_bootmode(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -223,7 +265,7 @@ static void rate(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_rate(_serial, arg);
+    beluga_serial_rate(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -234,12 +276,12 @@ static void channel(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_channel(_serial, arg);
+    beluga_serial_channel(attr.serial, arg);
     write_serial_response(tokens);
 }
 
 static void reset(const struct cmdline_tokens *tokens) {
-    beluga_serial_reset(_serial);
+    beluga_serial_reset(attr.serial);
     write_serial_response(tokens);
 }
 
@@ -250,7 +292,7 @@ static void timeout(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_timeout(_serial, arg);
+    beluga_serial_timeout(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -262,7 +304,7 @@ static void txpower(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_txpower(_serial, arg);
+    beluga_serial_txpower(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -273,7 +315,7 @@ static void streammode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_streammode(_serial, arg);
+    beluga_serial_streammode(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -284,7 +326,7 @@ static void twrmode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_twrmode(_serial, arg);
+    beluga_serial_twrmode(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -295,12 +337,12 @@ static void ledmode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_ledmode(_serial, arg);
+    beluga_serial_ledmode(attr.serial, arg);
     write_serial_response(tokens);
 }
 
 static void reboot(const struct cmdline_tokens *tokens) {
-    beluga_serial_reboot(_serial);
+    beluga_serial_reboot(attr.serial);
     write_serial_response(tokens);
 }
 
@@ -311,7 +353,7 @@ static void pwramp(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_pwramp(_serial, arg);
+    beluga_serial_pwramp(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -322,17 +364,17 @@ static void antenna(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_antenna(_serial, arg);
+    beluga_serial_antenna(attr.serial, arg);
     write_serial_response(tokens);
 }
 
 static void cmd_time(const struct cmdline_tokens *tokens) {
-    beluga_serial_time(_serial);
+    beluga_serial_time(attr.serial);
     write_serial_response(tokens);
 }
 
 static void deepsleep(const struct cmdline_tokens *tokens) {
-    beluga_serial_deepsleep(_serial);
+    beluga_serial_deepsleep(attr.serial);
     write_serial_response(tokens);
 }
 
@@ -343,7 +385,7 @@ static void datarate(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_datarate(_serial, arg);
+    beluga_serial_datarate(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -354,7 +396,7 @@ static void preamble(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_preamble(_serial, arg);
+    beluga_serial_preamble(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -365,7 +407,7 @@ static void pulserate(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_pulserate(_serial, arg);
+    beluga_serial_pulserate(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -376,7 +418,7 @@ static void phr(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_phr(_serial, arg);
+    beluga_serial_phr(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -387,7 +429,7 @@ static void pac(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_pac(_serial, arg);
+    beluga_serial_pac(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -398,7 +440,7 @@ static void sfd(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_sfd(_serial, arg);
+    beluga_serial_sfd(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -409,7 +451,7 @@ static void panid(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_panid(_serial, arg);
+    beluga_serial_panid(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -420,7 +462,7 @@ static void evict(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_evict(_serial, arg);
+    beluga_serial_evict(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -431,17 +473,17 @@ static void verbose(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_verbose(_serial, arg);
+    beluga_serial_verbose(attr.serial, arg);
     write_serial_response(tokens);
 }
 
 static void status(const struct cmdline_tokens *tokens) {
-    beluga_serial_status(_serial);
+    beluga_serial_status(attr.serial);
     write_serial_response(tokens);
 }
 
 static void version(const struct cmdline_tokens *tokens) {
-    beluga_serial_version(_serial);
+    beluga_serial_version(attr.serial);
     write_serial_response(tokens);
 }
 
@@ -452,7 +494,7 @@ static void starve(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_starve(_serial, arg);
+    beluga_serial_starve(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -463,7 +505,7 @@ static void exchange(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_exchange(_serial, arg);
+    beluga_serial_exchange(attr.serial, arg);
     write_serial_response(tokens);
 }
 
@@ -592,4 +634,106 @@ static void bg(const struct cmdline_tokens *tokens) {
 
 static void fg(const struct cmdline_tokens *tokens) {
     continue_job(tokens, FG);
+}
+
+static const char beluga_error_set_stream_doc[] =
+    "Set the file where error messages are written.";
+static const char beluga_error_set_stream_args_doc[] = "[FILE]...";
+static struct argp_option beluga_error_set_stream_options[] = {
+    {"reset", 'r', 0, 0, "Redirect error events to stdout."},
+    {"append", 'a', 0, 0, "Append the error reports to the given file."},
+    {0}};
+
+struct error_stream_args {
+    bool reset;
+    bool append;
+    char *file;
+};
+
+static error_t parse_set_error_stream(int key, char *arg,
+                                      struct argp_state *state) {
+    struct error_stream_args *arguments = state->input;
+    switch (key) {
+    case 'r':
+        arguments->reset = true;
+        break;
+    case 'a':
+        arguments->append = true;
+        break;
+    case ARGP_KEY_ARG:
+        if (state->arg_num < 1) {
+            arguments->file = arg;
+        }
+        break;
+
+    default:
+        return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static void beluga_error_stream(const struct cmdline_tokens *tokens) {
+    struct error_stream_args arguments = {};
+    struct argp argp = {beluga_error_set_stream_options, parse_set_error_stream,
+                        beluga_error_set_stream_args_doc,
+                        beluga_error_set_stream_doc};
+    error_t err = argp_parse(&argp, tokens->argc, tokens->argv, ARGP_NO_EXIT, 0,
+                             &arguments);
+    int flags = WR_FLAGS, fd;
+    bool flags_present = arguments.reset || arguments.append;
+
+    if (err != 0) {
+        return;
+    }
+
+    if (arguments.append) {
+        flags = APPEND_FLAGS;
+    }
+
+    MUTEX_CRITICAL_SECTION(&attr.error_fd.lock) {
+        if (arguments.file == NULL && !flags_present) {
+            if (attr.error_fd.fd == STDOUT_FILENO) {
+                puts("stdout");
+            } else {
+                puts(attr.error_fd.filepath);
+            }
+            MUTEX_SECTION_BREAK;
+        }
+
+        if (arguments.reset) {
+            if (attr.error_fd.fd != STDOUT_FILENO) {
+                close(attr.error_fd.fd);
+                free(attr.error_fd.filepath);
+            }
+            attr.error_fd.fd = STDOUT_FILENO;
+            MUTEX_SECTION_BREAK;
+        }
+
+        if (arguments.file == NULL) {
+            argp_help(&argp, stdout, ARGP_NO_EXIT, "set-error-stream");
+            MUTEX_SECTION_BREAK;
+        }
+
+        if (attr.error_fd.fd != STDOUT_FILENO) {
+            close(attr.error_fd.fd);
+            free(attr.error_fd.filepath);
+            attr.error_fd.filepath = NULL;
+        }
+
+        fd = open(arguments.file, flags, WR_PERMS);
+        if (fd < 0) {
+            perror("open");
+            MUTEX_SECTION_BREAK;
+        }
+
+        attr.error_fd.filepath = malloc(strlen(arguments.file) + 1);
+        if (attr.error_fd.filepath == NULL) {
+            perror("malloc");
+            close(fd);
+            MUTEX_SECTION_BREAK;
+        }
+
+        strcpy(attr.error_fd.filepath, arguments.file);
+        attr.error_fd.fd = fd;
+    }
 }
