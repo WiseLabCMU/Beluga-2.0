@@ -211,7 +211,7 @@ class BelugaSerialBase {
      * channel
      * @return The command response
      */
-    std::string channel(const std::string &channel);
+    std::string channel(const std::string &channel = "");
 
     /**
      * Sends a command for resetting the device settings
@@ -404,7 +404,7 @@ class BelugaSerialBase {
      * @param[in] new_id The new ID.
      * @return The command response.
      */
-    std::string exchange(const std::string &new_id);
+    std::string exchange(const std::string &new_id = "");
 
     /**
      * Starts the serial reception and processing tasks
@@ -549,6 +549,7 @@ class BelugaSerialBase {
 
     struct Task {
         std::packaged_task<void()> task;
+        std::future<void> future;
         std::thread thread;
     };
 
@@ -570,6 +571,10 @@ class BelugaSerialBase {
         _report_uwb_drops = nullptr;
     std::function<void(const std::string &)> _report_fatal_error_cb = nullptr;
 };
+
+void find_ports(
+    std::map<BelugaSerialBase::target_pair, std::vector<std::string>> &ports);
+
 } // namespace BelugaSerial
 
 #endif // BELUGA_SERIAL_BELUGA_SERIAL_BASE_HPP

@@ -9,7 +9,9 @@ FORMAT_FILES=beluga-serial/include/beluga/*.hpp \
 	beluga-serial/serial/src/core/*.cpp \
 	beluga-serial/serial/src/tools/core/*.cpp \
 	beluga-serial/serial/src/tools/*.cpp \
-	samples/*/src/*.cpp
+	samples/*/src/*.cpp \
+	samples/*/src/*.c \
+	samples/*/*/*.h
 
 format:
 	clang-format -i $(FORMAT_FILES)
