@@ -101,6 +101,9 @@ static void init(void) {
         .serial_timeout = 100,
         .reboot_event = report_unexpected_reboot,
         .fatal_error_event = report_fatal_error,
+        .range_events = report_range_event,
+        .neighbor_list_updates = report_neighbor_update,
+        .neighbor_ranging_updates = report_range_update,
     };
 
     cache_mkdir();

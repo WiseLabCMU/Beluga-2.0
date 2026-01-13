@@ -89,6 +89,9 @@ static struct _serial_attr attr = {
             .fd = STDOUT_FILENO,
             .streaming = true,
         },
+    .exchange = {.fd = STDOUT_FILENO},
+    .ranges = {.fd = STDOUT_FILENO},
+    .neighbors = {.fd = STDOUT_FILENO},
 };
 
 static struct command_info commands[] = {
@@ -127,7 +130,7 @@ static struct command_info commands[] = {
     COMMAND(jobs),
     COMMAND(bg),
     COMMAND(fg),
-    COMMAND(config_beluga_stream, "config-stream"),
+    COMMAND(config_beluga_stream, "manage-stream"),
 };
 
 #define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
@@ -138,6 +141,9 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
     }
     attr.serial = serial;
     pthread_mutex_init(&attr.error.lock, NULL);
+    pthread_mutex_init(&attr.exchange.lock, NULL);
+    pthread_mutex_init(&attr.neighbors.lock, NULL);
+    pthread_mutex_init(&attr.ranges.lock, NULL);
 
     if (register_command_callbacks(commands, ARRAY_SIZE(commands)) < 0) {
         printf("Failed to initialize command handlers\n");
@@ -157,6 +163,10 @@ void report_unexpected_reboot(void) {
     MUTEX_CRITICAL_SECTION(&attr.error.lock) {
         int fd = attr.error.fd;
 
+        if (!attr.error.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
+
         ssize_t err = write(fd, msg, sizeof(msg) - 1);
         if (err < 0) {
             perror("open");
@@ -169,29 +179,72 @@ void report_unexpected_reboot(void) {
 }
 
 void report_fatal_error(const char *msg) {
-    size_t len = strlen(msg);
-    ssize_t err;
-
     MUTEX_CRITICAL_SECTION(&attr.error.lock) {
         int fd = attr.error.fd;
 
         if (fd == STDOUT_FILENO) {
-            err = write(STDOUT_FILENO, "\n", 1);
-            if (err < 0) {
-                perror("open");
-                return;
+            sio_dprintf(fd, "\n%s\n", msg);
+            rl_redraw_prompt_last_line();
+        } else {
+            sio_dprintf(fd, "%s\n", msg);
+        }
+    }
+}
+
+void report_range_event(const struct range_event *event) {
+    MUTEX_CRITICAL_SECTION(&attr.exchange.lock) {
+        int fd = attr.exchange.fd;
+
+        sio_dprintf(fd,
+                    "\n-----\nExchange Event:\nID: %d\nExchange: "
+                    "%d\nTimestamp: %ld\n-----\n",
+                    event->id, event->exchange, event->timestamp);
+
+        if (fd == STDOUT_FILENO) {
+            rl_redraw_prompt_last_line();
+        }
+    }
+}
+
+void report_neighbor_update(const struct beluga_neighbor *updates, size_t len) {
+    MUTEX_CRITICAL_SECTION(&attr.neighbors.lock) {
+        int fd = attr.neighbors.fd;
+
+        sio_dprintf(fd, "\n-----\nNeighbor Event:\n");
+        for (size_t i = 0; i < len; i++) {
+            sio_dprintf(
+                fd,
+                "ID: %d\nRSSI: %d\nExchange: %d\nRange: %f\nTimestamp: %ld\n",
+                updates[i].id, updates[i].rssi, updates[i].exchange,
+                updates[i].range, updates[i].time);
+            if ((i + 1) < len) {
+                sio_dprintf(fd, "\n");
             }
         }
+        sio_dprintf(fd, "-----\n");
 
-        err = write(fd, msg, len);
-        if (err < 0) {
-            perror("open");
+        if (fd == STDOUT_FILENO) {
+            rl_redraw_prompt_last_line();
         }
+    }
+}
 
-        err = write(fd, "\n", 1);
-        if (err < 0) {
-            perror("open");
+void report_range_update(const struct beluga_neighbor *updates, size_t len) {
+    MUTEX_CRITICAL_SECTION(&attr.neighbors.lock) {
+        int fd = attr.neighbors.fd;
+
+        sio_dprintf(fd, "\n-----\nRange Event:\n");
+        for (size_t i = 0; i < len; i++) {
+            sio_dprintf(
+                fd,
+                "ID: %d\nRSSI: %d\nExchange: %d\nRange: %f\nTimestamp: %ld\n",
+                updates[i].id, updates[i].rssi, updates[i].exchange,
+                updates[i].range, updates[i].time);
+            if ((i + 1) < len) {
+                sio_dprintf(fd, "\n");
+            }
         }
+        sio_dprintf(fd, "-----\n");
 
         if (fd == STDOUT_FILENO) {
             rl_redraw_prompt_last_line();
@@ -732,7 +785,7 @@ static bool update_stream_state(struct stream_ctx *ctx,
     return true;
 }
 
-static const char config_stream_doc[] = "Configure the event streams.";
+static const char config_stream_doc[] = "Manage the event streams.";
 static const char config_stream_args_doc[] =
     "[error|exchange|neighbors|range] [FILE]...";
 static struct argp_option config_stream_options[] = {
@@ -785,6 +838,11 @@ static void config_beluga_stream(const struct cmdline_tokens *tokens) {
 
     if (err != 0) {
         perror("argp_parse");
+        return;
+    }
+
+    if (arguments.args[0] == NULL) {
+        // help or usage invoked
         return;
     }
 
