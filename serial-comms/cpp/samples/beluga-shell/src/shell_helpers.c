@@ -259,6 +259,7 @@ enum parseline_result parseline(const char *cmdline,
     tokens->outfile_append = false;
     tokens->builtin_command = false;
     tokens->argv = NULL;
+    tokens->builtin_bg = false;
 
     if (validate_and_count_args(tokens) < 0) {
         return PARSELINE_ERROR;
@@ -287,6 +288,7 @@ enum parseline_result parseline(const char *cmdline,
         if (tokens->argc == 0) {
             return PARSELINE_EMPTY;
         }
+        tokens->builtin_bg = true;
         return PARSELINE_BG;
     }
     return PARSELINE_FG;

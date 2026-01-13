@@ -60,6 +60,7 @@ struct cmdline_tokens {
     bool outfile_append;
     bool builtin_command;
     size_t builtin_index;
+    bool builtin_bg;
     char *_buf;
 };
 
