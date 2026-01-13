@@ -13,6 +13,7 @@
 
 #include <beluga/beluga_serial.hpp>
 #include <beluga_messages/msg/beluga_exchange.hpp>
+#include <beluga_messages/msg/beluga_fatal_error.hpp>
 #include <beluga_messages/msg/beluga_neighbors.hpp>
 #include <beluga_messages/msg/beluga_ranges.hpp>
 #include <beluga_messages/msg/beluga_unexpected_reboot.hpp>
@@ -65,6 +66,10 @@ class Beluga : public rclcpp::Node {
                                       std::forward<decltype(ph_2)>(ph_2));
             },
         .unexpected_reboot_event = [this]() { _unexpected_reboot_event(); },
+        .fatal_error_event =
+            [this](auto &&PH1) {
+                _publish_fatal_error(std::forward<decltype(PH1)>(PH1));
+            },
     };
     const BelugaSerial::NeighborCallbacks<NEIGHBOR_CLASS> _neighbor_cb = {
         .neighbor_update_cb = NEIGHBOR_UPDATE_CB,
@@ -109,6 +114,9 @@ class Beluga : public rclcpp::Node {
         // publisher)
         this->declare_parameter("events_period", 100);
 
+        // Fatal error publisher name
+        this->declare_parameter("fatal_error_topic", "beluga_fatal_error");
+
         int64_t qos = this->get_parameter("history_depth").as_int();
 
         _neighbor_list_publisher =
@@ -133,6 +141,9 @@ class Beluga : public rclcpp::Node {
                 this->get_parameter("power_control_topic").as_string(),
                 std::bind(&Beluga::_update_power_control, this,
                           std::placeholders::_1, std::placeholders::_2));
+        _fatal_error_publisher =
+            this->create_publisher<beluga_messages::msg::BelugaFatalError>(
+                this->get_parameter("fatal_error_topic").as_string(), qos);
 
         _setup();
 
@@ -174,6 +185,8 @@ class Beluga : public rclcpp::Node {
         _unexpected_reboot;
     rclcpp::Service<beluga_messages::srv::BelugaPowerControl>::SharedPtr
         _power_control_service;
+    rclcpp::Publisher<beluga_messages::msg::BelugaFatalError>::SharedPtr
+        _fatal_error_publisher;
 
     rclcpp::TimerBase::SharedPtr _sync_timer;
 
@@ -198,6 +211,7 @@ class Beluga : public rclcpp::Node {
     void
     _publish_ranges(const std::vector<BelugaSerial::BelugaNeighbor> &ranges);
     void _publish_exchange(const BelugaSerial::RangeEvent &event);
+    void _publish_fatal_error(const std::string &error);
 
     BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> _serial;
 
