@@ -205,7 +205,7 @@ void handle_resync(void) {
             MUTEX_SECTION_BREAK;
         }
 
-        dprintf(fd, "\nReboot Reason: %s\n", response);
+        dprintf(fd, "\n%s\n", response);
 
         if (fd == STDOUT_FILENO) {
             rl_redraw_prompt_last_line();
