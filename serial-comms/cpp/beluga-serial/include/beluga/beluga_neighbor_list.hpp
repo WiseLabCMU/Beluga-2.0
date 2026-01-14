@@ -15,6 +15,7 @@
 #include <exception>
 #include <fstream>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -220,6 +221,12 @@ template <typename NeighborImpl = BelugaNeighbor> class BelugaNeighborList {
     void get_neighbors(std::vector<NeighborImpl> &neighbors);
 
     /**
+     * Retrieves the neighbor list without resetting the neighbor update flag.
+     * @param neighbors The list of all the neighbors
+     */
+    void get_neighbors_no_update(std::vector<NeighborImpl> &neighbors);
+
+    /**
      * Clears the neighbor list
      */
     void clear() noexcept;
@@ -230,15 +237,16 @@ template <typename NeighborImpl = BelugaNeighbor> class BelugaNeighborList {
      * @note This checks if a new neighbor has been added or an existing
      * neighbor has been removed
      */
-    [[nodiscard]] bool neighbor_updates() const noexcept;
+    [[nodiscard]] bool neighbor_updates() noexcept;
 
     /**
      * Checks if there are any range updates
      * @return `true` if there are range updates, `false` otherwise
      */
-    [[nodiscard]] bool range_updates() const noexcept;
+    [[nodiscard]] bool range_updates() noexcept;
 
   private:
+    std::mutex _lock;
     std::map<uint16_t, NeighborImpl> _list;
     bool _neighbors_update = false;
     bool _range_update = false;
@@ -247,6 +255,7 @@ template <typename NeighborImpl = BelugaNeighbor> class BelugaNeighborList {
 template <typename NeighborImpl>
 void BelugaNeighborList<NeighborImpl>::update(
     const std::vector<BelugaFrame::NeighborUpdate> &updates) {
+    std::lock_guard<std::mutex> guard(_lock);
     for (auto neighbor : updates) {
         if (_list.find(neighbor.ID) == _list.end()) {
             _list[neighbor.ID] = NeighborImpl(neighbor);
@@ -261,6 +270,7 @@ void BelugaNeighborList<NeighborImpl>::update(
 
 template <typename NeighborImpl>
 void BelugaNeighborList<NeighborImpl>::remove(uint32_t node_id) {
+    std::lock_guard<std::mutex> guard(_lock);
     if (_list.find((uint16_t)node_id) != _list.end()) {
         _list.erase((uint16_t)node_id);
         _neighbors_update = true;
@@ -271,6 +281,7 @@ template <typename NeighborImpl>
 void BelugaNeighborList<NeighborImpl>::get_updates(
     std::vector<NeighborImpl> &updates) {
     updates.clear();
+    std::lock_guard<std::mutex> guard(_lock);
     for (auto &[_, value] : _list) {
         if (value.updated()) {
             updates.emplace_back(value);
@@ -283,6 +294,7 @@ void BelugaNeighborList<NeighborImpl>::get_updates(
 template <typename NeighborImpl>
 void BelugaNeighborList<NeighborImpl>::get_neighbors(
     std::vector<NeighborImpl> &neighbors) {
+    std::lock_guard<std::mutex> guard(_lock);
     for (auto &[_, value] : _list) {
         neighbors.emplace_back(value);
     }
@@ -290,7 +302,17 @@ void BelugaNeighborList<NeighborImpl>::get_neighbors(
 }
 
 template <typename NeighborImpl>
+void BelugaNeighborList<NeighborImpl>::get_neighbors_no_update(
+    std::vector<NeighborImpl> &neighbors) {
+    std::lock_guard<std::mutex> guard(_lock);
+    for (auto &[_, value] : _list) {
+        neighbors.emplace_back(value);
+    }
+}
+
+template <typename NeighborImpl>
 void BelugaNeighborList<NeighborImpl>::clear() noexcept {
+    std::lock_guard<std::mutex> guard(_lock);
     if (!_list.empty()) {
         _list.clear();
         _neighbors_update = true;
@@ -299,12 +321,14 @@ void BelugaNeighborList<NeighborImpl>::clear() noexcept {
 }
 
 template <typename NeighborImpl>
-bool BelugaNeighborList<NeighborImpl>::neighbor_updates() const noexcept {
+bool BelugaNeighborList<NeighborImpl>::neighbor_updates() noexcept {
+    std::lock_guard<std::mutex> guard(_lock);
     return _neighbors_update;
 }
 
 template <typename NeighborImpl>
-bool BelugaNeighborList<NeighborImpl>::range_updates() const noexcept {
+bool BelugaNeighborList<NeighborImpl>::range_updates() noexcept {
+    std::lock_guard<std::mutex> guard(_lock);
     return _range_update;
 }
 } // namespace BelugaSerial
