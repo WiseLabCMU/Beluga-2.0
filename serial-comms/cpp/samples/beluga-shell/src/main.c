@@ -157,7 +157,8 @@ static void archive_command(bool add_hist, char *command) {
     }
 
     const HIST_ENTRY *entry = previous_history();
-    if (strcmp(entry->line, command) == 0) {
+
+    if (entry != NULL && strcmp(entry->line, command) == 0) {
         return;
     }
 
