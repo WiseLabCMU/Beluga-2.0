@@ -151,6 +151,19 @@ static void init(void) {
     Signal(SIGTTOU, SIG_IGN);
 }
 
+static void archive_command(bool add_hist, char *command) {
+    if (!add_hist) {
+        return;
+    }
+
+    const HIST_ENTRY *entry = previous_history();
+    if (strcmp(entry->line, command) == 0) {
+        return;
+    }
+
+    add_history(command);
+}
+
 static void run(void) {
     char *command;
     bool add_hist = true;
@@ -168,9 +181,7 @@ static void run(void) {
 
         add_hist = evaluate_command(command);
 
-        if (add_hist) {
-            add_history(command);
-        }
+        archive_command(add_hist, command);
 
         free(command);
     }
