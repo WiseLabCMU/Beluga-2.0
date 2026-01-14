@@ -82,6 +82,7 @@ struct _serial_attr {
     struct stream_ctx ranges;
     struct stream_ctx neighbors;
     pthread_mutex_t serial_lock;
+    bool expecting_reboot;
 };
 
 static struct _serial_attr attr = {
@@ -192,6 +193,12 @@ void handle_resync(void) {
 
     MUTEX_CRITICAL_SECTION(&attr.error.lock) {
         int fd = attr.error.fd;
+
+        if (attr.expecting_reboot) {
+            attr.expecting_reboot = false;
+            MUTEX_SECTION_BREAK;
+        }
+
         if (!attr.error.streaming) {
             MUTEX_SECTION_BREAK;
         }
@@ -526,6 +533,7 @@ static void ledmode(const struct cmdline_tokens *tokens) {
 
 static void reboot(const struct cmdline_tokens *tokens) {
     MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        attr.expecting_reboot = true;
         beluga_serial_reboot(attr.serial);
         write_serial_response(tokens);
     }
