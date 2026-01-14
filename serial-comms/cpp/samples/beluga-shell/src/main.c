@@ -205,12 +205,8 @@ static void redirect_io(struct cmdline_tokens *tokens) {
     }
 
     if (tokens->outfile) {
-
-        if (!tokens->outfile_append) {
-            output_fd = open(tokens->outfile, WR_FLAGS, WR_PERMS);
-        } else {
-            output_fd = open(tokens->outfile, APPEND_FLAGS, WR_PERMS);
-        }
+        int flags = tokens->outfile_append ? APPEND_FLAGS : WR_FLAGS;
+        output_fd = open(tokens->outfile, flags, WR_PERMS);
 
         if (output_fd < 0) {
             perror(tokens->outfile);
