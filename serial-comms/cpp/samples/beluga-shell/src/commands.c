@@ -228,6 +228,10 @@ void report_range_event(const struct range_event *event) {
     MUTEX_CRITICAL_SECTION(&attr.exchange.lock) {
         int fd = attr.exchange.fd;
 
+        if (!attr.exchange.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
+
         sio_dprintf(fd,
                     "\n-----\nExchange Event:\nID: %d\nExchange: "
                     "%d\nTimestamp: %ld\n-----\n",
@@ -242,6 +246,10 @@ void report_range_event(const struct range_event *event) {
 void report_neighbor_update(const struct beluga_neighbor *updates, size_t len) {
     MUTEX_CRITICAL_SECTION(&attr.neighbors.lock) {
         int fd = attr.neighbors.fd;
+
+        if (!attr.neighbors.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
 
         sio_dprintf(fd, "\n-----\nNeighbor Event:\n");
         for (size_t i = 0; i < len; i++) {
@@ -263,8 +271,12 @@ void report_neighbor_update(const struct beluga_neighbor *updates, size_t len) {
 }
 
 void report_range_update(const struct beluga_neighbor *updates, size_t len) {
-    MUTEX_CRITICAL_SECTION(&attr.neighbors.lock) {
-        int fd = attr.neighbors.fd;
+    MUTEX_CRITICAL_SECTION(&attr.ranges.lock) {
+        int fd = attr.ranges.fd;
+
+        if (!attr.ranges.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
 
         sio_dprintf(fd, "\n-----\nRange Event:\n");
         for (size_t i = 0; i < len; i++) {
