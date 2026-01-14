@@ -67,6 +67,7 @@ static void jobs(const struct cmdline_tokens *tokens);
 static void bg(const struct cmdline_tokens *tokens);
 static void fg(const struct cmdline_tokens *tokens);
 static void config_beluga_stream(const struct cmdline_tokens *tokens);
+static void neighbors(const struct cmdline_tokens *tokens);
 
 struct stream_ctx {
     int fd;
@@ -135,6 +136,7 @@ static struct command_info commands[] = {
     COMMAND(bg),
     COMMAND(fg),
     COMMAND(config_beluga_stream, "manage-stream"),
+    COMMAND(neighbors),
 };
 
 #define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
@@ -1052,4 +1054,53 @@ static void config_beluga_stream(const struct cmdline_tokens *tokens) {
 
     update_stream_context(ctx, &arguments, &argp, tokens);
     update_stream_state(ctx, &arguments);
+}
+
+static void neighbors(const struct cmdline_tokens *tokens) {
+    struct beluga_neighbor *list = NULL, *tmp;
+    int len = 0;
+    int fd = STDOUT_FILENO;
+
+    if (tokens->outfile) {
+        fd = open(tokens->outfile,
+                  tokens->outfile_append ? APPEND_FLAGS : WR_FLAGS, WR_PERMS);
+        if (fd < 0) {
+            perror("open");
+            return;
+        }
+    }
+
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        len = beluga_serial_get_neighbor_list(attr.serial, &list);
+    }
+
+    if (len < 0) {
+        sio_dprintf(fd, "Insufficient memory\n");
+        goto close_fd;
+    }
+
+    tmp = list;
+    sio_dprintf(fd, "-----\n");
+    sio_dprintf(fd, "Neighbor list:\n");
+    for (int i = 0; i < len; i++) {
+        sio_assert(tmp != NULL);
+        sio_dprintf(fd, "ID: %d\n", tmp->id);
+        sio_dprintf(fd, "RSSI: %d\n", tmp->rssi);
+        sio_dprintf(fd, "Exchange: %d\n", tmp->exchange);
+        sio_dprintf(fd, "Range: %f\n", tmp->range);
+        sio_dprintf(fd, "Timestamp: %ld\n", tmp->time);
+
+        if ((i + 1) < len) {
+            sio_dprintf(fd, "\n");
+        }
+        tmp++;
+    }
+    sio_dprintf(fd, "-----\n");
+
+    free(list);
+
+close_fd:
+    if (fd != STDOUT_FILENO) {
+        close(fd);
+    }
 }

@@ -55,6 +55,23 @@ static void range_update(struct beluga_serial *obj,
     obj->_attr.neighbor_ranging_updates(neighbors.data(), neighbors.size());
 }
 
+template <typename NeighborType = BelugaSerial::BelugaNeighbor>
+static void retrieve_neighbors_now(struct beluga_serial *obj,
+                                   std::vector<struct beluga_neighbor> &out) {
+    auto serial =
+        static_cast<BelugaSerial::BelugaSerial<NeighborType> *>(obj->ctx);
+    std::vector<NeighborType> list;
+
+    serial->get_neighbor_list(list);
+
+    out.clear();
+
+    for (auto &neighbor : list) {
+        out.emplace_back(neighbor.rssi(), neighbor.id(), neighbor.exchange(),
+                         neighbor.range(), neighbor.time());
+    }
+}
+
 extern "C" {
 #include <stdlib.h>
 
@@ -417,6 +434,35 @@ void beluga_serial_exchange(struct beluga_serial *obj, const char *arg) {
 
 void beluga_serial_reason(struct beluga_serial *obj) {
     _CALL_AT_CMD2(obj, reason);
+}
+
+int beluga_serial_get_neighbor_list(struct beluga_serial *obj,
+                                    struct beluga_neighbor **list) {
+    if (!obj || !list) {
+        return -EINVAL;
+    }
+
+    std::vector<struct beluga_neighbor> list_;
+
+    retrieve_neighbors_now(obj, list_);
+
+    if (list_.empty()) {
+        return 0;
+    }
+
+    *list = (struct beluga_neighbor *)calloc(list_.size(),
+                                             sizeof(struct beluga_neighbor));
+
+    if (!*list) {
+        return -ENOMEM;
+    }
+
+    struct beluga_neighbor *tmp = *list;
+    for (size_t i = 0; i < list_.size(); i++) {
+        tmp[i] = list_[i];
+    }
+
+    return (int)list_.size();
 }
 
 static bool allocate_port_entry(

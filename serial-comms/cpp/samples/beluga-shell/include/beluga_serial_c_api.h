@@ -130,6 +130,8 @@ void beluga_serial_version(struct beluga_serial *obj);
 void beluga_serial_starve(struct beluga_serial *obj, const char *arg);
 void beluga_serial_exchange(struct beluga_serial *obj, const char *arg);
 void beluga_serial_reason(struct beluga_serial *obj);
+int beluga_serial_get_neighbor_list(struct beluga_serial *obj,
+                                    struct beluga_neighbor **list);
 struct beluga_serial_ports *find_ports(size_t *len);
 void cleanup_find_ports(struct beluga_serial_ports **ports, size_t len);
 
