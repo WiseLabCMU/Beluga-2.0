@@ -9,6 +9,7 @@
  */
 
 #include <errno.h>
+#include <math.h>
 #include <sio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -61,6 +62,70 @@ static size_t uintmax_to_string(uintmax_t v, char *s, unsigned char b) {
     return len;
 }
 
+static intmax_t sio_pow(intmax_t b, uintmax_t e) {
+    intmax_t ret = 1;
+
+    while (e > 0) {
+        if (e & 1) {
+            ret *= b;
+        }
+
+        b *= b;
+        e >>= 1;
+    }
+
+    return ret;
+}
+
+static size_t double_to_string(double v, char s[], uint8_t precision) {
+    size_t len = 0;
+    intmax_t ipart;
+    double fpart;
+    double v_p = fabs(v);
+
+    if (isnan(v)) {
+        strcpy(s, "nan");
+        return 3;
+    }
+
+    if (isinf(v)) {
+        if (signbit(v)) {
+            s[0] = '-';
+            len++;
+        }
+        strcpy(s + len, "inf");
+        return len + 3;
+    }
+
+    ipart = (intmax_t)v_p;
+    fpart = v_p - (double)ipart;
+
+    if (precision > 0) {
+        size_t zeros_needed;
+        fpart = fpart * (double)sio_pow(10ul, precision);
+        len = write_digits((uintmax_t)lrint(fpart), s, 10);
+        zeros_needed = (size_t)precision - len;
+        while (zeros_needed > 0) {
+            s[len] = '0';
+            len++;
+            zeros_needed--;
+        }
+
+        s[len] = '.';
+        len++;
+    }
+
+    len += write_digits((uintmax_t)ipart, s + len, 10);
+
+    if (signbit(v)) {
+        s[len] = '-';
+        len++;
+    }
+
+    reverse(s, len);
+    return len;
+}
+
 ssize_t sio_printf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -101,7 +166,10 @@ static size_t _handle_format(const char *fmt, va_list argp,
         union {
             uintmax_t u;
             intmax_t s;
+            double d;
         } convert_val = {.u = 0};
+        uint8_t precision = 6;
+        char *next;
 
         switch (fmt[1]) {
         case 'c': {
@@ -155,6 +223,20 @@ static size_t _handle_format(const char *fmt, va_list argp,
         case 'o': {
             convert_type = fmt[1];
             convert_val.u = (uintmax_t)va_arg(argp, unsigned);
+            pos += 2;
+            break;
+        }
+
+        case '.': {
+            precision = (uint8_t)strtoul(fmt + 2, &next, 10);
+            if (*next != 'f') {
+                break;
+            }
+            pos += next - (fmt + 1);
+        }
+        case 'f': {
+            convert_type = 'f';
+            convert_val.d = va_arg(argp, double);
             pos += 2;
             break;
         }
@@ -230,6 +312,12 @@ static size_t _handle_format(const char *fmt, va_list argp,
             strcpy(data->buf, "0x");
             data->str = data->buf;
             data->len = uintmax_to_string(convert_val.u, data->buf + 2, 16) + 2;
+            handled = true;
+            break;
+        }
+        case 'f': {
+            data->str = data->buf;
+            data->len = double_to_string(convert_val.d, data->buf, precision);
             handled = true;
             break;
         }
