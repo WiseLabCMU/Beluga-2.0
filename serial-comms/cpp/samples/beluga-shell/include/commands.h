@@ -19,5 +19,6 @@ void report_fatal_error(const char *msg);
 void report_range_event(const struct range_event *event);
 void report_neighbor_update(const struct beluga_neighbor *updates, size_t len);
 void report_range_update(const struct beluga_neighbor *updates, size_t len);
+void handle_resync(void);
 
 #endif // BELUGA_COMMANDS_H

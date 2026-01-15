@@ -104,6 +104,7 @@ static void init(void) {
         .range_events = report_range_event,
         .neighbor_list_updates = report_neighbor_update,
         .neighbor_ranging_updates = report_range_update,
+        .resync = handle_resync,
     };
 
     cache_mkdir();
@@ -150,6 +151,20 @@ static void init(void) {
     Signal(SIGTTOU, SIG_IGN);
 }
 
+static void archive_command(bool add_hist, char *command) {
+    if (!add_hist) {
+        return;
+    }
+
+    const HIST_ENTRY *entry = previous_history();
+
+    if (entry != NULL && strcmp(entry->line, command) == 0) {
+        return;
+    }
+
+    add_history(command);
+}
+
 static void run(void) {
     char *command;
     bool add_hist = true;
@@ -167,9 +182,7 @@ static void run(void) {
 
         add_hist = evaluate_command(command);
 
-        if (add_hist) {
-            add_history(command);
-        }
+        archive_command(add_hist, command);
 
         free(command);
     }
@@ -193,12 +206,8 @@ static void redirect_io(struct cmdline_tokens *tokens) {
     }
 
     if (tokens->outfile) {
-
-        if (!tokens->outfile_append) {
-            output_fd = open(tokens->outfile, WR_FLAGS, WR_PERMS);
-        } else {
-            output_fd = open(tokens->outfile, APPEND_FLAGS, WR_PERMS);
-        }
+        int flags = tokens->outfile_append ? APPEND_FLAGS : WR_FLAGS;
+        output_fd = open(tokens->outfile, flags, WR_PERMS);
 
         if (output_fd < 0) {
             perror(tokens->outfile);

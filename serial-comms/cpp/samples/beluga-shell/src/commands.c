@@ -62,10 +62,12 @@ static void status(const struct cmdline_tokens *tokens);
 static void version(const struct cmdline_tokens *tokens);
 static void starve(const struct cmdline_tokens *tokens);
 static void exchange(const struct cmdline_tokens *tokens);
+static void reason(const struct cmdline_tokens *tokens);
 static void jobs(const struct cmdline_tokens *tokens);
 static void bg(const struct cmdline_tokens *tokens);
 static void fg(const struct cmdline_tokens *tokens);
 static void config_beluga_stream(const struct cmdline_tokens *tokens);
+static void neighbors(const struct cmdline_tokens *tokens);
 
 struct stream_ctx {
     int fd;
@@ -80,6 +82,8 @@ struct _serial_attr {
     struct stream_ctx exchange;
     struct stream_ctx ranges;
     struct stream_ctx neighbors;
+    pthread_mutex_t serial_lock;
+    bool expecting_reboot;
 };
 
 static struct _serial_attr attr = {
@@ -127,10 +131,12 @@ static struct command_info commands[] = {
     COMMAND(version),
     COMMAND(starve),
     COMMAND(exchange),
+    COMMAND(reason),
     COMMAND(jobs),
     COMMAND(bg),
     COMMAND(fg),
     COMMAND(config_beluga_stream, "manage-stream"),
+    COMMAND(neighbors),
 };
 
 #define ARRAY_SIZE(array_) sizeof(array_) / sizeof(array_[0])
@@ -144,6 +150,7 @@ int initialize_builtin_commands(struct beluga_serial *serial) {
     pthread_mutex_init(&attr.exchange.lock, NULL);
     pthread_mutex_init(&attr.neighbors.lock, NULL);
     pthread_mutex_init(&attr.ranges.lock, NULL);
+    pthread_mutex_init(&attr.serial_lock, NULL);
 
     if (register_command_callbacks(commands, ARRAY_SIZE(commands)) < 0) {
         printf("Failed to initialize command handlers\n");
@@ -178,6 +185,34 @@ void report_unexpected_reboot(void) {
     }
 }
 
+void handle_resync(void) {
+    char response[sizeof(attr.serial->response)];
+
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_reason(attr.serial);
+        strcpy(response, attr.serial->response);
+    }
+
+    MUTEX_CRITICAL_SECTION(&attr.error.lock) {
+        int fd = attr.error.fd;
+
+        if (attr.expecting_reboot) {
+            attr.expecting_reboot = false;
+            MUTEX_SECTION_BREAK;
+        }
+
+        if (!attr.error.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
+
+        dprintf(fd, "\n%s\n", response);
+
+        if (fd == STDOUT_FILENO) {
+            rl_redraw_prompt_last_line();
+        }
+    }
+}
+
 void report_fatal_error(const char *msg) {
     MUTEX_CRITICAL_SECTION(&attr.error.lock) {
         int fd = attr.error.fd;
@@ -195,6 +230,10 @@ void report_range_event(const struct range_event *event) {
     MUTEX_CRITICAL_SECTION(&attr.exchange.lock) {
         int fd = attr.exchange.fd;
 
+        if (!attr.exchange.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
+
         sio_dprintf(fd,
                     "\n-----\nExchange Event:\nID: %d\nExchange: "
                     "%d\nTimestamp: %ld\n-----\n",
@@ -209,6 +248,10 @@ void report_range_event(const struct range_event *event) {
 void report_neighbor_update(const struct beluga_neighbor *updates, size_t len) {
     MUTEX_CRITICAL_SECTION(&attr.neighbors.lock) {
         int fd = attr.neighbors.fd;
+
+        if (!attr.neighbors.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
 
         sio_dprintf(fd, "\n-----\nNeighbor Event:\n");
         for (size_t i = 0; i < len; i++) {
@@ -230,8 +273,12 @@ void report_neighbor_update(const struct beluga_neighbor *updates, size_t len) {
 }
 
 void report_range_update(const struct beluga_neighbor *updates, size_t len) {
-    MUTEX_CRITICAL_SECTION(&attr.neighbors.lock) {
-        int fd = attr.neighbors.fd;
+    MUTEX_CRITICAL_SECTION(&attr.ranges.lock) {
+        int fd = attr.ranges.fd;
+
+        if (!attr.ranges.streaming) {
+            MUTEX_SECTION_BREAK;
+        }
 
         sio_dprintf(fd, "\n-----\nRange Event:\n");
         for (size_t i = 0; i < len; i++) {
@@ -278,28 +325,38 @@ static void id(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_id(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_id(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void start_ble(const struct cmdline_tokens *tokens) {
-    beluga_serial_start_ble(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_start_ble(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void stop_ble(const struct cmdline_tokens *tokens) {
-    beluga_serial_stop_ble(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_stop_ble(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void start_uwb(const struct cmdline_tokens *tokens) {
-    beluga_serial_start_uwb(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_start_uwb(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void stop_uwb(const struct cmdline_tokens *tokens) {
-    beluga_serial_stop_uwb(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_stop_uwb(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void bootmode(const struct cmdline_tokens *tokens) {
@@ -309,8 +366,10 @@ static void bootmode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_bootmode(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_bootmode(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void rate(const struct cmdline_tokens *tokens) {
@@ -320,8 +379,10 @@ static void rate(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_rate(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_rate(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void channel(const struct cmdline_tokens *tokens) {
@@ -331,13 +392,17 @@ static void channel(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_channel(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_channel(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void reset(const struct cmdline_tokens *tokens) {
-    beluga_serial_reset(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_reset(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void timeout(const struct cmdline_tokens *tokens) {
@@ -347,8 +412,10 @@ static void timeout(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_timeout(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_timeout(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static bool strtouint32(const char *str, uint32_t *result) {
@@ -381,8 +448,10 @@ static void handle_txpower1(const struct cmdline_tokens *tokens) {
         return;
     }
 
-    beluga_serial_txpower(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_txpower(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void handle_txpower2(const struct cmdline_tokens *tokens) {
@@ -423,8 +492,10 @@ static void handle_txpower2(const struct cmdline_tokens *tokens) {
         return;
     }
 
-    beluga_serial_txpower2(attr.serial, stage, coarse, fine);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_txpower2(attr.serial, stage, coarse, fine);
+        write_serial_response(tokens);
+    }
 }
 
 static void txpower(const struct cmdline_tokens *tokens) {
@@ -442,8 +513,10 @@ static void streammode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_streammode(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_streammode(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void twrmode(const struct cmdline_tokens *tokens) {
@@ -453,8 +526,10 @@ static void twrmode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_twrmode(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_twrmode(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void ledmode(const struct cmdline_tokens *tokens) {
@@ -464,13 +539,18 @@ static void ledmode(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_ledmode(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_ledmode(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void reboot(const struct cmdline_tokens *tokens) {
-    beluga_serial_reboot(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        attr.expecting_reboot = true;
+        beluga_serial_reboot(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void pwramp(const struct cmdline_tokens *tokens) {
@@ -480,8 +560,10 @@ static void pwramp(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_pwramp(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_pwramp(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void antenna(const struct cmdline_tokens *tokens) {
@@ -491,18 +573,24 @@ static void antenna(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_antenna(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_antenna(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void cmd_time(const struct cmdline_tokens *tokens) {
-    beluga_serial_time(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_time(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void deepsleep(const struct cmdline_tokens *tokens) {
-    beluga_serial_deepsleep(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_deepsleep(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void datarate(const struct cmdline_tokens *tokens) {
@@ -512,8 +600,10 @@ static void datarate(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_datarate(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_datarate(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void preamble(const struct cmdline_tokens *tokens) {
@@ -523,8 +613,10 @@ static void preamble(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_preamble(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_preamble(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void pulserate(const struct cmdline_tokens *tokens) {
@@ -534,8 +626,10 @@ static void pulserate(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_pulserate(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_pulserate(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void phr(const struct cmdline_tokens *tokens) {
@@ -545,8 +639,10 @@ static void phr(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_phr(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_phr(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void pac(const struct cmdline_tokens *tokens) {
@@ -556,8 +652,10 @@ static void pac(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_pac(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_pac(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void sfd(const struct cmdline_tokens *tokens) {
@@ -567,8 +665,10 @@ static void sfd(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_sfd(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_sfd(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void panid(const struct cmdline_tokens *tokens) {
@@ -578,8 +678,10 @@ static void panid(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_panid(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_panid(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void evict(const struct cmdline_tokens *tokens) {
@@ -589,8 +691,10 @@ static void evict(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_evict(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_evict(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void verbose(const struct cmdline_tokens *tokens) {
@@ -600,18 +704,24 @@ static void verbose(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_verbose(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_verbose(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void status(const struct cmdline_tokens *tokens) {
-    beluga_serial_status(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_status(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void version(const struct cmdline_tokens *tokens) {
-    beluga_serial_version(attr.serial);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_version(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void starve(const struct cmdline_tokens *tokens) {
@@ -621,8 +731,10 @@ static void starve(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_starve(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_starve(attr.serial, arg);
+        write_serial_response(tokens);
+    }
 }
 
 static void exchange(const struct cmdline_tokens *tokens) {
@@ -632,8 +744,17 @@ static void exchange(const struct cmdline_tokens *tokens) {
         arg = tokens->argv[1];
     }
 
-    beluga_serial_exchange(attr.serial, arg);
-    write_serial_response(tokens);
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_exchange(attr.serial, arg);
+        write_serial_response(tokens);
+    }
+}
+
+static void reason(const struct cmdline_tokens *tokens) {
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        beluga_serial_reason(attr.serial);
+        write_serial_response(tokens);
+    }
 }
 
 static void jobs(const struct cmdline_tokens *tokens) {
@@ -933,4 +1054,53 @@ static void config_beluga_stream(const struct cmdline_tokens *tokens) {
 
     update_stream_context(ctx, &arguments, &argp, tokens);
     update_stream_state(ctx, &arguments);
+}
+
+static void neighbors(const struct cmdline_tokens *tokens) {
+    struct beluga_neighbor *list = NULL, *tmp;
+    int len = 0;
+    int fd = STDOUT_FILENO;
+
+    if (tokens->outfile) {
+        fd = open(tokens->outfile,
+                  tokens->outfile_append ? APPEND_FLAGS : WR_FLAGS, WR_PERMS);
+        if (fd < 0) {
+            perror("open");
+            return;
+        }
+    }
+
+    MUTEX_CRITICAL_SECTION(&attr.serial_lock) {
+        len = beluga_serial_get_neighbor_list(attr.serial, &list);
+    }
+
+    if (len < 0) {
+        sio_dprintf(fd, "Insufficient memory\n");
+        goto close_fd;
+    }
+
+    tmp = list;
+    sio_dprintf(fd, "-----\n");
+    sio_dprintf(fd, "Neighbor list:\n");
+    for (int i = 0; i < len; i++) {
+        sio_assert(tmp != NULL);
+        sio_dprintf(fd, "ID: %d\n", tmp->id);
+        sio_dprintf(fd, "RSSI: %d\n", tmp->rssi);
+        sio_dprintf(fd, "Exchange: %d\n", tmp->exchange);
+        sio_dprintf(fd, "Range: %f\n", tmp->range);
+        sio_dprintf(fd, "Timestamp: %ld\n", tmp->time);
+
+        if ((i + 1) < len) {
+            sio_dprintf(fd, "\n");
+        }
+        tmp++;
+    }
+    sio_dprintf(fd, "-----\n");
+
+    free(list);
+
+close_fd:
+    if (fd != STDOUT_FILENO) {
+        close(fd);
+    }
 }

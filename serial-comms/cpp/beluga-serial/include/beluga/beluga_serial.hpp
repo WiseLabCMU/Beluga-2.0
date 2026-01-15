@@ -73,6 +73,12 @@ class BelugaSerial : public BelugaSerialBase {
      */
     [[maybe_unused]] void get_ranges(std::vector<NeighborImpl> &list);
 
+    /**
+     * Retrieves the current neighbor list.
+     * @param list List of neighbors to populate.
+     */
+    [[maybe_unused]] void get_neighbor_list(std::vector<NeighborImpl> &list);
+
   private:
     BelugaNeighborList<NeighborImpl> _neighbors;
 
@@ -109,6 +115,13 @@ BelugaSerial<NeighborImpl>::get_ranges(std::vector<NeighborImpl> &list) {
             throw;
         }
     }
+}
+
+template <typename NeighborImpl>
+void BelugaSerial<NeighborImpl>::get_neighbor_list(
+    std::vector<NeighborImpl> &list) {
+    list.clear();
+    _neighbors.get_neighbors_no_update(list);
 }
 
 template <typename NeighborImpl> BelugaSerial<NeighborImpl>::~BelugaSerial() {

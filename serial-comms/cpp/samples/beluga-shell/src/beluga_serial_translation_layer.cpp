@@ -10,6 +10,7 @@
 
 #include <beluga/beluga_serial.hpp>
 #include <beluga_serial_c_api.h>
+#include <utils.h>
 
 #define NEIGHBOR_CLASS
 
@@ -53,6 +54,23 @@ static void range_update(struct beluga_serial *obj,
     }
 
     obj->_attr.neighbor_ranging_updates(neighbors.data(), neighbors.size());
+}
+
+template <typename NeighborType = BelugaSerial::BelugaNeighbor>
+static void retrieve_neighbors_now(struct beluga_serial *obj,
+                                   std::vector<struct beluga_neighbor> &out) {
+    auto serial =
+        static_cast<BelugaSerial::BelugaSerial<NeighborType> *>(obj->ctx);
+    std::vector<NeighborType> list;
+
+    serial->get_neighbor_list(list);
+
+    out.clear();
+
+    for (auto &neighbor : list) {
+        out.emplace_back(neighbor.rssi(), neighbor.id(), neighbor.exchange(),
+                         neighbor.range(), neighbor.time());
+    }
 }
 
 extern "C" {
@@ -102,6 +120,13 @@ static void fatal_error_cb_(struct beluga_serial *obj, const std::string &msg) {
     obj->_attr.fatal_error_event(msg.c_str());
 }
 
+static void resync_cb_(struct beluga_serial *obj) {
+    if (!obj || !obj->_attr.resync) {
+        return;
+    }
+    obj->_attr.resync();
+}
+
 struct beluga_serial *
 create_beluga_serial_instance(const struct beluga_serial_attr *attr) {
     if (attr == nullptr) {
@@ -147,6 +172,11 @@ create_beluga_serial_instance(const struct beluga_serial_attr *attr) {
     if (!obj->ctx) {
         free(obj);
         return nullptr;
+    }
+
+    if (attr->resync != nullptr) {
+        static_cast<BelugaSerial::BelugaSerial<NEIGHBOR_CLASS> *>(obj->ctx)
+            ->register_resync_cb([obj]() { resync_cb_(obj); });
     }
 
     return obj;
@@ -244,48 +274,50 @@ int beluga_serial_swap_port(struct beluga_serial *obj, const char *port) {
                std::min(response.length(), sizeof(obj->response) - 1));        \
     } while (false)
 
+#define CALL_AT_CMD(obj_, func_, arg_...)                                      \
+    COND_CODE_0(IS_EMPTY(arg_), (_CALL_AT_CMD(obj_, func_, arg_)),             \
+                (_CALL_AT_CMD2(obj_, func_)))
+
 void beluga_serial_start_ble(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, start_ble);
+    CALL_AT_CMD(obj, start_ble);
 }
 
 void beluga_serial_stop_ble(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, stop_ble);
+    CALL_AT_CMD(obj, stop_ble);
 }
 
 void beluga_serial_start_uwb(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, start_uwb);
+    CALL_AT_CMD(obj, start_uwb);
 }
 
 void beluga_serial_stop_uwb(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, stop_uwb);
+    CALL_AT_CMD(obj, stop_uwb);
 }
 
 void beluga_serial_id(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, id, arg);
+    CALL_AT_CMD(obj, id, arg);
 }
 
 void beluga_serial_bootmode(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, bootmode, arg);
+    CALL_AT_CMD(obj, bootmode, arg);
 }
 
 void beluga_serial_rate(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, rate, arg);
+    CALL_AT_CMD(obj, rate, arg);
 }
 
 void beluga_serial_channel(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, channel, arg);
+    CALL_AT_CMD(obj, channel, arg);
 }
 
-void beluga_serial_reset(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, reset);
-}
+void beluga_serial_reset(struct beluga_serial *obj) { CALL_AT_CMD(obj, reset); }
 
 void beluga_serial_timeout(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, timeout, arg);
+    CALL_AT_CMD(obj, timeout, arg);
 }
 
 void beluga_serial_txpower(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, txpower, arg);
+    CALL_AT_CMD(obj, txpower, arg);
 }
 
 void beluga_serial_txpower2(struct beluga_serial *obj, enum uwb_amp_stage stage,
@@ -322,85 +354,118 @@ void beluga_serial_txpower2(struct beluga_serial *obj, enum uwb_amp_stage stage,
 }
 
 void beluga_serial_streammode(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, streammode, arg);
+    CALL_AT_CMD(obj, streammode, arg);
 }
 
 void beluga_serial_twrmode(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, twrmode, arg);
+    CALL_AT_CMD(obj, twrmode, arg);
 }
 
 void beluga_serial_ledmode(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, ledmode, arg);
+    CALL_AT_CMD(obj, ledmode, arg);
 }
 
 void beluga_serial_reboot(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, reboot);
+    CALL_AT_CMD(obj, reboot);
 }
 
 void beluga_serial_pwramp(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, pwramp, arg);
+    CALL_AT_CMD(obj, pwramp, arg);
 }
 
 void beluga_serial_antenna(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, antenna, arg);
+    CALL_AT_CMD(obj, antenna, arg);
 }
 
-void beluga_serial_time(struct beluga_serial *obj) { _CALL_AT_CMD2(obj, time); }
+void beluga_serial_time(struct beluga_serial *obj) { CALL_AT_CMD(obj, time); }
 
 void beluga_serial_deepsleep(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, deepsleep);
+    CALL_AT_CMD(obj, deepsleep);
 }
 
 void beluga_serial_datarate(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, datarate, arg);
+    CALL_AT_CMD(obj, datarate, arg);
 }
 
 void beluga_serial_preamble(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, preamble, arg);
+    CALL_AT_CMD(obj, preamble, arg);
 }
 
 void beluga_serial_pulserate(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, pulserate, arg);
+    CALL_AT_CMD(obj, pulserate, arg);
 }
 
 void beluga_serial_phr(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, phr, arg);
+    CALL_AT_CMD(obj, phr, arg);
 }
 
 void beluga_serial_pac(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, pac, arg);
+    CALL_AT_CMD(obj, pac, arg);
 }
 
 void beluga_serial_sfd(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, sfd, arg);
+    CALL_AT_CMD(obj, sfd, arg);
 }
 
 void beluga_serial_panid(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, panid, arg);
+    CALL_AT_CMD(obj, panid, arg);
 }
 
 void beluga_serial_evict(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, evict, arg);
+    CALL_AT_CMD(obj, evict, arg);
 }
 
 void beluga_serial_verbose(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, verbose, arg);
+    CALL_AT_CMD(obj, verbose, arg);
 }
 
 void beluga_serial_status(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, status);
+    CALL_AT_CMD(obj, status);
 }
 
 void beluga_serial_version(struct beluga_serial *obj) {
-    _CALL_AT_CMD2(obj, version);
+    CALL_AT_CMD(obj, version);
 }
 
 void beluga_serial_starve(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, starve, arg);
+    CALL_AT_CMD(obj, starve, arg);
 }
 
 void beluga_serial_exchange(struct beluga_serial *obj, const char *arg) {
-    _CALL_AT_CMD(obj, exchange, arg);
+    CALL_AT_CMD(obj, exchange, arg);
+}
+
+void beluga_serial_reason(struct beluga_serial *obj) {
+    CALL_AT_CMD(obj, reason);
+}
+
+int beluga_serial_get_neighbor_list(struct beluga_serial *obj,
+                                    struct beluga_neighbor **list) {
+    if (!obj || !list) {
+        return -EINVAL;
+    }
+
+    std::vector<struct beluga_neighbor> list_;
+
+    retrieve_neighbors_now(obj, list_);
+
+    if (list_.empty()) {
+        return 0;
+    }
+
+    *list = (struct beluga_neighbor *)calloc(list_.size(),
+                                             sizeof(struct beluga_neighbor));
+
+    if (!*list) {
+        return -ENOMEM;
+    }
+
+    struct beluga_neighbor *tmp = *list;
+    for (size_t i = 0; i < list_.size(); i++) {
+        tmp[i] = list_[i];
+    }
+
+    return (int)list_.size();
 }
 
 static bool allocate_port_entry(
