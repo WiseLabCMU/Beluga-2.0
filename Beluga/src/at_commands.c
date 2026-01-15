@@ -231,6 +231,9 @@ AT_COMMAND(STOPBLE) {
     if (get_ble_led_state() == LED_OFF) {
         ERROR(comms, "BLE is already off");
     }
+    if (get_uwb_led_state() == LED_ON) {
+        ERROR(comms, "UWB must be disabled first");
+    }
     int err = disable_bluetooth();
     if (err) {
         ERROR(comms, "Failed to stop BLE (%d)", err);
