@@ -942,3 +942,7 @@ int set_verbosity(const struct comms *comms, bool verbose) {
     comms->ctx->verbose = verbose;
     return 0;
 }
+
+void starve_comms_wdt(const struct comms *comms) {
+    let_the_dog_starve(&comms->ctx->watchdog);
+}

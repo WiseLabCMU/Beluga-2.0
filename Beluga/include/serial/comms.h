@@ -450,6 +450,12 @@ int set_wait_usb_host(const struct comms *comms, bool block);
 bool comms_check_rx_error(const struct comms *comms);
 
 /**
+ * Mark the comms watchdog instance as starving.
+ * @param[in] comms The comms object
+ */
+void starve_comms_wdt(const struct comms *comms);
+
+/**
  * @brief Helper that prints an AT command response and indicates that the
  * command executed correctly.
  *
