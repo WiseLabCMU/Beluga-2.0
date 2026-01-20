@@ -288,9 +288,13 @@ int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid) {
     return 0;
 }
 
-int pause_watchdog(struct task_wdt_attr *attr) {
+int pause_watchdog(const struct task_wdt_attr *attr) {
     if (WDT_CHECK(attr)) {
         return -EINVAL;
+    }
+
+    if (attr->starving) {
+        return 0;
     }
 
     K_SPINLOCK(&spinlock) { wdt_channels[attr->id].paused = true; }
