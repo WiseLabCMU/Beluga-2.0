@@ -14,6 +14,7 @@
 #include <beluga_message.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 
@@ -301,6 +302,11 @@ struct comms_ctx {
      * thread.
      */
     struct k_poll_event events[COMMS_SIGNALS];
+
+    /**
+     * Software watchdog attributes associated with comms thread.
+     */
+    struct task_wdt_attr watchdog;
 
     struct k_mutex wr_mtx;             ///< Write lock
     k_tid_t tid;                       ///< Comms thread ID

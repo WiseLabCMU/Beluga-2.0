@@ -119,6 +119,8 @@ int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid);
  * @return negative error code otherwise
  *
  * @note To unpause a task watchdog, call watchdog_red_rocket().
+ * @warning This is best suited for situations where a one-off function needs
+ * to be called.
  */
 int pause_watchdog(struct task_wdt_attr *attr);
 
