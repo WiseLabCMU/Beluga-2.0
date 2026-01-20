@@ -256,7 +256,7 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
 
     err = _COMMS_API(comms, enable, false);
     if (err != 0) {
-        return;
+        k_thread_abort(k_current_get());
     }
 
     while (true) {
@@ -266,7 +266,7 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
             k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
             LOG_ERR("Comms thread error: %d", err);
             k_mutex_unlock(&comms->ctx->wr_mtx);
-            return;
+            k_thread_abort(k_current_get());
         }
 
         comms_signal_handle(comms, COMMS_SIGNAL_RXRDY, comms_process);
@@ -339,9 +339,10 @@ int comms_init(const struct comms *comms, const void *transport_config) {
         return err;
     }
 
-    k_tid_t tid = k_thread_create(
-        comms->thread, comms->stack, CONFIG_COMMANDS_STACK_SIZE, comms_thread,
-        (void *)comms, NULL, NULL, CONFIG_BELUGA_COMMANDS_PRIO, 0, K_NO_WAIT);
+    k_tid_t tid =
+        k_thread_create(comms->thread, comms->stack, CONFIG_COMMANDS_STACK_SIZE,
+                        comms_thread, (void *)comms, NULL, NULL,
+                        CONFIG_BELUGA_COMMANDS_PRIO, K_ESSENTIAL, K_NO_WAIT);
     comms->ctx->tid = tid;
     k_thread_name_set(tid, comms->name);
 

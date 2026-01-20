@@ -241,8 +241,7 @@ static ALWAYS_INLINE void crit_sect_onexit(unsigned int *key) {
 
 #define CRITICAL_SECTION()                                                     \
     k_sched_lock();                                                            \
-    for (unsigned int __i __attribute__((__cleanup__(crit_sect_onexit))) = 0,  \
-                          __key = irq_lock();                                  \
+    for (unsigned int __i CRITICAL_SECTION_ONEXIT = 0, __key = irq_lock();     \
          !__i; irq_unlock(__key), __i = 1)
 
 void watchdog_red_rocket(struct task_wdt_attr *attr) {
