@@ -109,4 +109,17 @@ int kill_task_watchdog(struct task_wdt_attr *attr);
  */
 int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid);
 
+/**
+ * @brief Pauses a task watchdog channel from having to be fed.
+ *
+ * Send Sparky to rehab for his "red rocket" problem.
+ *
+ * @param attr The task watchdog attributes
+ * @return 0 on success
+ * @return negative error code otherwise
+ *
+ * @note To unpause a task watchdog, call watchdog_red_rocket().
+ */
+int pause_watchdog(struct task_wdt_attr *attr);
+
 #endif // BELUGA_WATCHDOG_H

@@ -62,6 +62,7 @@ struct wdt_channel {
     const char *name;
     int64_t timeout_ms;
     bool active;
+    bool paused;
 };
 
 struct hw_wdt {
@@ -121,7 +122,7 @@ static void schedule_next_timeout(int64_t current_time_ms) {
 #endif // defined(CONFIG_SW_WDT_HW_FALLBACK)
 
     for (size_t i = 0; i < ARRAY_SIZE(wdt_channels); i++) {
-        if (wdt_channels[i].active &&
+        if (wdt_channels[i].active && !wdt_channels[i].paused &&
             wdt_channels[i].timeout_ms < next_timeout) {
             next_channel_id = i;
             next_timeout = wdt_channels[i].timeout_ms;
@@ -144,7 +145,8 @@ static void wdt_timer_handler(struct k_timer *timer) {
     bool bg_channel = IS_ENABLED(CONFIG_SW_WDT_HW_FALLBACK) &&
                       (channel_id == ARRAY_SIZE(wdt_channels));
 
-    if (bg_channel || !wdt_channels[channel_id].active) {
+    if (bg_channel || !wdt_channels[channel_id].active ||
+        wdt_channels[channel_id].paused) {
         schedule_next_timeout(k_uptime_get());
         return;
     }
@@ -202,6 +204,7 @@ int spawn_task_watchdog(struct task_wdt_attr *attr) {
                 wdt_channels[i].tid = k_current_get();
                 wdt_channels[i].timeout_ms = K_TICKS_FOREVER;
                 wdt_channels[i].name = attr->name;
+                wdt_channels[i].paused = false;
                 attr->id = i;
                 attr->starving = false;
                 ret = 0;
@@ -246,6 +249,7 @@ static ALWAYS_INLINE void crit_sect_onexit(unsigned int *key) {
 
 void watchdog_red_rocket(struct task_wdt_attr *attr) {
     int64_t current_uptime;
+    struct wdt_channel *channel;
 
     if (WDT_CHECK(attr) || unlikely(attr->starving)) {
         return;
@@ -254,9 +258,9 @@ void watchdog_red_rocket(struct task_wdt_attr *attr) {
     // Don't allow anyone to interrupt this process
     CRITICAL_SECTION() {
         current_uptime = k_uptime_get();
-
-        wdt_channels[attr->id].timeout_ms =
-            current_uptime + wdt_channels[attr->id].period;
+        channel = &wdt_channels[attr->id];
+        channel->timeout_ms = current_uptime + channel->period;
+        channel->paused = false;
         schedule_next_timeout(current_uptime);
     }
 }
@@ -280,6 +284,16 @@ int set_watchdog_tid(const struct task_wdt_attr *attr, k_tid_t tid) {
     }
 
     K_SPINLOCK(&spinlock) { wdt_channels[attr->id].tid = tid; }
+
+    return 0;
+}
+
+int pause_watchdog(struct task_wdt_attr *attr) {
+    if (WDT_CHECK(attr)) {
+        return -EINVAL;
+    }
+
+    K_SPINLOCK(&spinlock) { wdt_channels[attr->id].paused = true; }
 
     return 0;
 }
