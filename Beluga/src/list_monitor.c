@@ -229,8 +229,7 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
 
     if (spawn_task_watchdog(&watchdogAttr) < 0) {
         LOG_ERR("Unable to spawn watchdog for monitor thread.\n");
-        while (1) // todo
-            ;
+        k_thread_abort(k_current_get());
     }
 
     while (1) {
@@ -258,7 +257,7 @@ NO_RETURN static void monitor_task_function(void *p1, void *p2, void *p3) {
 
 #if defined(CONFIG_ENABLE_MONITOR)
 K_THREAD_DEFINE(monitor_task, CONFIG_MONITOR_STACK_SIZE, monitor_task_function,
-                NULL, NULL, NULL, CONFIG_BELUGA_MONITOR_PRIO, 0, -1);
+                NULL, NULL, NULL, CONFIG_BELUGA_MONITOR_PRIO, K_ESSENTIAL, -1);
 
 /**
  * @brief Initializes and starts the list monitor thread

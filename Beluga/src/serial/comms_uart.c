@@ -369,9 +369,7 @@ static int enable_comms_uart(void) {
         }
     }
 
-    comms_init(&comms_uart, dev);
-
-    return 0;
+    return comms_init(&comms_uart, dev);
 }
 
 SYS_INIT(enable_comms_uart, POST_KERNEL, 90);

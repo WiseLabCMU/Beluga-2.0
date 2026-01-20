@@ -254,9 +254,18 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
     struct comms *comms = comms_handle;
     int err;
 
+    if (spawn_task_watchdog(&comms->ctx->watchdog) < 0) {
+        LOG_ERR("Unable to spawn task watchdog in command thread\n");
+        k_thread_abort(k_current_get());
+    }
+
+    if (pause_watchdog(&comms->ctx->watchdog) < 0) {
+        LOG_ERR("Unable to pause task watchdog in command thread\n");
+    }
+
     err = _COMMS_API(comms, enable, false);
     if (err != 0) {
-        return;
+        k_thread_abort(k_current_get());
     }
 
     while (true) {
@@ -266,7 +275,7 @@ void comms_thread(void *comms_handle, void *p2, void *p3) {
             k_mutex_lock(&comms->ctx->wr_mtx, K_FOREVER);
             LOG_ERR("Comms thread error: %d", err);
             k_mutex_unlock(&comms->ctx->wr_mtx);
-            return;
+            k_thread_abort(k_current_get());
         }
 
         comms_signal_handle(comms, COMMS_SIGNAL_RXRDY, comms_process);
@@ -303,6 +312,7 @@ static void transport_evt_handler(enum comms_transport_evt evt_type,
  */
 static int instance_init(const struct comms *comms,
                          const void *transport_config) {
+    struct task_wdt_attr watchdog = TASK_WDT_INITIALIZER(5000, comms->name);
     memset(comms->ctx, 0, sizeof(*comms->ctx));
 
     k_mutex_init(&comms->ctx->wr_mtx);
@@ -313,6 +323,8 @@ static int instance_init(const struct comms *comms,
                           K_POLL_MODE_NOTIFY_ONLY, &comms->ctx->signals[i]);
     }
 
+    comms->ctx->watchdog = watchdog;
+
     return _COMMS_API(comms, init, transport_config, transport_evt_handler,
                       (void *)comms);
 }
@@ -320,7 +332,7 @@ static int instance_init(const struct comms *comms,
 /**
  * @brief Function for initializing a transport layer and internal comms state.
  *
- * @param[in] sh		Pointer to comms instance.
+ * @param[in] comms		Pointer to comms instance.
  * @param[in] transport_config	Transport configuration during initialization.
  *
  * @return Standard error code.
@@ -339,9 +351,10 @@ int comms_init(const struct comms *comms, const void *transport_config) {
         return err;
     }
 
-    k_tid_t tid = k_thread_create(
-        comms->thread, comms->stack, CONFIG_COMMANDS_STACK_SIZE, comms_thread,
-        (void *)comms, NULL, NULL, CONFIG_BELUGA_COMMANDS_PRIO, 0, K_NO_WAIT);
+    k_tid_t tid =
+        k_thread_create(comms->thread, comms->stack, CONFIG_COMMANDS_STACK_SIZE,
+                        comms_thread, (void *)comms, NULL, NULL,
+                        CONFIG_BELUGA_COMMANDS_PRIO, K_ESSENTIAL, K_NO_WAIT);
     comms->ctx->tid = tid;
     k_thread_name_set(tid, comms->name);
 
@@ -354,7 +367,7 @@ static void at_respond(const struct comms *comms, bool ok);
  * @brief Process function, which should be executed when data is ready in the
  *	  transport interface.
  *
- * @param[in] sh Pointer to the comms instance.
+ * @param[in] comms Pointer to the comms instance.
  */
 void comms_process(const struct comms *comms) {
     __ASSERT_NO_MSG(comms);
@@ -364,14 +377,8 @@ void comms_process(const struct comms *comms) {
     char data;
     struct comms_buf *buf = &comms->ctx->rx_buf;
 
-    struct task_wdt_attr watchdog = TASK_WDT_INITIALIZER(5000, comms->name);
-    if (spawn_task_watchdog(&watchdog) < 0) {
-        printk("Unable to spawn task watchdog in command thread\n");
-        return;
-    }
-
     while (true) {
-        watchdog_red_rocket(&watchdog);
+        watchdog_red_rocket(&comms->ctx->watchdog);
         (void)_COMMS_API(comms, read, &data, sizeof(data), &count);
         if (count == 0) {
             // No data
@@ -388,8 +395,8 @@ void comms_process(const struct comms *comms) {
             _COMMS_BUF_APPEND(comms, data);
         }
     }
-    if (kill_task_watchdog(&watchdog) < 0) {
-        printk("Unable to spawn task watchdog in command thread\n");
+    if (pause_watchdog(&comms->ctx->watchdog) < 0) {
+        LOG_ERR("Unable to pause task watchdog in command thread\n");
     }
 }
 
@@ -934,4 +941,8 @@ int set_verbosity(const struct comms *comms, bool verbose) {
     }
     comms->ctx->verbose = verbose;
     return 0;
+}
+
+void starve_comms_wdt(const struct comms *comms) {
+    let_the_dog_starve(&comms->ctx->watchdog);
 }

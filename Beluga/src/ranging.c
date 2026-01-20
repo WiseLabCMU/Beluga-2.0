@@ -260,7 +260,8 @@ static struct task_wdt_attr responder_wdt =
 #if defined(CONFIG_ENABLE_RANGING)
 static void rangingTask(void *p1, void *p2, void *p3);
 K_THREAD_DEFINE(ranging_task, CONFIG_RANGING_STACK_SIZE, rangingTask, NULL,
-                NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, K_FP_REGS, -1);
+                NULL, NULL, CONFIG_BELUGA_RANGING_PRIO, K_FP_REGS | K_ESSENTIAL,
+                -1);
 
 /**
  * @brief Creates the ranging thread and initiates its data
@@ -281,7 +282,7 @@ void init_ranging_thread(void) { LOG_INF("Ranging disabled"); }
 static void responder_task_function(void *p1, void *p2, void *p3);
 K_THREAD_DEFINE(responder_task, CONFIG_RESPONDER_STACK_SIZE,
                 responder_task_function, NULL, NULL, NULL,
-                CONFIG_BELUGA_RESPONDER_PRIO, K_FP_REGS, -1);
+                CONFIG_BELUGA_RESPONDER_PRIO, K_FP_REGS | K_ESSENTIAL, -1);
 
 /**
  * @brief Creates the responder thread and initiates its data
@@ -1136,7 +1137,7 @@ NO_RETURN static void responder_task_function(void *p1, void *p2, void *p3) {
 
     if (spawn_task_watchdog(&responder_wdt) < 0) {
         LOG_ERR("Unable to spawn responder wdt");
-        sys_reboot(SYS_REBOOT_COLD);
+        k_thread_abort(k_current_get());
     }
 
     while (true) {

@@ -14,6 +14,7 @@
 #include <beluga_message.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <watchdog.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 
@@ -302,6 +303,11 @@ struct comms_ctx {
      */
     struct k_poll_event events[COMMS_SIGNALS];
 
+    /**
+     * Software watchdog attributes associated with comms thread.
+     */
+    struct task_wdt_attr watchdog;
+
     struct k_mutex wr_mtx;             ///< Write lock
     k_tid_t tid;                       ///< Comms thread ID
     enum comms_out_format_mode format; ///< Output mode
@@ -442,6 +448,12 @@ int set_verbosity(const struct comms *comms, bool verbose);
 int set_wait_usb_host(const struct comms *comms, bool block);
 
 bool comms_check_rx_error(const struct comms *comms);
+
+/**
+ * Mark the comms watchdog instance as starving.
+ * @param[in] comms The comms object
+ */
+void starve_comms_wdt(const struct comms *comms);
 
 /**
  * @brief Helper that prints an AT command response and indicates that the

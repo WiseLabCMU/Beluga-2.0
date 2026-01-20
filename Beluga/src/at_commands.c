@@ -1221,7 +1221,7 @@ AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_WDT_TEST_COMMAND), STARVE) {
     int32_t channel;
 
     if (!strtoint32(argv[1], &channel)) {
-        ERROR(comms, "Invalid channel argument. Must be 0, 1, or 2.");
+        ERROR(comms, "Invalid channel argument. Must be 0, 1, 2, or 3");
     }
 
     switch (channel) {
@@ -1237,8 +1237,12 @@ AT_COMMAND_COND_REGISTER(IS_ENABLED(CONFIG_WDT_TEST_COMMAND), STARVE) {
         starve_monitor_wdt();
         break;
     }
+    case 3: {
+        starve_comms_wdt(comms);
+        break;
+    }
     default: {
-        ERROR(comms, "Invalid channel argument. Must be 0, 1, or 2.");
+        ERROR(comms, "Invalid channel argument. Must be 0, 1, 2, or 3.");
         break;
     }
     }
