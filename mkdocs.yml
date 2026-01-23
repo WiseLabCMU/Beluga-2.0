@@ -5,6 +5,9 @@ nav:
   - Home: index.md
   - Firmware:
       - Overview: firmware/index.md
+      - Commands: firmware/commands.md
+      - Configurations: firmware/configs.md
+      - Building and Flashing: firmware/buildnflash.md
 
 extra_css:
 - stylesheets/extra.css
@@ -90,3 +93,8 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - footnotes
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde

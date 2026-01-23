@@ -1,7 +1,11 @@
-- Overview
+- Overview (this file)
   - Mention something about the old firmware
   - Architecture
 - Requirements
+
+
+
+
 - Build configs
   - Custom configs
   - external flash configs
