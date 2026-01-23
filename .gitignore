@@ -19,3 +19,4 @@ Beluga/build*
 asm-dumps/
 cmake-build-*
 build*
+docs-venv/
