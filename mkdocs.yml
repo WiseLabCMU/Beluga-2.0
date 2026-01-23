@@ -3,6 +3,8 @@ repo_url: https://github.com/WiseLabCMU/Beluga-2.0
 repo_name: WiseLabCMU/Beluga-2.0
 nav:
   - Home: index.md
+  - Firmware:
+      - Overview: firmware/index.md
 
 extra_css:
 - stylesheets/extra.css
