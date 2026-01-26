@@ -606,6 +606,57 @@ AT+VERBOSE <mode>
     | `0`   | (Default) Verbose mode turned off |
     | `1`   | Verbose mode turned on            |
 
+### AT+CALIBRATE
+Calibrate the UWB antenna delays.
+
+```shell title="Usage"
+AT+CALIBRATE
+AT+CALIBRATE <delay id> <calibration value>
+```
+
+=== "Argument Descriptions"
+
+    | Argument            | Description                                           |
+    |:--------------------|:------------------------------------------------------|
+    | `delay id`          | The value to calibrate the antenna delay for.         |
+    | `calibration value` | The calibration value for the specified antenna delay |
+
+=== "Delay ID Descriptions"
+
+    | Value | Description                                                    |
+    |:------|:---------------------------------------------------------------|
+    | `0`   | The delay ID for the UWB receive path with a PRF[^2] of 16MHz  |
+    | `1`   | The delay ID for the UWB receive path with a PRF[^2] of 64MHz  |
+    | `2`   | The delay ID for the UWB transmit path with a PRF[^2] of 16MHz |
+    | `3`   | The delay ID for the UWB transmit path with a PRF[^2] of 64MHz |
+
+    [^2]: The PRF is set with the [AT+PULSERATE](commands.md#atpulserate) command. (todo: link command)
+
+### AT+WAITUSBHOST
+Set the USB device start-up mode.
+
+```shell title="Usage"
+AT+WAITUSBHOST
+AT+WAITUSBHOST <mode>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description                  |
+    |:---------|:-----------------------------|
+    | `mode`   | The USB device start-up mode |
+
+=== "Mode Descriptions"
+
+    | Value | Description                                   |
+    |:------|:----------------------------------------------|
+    | `0`   | (Default) Do not wait for USB host connection |
+    | `1`   | Wait for USB host connection                  |
+
+???+ info
+    
+    This requires the USB_DEVICE_STACK (todo: insert link) build-time configuration to be enabled.
+
 ## Control Commands
 
 ### AT+STARTUWB
@@ -679,6 +730,50 @@ Places Beluga into deep sleep. A wakeup source must be configured for Beluga to 
 AT+DEEPSLEEP
 ```
 
+### AT+SYNC
+Synchronize the wireless settings of a certain node on the network.
+
+```shell title="Usage"
+AT+SYNC <id>
+```
+
+| Argument | Description                                      |
+|:---------|:-------------------------------------------------|
+| `id`     | The ID of the node on the network to synchronize |
+
+### AT+STARVE
+Starves a watchdog timer channel for testing purposes.
+
+```shell title="Usage"
+AT+STARVE <channel>
+```
+
+=== "Argument Descriptions"
+
+    | Argument  | Description                    |
+    |:----------|:-------------------------------|
+    | `channel` | The watchdog channel to starve |
+
+=== "Channel Descriptions"
+
+    | Value | Description                   |
+    |:------|:------------------------------|
+    | `0`   | Ranging initiator channel     |
+    | `1`   | Responder channel             |
+    | `2`   | Neighbor list monitor channel |
+    | `3`   | Commands channel              |
+
+### AT+EXCHANGE
+Set the exchange counter to a new value
+
+```shell title="Usage"
+AT+EXCHANGE <value>
+```
+
+| Argument | Description                                      |
+|:---------|:-------------------------------------------------|
+| `value`  | The new exchange value to start counting up from |
+
 ## Status Commands
 
 ### AT+TIME
@@ -719,4 +814,44 @@ Retrieve the firmware version.
 
 ```shell title="Usage"
 AT+VERSION
+```
+
+### AT+REASON
+Retrieve the reboot reason.
+
+```shell title="Usage"
+AT+REASON
+```
+
+| Reason                                                     | Value[^3] |
+|:-----------------------------------------------------------|:----------|
+| External pin                                               | 1         |
+| Software reset                                             | 2         |
+| Brownout (drop in voltage)                                 | 4         |
+| Power-on reset (POR)                                       | 8         |
+| Watchdog timer expiration                                  | 16        |
+| Debug event                                                | 32        |
+| Security Violation                                         | 64        |
+| Waking up from low power mode                              | 128       |
+| CPU lock-up detected                                       | 256       |
+| Parity error                                               | 512       |
+| PLL error                                                  | 1024      |
+| Clock error                                                | 2048      |
+| Hardware reset                                             | 4096      |
+| User reset                                                 | 8192      |
+| Temperature reset                                          | 16384     |
+| Bootloader reset (entry/exit)                              | 32768     |
+| Flash ECC reset                                            | 65536     |
+
+[^3]: The values listed can be OR’ed together to give multiple reset reasons.
+
+???+ info
+
+    This requires the BELUGA_RESET_REASON (todo: insert link) build-time configuration to be enabled.
+
+### AT+NEIGHBORS
+Print the scanned neighbor nodes in the neighbor list.
+
+```shell title="Usage"
+AT+NEIGHBORS
 ```
