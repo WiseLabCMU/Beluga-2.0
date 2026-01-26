@@ -338,6 +338,274 @@ AT+PWRAMP <mode>
     This requires the BELUGA_RANGE_EXTENSION (todo: insert link) build-time 
     configuration to be enabled.
 
+### AT+FORMAT
+
+Sets the format mode for serial outputs.
+
+```shell title="Usage"
+AT+FORMAT
+AT+FORMAT <mode>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description                   |
+    |:---------|:------------------------------|
+    | `mode`   | The output format mode to use |
+
+=== "Mode Descriptions"
+
+    | Value | Description          |
+    |:------|:---------------------|
+    | `0`   | (Default) CSV format |
+    | `1`   | JSON format          |
+    | `2`   | Framed format        |
+
+??? info "Modes"
+
+    **CSV format** is the most basic mode. It prints the command outputs
+    normally and the neighbor values are printed in a comma-separated
+    fashion with line-endings separating neighbor entries. Neighbor
+    removals are not recorded.
+
+    **JSON format** is very similar to CSV format in its behavior. The
+    main differences are that the neighbors are sent over serial in JSON format
+    instead of CSV format, and neighbor removals are noted with `rm <id>`.
+
+    **Framed format** places all serial output into frames. See 
+    (todo: insert link here) for more information on Beluga frames.
+
+### AT+PHR
+Determines whether extended frame lengths are allowed.
+
+```shell title="Usage"
+AT+PHR
+AT+PHR <mode>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description                           |
+    |:---------|:--------------------------------------|
+    | `mode`   | Allow transmit frame length extension |
+
+=== "Mode Descriptions"
+
+    | Value | Description                          |
+    |:------|:-------------------------------------|
+    | `0`   | (Default) Use standard frame lengths |
+    | `1`   | Allow frame lengths up to 1023 bytes |
+
+???+ warning
+
+    Updating this parameter also has an affect on the BLE advertising data. Nodes with mismatching
+    data will not attempt to range to each other.
+
+### AT+DATARATE
+Determines the data rate for the DW1000.
+
+```shell title="Usage"
+AT+DATARATE
+AT+DATARATE <rate>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description                           |
+    |:---------|:--------------------------------------|
+    | `rate`   | The data rate of the DW1000.          |
+
+=== "Rate Descriptions"
+
+    | Value | Description          |
+    |:------|:---------------------|
+    | `0`   | (Default) 6.8Mbits/s |
+    | `1`   | 850 kbit/s           |
+    | `2`   | 110 kbit/s           |
+
+???+ warning
+
+    Updating this parameter also has an affect on the BLE advertising data. Nodes with mismatching
+    data will not attempt to range to each other.
+
+### AT+PULSERATE
+Determines the pulse repetition frequency of the DW1000.
+
+```shell title="Usage"
+AT+PULSERATE
+AT+PULSERATE <rate>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description                            |
+    |:---------|:---------------------------------------|
+    | `rate`   | The pulse repetition frequency to use. |
+
+=== "Rate Descriptions"
+
+    | Value | Description      |
+    |:------|:-----------------|
+    | `0`   | 16 MHz           |
+    | `1`   | (Default) 64 MHz |
+
+???+ warning
+
+    Updating this parameter also has an affect on the BLE advertising data. Nodes with mismatching
+    data will not attempt to range to each other.
+
+### AT+PREAMBLE
+Determines the preamble length of the DW1000.
+
+```shell title="Usage"
+AT+PREAMBLE
+AT+PREAMBLE <preamble>
+```
+
+=== "Argument Descriptions"
+
+    | Argument   | Description                        |
+    |:-----------|:-----------------------------------|
+    | `preamble` | The preamble length of the DW1000. |
+
+=== "Preamble Descriptions"
+
+    | Value  | Description                            |
+    |:-------|:---------------------------------------|
+    | `64`   | 64 symbols per transmission            |
+    | `128`  | (Default) 128 symbols per transmission |
+    | `256`  | 256 symbols per transmission           |
+    | `512`  | 512 symbols per transmission           |
+    | `1024` | 1024 symbols per transmission          |
+    | `1536` | 1536 symbols per transmission          |
+    | `2048` | 2048 symbols per transmission          |
+    | `4096` | 4096 symbols per transmission          |
+
+???+ warning
+
+    Updating this parameter also has an affect on the BLE advertising data. Nodes with mismatching
+    data will not attempt to range to each other.
+
+### AT+PAC
+Determines the preamble acquisition chunk size for the DW1000.
+
+```shell title="Usage"
+AT+PAC
+AT+PAC <size>
+```
+
+=== "Argument Descriptions"
+
+    | Argument   | Description                               |
+    |:-----------|:------------------------------------------|
+    | `size`     | he size of the preamble acquisition chunk |
+
+=== "Size Descriptions"
+
+    | Value | Description                                                             |
+    |:------|:------------------------------------------------------------------------|
+    | `0`   | (Default) 8 bytes (recommended for RX of preamble length 128 and below) |
+    | `1`   | 16 bytes (recommended for RX of preamble length 256)                    |
+    | `2`   | 32 bytes (recommended for RX of preamble length 512)                    |
+    | `3`   | 64 bytes (recommended for RX of preamble length 1024 and above)         |
+
+???+ warning
+
+    Updating this parameter also has an affect on the BLE advertising data. Nodes with mismatching
+    data will not attempt to range to each other.
+
+### AT+SFD
+Determines the length of the start of frame delimiter on the DW1000.
+
+```shell title="Usage"
+AT+SFD
+AT+SFD <mode>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description          |
+    |:---------|:---------------------|
+    | `mode`   | The SFD mode to use. |
+
+=== "Mode Descriptions"
+
+    | Value | Description                                                    |
+    |:------|:---------------------------------------------------------------|
+    | `0`   | (Default) Standard SFD as defined in the IEEE802.15.4 standard |
+    | `1`   | DecaWave Proprietary SFD                                       |
+
+???+ warning
+
+    Updating this parameter also has an affect on the BLE advertising data. Nodes with mismatching
+    data will not attempt to range to each other.
+
+### AT+PANID
+Determines the Personal Area Network (PAN) ID for the DW1000. This allows for different networks to be in the same area.
+
+```shell title="Usage"
+AT+PANID
+AT+PANID <id>
+```
+
+| Argument | Description                                                                      |
+|:---------|:---------------------------------------------------------------------------------|
+| `id`     | The id of the personal area network. Allowable range: [0,65535]. Default: 57034. |
+
+???+ warning
+
+    Updating this parameter also has an affect on the BLE advertising data. Nodes with mismatching
+    data will not attempt to range to each other.
+
+### AT+EVICT
+Determines the eviction policy of the neighbor list.
+
+```shell title="Usage"
+AT+EVICT
+AT+EVICT <scheme>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description                                                 |
+    |:---------|:------------------------------------------------------------|
+    | `scheme` | The eviction scheme to use when managing the neighbor list. |
+
+=== "Scheme Descriptions"
+
+    | Value | Description                                                                                                                                                                                                                                                                                                            |
+    |:------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+    | `0`   | Index RR. Use an index round-robin strategy. This will evict node 0 first, then node 1 on the next insertion, then node 2 on the following insertion. After evicting N - 1 nodes (N being the maximum number of nodes the neighbor list can hold), then node 0 will be evicted next. This strategy is not recommended. |
+    | `1`   | (Default) RSSI, Evicts the node with the lowest RSSI. If there are no nodes with a lower RSSI than the scanned node, then no neighbors are evicted.                                                                                                                                                                    |
+    | `2`   | Range. Evict the node with the largest ranging value.                                                                                                                                                                                                                                                                  |
+    | `3`   | LRS. Evict the node that has not been scanned by the BLE in the longest amount of time.                                                                                                                                                                                                                                |
+    | `4`   | LRR. Evict the node that has been successfully ranged to in the longest amount of time.                                                                                                                                                                                                                                |
+
+???+ info
+
+    This requires the BELUGA_EVICT_RUNTIME_SELECT (todo: insert link) build-time configuration to be enabled.
+
+### AT+VERBOSE
+Sets the verbosity of the command responses.
+
+```shell title="Usage"
+AT+VERBOSE
+AT+VERBOSE <mode>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description              |
+    |:---------|:-------------------------|
+    | `mode`   | The verbose mode setting |
+
+=== "Mode Descriptions"
+
+    | Value | Description                       |
+    |:------|:----------------------------------|
+    | `0`   | (Default) Verbose mode turned off |
+    | `1`   | Verbose mode turned on            |
+
 ## Control Commands
 
 ### AT+STARTUWB
@@ -404,6 +672,13 @@ AT+ANTENNA <antenna>
     This requires the BELUGA_RANGE_EXTENSION (todo: insert link) build-time 
     configuration to be enabled.
 
+### AT+DEEPSLEEP
+Places Beluga into deep sleep. A wakeup source must be configured for Beluga to wake up (there are none currently).
+
+```shell title="Usage"
+AT+DEEPSLEEP
+```
+
 ## Status Commands
 
 ### AT+TIME
@@ -411,4 +686,37 @@ Retrieve the current Beluga timestamp (ms since boot).
 
 ```shell title="Usage"
 AT+TIME
+```
+
+### AT+STATUS
+Retrieve the firmware information and the current states.
+
+```shell title="Usage"
+AT+STATUS
+```
+
+=== "Status Return Fields"
+
+    | Bitfield | Name       | Description                                                                             |
+    |:--------:|:-----------|:----------------------------------------------------------------------------------------|
+    |  31:12   | -          | Reserved                                                                                |
+    |    11    | EVICT_ALGO | 0: eviction algorithm is fixed to the build<br>1: eviction algorithm runtime selectable |
+    |    10    | ANT_SEL    | 0: Primary antenna used<br>1: Secondary antenna used                                    |
+    |    9     | UWB        | 0: UWB inactive<br>1: UWB active                                                        |
+    |    8     | BLE        | 0: BLE inactive<br>1: BLE active                                                        |
+    |   7:0    | BOARD      | The hardware platform ID                                                                |
+
+=== "Hardware Platform IDs"
+
+    | Value | Board       |
+    |:------|:------------|
+    | 0     | DWM1001_dev |
+    | 1     | Beluga      |
+    | >=2   | Unspecified |
+
+### AT+VERSION
+Retrieve the firmware version.
+
+```shell title="Usage"
+AT+VERSION
 ```
