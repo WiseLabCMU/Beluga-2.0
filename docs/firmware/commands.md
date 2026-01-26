@@ -286,6 +286,58 @@ AT+TWRMODE <mode>
     | `0`   | Single-sided two-way ranging (SS-TWR)           |
     | `1`   | (Default) Double-sided two-way ranging (DS-TWR) |
 
+### AT+LEDMODE
+
+Determines the LED display mode,
+
+```shell title="Usage"
+AT+LEDMODE
+AT+LEDMODE <mode>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description   |
+    |:---------|:--------------|
+    | `mode`   | The LED mode. |
+
+=== "Mode Descriptions"
+
+    | Value | Description                                         |
+    |:------|:----------------------------------------------------|
+    | `0`   | (Default) LEDs are turned on and displaying states. |
+    | `1`   | LEDs are turned off                                 |
+
+### AT+PWRAMP
+Determines the state of the external power amplifiers.
+
+```shell title="Usage"
+AT+PWRAMP
+AT+PWRAMP <mode>
+```
+
+=== "Argument Descriptions"
+
+    | Argument | Description                        |
+    |:---------|:-----------------------------------|
+    | `mode`   | The external power amplifier mode. |
+
+=== "Mode Descriptions"
+
+    | Value | Description                                         |
+    |:------|:----------------------------------------------------|
+    | `0`   | (Default) External power amplifiers are disabled.   |
+    | `1`   | UWB amplifier enabled, BLE amplifier disabled.      |
+    | `2`   | UWB amplifier disabled, BLE 10 dB gain.             |
+    | `3`   | UWB amplifier enabled, BLE 10 dB gain.              |
+    | `4`   | UWB amplifier disabled, BLE 20 dB gain.             |
+    | `5`   | UWB amplifier enabled, BLE 20 dB gain.              |
+
+???+ info
+
+    This requires the BELUGA_RANGE_EXTENSION (todo: insert link) build-time 
+    configuration to be enabled.
+
 ## Control Commands
 
 ### AT+STARTUWB
@@ -316,4 +368,47 @@ Stops BLE advertising and scanning.
 AT+STOPBLE
 ```
 
+### AT+REBOOT
+Reboots the Beluga node. This will also cause the USB connection to be lost.
+
+```shell title="Usage"
+AT+REBOOT
+```
+
+### AT+ANTENNA
+Selects the antenna for BLE usage.
+
+```shell title="Usage"
+AT+ANTENNA <antenna>
+```
+
+=== "Argument descriptions"
+
+    | Argument  | Description                |
+    |:----------|:---------------------------|
+    | `antenna` | The antenna to use for BLE |
+
+=== "Antenna Descriptions"
+
+    | Value | Description       |
+    |:------|:------------------|
+    | `1`   | Primary antenna   |
+    | `2`   | Secondary antenna |
+
+??? info "Reading antenna value"
+
+    See AT+STATUS
+
+???+ info
+
+    This requires the BELUGA_RANGE_EXTENSION (todo: insert link) build-time 
+    configuration to be enabled.
+
 ## Status Commands
+
+### AT+TIME
+Retrieve the current Beluga timestamp (ms since boot).
+
+```shell title="Usage"
+AT+TIME
+```
