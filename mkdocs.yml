@@ -8,6 +8,8 @@ nav:
       - Commands: firmware/commands.md
       - Configurations: firmware/configs.md
       - Building and Flashing: firmware/buildnflash.md
+  - Hardware:
+      - Overview: hardware/index.md
 
 extra_css:
 - stylesheets/extra.css
