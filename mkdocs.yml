@@ -6,7 +6,12 @@ nav:
   - Firmware:
       - Overview: firmware/index.md
       - Commands: firmware/commands.md
-      - Configurations: firmware/configs.md
+      - Kconfig:
+          - Overview: firmware/kconfig/index.md
+          - Logging: firmware/kconfig/logging.md
+          - Debugging: firmware/kconfig/beluga_debug.md
+          - Threads: firmware/kconfig/threads.md
+          - UWB: firmware/kconfig/uwb.md
       - Building and Flashing: firmware/buildnflash.md
   - Hardware:
       - Overview: hardware/index.md

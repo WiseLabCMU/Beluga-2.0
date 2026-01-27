@@ -763,6 +763,11 @@ AT+STARVE <channel>
     | `2`   | Neighbor list monitor channel |
     | `3`   | Commands channel              |
 
+???+ info
+
+    This requires the [WDT_TEST_COMMAND](kconfig/beluga_debug.md#config_wdt_test_command) build-time 
+    configuration to be enabled.
+
 ### AT+EXCHANGE
 Set the exchange counter to a new value
 
