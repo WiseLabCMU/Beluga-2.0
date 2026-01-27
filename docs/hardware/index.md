@@ -1,0 +1,4 @@
+- brief overview
+  - Attach schematics and layout
+  - Go into different HW mods
+  - Recommend JTAG cable for flashing

@@ -65,7 +65,7 @@ config DWT_API_ERROR_CHECK
     default n
 
 config UWB_ENABLE_PA
-    bool "Allow the UWB external to be toggled on"
+    bool "Allow the UWB external power amplifier to be toggled on"
     default y
 
 config MAX_POLLING_RATE
