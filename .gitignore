@@ -18,4 +18,5 @@ Beluga/dwm1001_dev_clion/
 Beluga/build*
 asm-dumps/
 cmake-build-*
-build*
+build*/
+docs-venv/
